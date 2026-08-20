@@ -192,6 +192,10 @@ export default function OutdoorKitchenProjects() {
   const [actionModal, setActionModal] = useState(false);
   const [newActionTitle, setNewActionTitle] = useState('');
   const [newActionSub, setNewActionSub] = useState('');
+  const [newProjectModal, setNewProjectModal] = useState(false);
+  const [newProjectClient, setNewProjectClient] = useState('');
+  const [newProjectType, setNewProjectType] = useState('Outdoor Kitchen');
+  const [newProjectBudget, setNewProjectBudget] = useState('€ 3,920.00');
 
   // Logbook entries matching Project history
   const [logbook, setLogbook] = useState([
@@ -557,8 +561,49 @@ export default function OutdoorKitchenProjects() {
         )}
       </AnimatePresence>
 
+      {/* TOP PORTAL BREADCRUMB BAR (Matching Screenshot) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-b border-[#D6CFC2]/60 pb-3">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-[#1C1C1A] text-sm tracking-tight">Project Management</span>
+          <span className="text-[#8C8275]">·</span>
+          <span className="text-[#555046] font-mono text-[11px]">admin portal</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => {
+              navigate('/admin/projects/inbox-messages');
+              showToast('Opening project inbox messages...');
+            }}
+            className="px-3 py-1.5 bg-white border border-[#D6CFC2] text-[#1C1C1A] rounded-xl font-bold text-xs shadow-2xs hover:bg-[#FAF8F5] cursor-pointer flex items-center gap-1.5 transition-all"
+          >
+            <span>Inbox</span>
+            <strong className="text-[#283523] bg-[#E3EFE3] px-1.5 py-0.2 rounded font-mono text-[11px]">4</strong>
+          </button>
+
+          <button 
+            onClick={() => {
+              setActiveTab('Customer Actions');
+              showToast('Filtered: 3 tasks waiting for review');
+            }}
+            className="px-3 py-1.5 bg-[#FDF2E3] text-[#9E5507] border border-[#F6DCB8] rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer hover:bg-[#FCEAD0] transition-all"
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span>3 tasks waiting for us</span>
+          </button>
+
+          <button 
+            onClick={() => setNewProjectModal(true)}
+            className="px-4 py-1.5 bg-[#283523] hover:bg-[#1E291B] text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs transition-all flex items-center gap-1"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>New project</span>
+          </button>
+        </div>
+      </div>
+
       {/* TOP HEADER SECTION */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
         <div>
           <span className="text-xs font-mono font-bold text-[#555046] uppercase tracking-widest block">
             PROJECT 2026-014 — OUTDOOR KITCHEN
@@ -2058,6 +2103,98 @@ export default function OutdoorKitchenProjects() {
                   Close
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* NEW PROJECT MODAL */}
+      <AnimatePresence>
+        {newProjectModal && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-[#D6CFC2]"
+            >
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
+                <h3 className="font-bold text-base text-[#1C1C1A]">
+                  Create New Outdoor Kitchen Project
+                </h3>
+                <button onClick={() => setNewProjectModal(false)} className="text-[#615C52] hover:text-[#1C1C1A] cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!newProjectClient.trim()) return;
+                  setNewProjectModal(false);
+                  showToast(`✓ New project for "${newProjectClient}" created successfully!`);
+                }} 
+                className="space-y-4 text-xs"
+              >
+                <div>
+                  <label className="block text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider mb-1.5">
+                    Customer Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Martijn van Dam"
+                    value={newProjectClient}
+                    onChange={(e) => setNewProjectClient(e.target.value)}
+                    className="w-full p-2.5 bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#283523]/20"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider mb-1.5">
+                      Project Type
+                    </label>
+                    <select
+                      value={newProjectType}
+                      onChange={(e) => setNewProjectType(e.target.value)}
+                      className="w-full p-2.5 bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#283523]/20 cursor-pointer"
+                    >
+                      <option value="Outdoor Kitchen">Outdoor Kitchen</option>
+                      <option value="Garden Room">Garden Room</option>
+                      <option value="Custom Carpentry">Custom Carpentry</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider mb-1.5">
+                      Budget / Agreed Price
+                    </label>
+                    <input
+                      type="text"
+                      value={newProjectBudget}
+                      onChange={(e) => setNewProjectBudget(e.target.value)}
+                      className="w-full p-2.5 bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#283523]/20"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewProjectModal(false)}
+                    className="px-4 py-2 bg-white border border-[#D6CFC2] text-[#4F4B44] rounded-xl text-xs font-bold hover:bg-[#FAF8F5] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-[#283523] text-white font-bold rounded-xl text-xs hover:bg-[#1E291B] cursor-pointer"
+                  >
+                    Create Project
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
