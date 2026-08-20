@@ -10,6 +10,7 @@ import Leads from './pages/admin/Leads';
 import Quotes from './pages/admin/Quotes';
 import Projects from './pages/admin/Projects';
 import ProjectGlobalInbox from './pages/admin/ProjectGlobalInbox';
+import ProjectChatInboxPage from './pages/admin/ProjectChatInboxPage';
 import OutdoorKitchenProjects from './pages/admin/OutdoorKitchenProjects';
 import GardenRoomProjects from './pages/admin/GardenRoomProjects';
 import FieldMapping from './pages/admin/FieldMapping';
@@ -82,6 +83,8 @@ function App() {
         <Route path="projects" element={<Navigate to="/admin/projects/inbox" replace />} />
         <Route path="projects/all" element={<Navigate to="/admin/projects/inbox" replace />} />
         <Route path="projects/inbox" element={<ProjectGlobalInbox />} />
+        <Route path="projects/inbox-messages" element={<ProjectChatInboxPage />} />
+        <Route path="projects/inbox-create" element={<ProjectChatInboxPage />} />
         <Route path="projects/outdoor-kitchens" element={<OutdoorKitchenProjects />} />
         <Route path="projects/outdoor-kitchen" element={<OutdoorKitchenProjects />} />
         <Route path="projects/garden-rooms" element={<GardenRoomProjects />} />

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckCircle, MessageCircle, ExternalLink, Calendar, 
   Send, FileText, Camera, Shield, Check, Clock, ChevronRight,
-  X, Phone, MessageSquare, Download, AlertCircle, Info, User, Wrench, FileSpreadsheet, Building
+  X, Phone, MessageSquare, Download, AlertCircle, Info, User, Wrench, Building
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -98,7 +98,7 @@ export default function OutdoorKitchenProjects() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F4F1EA] text-[#4A4A43] font-body p-3 sm:p-6 space-y-5 relative">
+    <div className="-m-3 sm:-m-4 lg:-m-6 p-4 sm:p-6 lg:p-8 min-h-full bg-[#F4F1EA] text-[#4A4A43] font-body space-y-6 relative w-auto">
       
       {/* Toast Notification */}
       <AnimatePresence>
@@ -115,31 +115,59 @@ export default function OutdoorKitchenProjects() {
         )}
       </AnimatePresence>
 
+      {/* TOP PORTAL BREADCRUMB BAR matching Screenshot 2 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-b border-[#D6CFC2]/60 pb-3">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-[#33422C] font-serif text-sm">Projectenbeheer</span>
+          <span className="text-dark/40">·</span>
+          <span className="text-dark/60 font-mono text-[11px]">adminportaal</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => navigate('/admin/projects/inbox-messages')}
+            className="px-3 py-1 bg-white border border-[#D6CFC2] text-dark/70 rounded-xl font-bold text-xs shadow-2xs hover:bg-[#FAF8F5] cursor-pointer"
+          >
+            Inbox <strong className="text-[#33422C]">4</strong>
+          </button>
+          <span className="px-3 py-1 bg-[#FDF2E3] text-[#B86B14] border border-[#F6DCB8] rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            3 taken wachten op ons
+          </span>
+          <button 
+            onClick={() => showToast('Nieuw project formulier geopend')}
+            className="px-4 py-1.5 bg-[#33422C] hover:bg-[#283523] text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs transition-all"
+          >
+            + Nieuw project
+          </button>
+        </div>
+      </div>
+
       {/* TOP HEADER SECTION matching Screenshot 2 */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <span className="text-[11px] font-mono font-bold text-dark/50 uppercase tracking-widest block">
             PROJECT 2026-014 — BUITENKEUKEN
           </span>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#33422C] mt-0.5">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#33422C] mt-0.5">
             Sander de Vries — Thermo Fraké 240 cm
           </h1>
-          <p className="text-xs text-dark/70 font-body mt-1">
+          <p className="text-xs sm:text-sm text-dark/70 font-body mt-1">
             Oisterwijk · offerte OF-2026325 · akkoord 11 aug · € 3.920,00 incl. btw
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => setCustomerPortalModal(true)}
-            className="px-3.5 py-2 bg-white hover:bg-[#FAF8F5] text-[#33422C] border border-[#D6CFC2] rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2.5 bg-white hover:bg-[#FAF8F5] text-[#33422C] border border-[#D6CFC2] rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
           >
             <span>Klantportaal bekijken als klant</span>
           </button>
 
           <button
             onClick={() => showToast('Fase bijgewerkt naar de volgende stap!')}
-            className="px-4 py-2 bg-[#33422C] hover:bg-[#283523] text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
+            className="px-5 py-2.5 bg-[#33422C] hover:bg-[#283523] text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
           >
             Fase bijwerken
           </button>
@@ -147,18 +175,18 @@ export default function OutdoorKitchenProjects() {
       </div>
 
       {/* STEPPER BAR CARD matching Screenshot 2 */}
-      <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-4 shadow-2xs space-y-3">
+      <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           
           {/* Phase Stepper Pills */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2.5 flex-wrap">
             {stepsList.map((step) => {
               const isActive = activeStep === step.key;
               return (
                 <button
                   key={step.key}
                   onClick={() => setActiveStep(step.key)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     isActive 
                       ? 'bg-[#5A5038] text-white shadow-xs' 
                       : 'bg-[#EDE8DF]/60 text-dark/70 hover:bg-[#EDE8DF]'
@@ -181,13 +209,13 @@ export default function OutdoorKitchenProjects() {
           </div>
         </div>
 
-        <p className="text-[11px] text-dark/60 font-body leading-relaxed border-t border-[#E6E1D7]/60 pt-2.5">
+        <p className="text-xs text-dark/60 font-body leading-relaxed border-t border-[#E6E1D7]/60 pt-2.5">
           Fase wijzigen stuurt automatisch één notificatie naar de klant en werkt de fasebalk in beide portalen bij. Terugzetten kan alleen met een reden (komt in het logboek).
         </p>
       </div>
 
       {/* PRIMARY TABS BAR */}
-      <div className="space-y-3">
+      <div className="space-y-3 pt-2">
         <div className="flex items-center gap-8 border-b border-[#D6CFC2]/70 pb-0.5 overflow-x-auto no-scrollbar">
           {[
             'Status & teksten',
@@ -201,7 +229,7 @@ export default function OutdoorKitchenProjects() {
               <button
                 key={tabName}
                 onClick={() => setActiveTab(tabName)}
-                className={`pb-2.5 text-xs transition-all whitespace-nowrap cursor-pointer focus:outline-none relative ${
+                className={`pb-2.5 text-xs sm:text-sm transition-all whitespace-nowrap cursor-pointer focus:outline-none relative ${
                   isActive 
                     ? 'text-[#33422C] font-extrabold font-body' 
                     : 'text-[#736B5E] hover:text-[#33422C] font-medium font-body'
@@ -219,7 +247,7 @@ export default function OutdoorKitchenProjects() {
           })}
         </div>
 
-        {/* Fully Interactive Sub-toggle row under active tab */}
+        {/* Sub-toggle row under active tab */}
         {activeTab === 'Status & teksten' && (
           <div className="flex items-center gap-6 text-xs pt-0.5 border-b border-[#D6CFC2]/50 pb-2">
             <button 
@@ -249,17 +277,16 @@ export default function OutdoorKitchenProjects() {
       {/* TAB CONTENT: STATUS & TEKSTEN */}
       {activeTab === 'Status & teksten' && (
         <>
-          {/* SUB-TAB 1: BERICHTEN (DEFAULT VIEW MATCHING SCREENSHOT 2) */}
           {subToggle === 'Berichten' && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               
               {/* LEFT COLUMN: 7 COLUMNS */}
-              <div className="lg:col-span-7 space-y-5">
+              <div className="lg:col-span-7 space-y-6">
                 
                 {/* CARD 1: Statusteksten op het klantoverzicht */}
-                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
+                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-serif font-bold text-sm text-[#33422C]">
+                    <h3 className="font-serif font-bold text-base text-[#33422C]">
                       Statusteksten op het klantoverzicht
                     </h3>
                     <span className="px-2.5 py-0.5 bg-[#E3EFE3] text-[#2D6A2D] rounded-md font-mono text-[10px] font-bold">
@@ -267,7 +294,7 @@ export default function OutdoorKitchenProjects() {
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-dark/60 font-body leading-relaxed">
+                  <p className="text-xs text-dark/60 font-body leading-relaxed">
                     Deze twee velden vullen de statuskaart van de klant. Kort en concreet, alsof je het zelf appt. Verplicht bij elke faseovergang; tussentijds bijwerken mag altijd.
                   </p>
 
@@ -312,9 +339,9 @@ export default function OutdoorKitchenProjects() {
                 </div>
 
                 {/* CARD 2: Verwachte levering */}
-                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
+                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-serif font-bold text-sm text-[#33422C]">
+                    <h3 className="font-serif font-bold text-base text-[#33422C]">
                       Verwachte levering
                     </h3>
                     <span className="px-2.5 py-0.5 bg-[#E3EFE3] text-[#2D6A2D] rounded-md font-mono text-[10px] font-bold">
@@ -355,7 +382,7 @@ export default function OutdoorKitchenProjects() {
                   </div>
 
                   <div className="space-y-2 pt-1 border-t border-[#E6E1D7]/60">
-                    <p className="text-[11px] text-dark/60 font-body leading-relaxed">
+                    <p className="text-xs text-dark/60 font-body leading-relaxed">
                       Bij "Vertraagd" zijn reden + nieuwe week verplicht; de klant krijgt automatisch de vertragingsmelding in de vaste toon. De leverweek voedt óók de partnerplanning.
                     </p>
                     <span className="px-2 py-0.5 bg-[#FDF2E3] text-[#B86B14] rounded-md font-mono text-[9px] font-bold inline-block">
@@ -365,9 +392,9 @@ export default function OutdoorKitchenProjects() {
                 </div>
 
                 {/* CARD 3: Interne notities */}
-                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
+                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-5 sm:p-6 shadow-2xs space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-serif font-bold text-sm text-[#33422C]">
+                    <h3 className="font-serif font-bold text-base text-[#33422C]">
                       Interne notities
                     </h3>
                     <span className="px-2.5 py-0.5 bg-[#EAE7DF] text-[#55554E] rounded-md font-mono text-[10px] font-bold">
@@ -389,24 +416,24 @@ export default function OutdoorKitchenProjects() {
 
               </div>
 
-              {/* RIGHT COLUMN: 5 COLUMNS (RIGHT RAIL) */}
-              <div className="lg:col-span-5 space-y-5">
+              {/* RIGHT COLUMN: 5 COLUMNS */}
+              <div className="lg:col-span-5 space-y-6">
                 
                 {/* CARD 1: LIVE — WAT ZIET DE KLANT NU */}
-                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
+                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-5 shadow-2xs space-y-3">
                   <span className="text-[10px] font-mono font-bold text-dark/50 uppercase tracking-wider block">
-                    LIVE — WAT ZIET DE KLANT NU
+                    LIVE · WAT ZIET DE KLANT NU
                   </span>
 
-                  <div className="bg-white border border-[#E6E1D7] rounded-xl p-4 space-y-3 shadow-2xs">
+                  <div className="bg-white border border-dashed border-[#D6CFC2] rounded-2xl p-4 space-y-2.5 shadow-2xs">
                     <div>
                       <h4 className="font-serif font-bold text-xs text-[#33422C]">
                         Hoi Sander
                       </h4>
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-dark/80 mt-0.5">
-                        <span>In de werkplaats</span>
-                        <span>·</span>
-                        <span className="text-dark/60 font-normal">levering week 38</span>
+                      <div className="flex items-center gap-1.5 text-xs text-dark/80 font-sans mt-0.5">
+                        <strong className="font-bold text-[#2A2925]">In de werkplaats</strong>
+                        <span className="text-dark/40 font-normal">·</span>
+                        <span className="text-dark/70 font-medium">levering week 38</span>
                       </div>
                     </div>
 
@@ -414,7 +441,7 @@ export default function OutdoorKitchenProjects() {
                       <div className="bg-[#5A5038] h-full rounded-full w-[65%]" />
                     </div>
 
-                    <div className="px-2.5 py-1 bg-[#FDF2E3] border border-[#F6DCB8] text-[#B86B14] rounded-lg text-[10px] font-bold inline-block">
+                    <div className="px-3 py-1 bg-[#FDF2E3] border border-[#F6DCB8] text-[#B86B14] rounded-xl text-[10px] font-bold inline-block">
                       • 1 actie open: leveringsvoorstel
                     </div>
                   </div>
@@ -425,21 +452,18 @@ export default function OutdoorKitchenProjects() {
                 </div>
 
                 {/* CARD 2: PARTNER — HOEK BOUW */}
-                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
+                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-5 shadow-2xs space-y-3">
                   <span className="text-[10px] font-mono font-bold text-dark/50 uppercase tracking-wider block">
-                    PARTNER — HOEK BOUW
+                    PARTNER · HOEK BOUW
                   </span>
 
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-serif font-bold text-sm text-[#33422C]">
-                        Sven Hoek
-                      </h4>
-                      <span className="px-2 py-0.5 bg-[#E3EFE3] text-[#2D6A2D] rounded-md text-[10px] font-bold">
-                        ✔ In productie
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-dark/60 font-body mt-1">
+                  <div className="space-y-1.5">
+                    <h4 className="font-sans text-xs sm:text-sm font-bold text-[#2A2925] flex items-center gap-1 flex-wrap">
+                      <span className="font-bold text-[#2A2925]">Sven Hoek</span>
+                      <span className="text-dark/40 font-normal">·</span>
+                      <span className="px-2 py-0.5 bg-[#E3EFE3] text-[#2D6A2D] rounded-md text-[10px] font-bold">✔ In productie</span>
+                    </h4>
+                    <p className="text-[11px] text-dark/60 font-body">
                       Werkbon v3 · laatste foto 17 aug · levering di 15 sep
                     </p>
                   </div>
@@ -449,13 +473,13 @@ export default function OutdoorKitchenProjects() {
                       href="https://wa.me/31612345678"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-white hover:bg-[#FAF8F5] text-dark/80 border border-[#D6CFC2] rounded-xl text-[11px] font-bold transition-all shadow-2xs cursor-pointer"
+                      className="px-3.5 py-1.5 bg-white hover:bg-[#FAF8F5] text-dark/80 border border-[#D6CFC2] rounded-xl text-[11px] font-bold transition-all shadow-2xs cursor-pointer"
                     >
                       WhatsApp partner
                     </a>
                     <button
                       onClick={() => setSubToggle('Partner')}
-                      className="px-3 py-1.5 bg-white hover:bg-[#FAF8F5] text-dark/80 border border-[#D6CFC2] rounded-xl text-[11px] font-bold transition-all shadow-2xs cursor-pointer"
+                      className="px-3.5 py-1.5 bg-white hover:bg-[#FAF8F5] text-dark/80 border border-[#D6CFC2] rounded-xl text-[11px] font-bold transition-all shadow-2xs cursor-pointer"
                     >
                       Trello
                     </button>
@@ -463,12 +487,12 @@ export default function OutdoorKitchenProjects() {
                 </div>
 
                 {/* CARD 3: LOGBOEK */}
-                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
+                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-5 shadow-2xs space-y-3">
                   <span className="text-[10px] font-mono font-bold text-dark/50 uppercase tracking-wider block">
                     LOGBOEK (ALLES MET WIE/WANNEER)
                   </span>
 
-                  <div className="space-y-2 text-[11px] font-body">
+                  <div className="space-y-2.5 text-[11px] font-body">
                     {logbook.map((log) => (
                       <div key={log.id} className="flex items-start gap-2 border-b border-[#E6E1D7]/40 pb-2 last:border-none">
                         <span className="font-mono text-[10px] text-dark/50 whitespace-nowrap min-w-[70px]">
@@ -487,19 +511,17 @@ export default function OutdoorKitchenProjects() {
             </div>
           )}
 
-          {/* SUB-TAB 2: PARTNER (DEDICATED PARTNER DETAILS VIEW) */}
           {subToggle === 'Partner' && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               
-              {/* LEFT PARTNER COLUMN */}
-              <div className="lg:col-span-8 space-y-5">
-                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-5 shadow-2xs space-y-4">
+              <div className="lg:col-span-8 space-y-6">
+                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-6 shadow-2xs space-y-4">
                   <div className="flex items-center justify-between border-b border-[#E6E1D7] pb-3">
                     <div>
                       <span className="text-[10px] font-mono font-bold text-[#B86B14] uppercase tracking-wider block">
                         PARTNER TOEWIJZING & WERKBON
                       </span>
-                      <h3 className="font-serif font-bold text-base text-[#33422C] mt-0.5">
+                      <h3 className="font-serif font-bold text-lg text-[#33422C] mt-0.5">
                         Hoek Bouw — Sven Hoek
                       </h3>
                     </div>
@@ -509,14 +531,14 @@ export default function OutdoorKitchenProjects() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-body">
-                    <div className="p-3.5 bg-white border border-[#D6CFC2] rounded-xl space-y-1">
+                    <div className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-1">
                       <span className="text-[10px] font-bold text-dark/50 uppercase">Agreed Build Price (Partner)</span>
-                      <p className="text-sm font-bold text-[#33422C]">€ 2.800,00 ex. btw</p>
+                      <p className="text-base font-bold text-[#33422C]">€ 2.800,00 ex. btw</p>
                     </div>
 
-                    <div className="p-3.5 bg-white border border-[#D6CFC2] rounded-xl space-y-1">
+                    <div className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-1">
                       <span className="text-[10px] font-bold text-dark/50 uppercase">Target Delivery Week</span>
-                      <p className="text-sm font-bold text-[#33422C]">Week 38 (Di 15 September)</p>
+                      <p className="text-base font-bold text-[#33422C]">Week 38 (Di 15 September)</p>
                     </div>
                   </div>
 
@@ -559,27 +581,14 @@ export default function OutdoorKitchenProjects() {
                 </div>
               </div>
 
-              {/* RIGHT PARTNER COLUMN */}
-              <div className="lg:col-span-4 space-y-5">
-                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-5 shadow-2xs space-y-3 text-xs">
+              <div className="lg:col-span-4 space-y-6">
+                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-6 shadow-2xs space-y-3 text-xs">
                   <h4 className="font-serif font-bold text-sm text-[#33422C]">Partner Contact Info</h4>
                   <div className="space-y-2 text-dark/70">
                     <p><strong>Bedrijf:</strong> Hoek Bouw V.O.F.</p>
                     <p><strong>Contactpersoon:</strong> Sven Hoek</p>
                     <p><strong>Telefoon:</strong> +31 6 12345678</p>
                     <p><strong>Locatie:</strong> Werkplaats Tilburg</p>
-                  </div>
-                </div>
-
-                <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-5 shadow-2xs space-y-3 text-xs">
-                  <h4 className="font-serif font-bold text-sm text-[#33422C]">Partner Foto Updates (2)</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="h-20 bg-black/10 rounded-lg border border-[#D6CFC2] flex items-center justify-center text-[10px] text-dark/50">
-                      Foto 17 Aug (Frame)
-                    </div>
-                    <div className="h-20 bg-black/10 rounded-lg border border-[#D6CFC2] flex items-center justify-center text-[10px] text-dark/50">
-                      Foto 15 Aug (Hout)
-                    </div>
                   </div>
                 </div>
               </div>
@@ -599,55 +608,6 @@ export default function OutdoorKitchenProjects() {
               <span className="px-2.5 py-0.5 bg-[#E3EFE3] text-[#2D6A2D] rounded font-bold font-mono">Geaccepteerd op 11 aug</span>
             </div>
             <p className="text-dark/70">Klant heeft akkoord gegeven op de Thermo Fraké 240 cm opstelling inclusief Big Green Egg inbouw.</p>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'Levering' && (
-        <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-6 shadow-2xs space-y-4">
-          <h3 className="font-serif font-bold text-base text-[#33422C]">Levering & Montage Planning</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-1">
-              <span className="text-[10px] font-bold text-dark/50 uppercase">Montage Locatie</span>
-              <p className="font-bold text-dark">Hoofdstraat 42, Oisterwijk</p>
-            </div>
-            <div className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-1">
-              <span className="text-[10px] font-bold text-dark/50 uppercase">Vakman Transport</span>
-              <p className="font-bold text-dark">Hoek Bouw (Sven Hoek)</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'Media & documenten' && (
-        <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-6 shadow-2xs space-y-4">
-          <h3 className="font-serif font-bold text-base text-[#33422C]">Media & Documenten</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex items-center justify-between">
-              <div>
-                <p className="font-bold text-dark">Werkbon_v3_Thermo_Frake.pdf</p>
-                <p className="text-[10px] text-dark/50">Gepubliceerd op 17 aug</p>
-              </div>
-              <button onClick={() => showToast('Werkbon PDF gedownload!')} className="px-3 py-1.5 bg-[#33422C] text-white rounded-lg text-xs font-bold cursor-pointer">
-                Download
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'Betalingen' && (
-        <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-6 shadow-2xs space-y-4">
-          <h3 className="font-serif font-bold text-base text-[#33422C]">Betalingsstatus (50% / 50% Schema)</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-1">
-              <span className="text-[10px] font-bold text-dark/50 uppercase">50% Aanbetaling</span>
-              <p className="font-bold text-emerald-800">€ 1.960,00 — Betaald (11 aug)</p>
-            </div>
-            <div className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-1">
-              <span className="text-[10px] font-bold text-dark/50 uppercase">50% Eindfactuur</span>
-              <p className="font-bold text-amber-800">€ 1.960,00 — Bij oplevering</p>
-            </div>
           </div>
         </div>
       )}
@@ -674,7 +634,6 @@ export default function OutdoorKitchenProjects() {
               exit={{ x: 400 }}
               className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col font-body text-xs"
             >
-              {/* Drawer Header */}
               <div className="p-4 bg-[#33422C] text-white flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-emerald-400" />
@@ -685,7 +644,6 @@ export default function OutdoorKitchenProjects() {
                 </button>
               </div>
 
-              {/* Messages Area */}
               <div className="flex-1 p-4 space-y-3 overflow-y-auto bg-[#F4F1EA]">
                 {chatMessages.map((msg) => (
                   <div 
@@ -704,7 +662,6 @@ export default function OutdoorKitchenProjects() {
                 ))}
               </div>
 
-              {/* Input Form */}
               <form onSubmit={handleSendChat} className="p-3 border-t border-[#D6CFC2] bg-white flex items-center gap-2">
                 <input
                   type="text"
