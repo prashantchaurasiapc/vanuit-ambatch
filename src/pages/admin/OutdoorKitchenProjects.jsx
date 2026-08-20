@@ -546,7 +546,7 @@ export default function OutdoorKitchenProjects() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F4F1EA] text-[#222220] font-body p-3 sm:p-6 space-y-5 relative">
+    <div className="-m-3 sm:-m-4 lg:-m-6 p-4 sm:p-6 lg:p-8 min-h-full bg-[#F4F1EA] text-[#4A4A43] font-body space-y-6 relative w-auto">
       
       {/* Toast Notification */}
       <AnimatePresence>
@@ -564,7 +564,7 @@ export default function OutdoorKitchenProjects() {
       </AnimatePresence>
 
       {/* TOP PORTAL BREADCRUMB BAR (Matching Image 2 Seamlessly) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs pb-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-b border-[#D6CFC2]/60 pb-3">
         <div className="flex items-center gap-2">
           <span className="font-bold text-[#33422C] font-serif text-sm">Project Management</span>
           <span className="text-dark/40">·</span>
