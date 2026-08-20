@@ -561,11 +561,11 @@ export default function OutdoorKitchenProjects() {
         )}
       </AnimatePresence>
 
-      {/* TOP PORTAL BREADCRUMB BAR (Matching Screenshot) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-b border-[#D6CFC2]/60 pb-3">
+      {/* TOP PORTAL BREADCRUMB BAR (Matching Image 2 Seamlessly) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs pb-1">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-[#1C1C1A] text-sm tracking-tight">Project Management</span>
-          <span className="text-[#8C8275]">·</span>
+          <span className="font-bold text-[#33422C] font-serif text-sm">Project Management</span>
+          <span className="text-dark/40">·</span>
           <span className="text-[#555046] font-mono text-[11px]">admin portal</span>
         </div>
 
@@ -605,13 +605,13 @@ export default function OutdoorKitchenProjects() {
       {/* TOP HEADER SECTION */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
         <div>
-          <span className="text-xs font-mono font-bold text-[#555046] uppercase tracking-widest block">
+          <span className="text-[11px] font-mono font-bold text-dark/50 uppercase tracking-widest block">
             PROJECT 2026-014 — OUTDOOR KITCHEN
           </span>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#1C1C1A] tracking-tight mt-0.5">
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#33422C] mt-0.5">
             Sander de Vries — Thermo Fraké 240 cm
           </h1>
-          <p className="text-xs text-[#4F4B44] font-medium mt-1">
+          <p className="text-xs text-dark/70 font-body mt-1">
             Oisterwijk · Quote OF-2026325 · Approved Aug 11 · € 3,920.00 incl. VAT
           </p>
         </div>
