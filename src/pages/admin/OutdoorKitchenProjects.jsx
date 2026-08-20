@@ -633,66 +633,48 @@ export default function OutdoorKitchenProjects() {
         </div>
       </div>
 
-      {/* STEPPER BAR CARD */}
-      <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-4 shadow-2xs space-y-3">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          
-          {/* Phase Stepper Pills */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {stepsList.map((step) => {
-              const isActive = activeStep === step.key;
-              return (
-                <button
-                  key={step.key}
-                  onClick={() => setActiveStep(step.key)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    isActive 
-                      ? 'bg-[#9A7B44] text-white shadow-xs' 
-                      : 'bg-[#EDE8DF] text-[#4A4740] hover:bg-[#E2DDD3]'
-                  }`}
-                >
-                  {step.name}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Right Badges */}
-          <div className="flex items-center gap-2 text-[10px] font-bold font-mono">
-            <span className="px-2.5 py-1 bg-[#E3EFE3] text-[#1E561E] rounded-lg border border-[#C5E1C5]">
-              → CUSTOMER
-            </span>
-            <span className="px-2.5 py-1 bg-[#FDF2E3] text-[#A25A0B] rounded-lg border border-[#F6DCB8]">
-              → PARTNER
-            </span>
-          </div>
+      {/* STEPPER BAR CARD matching Screenshot 2 */}
+      <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-4 sm:p-5 shadow-2xs">
+        <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar">
+          {stepsList.map((step) => {
+            const isActive = activeStep === step.key;
+            return (
+              <button
+                key={step.key}
+                onClick={() => setActiveStep(step.key)}
+                className={`px-4 sm:px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  isActive 
+                    ? 'bg-[#5C5138] text-white shadow-xs' 
+                    : 'bg-[#EDE8DF]/80 text-[#555046] hover:bg-[#EDE8DF]'
+                }`}
+              >
+                {step.name}
+              </button>
+            );
+          })}
         </div>
-
-        <p className="text-xs text-[#4F4B44] leading-relaxed pt-1">
-          Changing phase automatically sends a notification to the customer and updates the progress bar in both portals. Reverting is only allowed with a reason (recorded in logbook).
-        </p>
       </div>
 
-      {/* ALL 7 TABS IN SINGLE HORIZONTAL ROW */}
-      <div className="pb-0.5 overflow-x-auto no-scrollbar">
-        <div className="flex items-center gap-6 sm:gap-8 min-w-max">
+      {/* PRIMARY TABS BAR matching Screenshot 2 */}
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center gap-8 border-b border-[#D6CFC2]/70 pb-0.5 overflow-x-auto no-scrollbar">
           {allTabsList.map((tabName) => {
             const isActive = activeTab === tabName;
             return (
               <button
                 key={tabName}
                 onClick={() => setActiveTab(tabName)}
-                className={`pb-2.5 text-xs transition-all whitespace-nowrap cursor-pointer focus:outline-none relative ${
+                className={`pb-2.5 text-xs sm:text-sm transition-all whitespace-nowrap cursor-pointer focus:outline-none relative ${
                   isActive 
-                    ? 'text-[#1C1C1A] font-extrabold' 
-                    : 'text-[#555046] hover:text-[#1C1C1A] font-bold'
+                    ? 'text-[#33422C] font-extrabold font-body' 
+                    : 'text-[#736B5E] hover:text-[#33422C] font-medium font-body'
                 }`}
               >
                 {tabName}
                 {isActive && (
                   <motion.div 
                     layoutId="activeTabIndicator" 
-                    className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#9A7B44]" 
+                    className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#9B7C47]" 
                   />
                 )}
               </button>
