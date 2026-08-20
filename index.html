@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/mini_logo1.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600;1,700&display=swap" rel="stylesheet">
+    <title>Vanuit Ambacht Portal</title>
+
+    <!-- ============================================================
+         GOOGLE TRANSLATE — Hidden integration (EN ↔ NL only)
+         The React language switcher calls window.googleTranslatePage()
+         Google's default UI (banner/toolbar) is fully suppressed below.
+         ============================================================ -->
+    <style>
+      /* ── Suppress ALL Google Translate floating UI ── */
+      .goog-te-banner-frame,
+      .goog-te-banner-frame.skiptranslate,
+      #goog-gt-tt,
+      .goog-te-balloon-frame,
+      .goog-tooltip,
+      .goog-tooltip-content,
+      .goog-logo-link,
+      .goog-te-gadget-simple,
+      .goog-te-menu-value,
+      .goog-te-menu2,
+      .goog-te-menu2-item,
+      .VIpgJd-ZVi9od-xl07Ob-lTBxed,
+      .VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+      .VIpgJd-ZVi9od-SmfZ-hSRGPd,
+      iframe.goog-te-banner-frame,
+      div#goog-gt-tt {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        height: 0 !important;
+        overflow: hidden !important;
+      }
+
+      /* Prevent body offset that Google Translate adds */
+      body {
+        top: 0 !important;
+        position: static !important;
+      }
+
+      /* Hide the translate widget container itself */
+      #google_translate_element {
+        display: none !important;
+        position: absolute;
+        left: -9999px;
+        top: -9999px;
+        width: 0;
+        height: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- Hidden Google Translate widget mount point (never visible) -->
+    <div id="google_translate_element"></div>
+
+    <!-- Google Translate SDK loader -->
+    <script type="text/javascript">
+      // Called by Google's SDK once it's ready
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement(
+          {
+            pageLanguage: 'en',
+            includedLanguages: 'en,nl',
+            autoDisplay: false,
+            layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+          },
+          'google_translate_element'
+        );
+      }
+
+      // ── Public API used by React LanguageContext ──────────────────
+      // Call this to switch to Dutch: window.googleTranslatePage('nl')
+      // Call this to restore English: window.googleTranslatePage('en')
+      window.googleTranslatePage = function (langCode) {
+        if (langCode === 'en') {
+          // Restore to original English — clear the cookie and reload
+          var cookieName = 'googtrans';
+          var domain = window.location.hostname;
+          // Clear cookie at multiple scope levels for reliability
+          document.cookie = cookieName + '=/;expires=' + new Date(0).toUTCString() + ';path=/';
+          document.cookie = cookieName + '=/;expires=' + new Date(0).toUTCString() + ';path=/;domain=' + domain;
+          document.cookie = cookieName + '=/;expires=' + new Date(0).toUTCString() + ';path=/;domain=.' + domain;
+
+          // Use Google Translate API to restore if widget is ready
+          try {
+            var iframe = document.querySelector('.goog-te-banner-frame') || document.querySelector('iframe[name="votingFrame"]');
+            var selectEl = document.querySelector('.goog-te-combo') || document.querySelector('select.goog-te-combo');
+            if (selectEl) {
+              selectEl.value = '';
+              selectEl.dispatchEvent(new Event('change'));
+              return;
+            }
+          } catch (e) {}
+
+          // Fallback: reload the page to fully restore English
+          window.location.reload();
+          return;
+        }
+
+        // Switch to Dutch (or any other supported lang)
+        var tryTranslate = function (attempts) {
+          try {
+            // Try the hidden select element Google Translate renders
+            var selectEl = document.querySelector('.goog-te-combo') ||
+                           document.querySelector('select.goog-te-combo');
+            if (selectEl) {
+              selectEl.value = langCode;
+              selectEl.dispatchEvent(new Event('change'));
+              return;
+            }
+
+            // Alternative: use the TranslateElement API directly
+            if (window.google && window.google.translate && window.google.translate.TranslateElement) {
+              var el = document.getElementById('google_translate_element');
+              if (el) {
+                var comboInEl = el.querySelector('select') || el.querySelector('.goog-te-combo');
+                if (comboInEl) {
+                  comboInEl.value = langCode;
+                  comboInEl.dispatchEvent(new Event('change'));
+                  return;
+                }
+              }
+            }
+          } catch (e) {}
+
+          // SDK not ready yet — retry up to 10 times with 200ms intervals
+          if (attempts > 0) {
+            setTimeout(function () { tryTranslate(attempts - 1); }, 200);
+          }
+        };
+
+        tryTranslate(10);
+      };
+    </script>
+
+    <!-- Load Google Translate SDK (async, non-blocking) -->
+    <script
+      type="text/javascript"
+      src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+      async
+      defer
+    ></script>
+
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
