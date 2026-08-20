@@ -80,6 +80,7 @@ function App() {
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="leads" element={<Leads />} />
         <Route path="quotes" element={<Quotes />} />
+        <Route path="inbox" element={<ProjectChatInboxPage />} />
         <Route path="projects" element={<Navigate to="/admin/projects/inbox" replace />} />
         <Route path="projects/all" element={<Navigate to="/admin/projects/inbox" replace />} />
         <Route path="projects/inbox" element={<ProjectGlobalInbox />} />
