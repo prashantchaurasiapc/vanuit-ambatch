@@ -64,18 +64,19 @@ export default function GardenRoomProjects() {
   const [newProjectClient, setNewProjectClient] = useState('');
   const [newProjectType, setNewProjectType] = useState('Buitenverblijf');
   const [newProjectBudget, setNewProjectBudget] = useState('€ 37.950,00');
+  const [phaseModal, setPhaseModal] = useState(false);
+  const [selectedNewPhase, setSelectedNewPhase] = useState('Schouw');
 
   const showToast = (msg) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 3500);
   };
 
-  const handleUpdatePhase = () => {
-    const currentIdx = stepsList.findIndex(s => s.key === activeStep);
-    const nextIdx = (currentIdx + 1) % stepsList.length;
-    const nextStep = stepsList[nextIdx].name;
-    setActiveStep(stepsList[nextIdx].key);
-    showToast(`✓ Fase succesvol bijgewerkt naar: "${nextStep}"`);
+  const handleConfirmPhaseUpdate = (e) => {
+    e.preventDefault();
+    setActiveStep(selectedNewPhase);
+    setPhaseModal(false);
+    showToast(`✓ Projectfase succesvol bijgewerkt naar: "${selectedNewPhase}"`);
   };
 
   const handleCreateNewProject = (e) => {
@@ -289,7 +290,7 @@ export default function GardenRoomProjects() {
             className="px-4 py-1.5 bg-[#33422C] hover:bg-[#283523] text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs transition-all flex items-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>+ Nieuw project</span>
+            <span>Nieuw project</span>
           </button>
         </div>
       </div>
@@ -317,7 +318,10 @@ export default function GardenRoomProjects() {
           </button>
 
           <button
-            onClick={handleUpdatePhase}
+            onClick={() => {
+              setSelectedNewPhase(activeStep);
+              setPhaseModal(true);
+            }}
             className="px-5 py-2.5 bg-[#33422C] hover:bg-[#283523] text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
           >
             Fase bijwerken
@@ -916,6 +920,79 @@ export default function GardenRoomProjects() {
                     className="px-4 py-2 bg-[#33422C] text-white rounded-xl text-xs font-bold hover:bg-[#283523] cursor-pointer"
                   >
                     Project Aanmaken
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* PHASE UPDATE MODAL */}
+      <AnimatePresence>
+        {phaseModal && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-[#D6CFC2]"
+            >
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
+                <h3 className="font-serif font-bold text-base text-[#33422C]">
+                  Projectfase Bijwerken
+                </h3>
+                <button onClick={() => setPhaseModal(false)} className="text-dark/40 hover:text-dark cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleConfirmPhaseUpdate} className="space-y-4 text-xs font-body">
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-dark/60 uppercase mb-1.5">
+                    Huidige Fase
+                  </label>
+                  <div className="px-3 py-2 bg-[#F4F1EA] rounded-xl text-xs font-bold text-[#33422C]">
+                    {activeStep}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-dark/60 uppercase mb-1.5">
+                    Selecteer Nieuwe Fase *
+                  </label>
+                  <select
+                    value={selectedNewPhase}
+                    onChange={(e) => setSelectedNewPhase(e.target.value)}
+                    className="w-full p-2.5 bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-xs font-bold text-dark focus:ring-2 focus:ring-[#33422C]/20 cursor-pointer"
+                  >
+                    {stepsList.map((st) => (
+                      <option key={st.key} value={st.key}>
+                        {st.name} {st.key === activeStep ? '(Huidig)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="p-3 bg-[#FAF8F5] rounded-xl border border-[#E6E1D7] text-[11px] text-dark/70 space-y-1">
+                  <p className="font-semibold text-[#33422C]">Automatische acties bij faseovergang:</p>
+                  <p>• Notificatie wordt direct verzonden naar klantportaal en partner.</p>
+                  <p>• Voortgangsbalk wordt gesynchroniseerd in beide portalen.</p>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-[#D6CFC2]">
+                  <button
+                    type="button"
+                    onClick={() => setPhaseModal(false)}
+                    className="px-4 py-2 bg-white border border-[#D6CFC2] text-dark/70 rounded-xl text-xs font-bold hover:bg-[#FAF8F5] cursor-pointer"
+                  >
+                    Annuleren
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-[#33422C] text-white rounded-xl text-xs font-bold hover:bg-[#283523] cursor-pointer"
+                  >
+                    Fase Bevestigen
                   </button>
                 </div>
               </form>

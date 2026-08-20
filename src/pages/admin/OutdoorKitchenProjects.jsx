@@ -196,6 +196,8 @@ export default function OutdoorKitchenProjects() {
   const [newProjectClient, setNewProjectClient] = useState('');
   const [newProjectType, setNewProjectType] = useState('Outdoor Kitchen');
   const [newProjectBudget, setNewProjectBudget] = useState('€ 3,920.00');
+  const [phaseModal, setPhaseModal] = useState(false);
+  const [selectedNewPhase, setSelectedNewPhase] = useState('In the workshop');
 
   // Logbook entries matching Project history
   const [logbook, setLogbook] = useState([
@@ -625,7 +627,10 @@ export default function OutdoorKitchenProjects() {
           </button>
 
           <button
-            onClick={() => showToast('Phase updated to next step!')}
+            onClick={() => {
+              setSelectedNewPhase(activeStep);
+              setPhaseModal(true);
+            }}
             className="px-4 py-2 bg-[#283523] hover:bg-[#1E291B] text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
           >
             Update Phase
@@ -2174,6 +2179,94 @@ export default function OutdoorKitchenProjects() {
                     className="px-4 py-2 bg-[#283523] text-white font-bold rounded-xl text-xs hover:bg-[#1E291B] cursor-pointer"
                   >
                     Create Project
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* PHASE UPDATE MODAL */}
+      <AnimatePresence>
+        {phaseModal && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-[#D6CFC2]"
+            >
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
+                <h3 className="font-bold text-base text-[#1C1C1A]">
+                  Update Project Phase
+                </h3>
+                <button onClick={() => setPhaseModal(false)} className="text-[#615C52] hover:text-[#1C1C1A] cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setActiveStep(selectedNewPhase);
+                  setPhaseModal(false);
+                  const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  const newLog = {
+                    id: Date.now(),
+                    date: `Today ${timeNow}`,
+                    text: `Phase updated to "${selectedNewPhase}" — Admin`
+                  };
+                  setLogbook([newLog, ...logbook]);
+                  showToast(`✓ Project phase updated to: "${selectedNewPhase}"`);
+                }} 
+                className="space-y-4 text-xs"
+              >
+                <div>
+                  <label className="block text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider mb-1.5">
+                    Current Phase
+                  </label>
+                  <div className="px-3 py-2 bg-[#F4F1EA] rounded-xl text-xs font-bold text-[#1C1C1A]">
+                    {activeStep}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider mb-1.5">
+                    Select New Phase *
+                  </label>
+                  <select
+                    value={selectedNewPhase}
+                    onChange={(e) => setSelectedNewPhase(e.target.value)}
+                    className="w-full p-2.5 bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#283523]/20 cursor-pointer"
+                  >
+                    {stepsList.map((st) => (
+                      <option key={st.key} value={st.key}>
+                        {st.name} {st.key === activeStep ? '(Current)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="p-3 bg-[#FAF8F5] rounded-xl border border-[#E6E1D7] text-xs text-[#4F4B44] space-y-1">
+                  <p className="font-bold text-[#1C1C1A]">Automatic actions on phase transition:</p>
+                  <p>• Notification sent immediately to customer and partner.</p>
+                  <p>• Progress bar is synchronized in both portals.</p>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-[#D6CFC2]">
+                  <button
+                    type="button"
+                    onClick={() => setPhaseModal(false)}
+                    className="px-4 py-2 bg-white border border-[#D6CFC2] text-[#4F4B44] rounded-xl text-xs font-bold hover:bg-[#FAF8F5] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-[#283523] text-white font-bold rounded-xl text-xs hover:bg-[#1E291B] cursor-pointer"
+                  >
+                    Confirm Phase
                   </button>
                 </div>
               </form>
