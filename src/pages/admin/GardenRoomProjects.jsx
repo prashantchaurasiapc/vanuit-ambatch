@@ -60,10 +60,29 @@ export default function GardenRoomProjects() {
   const [inputChatMsg, setInputChatMsg] = useState('');
   const [customerPortalModal, setCustomerPortalModal] = useState(false);
   const [previewRenderModal, setPreviewRenderModal] = useState(null);
+  const [newProjectModal, setNewProjectModal] = useState(false);
+  const [newProjectClient, setNewProjectClient] = useState('');
+  const [newProjectType, setNewProjectType] = useState('Buitenverblijf');
+  const [newProjectBudget, setNewProjectBudget] = useState('€ 37.950,00');
 
   const showToast = (msg) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 3500);
+  };
+
+  const handleUpdatePhase = () => {
+    const currentIdx = stepsList.findIndex(s => s.key === activeStep);
+    const nextIdx = (currentIdx + 1) % stepsList.length;
+    const nextStep = stepsList[nextIdx].name;
+    setActiveStep(stepsList[nextIdx].key);
+    showToast(`✓ Fase succesvol bijgewerkt naar: "${nextStep}"`);
+  };
+
+  const handleCreateNewProject = (e) => {
+    e.preventDefault();
+    if (!newProjectClient.trim()) return;
+    setNewProjectModal(false);
+    showToast(`✓ Nieuw project voor "${newProjectClient}" succesvol aangemaakt!`);
   };
 
   const handleDefinitiefMaken = () => {
@@ -235,7 +254,7 @@ export default function GardenRoomProjects() {
       </AnimatePresence>
 
       {/* TOP PORTAL BREADCRUMB BAR */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-b border-[#D6CFC2]/60 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs pb-1">
         <div className="flex items-center gap-2">
           <span className="font-bold text-[#33422C] font-serif text-sm">Projectenbeheer</span>
           <span className="text-dark/40">·</span>
@@ -244,20 +263,33 @@ export default function GardenRoomProjects() {
 
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => navigate('/admin/projects/inbox-messages')}
-            className="px-3 py-1 bg-white border border-[#D6CFC2] text-dark/70 rounded-xl font-bold text-xs shadow-2xs hover:bg-[#FAF8F5] cursor-pointer"
+            onClick={() => {
+              navigate('/admin/projects/inbox-messages');
+              showToast('Projectberichten geopend...');
+            }}
+            className="px-3 py-1 bg-white border border-[#D6CFC2] text-dark/70 rounded-xl font-bold text-xs shadow-2xs hover:bg-[#FAF8F5] cursor-pointer flex items-center gap-1.5 transition-all"
           >
-            Inbox <strong className="text-[#33422C]">4</strong>
+            <span>Inbox</span>
+            <strong className="text-[#33422C] bg-[#E3EFE3] px-1.5 py-0.2 rounded font-mono text-[11px]">4</strong>
           </button>
-          <span className="px-3 py-1 bg-[#FDF2E3] text-[#B86B14] border border-[#F6DCB8] rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
-            3 taken wachten op ons
-          </span>
+
           <button 
-            onClick={() => showToast('Nieuw project formulier geopend')}
-            className="px-4 py-1.5 bg-[#33422C] hover:bg-[#283523] text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs transition-all"
+            onClick={() => {
+              setActiveTab('Weekplanning & schouw');
+              showToast('Gefilterd: 3 taken wachten op ons (schouwvoorstel, render v2)');
+            }}
+            className="px-3 py-1 bg-[#FDF2E3] text-[#B86B14] border border-[#F6DCB8] rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer hover:bg-[#FCEAD0] transition-all"
           >
-            + Nieuw project
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span>3 taken wachten op ons</span>
+          </button>
+
+          <button 
+            onClick={() => setNewProjectModal(true)}
+            className="px-4 py-1.5 bg-[#33422C] hover:bg-[#283523] text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs transition-all flex items-center gap-1"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>+ Nieuw project</span>
           </button>
         </div>
       </div>
@@ -285,7 +317,7 @@ export default function GardenRoomProjects() {
           </button>
 
           <button
-            onClick={() => showToast('Fase bijgewerkt naar de volgende stap!')}
+            onClick={handleUpdatePhase}
             className="px-5 py-2.5 bg-[#33422C] hover:bg-[#283523] text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
           >
             Fase bijwerken
@@ -803,6 +835,90 @@ export default function GardenRoomProjects() {
                   Sluiten
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* NEW PROJECT MODAL */}
+      <AnimatePresence>
+        {newProjectModal && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-[#D6CFC2]"
+            >
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
+                <h3 className="font-serif font-bold text-base text-[#33422C]">
+                  Nieuw Buitenverblijf Project Aanmaken
+                </h3>
+                <button onClick={() => setNewProjectModal(false)} className="text-dark/40 hover:text-dark cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateNewProject} className="space-y-4 text-xs font-body">
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-dark/60 uppercase mb-1">
+                    Klantnaam *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="b.v. Sander de Vries"
+                    value={newProjectClient}
+                    onChange={(e) => setNewProjectClient(e.target.value)}
+                    className="w-full p-2.5 bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-xs text-dark focus:ring-2 focus:ring-[#33422C]/20"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-mono font-bold text-dark/60 uppercase mb-1">
+                      Project Type
+                    </label>
+                    <select
+                      value={newProjectType}
+                      onChange={(e) => setNewProjectType(e.target.value)}
+                      className="w-full p-2.5 bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-xs text-dark focus:ring-2 focus:ring-[#33422C]/20 cursor-pointer"
+                    >
+                      <option value="Buitenverblijf">Buitenverblijf</option>
+                      <option value="Overkapping met poolhouse">Overkapping met poolhouse</option>
+                      <option value="Buitenkeuken">Buitenkeuken</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-mono font-bold text-dark/60 uppercase mb-1">
+                      Budget / Offertebedrag
+                    </label>
+                    <input
+                      type="text"
+                      value={newProjectBudget}
+                      onChange={(e) => setNewProjectBudget(e.target.value)}
+                      className="w-full p-2.5 bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-xs text-dark focus:ring-2 focus:ring-[#33422C]/20"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-[#D6CFC2]">
+                  <button
+                    type="button"
+                    onClick={() => setNewProjectModal(false)}
+                    className="px-4 py-2 bg-white border border-[#D6CFC2] text-dark/70 rounded-xl text-xs font-bold hover:bg-[#FAF8F5] cursor-pointer"
+                  >
+                    Annuleren
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-[#33422C] text-white rounded-xl text-xs font-bold hover:bg-[#283523] cursor-pointer"
+                  >
+                    Project Aanmaken
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
