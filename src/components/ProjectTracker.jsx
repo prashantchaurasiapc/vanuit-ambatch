@@ -12,6 +12,7 @@ import {
   CheckSquare, MessageCircle, Paperclip, Compass, Edit2, Plus, Trash2, Eye, Share2,
   FileText, MessageSquare
 } from 'lucide-react';
+import CommunicationConfirmModal from './CommunicationConfirmModal';
 
 export const PROJECT_WORKFLOW_STEPS = [
   { id: 1, name: 'Project Setup & Specs', icon: Briefcase, desc: 'Work order setup, specs & catalog line items', color: 'indigo' },
@@ -53,6 +54,49 @@ export default function ProjectTracker({ project, onClose, onUpdateProject, part
   const [progressVal, setProgressVal] = useState(isCompletedProject ? 100 : (project?.progress ?? 25));
   const [orderStatus, setOrderStatus] = useState(project?.orderStatus || (isCompletedProject ? 'Afgerond' : project?.status === 'In Progress' ? 'In uitvoering' : 'Nieuw'));
   const [projectStatus, setProjectStatus] = useState(isCompletedProject ? 'Completed' : (project?.status || 'In Progress'));
+
+  // Communication Confirmation Modal State
+  const [commConfirmModal, setCommConfirmModal] = useState({
+    isOpen: false,
+    type: 'whatsapp',
+    recipientName: '',
+    recipientContact: '',
+    messageText: '',
+    subject: '',
+    onConfirm: () => {}
+  });
+
+  const handleOpenWhatsAppConfirm = (name, phone, text) => {
+    setCommConfirmModal({
+      isOpen: true,
+      type: 'whatsapp',
+      recipientName: name || customerName,
+      recipientContact: phone || customerPhone,
+      messageText: text || customMsgText,
+      subject: '',
+      onConfirm: () => {
+        const cleanPhone = (phone || customerPhone).replace(/[^0-9]/g, '');
+        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text || customMsgText)}`, '_blank');
+        showToast(language === 'EN' ? 'WhatsApp opened after user confirmation!' : 'WhatsApp geopend na gebruikersbevestiging!');
+      }
+    });
+  };
+
+  const handleOpenEmailConfirm = (name, email, text, subj) => {
+    setCommConfirmModal({
+      isOpen: true,
+      type: 'email',
+      recipientName: name || customerName,
+      recipientContact: email || customerEmail,
+      messageText: text || customMsgText,
+      subject: subj || `Project Update #${project?.id || 'PRJ'}`,
+      onConfirm: () => {
+        const mailtoUrl = `mailto:${email || customerEmail}?subject=${encodeURIComponent(subj || `Project Update #${project?.id || 'PRJ'}`)}&body=${encodeURIComponent(text || customMsgText)}`;
+        window.open(mailtoUrl, '_blank');
+        showToast(language === 'EN' ? 'E-mail opened after user confirmation!' : 'E-mail geopend na gebruikersbevestiging!');
+      }
+    });
+  };
 
   // Commercial Actions / Follow-ups State
   const [commercialActions, setCommercialActions] = useState(() => {
@@ -1222,26 +1266,26 @@ export default function ProjectTracker({ project, onClose, onUpdateProject, part
 
               {/* Quick Communication Buttons */}
               <div className="flex gap-2">
-                <a
-                  href={`https://wa.me/${customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(customMsgText)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 shadow-xs"
+                <button
+                  type="button"
+                  onClick={() => handleOpenWhatsAppConfirm(customerName, customerPhone, customMsgText)}
+                  className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 shadow-xs cursor-pointer"
                 >
                   <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-                </a>
+                </button>
                 <a
                   href={`tel:${customerPhone}`}
                   className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 shadow-xs"
                 >
                   <Phone className="w-3.5 h-3.5" /> Call
                 </a>
-                <a
-                  href={`mailto:${customerEmail}?subject=${encodeURIComponent(`Project Update #${project?.id || 'PRJ'}`)}&body=${encodeURIComponent(customMsgText)}`}
-                  className="flex-1 py-2 bg-[#3E4E36] hover:bg-[#2e3a28] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 shadow-xs"
+                <button
+                  type="button"
+                  onClick={() => handleOpenEmailConfirm(customerName, customerEmail, customMsgText, `Project Update #${project?.id || 'PRJ'}`)}
+                  className="flex-1 py-2 bg-[#3E4E36] hover:bg-[#2e3a28] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 shadow-xs cursor-pointer"
                 >
                   <Mail className="w-3.5 h-3.5" /> Email
-                </a>
+                </button>
               </div>
             </div>
           </Card>
@@ -1278,14 +1322,13 @@ export default function ProjectTracker({ project, onClose, onUpdateProject, part
               </div>
 
               <div className="flex gap-2">
-                <a
-                  href={`https://wa.me/${customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(customMsgText)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1"
+                <button
+                  type="button"
+                  onClick={() => handleOpenWhatsAppConfirm(customerName, customerPhone, customMsgText)}
+                  className="flex-1 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <Send className="w-3 h-3" /> Send WhatsApp
-                </a>
+                </button>
               </div>
             </div>
           </Card>
@@ -1662,6 +1705,18 @@ export default function ProjectTracker({ project, onClose, onUpdateProject, part
           </div>
         )}
       </AnimatePresence>
+
+      {/* STRICT NO-AUTO-COMMUNICATION POLICY CONFIRMATION MODAL */}
+      <CommunicationConfirmModal
+        isOpen={commConfirmModal.isOpen}
+        onClose={() => setCommConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={commConfirmModal.onConfirm}
+        type={commConfirmModal.type}
+        recipientName={commConfirmModal.recipientName}
+        recipientContact={commConfirmModal.recipientContact}
+        messageText={commConfirmModal.messageText}
+        subject={commConfirmModal.subject}
+      />
     </div>
   );
 }

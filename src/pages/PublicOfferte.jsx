@@ -6,6 +6,7 @@ import { FileText, CheckCircle, Check, X, ShieldCheck, Clock, Download, MessageS
 import { mockQuotes as defaultQuotes } from '../utils/mockData';
 import { safeSetItem } from '../utils/storageHelper';
 import Offerte6PagePDF from '../components/Offerte6PagePDF';
+import { downloadDirectPdfFile } from '../utils/pdfGenerator';
 import outdoorProjectCard from '../assets/outdoor_project_card.png';
 import outdoorLivingLogin from '../assets/outdoor_living_login.png';
 
@@ -91,7 +92,7 @@ export default function PublicOfferte() {
       if (String(q.id).toLowerCase() === String(quote.id).toLowerCase()) {
         return {
           ...q,
-          status: 'Approved',
+          status: 'Geaccepteerd',
           signerName: signerName.trim(),
           approvedAt: approvalDate,
           signerIp: updatedApproval.ip
@@ -102,12 +103,45 @@ export default function PublicOfferte() {
 
     safeSetItem('app_quotes_v2', updatedList);
     safeSetItem('app_quotes', updatedList);
+
+    // AUTOMATIC CONSEQUENCE: Project Created Immediately on Customer Approval
+    try {
+      const savedProjectsStr = localStorage.getItem('app_projects');
+      const savedProjects = savedProjectsStr ? JSON.parse(savedProjectsStr) : [];
+      const newProjectId = `PRJ-${quote.id.replace(/[^0-9]/g, '') || Math.floor(1000 + Math.random() * 9000)}`;
+      const existingIdx = savedProjects.findIndex(p => p.quoteId === quote.id || p.id === newProjectId);
+
+      const newProjectRecord = {
+        id: newProjectId,
+        quoteId: quote.id,
+        name: quote.project || `${quote.customer} — Custom Build`,
+        customer: quote.customer || signerName.trim(),
+        totalAmount: quote.amount || '€ 12,500',
+        status: 'In uitvoering',
+        approvalRoute: 'ROUTE_A_ONLINE',
+        approvedAt: approvalDate,
+        signerName: signerName.trim(),
+        createdAt: new Date().toISOString()
+      };
+
+      let updatedProjects;
+      if (existingIdx >= 0) {
+        updatedProjects = savedProjects.map((p, idx) => idx === existingIdx ? { ...p, ...newProjectRecord } : p);
+      } else {
+        updatedProjects = [newProjectRecord, ...savedProjects];
+      }
+
+      safeSetItem('app_projects', updatedProjects);
+    } catch (e) {
+      console.error('Error creating project on online approval:', e);
+    }
+
     window.dispatchEvent(new Event('app_data_changed'));
 
     // Update local state
     setQuote((prev) => ({
       ...prev,
-      status: 'Akkoord',
+      status: 'Geaccepteerd',
       signerName: signerName.trim(),
       approvedAt: approvalDate
     }));
@@ -142,10 +176,10 @@ export default function PublicOfferte() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => window.print()}
+              onClick={() => downloadDirectPdfFile(quote)}
               className="px-3 py-1 bg-[#70624F] hover:bg-[#5e5241] text-[#FDFBF7] rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-colors print:hidden cursor-pointer"
             >
-              <Printer className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5" />
               <span>Download PDF</span>
             </button>
             <span className={`text-[11px] font-mono font-bold px-3 py-1 rounded-full border ${

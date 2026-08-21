@@ -499,7 +499,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
         {/* ========================================================= */}
         {/* ZONE 1: LEFT COLUMN - STEP NAVIGATION (3 Cols)            */}
         {/* ========================================================= */}
-        <div className={`lg:col-span-3 space-y-3 lg:overflow-y-auto lg:max-h-[calc(100vh-210px)] pr-1 ${mobileTab === 'preview' ? 'hidden lg:block' : 'block'}`}>
+        <div className={`lg:col-span-3 space-y-3 lg:overflow-y-auto lg:max-h-[calc(100vh-210px)] pr-1 no-scrollbar ${mobileTab === 'preview' ? 'hidden lg:block' : 'block'}`}>
           <div className="bg-white rounded-2xl p-3.5 border border-[#D6CFC2] shadow-xs space-y-2.5">
             <h3 className="font-serif font-bold text-lg text-primary whitespace-nowrap">Quote {quote.id}</h3>
 
@@ -545,7 +545,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
         {/* ========================================================= */}
         {/* ZONE 2: MIDDLE COLUMN - ACTIVE STEP FORM (6 Cols)          */}
         {/* ========================================================= */}
-        <div ref={stepFormRef} className={`lg:col-span-6 space-y-4 lg:overflow-y-auto lg:max-h-[calc(100vh-210px)] pr-2 ${mobileTab === 'preview' ? 'hidden lg:block' : 'block'}`}>
+        <div ref={stepFormRef} className={`lg:col-span-6 space-y-4 lg:overflow-y-auto lg:max-h-[calc(100vh-210px)] pr-2 no-scrollbar ${mobileTab === 'preview' ? 'hidden lg:block' : 'block'}`}>
 
           {/* Main Title & Subtitle */}
           <div className="space-y-1">
@@ -2087,17 +2087,37 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
 
                   <button
                     type="button"
+                    disabled={quote?.status === 'Draft' || quote?.status === 'Concept' || quote?.status === 'DRAFT'}
                     onClick={() => {
+                      if (quote?.status === 'Draft' || quote?.status === 'Concept' || quote?.status === 'DRAFT') return;
                       const publicUrl = `${window.location.origin}/offerte/${quote.id}`;
                       navigator.clipboard.writeText(publicUrl);
                       showToast('Approval link copied to clipboard!');
                     }}
-                    className="px-4 py-2.5 bg-white border border-[#D6CFC2] text-dark font-bold text-xs rounded-xl shadow-xs hover:bg-[#EDE8DF] transition-all cursor-pointer font-mono flex items-center gap-2"
+                    className={`px-4 py-2.5 font-bold text-xs rounded-xl shadow-xs transition-all font-mono flex items-center gap-2 ${
+                      (quote?.status === 'Draft' || quote?.status === 'Concept' || quote?.status === 'DRAFT')
+                        ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60'
+                        : 'bg-white border border-[#D6CFC2] text-dark hover:bg-[#EDE8DF] cursor-pointer'
+                    }`}
+                    title={(quote?.status === 'Draft' || quote?.status === 'Concept' || quote?.status === 'DRAFT')
+                      ? (language === 'EN' ? 'Draft quote — Approve quote internally to enable send buttons' : 'Concept offerte — Keur offerte intern goed om verzendopties te ontgrendelen')
+                      : 'Copy Public Digital Approval Link'}
                   >
                     <span className="text-emerald-700">🔗</span>
                     <span>Copy approval link</span>
                   </button>
                 </div>
+
+                {(quote?.status === 'Draft' || quote?.status === 'Concept' || quote?.status === 'DRAFT') && (
+                  <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl text-xs flex items-center gap-2 font-body">
+                    <span className="font-bold font-mono text-[10px] bg-amber-200 px-2 py-0.5 rounded text-amber-900">🔒 DRAFT GATED</span>
+                    <span>
+                      {language === 'EN'
+                        ? 'Draft quote — WhatsApp & E-mail send channels are disabled until quote is approved internally.'
+                        : 'Concept offerte — WhatsApp & E-mail verzendopties zijn vergrendeld totdat de offerte intern goedgekeurd is.'}
+                    </span>
+                  </div>
+                )}
 
                 {validation.errors.length > 0 && (
                   <div className="p-3 bg-red-50 border border-red-300 text-red-800 rounded-xl text-xs space-y-1 font-body">
@@ -2139,7 +2159,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
 
                 {/* Filename & notice */}
                 <p className="text-xs text-dark/70 font-body pt-1">
-                  Filename: <strong className="font-bold text-dark">Offerte-{quote.id}-{(quote.customer?.name || 'Bjorn Valk').replace(/\s+/g, '-')}.pdf</strong> · draft saving is non-blocking
+                  Filename: <strong className="font-bold text-dark">Quote-{quote.id} {typeof quote.customer === 'object' ? (quote.customer?.name || 'Jan de Vries') : (quote.customer || 'Jan de Vries')}.pdf</strong> · draft saving is non-blocking
                 </p>
               </div>
             </div>
@@ -2171,7 +2191,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
         {/* ========================================================= */}
         {/* ZONE 3: RIGHT COLUMN - MANDATORY LIVE PREVIEW (3 Cols)    */}
         {/* ========================================================= */}
-        <div className={`lg:col-span-3 overflow-y-auto max-h-[calc(100vh-210px)] pr-1 ${mobileTab === 'editor' ? 'hidden lg:block' : 'block'}`}>
+        <div className={`lg:col-span-3 overflow-y-auto max-h-[calc(100vh-210px)] pr-1 no-scrollbar ${mobileTab === 'editor' ? 'hidden lg:block' : 'block'}`}>
           <div className="bg-white rounded-2xl p-3 border border-[#D6CFC2] shadow-xs space-y-2 font-body relative">
             {/* Live Preview Header */}
             <div className="flex justify-between items-center border-b border-[#D6CFC2]/80 pb-2.5">

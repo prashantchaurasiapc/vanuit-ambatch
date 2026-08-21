@@ -47,21 +47,32 @@
     font-family: 'Montserrat', sans-serif;
   }
 
-  /* Scrollbar styling – no visible ugly scrollbars */
+  /* Scrollbar styling – clean, subtle, non-intrusive scrollbars */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background-color: #70624F; /* Brandbook Wood Brown */
+    background-color: rgba(112, 98, 79, 0.2); /* Subtle Wood Brown */
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
     background-color: var(--primary-color, #3E4E36);
   }
+}
+
+/* Utility to completely hide scrollbars while allowing smooth scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
 }
 
 @layer components {
