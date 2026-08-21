@@ -33,10 +33,10 @@ export default function Leads() {
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return [
-      { id: 'cat-1', name: 'Buitenkeukens' },
-      { id: 'cat-2', name: 'Kliko-ombouw' },
-      { id: 'cat-3', name: 'Snijplanken' },
-      { id: 'cat-4', name: 'Overkappingen' }
+      { id: 'cat-1', name: 'Outdoor Kitchens' },
+      { id: 'cat-2', name: 'Bin Storage' },
+      { id: 'cat-3', name: 'Cutting Boards' },
+      { id: 'cat-4', name: 'Canopies & Garden Rooms' }
     ];
   });
 
@@ -849,12 +849,12 @@ export default function Leads() {
                     onChange={e => setStatusFilter(e.target.value)}
                     className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none text-[#4A4A43]"
                   >
-                    <option value="All">{language === 'NL' ? 'Alle (All)' : 'All Statuses'}</option>
-                    <option value="Nieuw">{language === 'NL' ? 'Nieuw' : 'New'}</option>
-                    <option value="In gesprek">{language === 'NL' ? 'In gesprek' : 'In Conversation'}</option>
-                    <option value="Offerte verstuurd">{language === 'NL' ? 'Offerte verstuurd' : 'Quote Sent'}</option>
-                    <option value="Gewonnen">{language === 'NL' ? 'Gewonnen' : 'Won'}</option>
-                    <option value="Verloren">{language === 'NL' ? 'Verloren' : 'Lost'}</option>
+                    <option value="All">All Statuses</option>
+                    <option value="New">New</option>
+                    <option value="In discussion">In Discussion</option>
+                    <option value="Quote Sent">Quote Sent</option>
+                    <option value="Won">Won</option>
+                    <option value="Lost">Lost</option>
                   </select>
                 </div>
 
@@ -866,7 +866,7 @@ export default function Leads() {
                     onChange={e => setProductTypeFilter(e.target.value)}
                     className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none text-[#4A4A43]"
                   >
-                    <option value="All">{language === 'NL' ? 'Alle (All)' : 'All Products'}</option>
+                    <option value="All">All Products</option>
                     {dynamicCategoriesList.map((cat) => (
                       <option key={cat.id || cat.name} value={cat.name.toLowerCase()}>
                         {(cat.icon ? `${cat.icon} ` : '') + cat.name}
@@ -877,13 +877,13 @@ export default function Leads() {
 
                 {/* Source Filter */}
                 <div className="min-w-0">
-                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">{language === 'EN' ? 'Source / Campaign' : 'Bron / Campagne'}</label>
+                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">Source / Campaign</label>
                   <select
                     value={sourceFilter}
                     onChange={e => setSourceFilter(e.target.value)}
                     className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none text-[#4A4A43]"
                   >
-                    <option value="All">{language === 'NL' ? 'Alle (All)' : 'All Sources'}</option>
+                    <option value="All">All Sources</option>
                     <option value="Google Ads">Google Ads</option>
                     <option value="Facebook">Facebook</option>
                     <option value="Meta Ads">Meta Ads</option>
@@ -894,13 +894,13 @@ export default function Leads() {
 
                 {/* Assignee Filter */}
                 <div className="min-w-0">
-                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">{language === 'NL' ? 'Eigenaar' : 'Assignee'}</label>
+                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">Assignee</label>
                   <select
                     value={assigneeFilter}
                     onChange={e => setAssigneeFilter(e.target.value)}
                     className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none text-[#4A4A43]"
                   >
-                    <option value="All">{language === 'NL' ? 'Alle Eigenaren (All)' : 'All Assignees'}</option>
+                    <option value="All">All Assignees</option>
                     <option value="Tim">Tim</option>
                     <option value="Bram">Bram</option>
                   </select>
@@ -908,15 +908,15 @@ export default function Leads() {
 
                 {/* Last Contact Filter */}
                 <div className="min-w-0">
-                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">{language === 'NL' ? 'Laatste Contact' : 'Last Contact'}</label>
+                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">Last Contact</label>
                   <select
                     value={lastContactFilter}
                     onChange={e => setLastContactFilter(e.target.value)}
                     className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none text-[#4A4A43]"
                   >
-                    <option value="All">{language === 'NL' ? 'Alle Contact Datums' : 'All Contact Dates'}</option>
-                    <option value="RedFlag">{language === 'NL' ? '⚠️ Follow-up Nodig (3+ dagen)' : '⚠️ Needs Follow-up (3+ days)'}</option>
-                    <option value="Recent">{language === 'NL' ? '🟢 Recent Gecontacteerd' : '🟢 Contacted Recently'}</option>
+                    <option value="All">All Contact Dates</option>
+                    <option value="RedFlag">⚠️ Needs Follow-up (3+ days)</option>
+                    <option value="Recent">🟢 Contacted Recently</option>
                   </select>
                 </div>
               </motion.div>

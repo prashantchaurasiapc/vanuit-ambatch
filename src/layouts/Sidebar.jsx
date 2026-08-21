@@ -89,47 +89,47 @@ export default function Sidebar({ role }) {
   };
 
   const ADMIN_LINKS = [
-    { name: t('common.dashboard'), path: '/admin/dashboard', icon: LayoutDashboard },
-    { name: t('common.leads'), path: '/admin/leads', icon: Users },
+    { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Leads', path: '/admin/leads', icon: Users },
     { 
-      name: t('common.projects'), 
+      name: 'Projects', 
       icon: Briefcase,
       isDropdown: true,
       children: [
-        { name: language === 'EN' ? 'Inbox messages' : 'Inbox berichten', path: '/admin/projects/inbox', badge: '4' },
-        { name: language === 'EN' ? 'Outdoor Kitchen Project' : 'Project buitenkeuken', path: '/admin/projects/outdoor-kitchens' },
-        { name: language === 'EN' ? 'Garden Room Project' : 'Project buitenverblijf', path: '/admin/projects/garden-rooms' },
-        { name: language === 'EN' ? 'Field Mapping' : 'Veldenkoppeling', path: '/admin/projects/field-mapping' },
+        { name: 'Inbox messages', path: '/admin/projects/inbox', badge: '4' },
+        { name: 'Outdoor Kitchen Project', path: '/admin/projects/outdoor-kitchens' },
+        { name: 'Garden Room Project', path: '/admin/projects/garden-rooms' },
+        { name: 'Field Mapping', path: '/admin/projects/field-mapping' },
       ]
     },
     { 
-      name: t('common.bookkeeping'), 
+      name: 'Bookkeeping', 
       icon: PieChart, 
       isDropdown: true,
       children: [
-        { name: t('common.quotes'), path: '/admin/quotes' },
-        { name: t('common.invoices'), path: '/admin/invoices' },
-        { name: language === 'EN' ? 'Customers' : 'Klanten', path: '/admin/customers' },
-        { name: t('common.bank'), path: '/admin/bank' },
-        { name: t('common.taxes'), path: '/admin/taxes' },
-        { name: t('common.profitLoss'), path: '/admin/profit-loss' },
+        { name: 'Quotes', path: '/admin/quotes' },
+        { name: 'Invoices', path: '/admin/invoices' },
+        { name: 'Customers', path: '/admin/customers' },
+        { name: 'Bank', path: '/admin/bank' },
+        { name: 'Taxes (VAT)', path: '/admin/taxes' },
+        { name: 'Profit & Loss', path: '/admin/profit-loss' },
       ]
     },
-    { name: t('common.partners'), path: '/admin/partners', icon: UserSquare },
-    { name: t('common.planning'), path: '/admin/planning', icon: Calendar },
-    { name: language === 'EN' ? 'Photos & Media' : 'Foto\'s & Media', path: '/admin/photos', icon: Camera },
-    { name: t('common.tasks'), path: '/admin/tasks', icon: FileText },
-    { name: t('common.documents'), path: '/admin/documents', icon: Folder },
-    { name: t('common.settings'), path: '/admin/settings', icon: Settings },
+    { name: 'Partners', path: '/admin/partners', icon: UserSquare },
+    { name: 'Planning', path: '/admin/planning', icon: Calendar },
+    { name: 'Photos & Media', path: '/admin/photos', icon: Camera },
+    { name: 'Tasks', path: '/admin/tasks', icon: FileText },
+    { name: 'Documents', path: '/admin/documents', icon: Folder },
+    { name: 'Settings', path: '/admin/settings', icon: Settings },
   ];
 
   const PARTNER_LINKS = [
-    { name: t('common.dashboard'), path: '/partner/dashboard', icon: LayoutDashboard },
-    { name: t('common.myProjects'), path: '/partner/projects', icon: Briefcase },
-    { name: t('common.priceRequests'), path: '/partner/price-requests', icon: FileText },
-    { name: t('common.planning'), path: '/partner/planning', icon: Calendar },
-    { name: t('common.documents'), path: '/partner/documents', icon: Folder },
-    { name: t('common.myDetails'), path: '/partner/profile', icon: UserSquare },
+    { name: 'Dashboard', path: '/partner/dashboard', icon: LayoutDashboard },
+    { name: 'My Projects', path: '/partner/projects', icon: Briefcase },
+    { name: 'Price Requests', path: '/partner/price-requests', icon: FileText },
+    { name: 'Planning', path: '/partner/planning', icon: Calendar },
+    { name: 'Documents', path: '/partner/documents', icon: Folder },
+    { name: 'My Details', path: '/partner/profile', icon: UserSquare },
   ];
 
   const CUSTOMER_LINKS = [

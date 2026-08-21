@@ -111,16 +111,16 @@ export default function AdminDashboard() {
   }, []);
 
   const [dashboardTasks, setDashboardTasks] = useState([
-    { id: 'TSK-101', title: 'Bellen met Pieter Bakker voor offerte akkoord (P-2002)', completed: false, priority: 'High' },
-    { id: 'TSK-102', title: 'Factuur versturen naar Kees Janssen voor oplevering', completed: false, priority: 'Medium' },
-    { id: 'TSK-103', title: 'Beoordeel sollicitatie nieuwe vakman Sander Koster', completed: true, priority: 'Low' }
+    { id: 'TSK-101', title: 'Call Pieter Bakker for quote approval (P-2002)', completed: false, priority: 'High' },
+    { id: 'TSK-102', title: 'Send invoice to Kees Janssen for project completion', completed: false, priority: 'Medium' },
+    { id: 'TSK-103', title: 'Review application of new craftsman Sander Koster', completed: true, priority: 'Low' }
   ]);
 
   const handleToggleDashboardTask = (taskId) => {
     const updated = dashboardTasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t);
     setDashboardTasks(updated);
     localStorage.setItem('app_tasks', JSON.stringify(updated));
-    showToast("Taak status bijgewerkt!");
+    showToast("Task status updated!");
   };
 
   // Modals visibility state
@@ -817,11 +817,11 @@ export default function AdminDashboard() {
                     }}
                     className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43] mb-2"
                   >
-                    <option value="Bespoke Outdoor Kitchen">{language === 'NL' ? 'Exclusieve Buitenkeuken' : 'Bespoke Outdoor Kitchen'}</option>
-                    <option value="Bespoke Hiko Surround">{language === 'NL' ? 'Exclusieve Kliko-ombouw' : 'Bespoke Hiko Surround'}</option>
-                    <option value="Wood Pergola">{language === 'NL' ? 'Houten Pergola' : 'Wood Pergola'}</option>
-                    <option value="Garden Decking">{language === 'NL' ? 'Tuinterras' : 'Garden Decking'}</option>
-                    <option value="Other">{language === 'NL' ? 'Anders (Aangepast)...' : 'Other (Custom Type)...'}</option>
+                    <option value="Bespoke Outdoor Kitchen">Bespoke Outdoor Kitchen</option>
+                    <option value="Bespoke Hiko Surround">Bespoke Bin Enclosure / Surround</option>
+                    <option value="Wood Pergola">Wooden Canopy / Pergola</option>
+                    <option value="Garden Decking">Garden Decking</option>
+                    <option value="Other">Other (Custom Type)...</option>
                   </select>
                   
                   {projectSelect === 'Other' && (
@@ -833,7 +833,7 @@ export default function AdminDashboard() {
                       value={quoteForm.project}
                       onChange={e => setQuoteForm(prev => ({ ...prev, project: e.target.value }))}
                       className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
-                      placeholder={language === 'NL' ? 'Typ projecttype...' : 'Type custom project type...'}
+                      placeholder="Type custom project type..."
                     />
                   )}
                 </div>

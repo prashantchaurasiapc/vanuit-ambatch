@@ -75,27 +75,27 @@ export default function PartnerPriceRequests() {
     return [
       {
         id: 'sec-materials',
-        title: 'Material Cost (Hout & Grondstoffen)',
+        title: 'Material Cost (Timber & Raw Materials)',
         icon: '🪵',
         fields: [
-          { id: 'f-mat-1', label: 'Hout & Grondstoffen Koste (€)', required: true },
-          { id: 'f-mat-2', label: 'Aanrechtblad & Afwerking (€)', required: true }
+          { id: 'f-mat-1', label: 'Timber & Raw Materials Cost (€)', required: true },
+          { id: 'f-mat-2', label: 'Countertop & Finishing (€)', required: true }
         ]
       },
       {
         id: 'sec-labor',
-        title: 'Labour Cost (Arbeid & Ambacht)',
+        title: 'Labour Cost (Craftsmanship & Assembly)',
         icon: '🔨',
         fields: [
-          { id: 'f-lab-1', label: 'Werkplaats Fabricage & Uren (€)', required: true }
+          { id: 'f-lab-1', label: 'Workshop Fabrication & Hours (€)', required: true }
         ]
       },
       {
         id: 'sec-transport',
-        title: 'Transport Cost (Transport & Logistiek)',
+        title: 'Transport Cost (Delivery & Freight)',
         icon: '🚚',
         fields: [
-          { id: 'f-tra-1', label: 'Vracht & Leveringskoste (€)', required: true }
+          { id: 'f-tra-1', label: 'Freight & Delivery Cost (€)', required: true }
         ]
       },
       {

@@ -7,12 +7,12 @@ import ErrorBoundary from './components/ErrorBoundary'
 import App from './App.jsx'
 import './index.css'
 
-// One-time cleanup script to wipe old mock data for clean connected testing slate
-if (!localStorage.getItem('testing_clean_v6')) {
+// Ensure app_language is set to EN by default
+if (!localStorage.getItem('testing_clean_v7')) {
   localStorage.clear();
-  localStorage.setItem('testing_clean_v6', 'true');
+  localStorage.setItem('testing_clean_v7', 'true');
   localStorage.setItem('app_language', 'EN');
-  console.log("Local storage re-initialized with rich connected seed data.");
+  console.log("Local storage re-initialized with rich connected seed data in English.");
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

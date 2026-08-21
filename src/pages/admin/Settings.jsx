@@ -78,10 +78,10 @@ export default function Settings() {
   const [notifications, setNotifications] = useState(() => {
     const saved = localStorage.getItem('notification_settings');
     return saved ? JSON.parse(saved) : [
-      { id: 'lead', label: 'Nieuwe lead ontvangen', desc: 'Ontvang een melding bij een nieuwe binnengekomen aanvraag', enabled: true },
-      { id: 'quote', label: 'Offerte geaccepteerd', desc: 'Ontvang een melding wanneer een klant de offerte accepteert', enabled: true },
-      { id: 'project', label: 'Project status gewijzigd', desc: 'Melding bij voortgangs-updates van projecten', enabled: true },
-      { id: 'payment', label: 'Betaling ontvangen', desc: 'Melding wanneer een factuur als betaald wordt gemarkeerd', enabled: true },
+      { id: 'lead', label: 'New lead received', desc: 'Receive a notification when a new inquiry arrives', enabled: true },
+      { id: 'quote', label: 'Quote accepted', desc: 'Receive a notification when a customer accepts a proposal', enabled: true },
+      { id: 'project', label: 'Project status updated', desc: 'Receive a notification on project milestones & updates', enabled: true },
+      { id: 'payment', label: 'Payment received', desc: 'Receive a notification when an invoice is marked as paid', enabled: true },
     ];
   });
 
@@ -91,11 +91,11 @@ export default function Settings() {
   const [usersList, setUsersList] = useState(() => {
     const saved = localStorage.getItem('app_system_users');
     return saved ? JSON.parse(saved) : [
-      { id: 'USR-001', name: 'Admin User', email: 'admin@vanuitambacht.nl', role: 'admin', status: 'Actief', joinedDate: '2025-01-10' },
-      { id: 'USR-002', name: 'Sven Hoek', email: 'sven@hoekbouw.nl', role: 'partner', status: 'Actief', joinedDate: '2025-03-15' },
-      { id: 'USR-003', name: 'Lars Jansen', email: 'lars@jansen.nl', role: 'partner', status: 'Actief', joinedDate: '2025-04-20' },
-      { id: 'USR-004', name: 'Jan de Vries', email: 'jan@devries.nl', role: 'customer', status: 'Actief', joinedDate: '2026-02-12' },
-      { id: 'USR-005', name: 'Sanne Visser', email: 'sanne@visser.nl', role: 'customer', status: 'Inactief', joinedDate: '2026-05-01' },
+      { id: 'USR-001', name: 'Admin User', email: 'admin@vanuitambacht.nl', role: 'admin', status: 'Active', joinedDate: '2025-01-10' },
+      { id: 'USR-002', name: 'Sven Hoek', email: 'sven@hoekbouw.nl', role: 'partner', status: 'Active', joinedDate: '2025-03-15' },
+      { id: 'USR-003', name: 'Lars Jansen', email: 'lars@jansen.nl', role: 'partner', status: 'Active', joinedDate: '2025-04-20' },
+      { id: 'USR-004', name: 'John Miller', email: 'john@miller.nl', role: 'customer', status: 'Active', joinedDate: '2026-02-12' },
+      { id: 'USR-005', name: 'Emma Wilson', email: 'emma@wilson.nl', role: 'customer', status: 'Inactive', joinedDate: '2026-05-01' },
     ];
   });
 

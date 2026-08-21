@@ -32,7 +32,7 @@ export default function Customers() {
     email: '',
     phone: '',
     address: '',
-    productInterest: 'Buitenkeuken',
+    productInterest: 'Outdoor Kitchen',
     totalSpend: '',
     status: 'Active'
   });
@@ -45,14 +45,14 @@ export default function Customers() {
   const handleAddCustomerSubmit = (e) => {
     e.preventDefault();
     if (!newCustomerForm.name.trim() || !newCustomerForm.email.trim()) {
-      return showToast('Vul a.u.b. de naam en het e-mailadres in.');
+      return showToast('Please enter customer name and email address.');
     }
 
     const emailClean = newCustomerForm.email.trim().toLowerCase();
     // Check duplicate customer by email
     const isDuplicate = customers.some(c => c.email && c.email.toLowerCase() === emailClean);
     if (isDuplicate) {
-      return showToast(`Er bestaat al een klant met het e-mailadres "${emailClean}"!`);
+      return showToast(`A customer already exists with email "${emailClean}"!`);
     }
 
     const numericVal = parseFloat(newCustomerForm.totalSpend) || 0;
@@ -648,15 +648,15 @@ export default function Customers() {
                         <div className="fixed inset-0 z-40" onClick={() => setProductInterestDropdownOpen(false)} />
                         <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white border border-[#D6CFC2] rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-[#EDE8DF]">
                           {[
-                            { val: 'Luxe Buitenkeuken', label: language === 'EN' ? 'Outdoor Kitchen' : 'Luxe Buitenkeuken' },
-                            { val: 'Buitenverblijf / Tuinkamer', label: language === 'EN' ? 'Garden / Outdoor Building' : 'Buitenverblijf / Tuinkamer' },
-                            { val: 'Overkapping / Pergola', label: language === 'EN' ? 'Canopy / Pergola' : 'Overkapping / Pergola' },
+                            { val: 'Outdoor Kitchen', label: 'Bespoke Outdoor Kitchen' },
+                            { val: 'Garden Room', label: 'Garden Room / Outdoor Building' },
+                            { val: 'Canopy', label: 'Canopy / Pergola' },
                             { val: 'Poolhouse', label: 'Poolhouse' },
                             ...(() => {
                               try {
                                 const dynCats = JSON.parse(localStorage.getItem('app_dynamic_categories') || '[]');
                                 return dynCats
-                                  .filter(c => !['buitenkeuken','buitenverblijf','overkapping','poolhouse'].includes((c.name||'').toLowerCase()))
+                                  .filter(c => !['buitenkeuken','buitenverblijf','overkapping','poolhouse','outdoor kitchen','garden room','canopy'].includes((c.name||'').toLowerCase()))
                                   .map(c => ({ val: c.name, label: c.name }));
                               } catch(e) { return []; }
                             })()

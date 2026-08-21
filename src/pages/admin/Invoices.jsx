@@ -250,35 +250,35 @@ export default function Invoices() {
       )
     },
     { 
-      header: 'Totaal Bedrag (incl. BTW)', 
+      header: 'Total Amount (incl. VAT)', 
       render: (row) => <span className="font-mono font-bold text-xs">{row.amount || `€ ${row.numericAmount}`}</span> 
     },
     {
-      header: 'Ontvangen / Openstaand',
+      header: 'Received / Outstanding',
       render: (row) => {
         const orderVal = getNumericAmount(row.amount, row.numericAmount);
         const settlement = calculateOrderSettlement({ id: row.id, totalAmount: orderVal }, bankTxns);
         return (
           <div className="font-mono text-xs leading-tight">
-            <p className="text-emerald-700 font-bold">Ontvangen: € {settlement.totalReceived.toLocaleString('nl-NL')}</p>
+            <p className="text-emerald-700 font-bold">Received: € {settlement.totalReceived.toLocaleString('nl-NL')}</p>
             <p className={`font-bold ${settlement.outstanding > 0 ? 'text-amber-800' : 'text-dark/40'}`}>
-              Openstaand: € {settlement.outstanding.toLocaleString('nl-NL')}
+              Outstanding: € {settlement.outstanding.toLocaleString('nl-NL')}
             </p>
           </div>
         );
       }
     },
     { 
-      header: 'Project Inkoop & Marge',
+      header: 'Project Purchasing & Margin',
       render: (row) => {
         const orderVal = getNumericAmount(row.amount, row.numericAmount);
         const linkedPurchasing = bankTxns.filter(t => t.category === UNIFIED_PURCHASING_CATEGORY && (t.orderId === row.id || t.projectId === row.id || t.customerName === row.customer));
         const marginInfo = calculateProjectMarginWithPurchasing(orderVal, linkedPurchasing);
         return (
           <div className="text-[11px] leading-tight space-y-1 font-mono">
-            <p className="text-blue-950 font-medium">Inkoop: € {marginInfo.totalPurchasing.toLocaleString('nl-NL')}</p>
+            <p className="text-blue-950 font-medium">Purchasing: € {marginInfo.totalPurchasing.toLocaleString('nl-NL')}</p>
             <span className="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-900 font-bold rounded-md">
-              Marge: € {marginInfo.projectMargin.toLocaleString('nl-NL')} ({marginInfo.marginPercentage}%)
+              Margin: € {marginInfo.projectMargin.toLocaleString('nl-NL')} ({marginInfo.marginPercentage}%)
             </span>
           </div>
         );
@@ -289,14 +289,14 @@ export default function Invoices() {
       render: (row) => {
         const orderVal = getNumericAmount(row.amount, row.numericAmount);
         const settlement = calculateOrderSettlement({ id: row.id, totalAmount: orderVal }, bankTxns);
-        const displayStatus = row.status === 'Betaald' || settlement.paymentStatus === 'Paid / Settled' 
-          ? 'Betaald' 
+        const displayStatus = row.status === 'Betaald' || row.status === 'Paid' || settlement.paymentStatus === 'Paid / Settled' 
+          ? 'Paid' 
           : settlement.paymentStatus === 'Partially Paid' 
-          ? 'Deels Betaald' 
+          ? 'Partially Paid' 
           : translateInvoiceStatus(row.status);
         
         return (
-          <Badge variant={displayStatus === 'Betaald' ? 'success' : displayStatus === 'Deels Betaald' ? 'warning' : getBadgeVariant(row.status)}>
+          <Badge variant={displayStatus === 'Paid' ? 'success' : displayStatus === 'Partially Paid' ? 'warning' : getBadgeVariant(row.status)}>
             {displayStatus}
           </Badge>
         );

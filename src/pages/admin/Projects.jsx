@@ -875,7 +875,7 @@ export default function Projects({ defaultCategoryFilter, titleOverride }) {
                         onClick={() => handleUnlockPartnerAssignment(row.id)}
                         className="text-[10px] text-emerald-700 hover:text-emerald-900 underline font-semibold flex-shrink-0 cursor-pointer"
                       >
-                        Wijzigen
+                        {language === 'EN' ? 'Edit' : 'Wijzigen'}
                       </button>
                     </div>
                   ) : (
@@ -895,7 +895,7 @@ export default function Projects({ defaultCategoryFilter, titleOverride }) {
                           onClick={() => handleConfirmPartnerForGood(row.id)}
                           className="w-full py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold cursor-pointer flex items-center justify-center gap-1.5"
                         >
-                          ✓ Bevestig Partner Definitief
+                          ✓ {language === 'EN' ? 'Confirm Partner (Lock)' : 'Bevestig Partner Definitief'}
                         </button>
                       )}
                     </div>

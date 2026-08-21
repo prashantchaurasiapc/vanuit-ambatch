@@ -59,14 +59,14 @@ const copyTextToClipboard = async (text) => {
 
 // Pre-saved Fixed Product Library for Outdoor Kitchens
 const PRESET_PRODUCT_LIBRARY = [
-  { id: 'p1', description: 'Thermo Fraké Buitenkeuken Cabinet (240x80cm)', unitPrice: 2450 },
-  { id: 'p2', description: 'Massief Teak Hout Buitenkeuken Cabinet (300x90cm)', unitPrice: 3200 },
-  { id: 'p3', description: 'Big Green Egg Large Uitsparing & Base Support', unitPrice: 450 },
-  { id: 'p4', description: 'Zwart Polijst Beton Cire Werkblad (8cm)', unitPrice: 850 },
-  { id: 'p5', description: 'RVS Inbouw Buitenkoelkast Premium 80L', unitPrice: 890 },
-  { id: 'p6', description: 'RVS Spoelbak & Mengkraan Inbouwset', unitPrice: 390 },
-  { id: 'p7', description: 'Heavy Duty Terras Wielen Set (4x)', unitPrice: 190 },
-  { id: 'p8', description: 'Bezorging & Professionele Inhuizen', unitPrice: 0 }
+  { id: 'p1', description: 'Thermo Fraké Outdoor Kitchen Cabinet (240x80cm)', unitPrice: 2450 },
+  { id: 'p2', description: 'Solid Teak Wood Outdoor Kitchen Cabinet (300x90cm)', unitPrice: 3200 },
+  { id: 'p3', description: 'Big Green Egg Large Cutout & Base Support', unitPrice: 450 },
+  { id: 'p4', description: 'Black Polished Concrete Cire Countertop (8cm)', unitPrice: 850 },
+  { id: 'p5', description: 'Stainless Steel Built-in Outdoor Fridge Premium 80L', unitPrice: 890 },
+  { id: 'p6', description: 'Stainless Steel Sink & Mixer Tap Built-in Set', unitPrice: 390 },
+  { id: 'p7', description: 'Heavy Duty Terrace Caster Wheels Set (4x)', unitPrice: 190 },
+  { id: 'p8', description: 'Delivery & Professional On-site Placement', unitPrice: 0 }
 ];
 
 // Sequential Quote Number Generator: OF-{year}{sequence} (e.g. OF-2026331)
@@ -113,10 +113,10 @@ export default function Quotes() {
     customer: '',
     project: '',
     discountPercent: 0,
-    status: 'Concept',
+    status: 'Draft',
     items: [
-      { description: 'Buitenkeuken Frame (Teak Hout)', quantity: 1, unitPrice: 8500 },
-      { description: 'Beton Aanrechtblad & Installatie', quantity: 1, unitPrice: 2800 }
+      { description: 'Outdoor Kitchen Frame (Teak Wood)', quantity: 1, unitPrice: 8500 },
+      { description: 'Concrete Countertop & Installation', quantity: 1, unitPrice: 2800 }
     ]
   });
 
