@@ -796,7 +796,7 @@ export default function Leads() {
                   onChange={handleCSVImport}
                 />
               </div>
-              <Button icon={Plus} onClick={handleOpenAddModal}>{language === 'EN' ? '+ New Lead' : '+ Nieuwe lead'}</Button>
+              <Button icon={Plus} onClick={handleOpenAddModal}>{language === 'EN' ? 'New Lead' : 'Nieuwe lead'}</Button>
             </div>
           </div>
 

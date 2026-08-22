@@ -47,7 +47,8 @@ import PublicOfferte from './pages/PublicOfferte';
 function ProtectedRoute({ children, requiredRole }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (requiredRole && user.role !== requiredRole) {
+  // Allow Admin to view any portal in preview/impersonation mode
+  if (requiredRole && user.role !== requiredRole && user.role !== 'admin') {
     return <Navigate to={`/${user.role}/dashboard`} replace />;
   }
   return children;

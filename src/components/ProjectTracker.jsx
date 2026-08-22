@@ -588,15 +588,13 @@ export default function ProjectTracker({ project, onClose, onUpdateProject, part
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1.5">
-              {onClose && (
                 <button
                   onClick={onClose}
-                  className="text-xs font-bold text-primary hover:bg-white/80 flex items-center gap-1 bg-white/50 px-2.5 py-1 rounded-lg border border-[#D6CFC2] transition-colors cursor-pointer shadow-2xs"
-                  title="Return to full Projects overview table"
+                  className="p-1.5 px-2.5 bg-[#33422C] hover:bg-[#253120] text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center justify-center cursor-pointer mr-1"
+                  title="Terug naar Projecten Overzicht"
                 >
-                  ← {language === 'EN' ? 'Back to Projects Overview' : 'Terug naar Projecten Overzicht'}
+                  ←
                 </button>
-              )}
               <span className="text-[10px] font-bold text-accent tracking-wider uppercase font-body">Project Detail</span>
               <Badge variant="info">{project?.id || 'PRJ-101'}</Badge>
               <span className="text-[10px] font-bold text-primary font-body bg-primary/10 px-2 py-0.5 rounded-md font-mono">

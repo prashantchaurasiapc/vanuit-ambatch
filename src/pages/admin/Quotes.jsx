@@ -755,7 +755,7 @@ export default function Quotes() {
         </div>
 
         <Button icon={Plus} onClick={handleOpenAddModal}>
-          {language === 'EN' ? '+ Create New Quote' : '+ Nieuwe Offerte'}
+          {language === 'EN' ? 'Create New Quote' : 'Nieuwe Offerte'}
         </Button>
       </div>
 

@@ -116,7 +116,7 @@ export default function FieldMapping({ onBackToOverview }) {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-5 right-5 z-[9999] bg-[#33422C] text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 text-xs font-medium"
+            className="fixed top-20 right-6 z-[99999] bg-[#33422C] text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-bold border border-white/10"
           >
             <CheckCircle className="w-4 h-4 text-emerald-400" />
             {toastMsg}
@@ -130,16 +130,18 @@ export default function FieldMapping({ onBackToOverview }) {
           {onBackToOverview ? (
             <button
               onClick={onBackToOverview}
-              className="px-3 py-1 bg-[#33422C] hover:bg-[#253120] text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer mr-2"
+              className="p-1.5 px-2.5 bg-[#33422C] hover:bg-[#253120] text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center justify-center cursor-pointer mr-1"
+              title="Terug naar Projecten Overzicht"
             >
-              ← Terug naar Projecten Overzicht
+              ←
             </button>
           ) : (
             <button
               onClick={() => navigate('/admin/projects')}
-              className="px-3 py-1 bg-[#33422C] hover:bg-[#253120] text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer mr-2"
+              className="p-1.5 px-2.5 bg-[#33422C] hover:bg-[#253120] text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center justify-center cursor-pointer mr-1"
+              title="Terug naar Projecten Overzicht"
             >
-              ← Projecten Overzicht
+              ←
             </button>
           )}
           <span className="font-bold text-[#33422C] font-serif text-sm">Projectenbeheer</span>

@@ -196,9 +196,51 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
   const [newProjectModal, setNewProjectModal] = useState(false);
   const [newProjectClient, setNewProjectClient] = useState('');
   const [newProjectType, setNewProjectType] = useState('Outdoor Kitchen');
-  const [newProjectBudget, setNewProjectBudget] = useState('€ 3,920.00');
   const [phaseModal, setPhaseModal] = useState(false);
   const [selectedNewPhase, setSelectedNewPhase] = useState('In the workshop');
+
+  // Payments Tab State (Sent & Paid tracking + Direct Invoice Sending)
+  const [finalInvoiceSent, setFinalInvoiceSent] = useState(false);
+  const [finalInvoiceSentDate, setFinalInvoiceSentDate] = useState('');
+
+  const handleSendFinalInvoice = () => {
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const todayFormatted = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    setFinalInvoiceSent(true);
+    setFinalInvoiceSentDate(`Today (${todayFormatted})`);
+
+    // Add invoice to global invoices localStorage
+    const currentInvoices = JSON.parse(localStorage.getItem('app_invoices') || '[]');
+    const newInvoiceObj = {
+      id: 'INV-2026-042',
+      invoiceNumber: 'INV-2026-042',
+      customerName: 'Sander de Vries',
+      customer: 'Sander de Vries',
+      projectId: '2026-014',
+      projectName: 'Sander de Vries — Thermo Fraké 240 cm',
+      amount: '€ 1,960.00',
+      numericAmount: 1960.00,
+      vatAmount: '€ 340.17',
+      issueDate: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      status: 'Sent',
+      paymentStatus: 'Open',
+      milestone: '50% Final Invoice (Upon Delivery)',
+      items: [
+        { description: 'Final installment (50%) — Thermo Fraké Outdoor Kitchen 240 cm', qty: 1, rate: 1619.83, amount: 1619.83 }
+      ]
+    };
+    localStorage.setItem('app_invoices', JSON.stringify([newInvoiceObj, ...currentInvoices]));
+    window.dispatchEvent(new Event('app_data_changed'));
+
+    const newLog = {
+      id: Date.now(),
+      date: `Today ${timeNow}`,
+      text: 'Final invoice #INV-2026-042 sent directly to customer Sander de Vries — Admin'
+    };
+    setLogbook(prev => [newLog, ...prev]);
+    showToast('✓ Invoice #INV-2026-042 sent directly to customer (Email & Customer Portal)!');
+  };
 
   // Logbook entries matching Project history
   const [logbook, setLogbook] = useState([
@@ -370,24 +412,45 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
 
   const handlePublishPhoto = (photoId) => {
     if (!draftPhotoNote.trim()) {
-      showToast('Please provide a short note for the customer (mandatory)');
+      showToast('Please type a note in the box before publishing (mandatory)');
       return;
     }
+    const publishedNote = draftPhotoNote.trim();
     const updated = photosList.map(p => {
       if (p.id === photoId) {
-        return { ...p, published: true, note: draftPhotoNote.trim() };
+        return { ...p, published: true, note: publishedNote };
       }
       return p;
     });
     setPhotosList(updated);
+    setDraftPhotoNote('');
+
+    // Sync with global photos storage for Customer Portal
+    const existing = JSON.parse(localStorage.getItem('app_project_photos') || '[]');
+    const newPublished = {
+      id: `P-${Date.now()}`,
+      projectId: '2026-014',
+      projectName: 'Sander de Vries — Thermo Fraké 240 cm',
+      customer: 'Sander de Vries',
+      title: 'Fitting countertop',
+      description: publishedNote,
+      phase: 'In the workshop',
+      craftsman: 'Sven Hoek · Hoek Bouw',
+      uploaderRole: 'admin',
+      isShared: true,
+      date: new Date().toISOString().split('T')[0]
+    };
+    localStorage.setItem('app_project_photos', JSON.stringify([newPublished, ...existing]));
+    window.dispatchEvent(new Event('app_data_changed'));
+
     const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newLog = {
       id: Date.now(),
       date: `Today ${timeNow}`,
-      text: 'Photo published (Fitting countertop) — Admin'
+      text: `Photo published (Fitting countertop: "${publishedNote}") — Admin`
     };
     setLogbook([newLog, ...logbook]);
-    showToast('✓ Photo published & notification sent to customer!');
+    showToast('✓ Photo published & 1 notification sent to customer!');
   };
 
   const handleToggleDocCustomer = (docId) => {
@@ -556,7 +619,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-5 right-5 z-[9999] bg-[#283523] text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 text-xs font-semibold"
+            className="fixed top-20 right-6 z-[99999] bg-[#283523] text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-bold border border-white/10"
           >
             <CheckCircle className="w-4 h-4 text-emerald-400" />
             {toastMsg}
@@ -570,16 +633,18 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
           {onBackToOverview ? (
             <button
               onClick={onBackToOverview}
-              className="px-3 py-1 bg-[#33422C] hover:bg-[#253120] text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer mr-2"
+              className="p-1.5 px-2.5 bg-[#33422C] hover:bg-[#253120] text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center justify-center cursor-pointer mr-1"
+              title="Terug naar Projecten Overzicht"
             >
-              ← Terug naar Projecten Overzicht
+              ←
             </button>
           ) : (
             <button
               onClick={() => navigate('/admin/projects')}
-              className="px-3 py-1 bg-[#33422C] hover:bg-[#253120] text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer mr-2"
+              className="p-1.5 px-2.5 bg-[#33422C] hover:bg-[#253120] text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center justify-center cursor-pointer mr-1"
+              title="Terug naar Projecten Overzicht"
             >
-              ← Projecten Overzicht
+              ←
             </button>
           )}
           <span className="font-bold text-[#33422C] font-serif text-sm">Project Management</span>
@@ -636,10 +701,21 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
 
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
-            onClick={() => setCustomerPortalModal(true)}
+            onClick={() => {
+              const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const newLog = {
+                id: Date.now(),
+                date: `Today ${timeNow}`,
+                text: 'Customer Portal session opened (Bekijk als klant) — Admin'
+              };
+              setLogbook([newLog, ...logbook]);
+              showToast('✓ Opening Customer Portal in read-only preview mode (Session Logged)...');
+              window.open('/customer/project', '_blank');
+            }}
             className="px-3.5 py-2 bg-white hover:bg-[#FAF8F5] text-[#1C1C1A] border border-[#D6CFC2] rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+            title="Bekijk als klant (Live Read-Only Customer Portal)"
           >
-            <span>View Customer Portal</span>
+            <span>👁️ View Customer Portal</span>
           </button>
 
           <button
@@ -1366,21 +1442,146 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
         </div>
       )}
 
-      {/* TAB 5: PAYMENTS */}
+      {/* TAB 5: PAYMENTS (Exact Match to Client Requirements: Sent Date, Paid Date, Direct Send Action) */}
       {activeTab === 'Payments' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           <div className="lg:col-span-7 space-y-5">
+            {/* Header Box with Routing Scope */}
             <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-5 shadow-2xs space-y-4">
-              <h3 className="font-bold text-base text-[#1C1C1A]">Payment Status (50% / 50% Scheme)</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-1">
-                  <span className="text-[10px] font-bold text-[#555046] uppercase">50% Deposit</span>
-                  <p className="font-bold text-emerald-800 text-sm">€ 1,960.00 — Paid (Aug 11)</p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E6E1D7] pb-3">
+                <div>
+                  <h3 className="font-bold text-base text-[#1C1C1A]">
+                    Payment Schedule & Invoices (50% / 50% Scheme)
+                  </h3>
+                  <p className="text-xs text-[#555046] mt-0.5">
+                    Total project sum: <strong className="text-[#1C1C1A]">€ 3,920.00 incl. VAT</strong> · Source: Bookkeeping & Invoices
+                  </p>
                 </div>
-                <div className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-1">
-                  <span className="text-[10px] font-bold text-[#555046] uppercase">50% Final Invoice</span>
-                  <p className="font-bold text-amber-800 text-sm">€ 1,960.00 — Upon Delivery</p>
+                <span className="px-2.5 py-1 bg-[#E3EFE3] text-[#1E561E] rounded-md font-mono text-[10px] font-bold border border-[#C5E1C5] self-start sm:self-center">
+                  → CUSTOMER & BOEKHOUDING
+                </span>
+              </div>
+
+              {/* Installment Invoices List */}
+              <div className="space-y-4">
+                
+                {/* 1. DEPOSIT INVOICE (PAID) */}
+                <div className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-3 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 bg-[#EDE8DF] text-[#3E3A33] rounded font-mono text-[11px] font-bold">
+                        #INV-2026-041
+                      </span>
+                      <h4 className="font-bold text-sm text-[#1C1C1A]">
+                        50% Deposit (Aanbetaling bij akkoord)
+                      </h4>
+                    </div>
+                    <span className="font-bold text-[#1C1C1A] text-sm">
+                      € 1,960.00 <span className="text-[10px] font-normal text-[#555046]">incl. VAT</span>
+                    </span>
+                  </div>
+
+                  {/* Lifecycle Tracking Dates */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs py-2 px-3 bg-[#FAF8F5] rounded-lg border border-[#E6E1D7]">
+                    <div className="flex items-center gap-1.5 text-[#33422C]">
+                      <span>📅</span>
+                      <span><strong>Invoice Sent:</strong> Aug 11, 2026</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-emerald-800 font-semibold">
+                      <span>🟢</span>
+                      <span><strong>Paid:</strong> Aug 12, 2026 (via iDEAL)</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 text-xs">
+                    <span className="text-emerald-700 font-bold flex items-center gap-1">
+                      <span>✔</span> Fully settled & verified in bank
+                    </span>
+                    <button
+                      onClick={() => showToast('Downloading PDF for Invoice #INV-2026-041...')}
+                      className="px-3 py-1 bg-white hover:bg-[#FAF8F5] text-[#1C1C1A] border border-[#D6CFC2] rounded-lg text-xs font-semibold shadow-2xs cursor-pointer flex items-center gap-1"
+                    >
+                      <span>📄 Download Invoice PDF</span>
+                    </button>
+                  </div>
                 </div>
+
+                {/* 2. FINAL INVOICE (UPON DELIVERY - CAN BE SENT DIRECTLY) */}
+                <div className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-3 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 bg-[#EDE8DF] text-[#3E3A33] rounded font-mono text-[11px] font-bold">
+                        #INV-2026-042
+                      </span>
+                      <h4 className="font-bold text-sm text-[#1C1C1A]">
+                        50% Final Invoice (Slottermijn bij oplevering)
+                      </h4>
+                    </div>
+                    <span className="font-bold text-[#1C1C1A] text-sm">
+                      € 1,960.00 <span className="text-[10px] font-normal text-[#555046]">incl. VAT</span>
+                    </span>
+                  </div>
+
+                  {/* Lifecycle Tracking Dates */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs py-2 px-3 bg-[#FAF8F5] rounded-lg border border-[#E6E1D7]">
+                    <div className="flex items-center gap-1.5">
+                      {finalInvoiceSent ? (
+                        <span className="text-[#33422C] font-semibold">
+                          📅 <strong>Invoice Sent:</strong> {finalInvoiceSentDate}
+                        </span>
+                      ) : (
+                        <span className="text-amber-800 font-semibold">
+                          ⚠️ <strong>Invoice:</strong> Not yet sent to customer
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {finalInvoiceSent ? (
+                        <span className="text-amber-800 font-semibold">
+                          🟡 <strong>Status:</strong> Open · Awaiting payment (Due in 14 days)
+                        </span>
+                      ) : (
+                        <span className="text-[#555046]">
+                          ⏳ <strong>Due:</strong> Upon completion / delivery
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Row */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-xs">
+                    <p className="text-[#555046] text-[11px]">
+                      {finalInvoiceSent 
+                        ? 'Invoice is published in Customer Portal with online payment link.' 
+                        : 'Can be dispatched directly to customer from this project environment.'}
+                    </p>
+
+                    {finalInvoiceSent ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => showToast('Payment reminder sent to customer Sander de Vries!')}
+                          className="px-3 py-1.5 bg-white hover:bg-[#FAF8F5] text-[#1C1C1A] border border-[#D6CFC2] rounded-xl text-xs font-semibold shadow-2xs cursor-pointer"
+                        >
+                          🔔 Send Reminder
+                        </button>
+                        <button
+                          onClick={() => showToast('Payment link copied to clipboard!')}
+                          className="px-3 py-1.5 bg-[#283523] text-white hover:bg-[#1E291B] rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+                        >
+                          📋 Copy Payment Link
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleSendFinalInvoice}
+                        className="px-4 py-2 bg-[#283523] hover:bg-[#1E291B] text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+                      >
+                        <span>🚀 Send Invoice Directly</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>

@@ -366,7 +366,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
         </div>
 
         <Button icon={Plus} onClick={handleOpenAddModal} className="w-full sm:w-auto">
-          {language === 'NL' ? '+ + Nieuw Project' : '+ + New Project'}
+          {language === 'NL' ? 'Nieuw Project' : 'New Project'}
         </Button>
       </div>
 
