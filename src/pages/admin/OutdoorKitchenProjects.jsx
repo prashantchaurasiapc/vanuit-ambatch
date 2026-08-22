@@ -8,6 +8,7 @@ import {
   Paperclip, Share2, CornerDownRight, ChevronDown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ProjectChatDrawer from '../../components/common/ProjectChatDrawer';
 
 export default function OutdoorKitchenProjects() {
   const navigate = useNavigate();
@@ -1981,65 +1982,14 @@ export default function OutdoorKitchenProjects() {
       </AnimatePresence>
 
       {/* PROJECT CHAT DRAWER MODAL */}
-      <AnimatePresence>
-        {chatOpen && (
-          <div className="fixed inset-0 z-[9999] flex justify-end bg-black/40 backdrop-blur-xs">
-            <motion.div
-              initial={{ x: 400 }}
-              animate={{ x: 0 }}
-              exit={{ x: 400 }}
-              className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col text-xs"
-            >
-              {/* Drawer Header */}
-              <div className="p-4 bg-[#283523] text-white flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-emerald-400" />
-                  <span className="font-bold">Project Chat — Sander de Vries</span>
-                </div>
-                <button onClick={() => setChatOpen(false)} className="text-white/60 hover:text-white cursor-pointer">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Messages Area */}
-              <div className="flex-1 p-4 space-y-3 overflow-y-auto bg-[#F4F1EA]">
-                {chatMessages.map((msg) => (
-                  <div 
-                    key={msg.id}
-                    className={`flex flex-col ${msg.role === 'admin' ? 'items-end' : 'items-start'}`}
-                  >
-                    <span className="text-[10px] font-semibold text-[#555046] mb-0.5">{msg.sender} · {msg.time}</span>
-                    <div className={`p-3 rounded-2xl max-w-[85%] leading-relaxed font-medium ${
-                      msg.role === 'admin' 
-                        ? 'bg-[#283523] text-white rounded-tr-xs' 
-                        : 'bg-white border border-[#D6CFC2] text-[#1C1C1A] rounded-tl-xs'
-                    }`}>
-                      {msg.text}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Input Form */}
-              <form onSubmit={handleSendChat} className="p-3 border-t border-[#D6CFC2] bg-white flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Type a message..."
-                  value={inputChatMsg}
-                  onChange={(e) => setInputChatMsg(e.target.value)}
-                  className="flex-1 px-3 py-2 bg-[#F4F1EA] border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#283523]/20"
-                />
-                <button 
-                  type="submit"
-                  className="px-3.5 py-2 bg-[#283523] text-white font-bold rounded-xl text-xs hover:bg-[#1E291B] cursor-pointer"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <ProjectChatDrawer
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        projectCode="2026-014"
+        clientName="Sander"
+        partnerName="Sven"
+        onShowToast={showToast}
+      />
 
       {/* CUSTOMER PORTAL READ-ONLY PREVIEW MODAL */}
       <AnimatePresence>
