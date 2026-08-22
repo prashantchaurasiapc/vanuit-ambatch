@@ -16,7 +16,8 @@ export const PROJECT_TYPES = {
   OUTDOOR_KITCHEN: 'outdoor_kitchen',
   GARDEN_ROOM: 'garden_room',
   POOLHOUSE: 'poolhouse',
-  CANOPY: 'canopy'
+  CANOPY: 'canopy',
+  FIELD_MAPPING: 'field_mapping'
 };
 
 const VALID_TYPES = Object.values(PROJECT_TYPES);
@@ -26,7 +27,7 @@ const VALID_TYPES = Object.values(PROJECT_TYPES);
  * Defaults to 'outdoor_kitchen' if unassigned (100% backward compatibility).
  * 
  * @param {Object|String} projectOrCategory - Project data object or category string
- * @returns {String} One of: 'outdoor_kitchen', 'garden_room', 'poolhouse', 'canopy'
+ * @returns {String} One of: 'outdoor_kitchen', 'garden_room', 'poolhouse', 'canopy', 'field_mapping'
  */
 export function detectProjectType(projectOrCategory) {
   if (!projectOrCategory) return PROJECT_TYPES.OUTDOOR_KITCHEN;
@@ -57,6 +58,7 @@ export function detectProjectType(projectOrCategory) {
  */
 function resolveTypeFromString(str) {
   if (!str) return PROJECT_TYPES.OUTDOOR_KITCHEN;
+  if (str.includes('field') || str.includes('mapping') || str.includes('veldenkoppeling')) return PROJECT_TYPES.FIELD_MAPPING;
   if (str.includes('poolhouse')) return PROJECT_TYPES.POOLHOUSE;
   if (str.includes('verblijf') || str.includes('buitenverblijf') || str.includes('garden room') || str.includes('studio')) {
     return PROJECT_TYPES.GARDEN_ROOM;

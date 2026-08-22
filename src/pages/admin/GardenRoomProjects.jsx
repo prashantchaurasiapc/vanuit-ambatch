@@ -8,7 +8,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import ProjectChatDrawer from '../../components/common/ProjectChatDrawer';
 
-export default function GardenRoomProjects() {
+export default function GardenRoomProjects({ onBackToOverview }) {
   const navigate = useNavigate();
 
   // State matching Screenshot 2 (Garden Room Project Detail: PROJECT 2026-021)
@@ -258,6 +258,21 @@ export default function GardenRoomProjects() {
       {/* TOP PORTAL BREADCRUMB BAR */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs pb-1">
         <div className="flex items-center gap-2">
+          {onBackToOverview ? (
+            <button
+              onClick={onBackToOverview}
+              className="px-3 py-1 bg-[#33422C] hover:bg-[#253120] text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer mr-2"
+            >
+              ← Terug naar Projecten Overzicht
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate('/admin/projects')}
+              className="px-3 py-1 bg-[#33422C] hover:bg-[#253120] text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer mr-2"
+            >
+              ← Projecten Overzicht
+            </button>
+          )}
           <span className="font-bold text-[#33422C] font-serif text-sm">Projectenbeheer</span>
           <span className="text-dark/40">·</span>
           <span className="text-dark/60 font-mono text-[11px]">adminportaal</span>

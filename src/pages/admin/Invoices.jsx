@@ -15,6 +15,7 @@ import { downloadInvoicePdf } from '../../utils/pdfGenerator';
 
 import { calculateOrderSettlement } from '../../utils/orderMatcher';
 import { calculateProjectMarginWithPurchasing, UNIFIED_PURCHASING_CATEGORY } from '../../utils/purchasingAllocator';
+import BookkeepingHeader from '../../components/admin/BookkeepingHeader';
 
 export default function Invoices() {
   const { t, language } = useLanguage();
@@ -353,6 +354,9 @@ export default function Invoices() {
 
   return (
     <div className="space-y-6 relative font-body text-[#4A4A43]">
+      {/* BOOKKEEPING HEADER NAVIGATION */}
+      <BookkeepingHeader activeTab="invoices" />
+
       {/* Toast Notification */}
       <AnimatePresence>
         {toastMsg && (

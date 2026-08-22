@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { mockProfitLossData as defaultPLs } from '../../utils/mockData';
+import BookkeepingHeader from '../../components/admin/BookkeepingHeader';
 
 export default function ProfitLoss() {
   const { t, language } = useLanguage();
@@ -297,6 +298,9 @@ export default function ProfitLoss() {
 
   return (
     <div className="space-[#4A4A43] space-y-6 font-body">
+      {/* BOOKKEEPING HEADER NAVIGATION */}
+      <BookkeepingHeader activeTab="profit-loss" />
+
       {/* Toast Notification */}
       <AnimatePresence>
         {toastMsg && (

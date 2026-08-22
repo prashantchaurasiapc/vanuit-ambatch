@@ -13,6 +13,7 @@ import { mockQuotes as defaultQuotes } from '../../utils/mockData';
 import { useLanguage } from '../../context/LanguageContext';
 import { safeSetItem } from '../../utils/storageHelper';
 import { downloadQuotePdf, downloadDirectPdfFile } from '../../utils/pdfGenerator';
+import BookkeepingHeader from '../../components/admin/BookkeepingHeader';
 
 
 // Helper to get raw numeric value from formatted amount string (e.g. "€ 12,500" -> 12500)
@@ -724,6 +725,9 @@ export default function Quotes() {
 
   return (
     <div className="space-y-6 font-body">
+      {/* BOOKKEEPING HEADER NAVIGATION */}
+      <BookkeepingHeader activeTab="quotes" />
+
       {/* Toast Notification */}
       <AnimatePresence>
         {toastMsg && (

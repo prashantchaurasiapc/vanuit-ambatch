@@ -10,6 +10,7 @@ import {
   Users, UserCheck, Briefcase, DollarSign, Search, Filter, 
   Mail, Phone, MapPin, Calendar, FileText, ChevronRight, ChevronDown, X, Sparkles, Plus, Download, ArrowUpRight
 } from 'lucide-react';
+import BookkeepingHeader from '../../components/admin/BookkeepingHeader';
 
 export default function Customers() {
   const { t, language } = useLanguage();
@@ -297,6 +298,9 @@ export default function Customers() {
 
   return (
     <div className="space-y-6 font-body relative">
+      {/* BOOKKEEPING HEADER NAVIGATION */}
+      <BookkeepingHeader activeTab="customers" />
+
       {/* Toast Notification */}
       <AnimatePresence>
         {toastMsg && (

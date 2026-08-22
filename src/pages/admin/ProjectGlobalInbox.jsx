@@ -6,7 +6,7 @@ import {
   Plus, Search, Filter, Trash2, Edit2, X, CheckCircle, RotateCcw, 
   MapPin, Calendar, UserCheck, Layers, FileText, CheckSquare, 
   Sparkles, Truck, ShoppingBag, Download, Camera, Image as ImageIcon,
-  Lock, Check, ChevronDown
+  Lock, Check, ChevronDown, FolderOpen
 } from 'lucide-react';
 import { downloadBlueprintPdf } from '../../utils/pdfGenerator';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../context/LanguageContext';
 import { detectProjectType } from '../../utils/projectType';
 
-export default function ProjectGlobalInbox() {
+export default function ProjectGlobalInbox({ onSelectProject }) {
   const { language } = useLanguage();
   const navigate = useNavigate();
   const directFileInputRef = useRef(null);
@@ -128,7 +128,7 @@ export default function ProjectGlobalInbox() {
 
   // Category type change dropdown
   const handleCategoryTypeChange = (projectId, newType) => {
-    const categoryName = newType === 'outdoor_kitchen' ? 'Outdoor Kitchens' : newType === 'garden_room' ? 'Garden Rooms' : newType === 'canopy' ? 'Canopies' : 'Poolhouse';
+    const categoryName = newType === 'outdoor_kitchen' ? 'Outdoor Kitchen Project' : newType === 'garden_room' ? 'Garden Room Project' : 'Field Mapping';
     const updatedProjects = projects.map(p => p.id === projectId ? { ...p, projectType: newType, category: categoryName } : p);
     setProjects(updatedProjects);
     localStorage.setItem('app_projects', JSON.stringify(updatedProjects));
@@ -487,39 +487,56 @@ export default function ProjectGlobalInbox() {
                   return (
                     <tr 
                       key={row.id}
-                      className="bg-white shadow-xs hover:shadow-md transition-shadow group"
+                      className="bg-white shadow-xs hover:shadow-md hover:bg-[#FAF8F5]/80 transition-all group cursor-pointer"
                     >
-                      {/* 1. Project No. */}
-                      <td className="py-4 px-4 rounded-l-2xl border-y border-l border-[#E2DDD3] font-mono font-bold text-xs text-primary whitespace-nowrap">
-                        {row.id}
+                      {/* 1. Project No. (Clickable to open project overview) */}
+                      <td 
+                        onClick={() => onSelectProject ? onSelectProject(row) : (pType === 'field_mapping' ? navigate('/admin/projects/field-mapping') : pType === 'garden_room' ? navigate('/admin/projects/garden-rooms') : navigate('/admin/projects/outdoor-kitchens'))}
+                        className="py-4 px-4 rounded-l-2xl border-y border-l border-[#E2DDD3] font-mono font-bold text-xs text-primary whitespace-nowrap"
+                        title="Click to open project overview & tabs"
+                      >
+                        <span className="inline-flex items-center gap-1 bg-[#EAE4D9] group-hover:bg-[#33422C] group-hover:text-white text-[#33422C] px-2.5 py-1 rounded-md text-xs font-bold transition-all shadow-2xs">
+                          {row.id}
+                        </span>
                       </td>
 
                       {/* 2. Category Dropdown Pill (Explicit width, will NEVER shrink) */}
-                      <td className="py-4 px-4 border-y border-[#E2DDD3]">
+                      <td 
+                        className="py-4 px-4 border-y border-[#E2DDD3]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <select
                           value={pType}
                           onChange={(e) => handleCategoryTypeChange(row.id, e.target.value)}
-                          className="w-[190px] min-w-[190px] px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-full text-xs font-semibold text-dark/80 focus:outline-none focus:ring-1 focus:ring-primary/40 cursor-pointer shadow-2xs"
+                          className="w-[200px] min-w-[200px] px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-full text-xs font-semibold text-dark/80 focus:outline-none focus:ring-1 focus:ring-primary/40 cursor-pointer shadow-2xs hover:border-primary transition-colors"
                         >
-                          <option value="outdoor_kitchen">Outdoor Kitchens</option>
-                          <option value="garden_room">Garden Rooms</option>
-                          <option value="canopy">Canopy / Overkapping</option>
-                          <option value="poolhouse">Poolhouse</option>
+                          <option value="outdoor_kitchen">Outdoor Kitchen Project</option>
+                          <option value="garden_room">Garden Room Project</option>
+                          <option value="field_mapping">Field Mapping</option>
                         </select>
                       </td>
 
-                      {/* 3. Project Name */}
-                      <td className="py-4 px-4 border-y border-[#E2DDD3] font-bold text-dark text-xs whitespace-nowrap">
-                        {row.name}
+                      {/* 3. Project Name (Clickable to open project overview) */}
+                      <td 
+                        onClick={() => onSelectProject ? onSelectProject(row) : (pType === 'field_mapping' ? navigate('/admin/projects/field-mapping') : pType === 'garden_room' ? navigate('/admin/projects/garden-rooms') : navigate('/admin/projects/outdoor-kitchens'))}
+                        className="py-4 px-4 border-y border-[#E2DDD3] font-bold text-dark text-xs whitespace-nowrap"
+                        title="Click to open project overview & tabs"
+                      >
+                        <span className="hover:underline font-bold text-dark group-hover:text-primary transition-colors">
+                          {row.name}
+                        </span>
                       </td>
 
                       {/* 4. Customer */}
-                      <td className="py-4 px-4 border-y border-[#E2DDD3] text-dark/80 text-xs font-medium whitespace-nowrap">
+                      <td 
+                        onClick={() => onSelectProject ? onSelectProject(row) : (pType === 'field_mapping' ? navigate('/admin/projects/field-mapping') : pType === 'garden_room' ? navigate('/admin/projects/garden-rooms') : navigate('/admin/projects/outdoor-kitchens'))}
+                        className="py-4 px-4 border-y border-[#E2DDD3] text-dark/80 text-xs font-medium whitespace-nowrap"
+                      >
                         {row.customer}
                       </td>
 
                       {/* 5. Partner Assignment (Explicit width, will NEVER shrink) */}
-                      <td className="py-4 px-4 border-y border-[#E2DDD3]">
+                      <td className="py-4 px-4 border-y border-[#E2DDD3]" onClick={(e) => e.stopPropagation()}>
                         <div className="w-[240px] min-w-[240px] space-y-1.5">
                           {isConfirmed ? (
                             <div className="flex items-center justify-between gap-1.5 bg-emerald-50 border border-emerald-300 px-3 py-2 rounded-xl text-xs">
@@ -576,15 +593,15 @@ export default function ProjectGlobalInbox() {
                       </td>
 
                       {/* 9. Actions (Aligned directly under ACTIONS header) */}
-                      <td className="py-4 px-4 rounded-r-2xl border-y border-r border-[#E2DDD3] whitespace-nowrap">
+                      <td className="py-4 px-4 rounded-r-2xl border-y border-r border-[#E2DDD3] whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-2">
                           <button 
                             onClick={() => setDirectUploadProject(row)}
-                            className="text-primary hover:text-dark px-2.5 py-1.5 text-xs font-semibold cursor-pointer flex items-center gap-1.5 transition-colors"
+                            className="text-primary hover:text-dark px-2 py-1.5 text-xs font-semibold cursor-pointer flex items-center gap-1 transition-colors"
                             title="Upload Project Photos"
                           >
                             <Camera className="w-3.5 h-3.5 text-dark/60" /> 
-                            <span>Upload Photos</span>
+                            <span>Photos</span>
                           </button>
                           <button 
                             onClick={() => handleOpenEditModal(row)}

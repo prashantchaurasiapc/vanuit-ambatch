@@ -16,6 +16,7 @@ import { matchPaymentToOrder, calculateOrderSettlement, calculateProjectMargin }
 import { matchPurchaseToProject, calculateProjectMarginWithPurchasing, UNIFIED_PURCHASING_CATEGORY } from '../../utils/purchasingAllocator';
 import { generateJournalEntries } from '../../utils/journalEngine';
 import { mockInvoices, mockProjects } from '../../utils/mockData';
+import BookkeepingHeader from '../../components/admin/BookkeepingHeader';
 
 export default function Bank() {
   const { t, language } = useLanguage();
@@ -672,6 +673,9 @@ Kenmerk: EREF-2026-9006`;
 
   return (
     <div className="space-y-6 relative font-body text-[#4A4A43]">
+      {/* BOOKKEEPING HEADER NAVIGATION */}
+      <BookkeepingHeader activeTab="bank" />
+
       {/* Toast Notification */}
       <AnimatePresence>
         {toastMsg && (

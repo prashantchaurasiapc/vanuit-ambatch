@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Card from '../../components/Card';
 import Table from '../../components/Table';
@@ -6,6 +6,7 @@ import Badge from '../../components/Badge';
 import Button from '../../components/Button';
 import { Receipt, CheckCircle, Download, FileText, Send, Calendar, Percent } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import BookkeepingHeader from '../../components/admin/BookkeepingHeader';
 
 export default function Taxes() {
   const { t, language } = useLanguage();
@@ -212,6 +213,9 @@ export default function Taxes() {
 
   return (
     <div className="space-y-6 relative font-body text-[#4A4A43]">
+      {/* BOOKKEEPING HEADER NAVIGATION */}
+      <BookkeepingHeader activeTab="taxes" />
+
       {/* Toast Notification */}
       <AnimatePresence>
         {toastMsg && (

@@ -81,8 +81,8 @@ function App() {
         <Route path="leads" element={<Leads />} />
         <Route path="quotes" element={<Quotes />} />
         <Route path="inbox" element={<ProjectChatInboxPage />} />
-        <Route path="projects" element={<Navigate to="/admin/projects/inbox" replace />} />
-        <Route path="projects/all" element={<Navigate to="/admin/projects/inbox" replace />} />
+        <Route path="projects" element={<Projects />} />
+        <Route path="projects/all" element={<Projects />} />
         <Route path="projects/inbox" element={<ProjectGlobalInbox />} />
         <Route path="projects/inbox-messages" element={<ProjectChatInboxPage />} />
         <Route path="projects/inbox-create" element={<ProjectChatInboxPage />} />

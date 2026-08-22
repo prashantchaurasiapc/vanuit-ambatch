@@ -208,27 +208,50 @@ export const mockQuotes = [
 
 export const mockProjects = [
   {
+    id: 'P-2216',
+    name: 'Luxury Buitenkeukens — Mark Davis',
+    customer: 'Mark Davis',
+    partner: 'CraftWood Veluwe',
+    projectType: 'outdoor_kitchen',
+    category: 'Outdoor Kitchen Project',
+    progress: 75,
+    deadline: getRelativeDate(-10),
+    status: 'In Progress',
+    orderStatus: 'Production started',
+    numericAmount: 15180,
+    amount: '€ 15.180,00',
+    value: '€ 15.180,00'
+  },
+  {
     id: 'PRJ-101',
     name: 'Luxury Teak Outdoor Kitchen 4m',
     customer: 'John Miller',
     partner: 'CraftWood Veluwe',
+    projectType: 'outdoor_kitchen',
+    category: 'Outdoor Kitchen Project',
     progress: 65,
-    deadline: getRelativeDate(-14), // 14 days in future
+    deadline: getRelativeDate(-14),
     status: 'In Progress',
     orderStatus: 'Production started',
     quoteId: 'Q-4001',
+    numericAmount: 11300,
+    amount: '€ 11,300',
     value: '€ 11,300'
   },
   {
     id: 'PRJ-102',
     name: 'Oak Wooden Canopy 6x4m',
     customer: 'Sophia Taylor',
-    partner: 'Hout & Steen Utrecht',
+    partner: 'Sven Hoek — Hoek Construction',
+    projectType: 'garden_room',
+    category: 'Garden Room Project',
     progress: 35,
     deadline: getRelativeDate(-21),
     status: 'In Progress',
     orderStatus: 'Materials delivered',
     quoteId: 'Q-4002',
+    numericAmount: 14500,
+    amount: '€ 14,500',
     value: '€ 14,500'
   }
 ];

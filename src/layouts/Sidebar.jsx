@@ -70,6 +70,13 @@ export default function Sidebar({ role }) {
 
   const [openDropdowns, setOpenDropdowns] = useState({});
 
+  useEffect(() => {
+    const bookkeepingPaths = ['/admin/quotes', '/admin/invoices', '/admin/customers', '/admin/bank', '/admin/taxes', '/admin/profit-loss'];
+    if (bookkeepingPaths.includes(location.pathname)) {
+      setOpenDropdowns(prev => ({ ...prev, Bookkeeping: true }));
+    }
+  }, [location.pathname]);
+
   const toggleCollapse = () => {
     setIsCollapsed(prev => {
       const next = !prev;
@@ -91,13 +98,13 @@ export default function Sidebar({ role }) {
   const ADMIN_LINKS = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Leads', path: '/admin/leads', icon: Users },
-    { name: 'Quotes', path: '/admin/quotes', icon: Receipt },
-    { name: 'Projects', path: '/admin/projects/inbox', icon: Briefcase, badge: '2' },
+    { name: 'Projects', path: '/admin/projects', icon: Briefcase, badge: '2' },
     { 
       name: 'Bookkeeping', 
       icon: PieChart, 
       isDropdown: true,
       children: [
+        { name: 'Quotes', path: '/admin/quotes' },
         { name: 'Invoices', path: '/admin/invoices' },
         { name: 'Customers', path: '/admin/customers' },
         { name: 'Bank', path: '/admin/bank' },
@@ -111,13 +118,6 @@ export default function Sidebar({ role }) {
     { name: 'Tasks', path: '/admin/tasks', icon: FileText },
     { name: 'Documents', path: '/admin/documents', icon: Folder },
     { name: 'Settings', path: '/admin/settings', icon: Settings },
-  ];
-
-  const ADMIN_MOCKUP_LINKS = [
-    { name: 'Inbox messages', path: '/admin/projects/inbox', badge: '4' },
-    { name: 'Outdoor Kitchen Project', path: '/admin/projects/outdoor-kitchens' },
-    { name: 'Garden Room Project', path: '/admin/projects/garden-rooms' },
-    { name: 'Field Mapping', path: '/admin/projects/field-mapping' },
   ];
 
   const PARTNER_LINKS = [
@@ -317,61 +317,6 @@ export default function Sidebar({ role }) {
             </NavLink>
           );
         })}
-
-        {/* BOTTOM SECTION: THIS MOCK-UP */}
-        {role === 'admin' && !collapsed && (
-          <div className="pt-3 pb-1 border-t border-white/10 mt-3">
-            <p className="px-2.5 text-[9px] uppercase tracking-wider text-white/40 font-bold mb-1.5">
-              {language === 'NL' ? 'DEZE MOCK-UP' : 'THIS MOCK-UP'}
-            </p>
-            <div className="space-y-0.5">
-              {ADMIN_MOCKUP_LINKS.map(link => {
-                const active = location.pathname === link.path;
-                return (
-                  <NavLink
-                    key={link.name}
-                    to={link.path}
-                    onClick={() => handleNavLinkClick(link.path)}
-                    className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
-                      active ? 'bg-white/20 text-white font-semibold' : 'text-white/60 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2 truncate">
-                      <CornerDownRight className="w-3 h-3 text-amber-400 flex-shrink-0" />
-                      <span className="truncate">{link.name}</span>
-                    </span>
-                    {link.badge && (
-                      <span className="px-1.5 py-0.2 bg-[#D97706] text-white font-mono text-[9px] font-bold rounded-full">
-                        {link.badge}
-                      </span>
-                    )}
-                  </NavLink>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {role === 'admin' && collapsed && (
-          <div className="pt-2 border-t border-white/10 mt-2 space-y-1">
-            {ADMIN_MOCKUP_LINKS.map(link => {
-              const active = location.pathname === link.path;
-              return (
-                <NavLink
-                  key={link.name}
-                  to={link.path}
-                  onClick={() => handleNavLinkClick(link.path)}
-                  className={`w-9 h-9 mx-auto rounded-lg flex items-center justify-center transition-all ${
-                    active ? 'bg-cream text-primary shadow-md font-bold' : 'text-white/60 hover:bg-white/15 hover:text-white'
-                  }`}
-                  title={link.name}
-                >
-                  <CornerDownRight className="w-3.5 h-3.5 text-amber-400" />
-                </NavLink>
-              );
-            })}
-          </div>
-        )}
 
       </nav>
 
