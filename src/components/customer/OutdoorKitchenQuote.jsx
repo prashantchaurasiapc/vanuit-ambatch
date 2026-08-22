@@ -60,6 +60,14 @@ export default function OutdoorKitchenQuote({ quote = null, project = null }) {
   const vat = 680.33;
   const halfAmount = 1960.00;
 
+  const quotePayload = quote || {
+    id: quoteId,
+    customer: customerName,
+    project: productName,
+    amount: `€ ${totalNumeric.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`,
+    items: lineItems.map(i => ({ description: i.title, unitPrice: i.price ? parseFloat(i.price.replace(/[^\d.]/g, '')) || 3495 : 0, quantity: 1 }))
+  };
+
   return (
     <div className="space-y-5 font-body text-[#4A4A43] max-w-5xl w-full">
 
@@ -256,7 +264,7 @@ export default function OutdoorKitchenQuote({ quote = null, project = null }) {
 
             <button
               type="button"
-              onClick={() => downloadDirectPdfFile('quote')}
+              onClick={() => downloadDirectPdfFile(quotePayload)}
               className="px-3.5 py-2 bg-white text-dark/80 border border-[#D6CFC2] text-xs font-bold rounded-xl hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-1.5"
             >
               <FileText className="w-3.5 h-3.5 text-primary" />
@@ -296,7 +304,7 @@ export default function OutdoorKitchenQuote({ quote = null, project = null }) {
 
           <button
             type="button"
-            onClick={() => downloadDirectPdfFile('quote')}
+            onClick={() => downloadDirectPdfFile(quotePayload)}
             className="px-3 py-1.5 bg-white text-dark/80 border border-[#D6CFC2] text-[11px] font-bold rounded-lg hover:bg-gray-50 transition-all cursor-pointer"
           >
             View

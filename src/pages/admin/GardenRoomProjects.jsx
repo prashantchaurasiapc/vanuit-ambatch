@@ -6,6 +6,7 @@ import {
   X, Phone, MessageSquare, Download, AlertCircle, Info, Lock, User, Wrench, Plus, Eye
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ProjectChatDrawer from '../../components/common/ProjectChatDrawer';
 
 export default function GardenRoomProjects() {
   const navigate = useNavigate();
@@ -740,62 +741,14 @@ export default function GardenRoomProjects() {
       </AnimatePresence>
 
       {/* PROJECT CHAT DRAWER MODAL */}
-      <AnimatePresence>
-        {chatOpen && (
-          <div className="fixed inset-0 z-[9999] flex justify-end bg-black/40 backdrop-blur-xs">
-            <motion.div
-              initial={{ x: 400 }}
-              animate={{ x: 0 }}
-              exit={{ x: 400 }}
-              className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col font-body text-xs"
-            >
-              <div className="p-4 bg-[#33422C] text-white flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-emerald-400" />
-                  <span className="font-bold">Projectchat — Sander de Vries</span>
-                </div>
-                <button onClick={() => setChatOpen(false)} className="text-white/60 hover:text-white cursor-pointer">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="flex-1 p-4 space-y-3 overflow-y-auto bg-[#F4F1EA]">
-                {chatMessages.map((msg) => (
-                  <div 
-                    key={msg.id}
-                    className={`flex flex-col ${msg.role === 'admin' ? 'items-end' : 'items-start'}`}
-                  >
-                    <span className="text-[10px] text-dark/50 mb-0.5">{msg.sender} · {msg.time}</span>
-                    <div className={`p-3 rounded-2xl max-w-[85%] leading-relaxed ${
-                      msg.role === 'admin' 
-                        ? 'bg-[#33422C] text-white rounded-tr-xs' 
-                        : 'bg-white border border-[#D6CFC2] text-[#4A4A43] rounded-tl-xs'
-                    }`}>
-                      {msg.text}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <form onSubmit={handleSendChat} className="p-3 border-t border-[#D6CFC2] bg-white flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Typ een bericht..."
-                  value={inputChatMsg}
-                  onChange={(e) => setInputChatMsg(e.target.value)}
-                  className="flex-1 px-3 py-2 bg-[#F4F1EA] border border-[#D6CFC2] rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#33422C]/20"
-                />
-                <button 
-                  type="submit"
-                  className="px-3.5 py-2 bg-[#33422C] text-white font-bold rounded-xl text-xs hover:bg-[#283523] cursor-pointer"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <ProjectChatDrawer
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        projectCode="2026-021"
+        clientName="Sander"
+        partnerName="Lars"
+        onShowToast={showToast}
+      />
 
       {/* KLANTPORTAAL READ-ONLY PREVIEW MODAL */}
       <AnimatePresence>

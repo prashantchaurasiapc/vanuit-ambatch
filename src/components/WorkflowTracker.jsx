@@ -14,6 +14,7 @@ import {
 import { convertLeadToCustomerOnInvoiceSent } from '../utils/customerConversion';
 import { safeSetItem } from '../utils/storageHelper';
 import { downloadDirectPdfFile } from '../utils/pdfGenerator';
+import CommunicationConfirmModal from './CommunicationConfirmModal';
 
 export const WORKFLOW_STEPS = [
   { id: 1, name: 'New lead', desc: 'Contact & first intake', icon: UserPlus, statusKey: 'new', color: 'blue' },
@@ -33,6 +34,51 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const isLeadCompleted = currentStep === 8;
   const [autoModalType, setAutoModalType] = useState(null); // 'quote' | 'project' | 'partner' | 'invoice' | null
   const [toastMsg, setToastMsg] = useState('');
+
+  // Communication Confirmation Modal State (Strict No-Auto-Communication Policy)
+  const [commConfirmModal, setCommConfirmModal] = useState({
+    isOpen: false,
+    type: 'whatsapp',
+    recipientName: '',
+    recipientContact: '',
+    messageText: '',
+    subject: '',
+    onConfirm: () => {}
+  });
+
+  const handleOpenWhatsAppConfirm = (name, phone, text) => {
+    setCommConfirmModal({
+      isOpen: true,
+      type: 'whatsapp',
+      recipientName: name || customerName,
+      recipientContact: phone || customerPhone,
+      messageText: text || customMessageText,
+      subject: '',
+      onConfirm: () => {
+        const cleanPhone = (phone || customerPhone).replace(/[^0-9]/g, '');
+        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text || customMessageText)}`, '_blank');
+        setToastMsg(language === 'EN' ? 'WhatsApp opened after user confirmation!' : 'WhatsApp geopend na gebruikersbevestiging!');
+        setTimeout(() => setToastMsg(''), 3000);
+      }
+    });
+  };
+
+  const handleOpenEmailConfirm = (name, email, text, subj) => {
+    setCommConfirmModal({
+      isOpen: true,
+      type: 'email',
+      recipientName: name || customerName,
+      recipientContact: email || customerEmail,
+      messageText: text || customMessageText,
+      subject: subj || `Vanuit Ambacht - ${customerName}`,
+      onConfirm: () => {
+        const mailtoUrl = `mailto:${email || customerEmail}?subject=${encodeURIComponent(subj || `Vanuit Ambacht - ${customerName}`)}&body=${encodeURIComponent(text || customMessageText)}`;
+        window.open(mailtoUrl, '_blank');
+        setToastMsg(language === 'EN' ? 'E-mail opened after user confirmation!' : 'E-mail geopend na gebruikersbevestiging!');
+        setTimeout(() => setToastMsg(''), 3000);
+      }
+    });
+  };
 
   // Commercial Actions State
   const [commercialActions, setCommercialActions] = useState(() => {
@@ -1434,28 +1480,26 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       </label>
 
                       <div className="flex gap-2 flex-wrap">
-                        <a
-                          href={`https://wa.me/${customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(customMessageText)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs"
+                        <button
+                          type="button"
+                          onClick={() => handleOpenWhatsAppConfirm(customerName, customerPhone, customMessageText)}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs cursor-pointer"
                         >
                           <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-                        </a>
+                        </button>
                         <a
                           href={`tel:${customerPhone}`}
                           className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2196F3] hover:bg-[#1e87db] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs"
                         >
                           <Phone className="w-3.5 h-3.5" /> Call
                         </a>
-                        <a
-                          href={`mailto:${customerEmail}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#3E4E36] hover:bg-[#2e3a28] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs"
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEmailConfirm(customerName, customerEmail, customMessageText, `Vanuit Ambacht - ${customerName}`)}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#3E4E36] hover:bg-[#2e3a28] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs cursor-pointer"
                         >
                           <Mail className="w-3.5 h-3.5" /> E-mail
-                        </a>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1833,28 +1877,26 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       </label>
 
                       <div className="flex gap-2 flex-wrap">
-                        <a
-                          href={`https://wa.me/${customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(customMessageText)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs"
+                        <button
+                          type="button"
+                          onClick={() => handleOpenWhatsAppConfirm(customerName, customerPhone, customMessageText)}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs cursor-pointer"
                         >
                           <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-                        </a>
+                        </button>
                         <a
                           href={`tel:${customerPhone}`}
                           className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2196F3] hover:bg-[#1e87db] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs"
                         >
                           <Phone className="w-3.5 h-3.5" /> Call
                         </a>
-                        <a
-                          href={`mailto:${customerEmail}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#3E4E36] hover:bg-[#2e3a28] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs"
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEmailConfirm(customerName, customerEmail, customMessageText, `Vanuit Ambacht - ${customerName}`)}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#3E4E36] hover:bg-[#2e3a28] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs cursor-pointer"
                         >
                           <Mail className="w-3.5 h-3.5" /> E-mail
-                        </a>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -2206,28 +2248,26 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       </label>
 
                       <div className="flex gap-2 flex-wrap">
-                        <a
-                          href={`https://wa.me/${customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(customMessageText)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs"
+                        <button
+                          type="button"
+                          onClick={() => handleOpenWhatsAppConfirm(customerName, customerPhone, customMessageText)}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs cursor-pointer"
                         >
                           <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-                        </a>
+                        </button>
                         <a
                           href={`tel:${customerPhone}`}
                           className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2196F3] hover:bg-[#1e87db] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs"
                         >
                           <Phone className="w-3.5 h-3.5" /> Call
                         </a>
-                        <a
-                          href={`mailto:${customerEmail}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#3E4E36] hover:bg-[#2e3a28] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs"
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEmailConfirm(customerName, customerEmail, customMessageText, `Vanuit Ambacht - ${customerName}`)}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#3E4E36] hover:bg-[#2e3a28] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs cursor-pointer"
                         >
                           <Mail className="w-3.5 h-3.5" /> E-mail
-                        </a>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -3359,28 +3399,26 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       </label>
 
                       <div className="flex gap-2 flex-wrap">
-                        <a
-                          href={`https://wa.me/${customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(customMessageText)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs"
+                        <button
+                          type="button"
+                          onClick={() => handleOpenWhatsAppConfirm(customerName, customerPhone, customMessageText)}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs cursor-pointer"
                         >
                           <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-                        </a>
+                        </button>
                         <a
                           href={`tel:${customerPhone}`}
                           className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2196F3] hover:bg-[#1e87db] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs"
                         >
                           <Phone className="w-3.5 h-3.5" /> Call
                         </a>
-                        <a
-                          href={`mailto:${customerEmail}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#3E4E36] hover:bg-[#2e3a28] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs"
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEmailConfirm(customerName, customerEmail, customMessageText, `Vanuit Ambacht - ${customerName}`)}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#3E4E36] hover:bg-[#2e3a28] text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-2xs cursor-pointer"
                         >
                           <Mail className="w-3.5 h-3.5" /> E-mail
-                        </a>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -4418,6 +4456,18 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
           </div>
         )}
       </AnimatePresence>
+
+      {/* STRICT NO-AUTO-COMMUNICATION POLICY CONFIRMATION MODAL */}
+      <CommunicationConfirmModal
+        isOpen={commConfirmModal.isOpen}
+        onClose={() => setCommConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={commConfirmModal.onConfirm}
+        type={commConfirmModal.type}
+        recipientName={commConfirmModal.recipientName}
+        recipientContact={commConfirmModal.recipientContact}
+        messageText={commConfirmModal.messageText}
+        subject={commConfirmModal.subject}
+      />
     </div>
   );
 }

@@ -117,9 +117,9 @@ export async function generateFull6PagePdf(quoteData) {
   const quoteId = quote.id || quote.quoteId || 'OF-2026331';
 
   const custObj = typeof quote.customer === 'object' ? quote.customer : null;
-  const customerName = custObj?.name || quote.customer || quote.customerName || 'Bjorn Valk';
-  const cleanCustomerName = String(customerName).replace(/[\\/:*?"<>|]/g, '').trim().replace(/\s+/g, '-');
-  const fileName = `Offerte-${quoteId}-${cleanCustomerName}.pdf`;
+  const customerName = custObj?.name || quote.customer || quote.customerName || 'Jan de Vries';
+  const cleanCustomerName = String(customerName).replace(/[\\/:*?"<>|]/g, '').trim();
+  const fileName = `Quote-${quoteId} ${cleanCustomerName}.pdf`;
 
   // Create temporary off-screen container for 6 pages
   const tempDiv = document.createElement('div');
@@ -185,8 +185,15 @@ export async function generateFull6PagePdf(quoteData) {
  * @param {object} quote  - row from quotes state
  */
 export function downloadQuotePdf(quote) {
-  generateFull6PagePdf(quote).catch(() => downloadQuotePdfFallback(quote));
-  return `Offerte-${quote?.id || 'OF-2026331'}.pdf`;
+  const quoteObj = quote?.quote || quote || {};
+  const quoteId = quoteObj.id || quoteObj.quoteId || 'OF-2026331';
+  const custObj = typeof quoteObj.customer === 'object' ? quoteObj.customer : null;
+  const customerName = custObj?.name || quoteObj.customer || quoteObj.customerName || 'Jan de Vries';
+  const cleanCustomerName = String(customerName).replace(/[\\/:*?"<>|]/g, '').trim();
+  const fileName = `Quote-${quoteId} ${cleanCustomerName}.pdf`;
+
+  generateFull6PagePdf(quoteObj).catch(() => downloadQuotePdfFallback(quoteObj));
+  return fileName;
 }
 
 export function downloadQuotePdfFallback(quote) {
@@ -203,7 +210,8 @@ export function downloadQuotePdfFallback(quote) {
     ? quote.items
     : (Array.isArray(quote?.investment?.lineItems) ? quote.investment.lineItems : []);
 
-  const fileName = `Offerte-${id}-${slugify(customer)}.pdf`;
+  const cleanCustomer = String(customer).replace(/[\\/:*?"<>|]/g, '').trim();
+  const fileName = `Quote-${id} ${cleanCustomer}.pdf`;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
   let y = drawHeader(doc, 'OFFICIËLE MAATOFFERTE', `Vanuit Ambacht • ${id} • ${date}`, id);
@@ -324,8 +332,15 @@ export function downloadQuotePdfFallback(quote) {
  * and calls doc.save("Quote-{number} {customer}.pdf") to trigger an actual file download.
  */
 export function downloadDirectPdfFile(quoteData = {}) {
-  generateFull6PagePdf(quoteData).catch(() => downloadQuotePdfFallback(quoteData?.quote || quoteData));
-  return `Offerte-${(quoteData?.quote || quoteData)?.id || 'OF-2026331'}.pdf`;
+  const quoteObj = quoteData?.quote || quoteData || {};
+  const quoteId = quoteObj.id || quoteObj.quoteId || 'OF-2026331';
+  const custObj = typeof quoteObj.customer === 'object' ? quoteObj.customer : null;
+  const customerName = custObj?.name || quoteObj.customer || quoteObj.customerName || 'Jan de Vries';
+  const cleanCustomerName = String(customerName).replace(/[\\/:*?"<>|]/g, '').trim();
+  const fileName = `Quote-${quoteId} ${cleanCustomerName}.pdf`;
+
+  generateFull6PagePdf(quoteData).catch(() => downloadDirectPdfFileFallback(quoteData));
+  return fileName;
 }
 
 export function downloadDirectPdfFileFallback(quoteData = {}) {
