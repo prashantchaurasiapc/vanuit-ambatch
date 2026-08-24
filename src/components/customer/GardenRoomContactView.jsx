@@ -1,26 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageSquare, Sparkles, Send, Paperclip, ChevronDown, ChevronUp, Check, Phone, Mail, Package } from 'lucide-react';
 
 /**
  * GardenRoomContactView Component (1-to-1 implementation of Client Mockup PDF Garden Rooms Screen 8 & Screenshots 1 & 2)
- * 
- * Features:
- * - Top Header Tag Bar (Custom Garden Room — project 2026-021, Updates 3, WhatsApp us)
- * - Page Title & Subtitle (Messages & Contact - You are not texting a company. You are texting us...)
- * - Two-Column Layout:
- *   - Left: Chat Thread Card with Bram (T&B) and Sander (SV) matching Page 13 1-to-1 in English
- *   - Right: 3 Sidebar Cards (Direct Contact, We Work Without Showroom / Wood Samples, Who Builds Your Garden Room)
- * - FAQ Accordion Section (Frequently Asked Questions with 5 expandable items matching Page 13 1-to-1)
- * - Clean left-aligned layout
  */
 export default function GardenRoomContactView({ project = null }) {
   const [feedbackToast, setFeedbackToast] = useState('');
-  const [messages, setMessages] = useState([
+  
+  const defaultGardenMsgs = [
     {
       id: 1,
       sender: 'T&B',
-      senderName: 'Bram',
-      time: 'yesterday 16:40',
+      senderName: 'Bram (Admin)',
+      time: 'Yesterday 16:40',
       text: "Hi Sander, render version 2 is in your portal — sliding doors on the south side and the wider overhang are included. Take a look to see if this is it.",
       type: 'incoming'
     },
@@ -35,8 +27,8 @@ export default function GardenRoomContactView({ project = null }) {
     {
       id: 3,
       sender: 'T&B',
-      senderName: 'Bram',
-      time: 'yesterday 19:30',
+      senderName: 'Bram (Admin)',
+      time: 'Yesterday 19:30',
       text: "Certainly — the 60x60 tiles are also available in anthracite. Same price. I will put two examples in the next render so you can choose visually.",
       type: 'incoming'
     },
@@ -51,12 +43,61 @@ export default function GardenRoomContactView({ project = null }) {
     {
       id: 5,
       sender: 'T&B',
-      senderName: 'Bram',
-      time: 'today 09:02',
+      senderName: 'Bram (Admin)',
+      time: 'Today 09:02',
       text: "Totally fine — as long as someone can unlock the backyard it will be good. Please approve the proposal under Planning & Build so it's confirmed.",
       type: 'incoming'
     }
-  ]);
+  ];
+
+  const [messages, setMessages] = useState(() => {
+    try {
+      const raw = localStorage.getItem('app_project_messages_2026_021');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.customer && Array.isArray(parsed.customer)) {
+          return parsed.customer.map(m => ({
+            id: m.id,
+            sender: m.role === 'customer' ? 'SV' : 'T&B',
+            senderName: m.sender || (m.role === 'customer' ? 'Sander' : 'Bram'),
+            time: m.time || 'Today',
+            text: m.text,
+            type: m.role === 'customer' ? 'outgoing' : 'incoming'
+          }));
+        }
+      }
+    } catch(e) {}
+    return defaultGardenMsgs;
+  });
+
+  // Listen for real-time messages
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const raw = localStorage.getItem('app_project_messages_2026_021');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.customer && Array.isArray(parsed.customer)) {
+            setMessages(parsed.customer.map(m => ({
+              id: m.id,
+              sender: m.role === 'customer' ? 'SV' : 'T&B',
+              senderName: m.sender || (m.role === 'customer' ? 'Sander' : 'Bram'),
+              time: m.time || 'Today',
+              text: m.text,
+              type: m.role === 'customer' ? 'outgoing' : 'incoming'
+            })));
+          }
+        }
+      } catch(e) {}
+    };
+
+    window.addEventListener('app_messages_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('app_messages_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   const [inputMsg, setInputMsg] = useState('');
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
@@ -67,16 +108,32 @@ export default function GardenRoomContactView({ project = null }) {
     e.preventDefault();
     if (!inputMsg.trim()) return;
 
-    const newMsg = {
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const rawMsg = {
       id: Date.now(),
-      sender: 'SV',
-      senderName: 'Sander',
-      time: 'Just now',
+      sender: 'Sander de Vries',
+      initials: 'SV',
+      role: 'customer',
       text: inputMsg.trim(),
-      type: 'outgoing'
+      time: `today ${timeNow}`,
+      isRead: false
     };
 
-    setMessages([...messages, newMsg]);
+    // Save to shared store
+    try {
+      const raw = localStorage.getItem('app_project_messages_2026_021');
+      const parsed = raw ? JSON.parse(raw) : { customer: defaultGardenMsgs.map(m => ({
+        id: m.id,
+        sender: m.senderName,
+        role: m.type === 'outgoing' ? 'customer' : 'admin',
+        text: m.text,
+        time: m.time
+      })), partner: [] };
+      const nextCust = [...(parsed.customer || []), rawMsg];
+      localStorage.setItem('app_project_messages_2026_021', JSON.stringify({ ...parsed, customer: nextCust }));
+      window.dispatchEvent(new Event('app_messages_updated'));
+    } catch(e) {}
+
     setInputMsg('');
     setFeedbackToast('Message sent to Tim & Bram!');
     setTimeout(() => setFeedbackToast(''), 3500);

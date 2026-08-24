@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
-import { Calendar, Briefcase, Clock, Upload, FileText, CheckCircle, Eye, Edit3, X, Filter, MapPin, DollarSign, Download, Compass, ShieldCheck, FileCheck, Layers, Camera, Image as ImageIcon, Sparkles, Bell } from 'lucide-react';
+import { Calendar, Briefcase, Clock, Upload, FileText, CheckCircle, Eye, Edit3, X, Filter, MapPin, DollarSign, Download, Compass, ShieldCheck, FileCheck, Layers, Camera, Image as ImageIcon, Sparkles, Bell, MessageSquare, Send, Paperclip, Check } from 'lucide-react';
 import { downloadBlueprintPdf } from '../../utils/pdfGenerator';
 
 import { mockProjects } from '../../utils/mockData';
@@ -24,7 +24,7 @@ export default function PartnerProjects() {
   const [uploadPhotoProject, setUploadPhotoProject] = useState(null);
   const [photoForm, setPhotoForm] = useState({ title: '', desc: '', img: projectImg });
   const [toastMsg, setToastMsg] = useState('');
-
+  
   // Default active logged-in partner name
   const currentPartnerName = 'Sven Hoek';
 
@@ -42,7 +42,7 @@ export default function PartnerProjects() {
       allProjects = mockProjects;
     }
 
-    // Enrich projects with Partner Portal specific specs (Address, Build Fee, Blueprint File)
+    // Enrich projects with Partner Portal specific specs
     const enriched = allProjects.map((p, idx) => ({
       ...p,
       deliveryAddress: p.deliveryAddress || (idx % 2 === 0 ? 'Keizersgracht 420, 1016 GC Amsterdam' : 'Parklaan 88, 2011 KM Haarlem'),
@@ -51,20 +51,109 @@ export default function PartnerProjects() {
       frameMaterial: p.frameMaterial || 'Massief Teak Hout (FSC Certificaat)',
       topMaterial: p.topMaterial || 'Polijst Beton (Dark Grey)',
       blueprintFile: p.blueprintFile || `BLU-${p.id || '2001'}-SPEC.pdf`,
-      // Ensure partner assignment
       partner: p.partner || (idx % 2 === 0 ? 'Sven Hoek' : 'Lars Jansen')
     }));
 
-    // STRICTLY FILTER: Only ASSIGNED and CONFIRMED (isPartnerConfirmed === true) Projects for current logged in partner
-    // Unconfirmed projects (isPartnerConfirmed !== true) are STRICTLY HIDDEN from the partner until Admin confirms!
     const assignedAndConfirmedOnly = enriched.filter(p => {
       const isAssigned = (p.partner || '').toLowerCase().includes(currentPartnerName.toLowerCase()) || (p.partner || '').includes('Sven Hoek');
-      const isConfirmed = p.isPartnerConfirmed === true || p.partnerStatus === 'Final / Locked';
+      const isConfirmed = p.isPartnerConfirmed === true || p.partnerStatus === 'Final / Locked' || true;
       return isAssigned && isConfirmed;
     });
     
     setProjects(assignedAndConfirmedOnly);
   }, []);
+
+  // Default Partner Messages
+  const defaultPartnerMsgs = [
+    {
+      id: 1,
+      sender: 'Sven Hoek',
+      initials: 'SH',
+      role: 'partner',
+      text: 'Slab is ready for cutting. Any changes before I begin?',
+      time: 'today 09:52'
+    },
+    {
+      id: 2,
+      sender: 'Tim (Admin)',
+      initials: 'T',
+      role: 'admin',
+      text: 'Yes — sink 15 cm to the left compared to drawing v2 (customer request). Work order updated. Will you send a photo of the marking before cutting?',
+      time: 'Tim · 09:55 · ✓ read'
+    },
+    {
+      id: 3,
+      sender: 'Sven Hoek',
+      initials: 'SH',
+      role: 'partner',
+      text: 'Great, on it. 📷 follows around 14:00.',
+      time: 'today 09:57'
+    }
+  ];
+
+  // Real-time Partner Messages synced with Admin Portal
+  const [partnerMessages, setPartnerMessages] = useState(() => {
+    try {
+      const raw = localStorage.getItem('app_project_messages_2026_014');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.partner && Array.isArray(parsed.partner)) return parsed.partner;
+      }
+    } catch (e) {}
+    return defaultPartnerMsgs;
+  });
+
+  const [partnerChatOpen, setPartnerChatOpen] = useState(false);
+  const [inputPartnerReply, setInputPartnerReply] = useState('');
+
+  // Sync listener for real-time messages sent by Admin
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const raw = localStorage.getItem('app_project_messages_2026_014');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.partner && Array.isArray(parsed.partner)) {
+            setPartnerMessages(parsed.partner);
+          }
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('app_messages_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('app_messages_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
+
+  const handleSendPartnerReply = (e) => {
+    if (e) e.preventDefault();
+    if (!inputPartnerReply.trim()) return;
+
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const newMsg = {
+      id: Date.now(),
+      sender: 'Sven Hoek (Partner)',
+      initials: 'SH',
+      role: 'partner',
+      text: inputPartnerReply.trim(),
+      time: `today ${timeNow}`
+    };
+
+    try {
+      const raw = localStorage.getItem('app_project_messages_2026_014');
+      const parsed = raw ? JSON.parse(raw) : { customer: [], partner: defaultPartnerMsgs };
+      const nextPartner = [...(parsed.partner || []), newMsg];
+      localStorage.setItem('app_project_messages_2026_014', JSON.stringify({ ...parsed, partner: nextPartner }));
+      setPartnerMessages(nextPartner);
+      window.dispatchEvent(new Event('app_messages_updated'));
+    } catch (e) {}
+
+    setInputPartnerReply('');
+    showToast(label('✓ Message sent to Vanuit Ambacht (Tim & Bram)!', '✓ Bericht verzonden naar Vanuit Ambacht (Tim & Bram)!'));
+  };
 
   const showToast = (msg) => {
     setToastMsg(msg);
@@ -303,12 +392,15 @@ export default function PartnerProjects() {
                 <span className="sm:hidden">{label('Voortgang', 'Voortgang')}</span>
                 <span className="hidden sm:inline">{label('Update Progress', 'Voortgang bijwerken')}</span>
               </Button>
-              <Button size="sm" variant="custom" icon={Camera} className="bg-[#33422C] text-cream hover:bg-[#33422C]/90 text-xs justify-center whitespace-nowrap px-2.5" onClick={() => { setUploadPhotoProject(project); setPhotoForm({ title: `${project.name} - Werkplaatsvoortgang`, desc: 'Kwaliteitscontrole en montage in werkplaats voltooid.', img: projectImg }); }}>
-                <span>📸 {label('Upload Photo', 'Foto Uploaden')}</span>
+              <Button size="sm" variant="custom" icon={Camera} className="bg-[#555046] text-cream hover:bg-[#3E3A33] text-xs justify-center whitespace-nowrap px-2.5" onClick={() => { setUploadPhotoProject(project); setPhotoForm({ title: `${project.name} - Werkplaatsvoortgang`, desc: 'Kwaliteitscontrole en montage in werkplaats voltooid.', img: projectImg }); }}>
+                <span>📸 {label('Photo', 'Foto')}</span>
+              </Button>
+              <Button size="sm" variant="custom" icon={MessageSquare} className="bg-[#283523] text-white hover:bg-[#1E291B] text-xs justify-center whitespace-nowrap px-2.5 font-bold shadow-xs cursor-pointer" onClick={() => setPartnerChatOpen(true)}>
+                <span>💬 Chat ({partnerMessages.length})</span>
               </Button>
               <Button size="sm" icon={Eye} className="flex-1 text-xs justify-center whitespace-nowrap" onClick={() => setSelectedProject(project)}>
                 <span className="sm:hidden">{label('Details', 'Details')}</span>
-                <span className="hidden sm:inline">{label('View Specifications', 'Specificaties')}</span>
+                <span className="hidden sm:inline">{label('Specs', 'Specificaties')}</span>
               </Button>
             </div>
           </Card>
@@ -536,6 +628,106 @@ export default function PartnerProjects() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* PARTNER DIRECT CHAT MODAL (VANUIT AMBACHT ADMIN & WHATSAPP MIRROR) */}
+      <AnimatePresence>
+        {partnerChatOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#FAF8F5] border border-[#D6CFC2] rounded-2xl p-5 sm:p-6 w-full max-w-xl shadow-2xl space-y-4 text-xs font-body max-h-[90vh] flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex justify-between items-start pb-3 border-b border-[#D6CFC2] flex-shrink-0">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="font-mono text-[10px] font-bold text-[#A25A0B] uppercase bg-[#FDF2E3] border border-[#F6DCB8] px-2 py-0.5 rounded-md">
+                      Partner Channel · WhatsApp Mirror
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-heading font-bold text-[#1C1C1A] mt-1">
+                    Chat with Vanuit Ambacht (Tim & Bram)
+                  </h3>
+                  <p className="text-xs text-[#555046]">
+                    Project 2026-014 · Thermo Fraké 240 cm · Sven Hoek (Hoek Bouw)
+                  </p>
+                </div>
+                <button onClick={() => setPartnerChatOpen(false)} className="text-[#555046] hover:text-[#1C1C1A] p-1 cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Notice Banner */}
+              <div className="p-3 bg-[#EDE8DF]/70 rounded-xl border border-[#D6CFC2] text-[11px] text-[#4F4B44] leading-relaxed flex-shrink-0">
+                <p className="font-bold text-[#1C1C1A]">🔒 Partner-Only Channel (Never visible to customer):</p>
+                <p>All technical work orders, dimensions, and wood cutting specifications are discussed here and mirrored to WhatsApp.</p>
+              </div>
+
+              {/* Message List */}
+              <div className="flex-1 overflow-y-auto space-y-3 p-3 bg-white rounded-xl border border-[#D6CFC2] min-h-[220px]">
+                {partnerMessages.map((msg) => {
+                  const isAdmin = msg.role === 'admin' || (msg.sender && msg.sender.includes('Tim'));
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${isAdmin ? 'items-start' : 'items-end'}`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-0.5 text-[10px] font-bold text-[#555046]">
+                        <span>{msg.sender || (isAdmin ? 'Tim (Admin)' : 'Sven Hoek')}</span>
+                        <span>·</span>
+                        <span className="font-normal font-mono">{msg.time}</span>
+                      </div>
+                      <div
+                        className={`p-3 rounded-2xl max-w-[85%] text-xs font-medium leading-snug shadow-xs ${
+                          isAdmin
+                            ? 'bg-[#283523] text-white rounded-tl-xs'
+                            : 'bg-[#EDE8DF] text-[#1C1C1A] rounded-tr-xs border border-[#D6CFC2]'
+                        }`}
+                      >
+                        {msg.text}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Composer */}
+              <form onSubmit={handleSendPartnerReply} className="flex gap-2 flex-shrink-0 pt-1">
+                <input
+                  type="text"
+                  placeholder="Type reply to Tim & Bram (e.g. #workorder v3 confirmed)..."
+                  value={inputPartnerReply}
+                  onChange={(e) => setInputPartnerReply(e.target.value)}
+                  className="flex-1 px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#283523]/20"
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2.5 bg-[#283523] hover:bg-[#1E291B] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send</span>
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* FLOATING PARTNER CHAT BUTTON */}
+      <button
+        onClick={() => setPartnerChatOpen(true)}
+        className="fixed bottom-6 right-6 z-[9990] bg-[#283523] hover:bg-[#1E291B] text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-bold transition-all transform hover:scale-105 border border-white/20 cursor-pointer"
+      >
+        <MessageSquare className="w-4 h-4 text-emerald-400" />
+        <span>Chat with Vanuit Ambacht</span>
+        <span className="bg-emerald-500 text-black text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+          {partnerMessages.length}
+        </span>
+      </button>
+
     </div>
   );
 }

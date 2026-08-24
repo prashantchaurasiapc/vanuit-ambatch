@@ -151,50 +151,100 @@ export default function OutdoorKitchenOverview({ project = null }) {
       </div>
 
       {/* 3. CUSTOMER ACTION SECTION */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h3 className="font-heading font-bold text-primary text-sm sm:text-base">
-            What we still need from you
-          </h3>
-          <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
-            1 action for you
-          </span>
-        </div>
+      {(() => {
+        const defaultActs = [
+          {
+            id: 1,
+            status: 'Open',
+            title: 'Approve delivery proposal',
+            subtitle: 'We propose: Tuesday 15 September, between 13:00 and 16:00. Does this work for you? Click below to confirm or request a different time.',
+            actionType: 'proposal'
+          }
+        ];
+        
+        let acts = defaultActs;
+        try {
+          const raw = localStorage.getItem('app_customer_actions');
+          if (raw) {
+            acts = JSON.parse(raw);
+          }
+        } catch (e) {}
 
-        {/* Action Card 1: Delivery Proposal */}
-        <div className="bg-[#FFFDF9] border border-amber-300 rounded-xl p-4 shadow-xs space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-              1
+        const openActs = acts.filter(a => a.status === 'Open');
+
+        const handleCompleteAction = (actionId) => {
+          const updated = acts.map(a => a.id === actionId ? { ...a, status: 'Completed' } : a);
+          localStorage.setItem('app_customer_actions', JSON.stringify(updated));
+          window.dispatchEvent(new Event('app_data_changed'));
+        };
+
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-heading font-bold text-primary text-sm sm:text-base">
+                What we still need from you
+              </h3>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                openActs.length > 0
+                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                  : 'bg-green-100 text-green-900 border border-green-300'
+              }`}>
+                {openActs.length} {openActs.length === 1 ? 'action for you' : 'actions for you'}
+              </span>
             </div>
-            <div className="space-y-1 flex-1">
-              <h4 className="font-heading font-bold text-primary text-xs sm:text-sm">
-                Approve delivery proposal
-              </h4>
-              <p className="text-xs text-dark/80">
-                We propose: <span className="font-bold text-primary">Tuesday 15 September, between 13:00 and 16:00</span>. Does this work for you? Click below to confirm or request a different time.
-              </p>
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => navigate('/customer/project?tab=planning')}
-                  className="px-4 py-2 bg-primary text-cream text-xs font-bold rounded-xl hover:bg-primary/90 transition-all cursor-pointer shadow-xs"
-                >
-                  View Proposal & Confirm
-                </button>
+
+            {/* Dynamic Open Action Cards */}
+            {openActs.map((action, idx) => (
+              <div key={action.id} className="bg-[#FFFDF9] border border-amber-300 rounded-xl p-4 shadow-xs space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                    {idx + 1}
+                  </div>
+                  <div className="space-y-1 flex-1">
+                    <h4 className="font-heading font-bold text-primary text-xs sm:text-sm">
+                      {action.title}
+                    </h4>
+                    <p className="text-xs text-dark/80">
+                      {action.actionType === 'proposal' && !action.subtitle.includes('We propose')
+                        ? `We propose: Tuesday 15 September, between 13:00 and 16:00. ${action.subtitle}`
+                        : action.subtitle}
+                    </p>
+                    <div className="pt-2 flex items-center gap-2">
+                      {action.actionType === 'proposal' ? (
+                        <button
+                          type="button"
+                          onClick={() => navigate('/customer/project?tab=planning')}
+                          className="px-4 py-2 bg-primary text-cream text-xs font-bold rounded-xl hover:bg-primary/90 transition-all cursor-pointer shadow-xs"
+                        >
+                          View Proposal & Confirm
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleCompleteAction(action.id)}
+                          className="px-4 py-2 bg-primary text-cream text-xs font-bold rounded-xl hover:bg-primary/90 transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
+                        >
+                          <span>✓ Confirm & Check Off</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
+            ))}
 
-        {/* Information Box: No action required */}
-        <div className="bg-green-50/70 border border-green-200 rounded-xl p-3.5 flex items-center gap-2.5 text-xs text-green-900">
-          <CheckCircle2 className="w-4 h-4 text-green-700 flex-shrink-0" />
-          <span>
-            <strong className="font-bold">No further action needed right now.</strong> We are crafting your kitchen in the workshop. You will hear from us as soon as there is an update.
-          </span>
-        </div>
-      </div>
+            {/* Information Box: No action required if empty */}
+            {openActs.length === 0 && (
+              <div className="bg-green-50/70 border border-green-200 rounded-xl p-3.5 flex items-center gap-2.5 text-xs text-green-900">
+                <CheckCircle2 className="w-4 h-4 text-green-700 flex-shrink-0" />
+                <span>
+                  <strong className="font-bold">No further action needed right now.</strong> All checklist items are confirmed. We are crafting your kitchen in the workshop!
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* 4. MAIN CONTENT GRID (Workshop Photo & Side Summary Cards) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

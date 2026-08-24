@@ -1,60 +1,79 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageSquare, Sparkles, Send, Paperclip, ChevronDown, ChevronUp, Check, Phone, Mail, Package } from 'lucide-react';
 
 /**
  * OutdoorKitchenContactView Component (1-to-1 implementation of Client Mockup PDF Outdoor Kitchen Screen 8 & Screenshots 1 & 2)
- * 
- * Clean English Translation & Compact Left-Aligned Layout:
- * - All text translated into English
- * - Top Header Tag Bar (Custom Outdoor Kitchen — project 2026-014, Updates 3, WhatsApp us)
- * - Page Title & Subtitle (Messages & Contact)
- * - Two-Column Layout (Chat Thread Card + 3 Sidebar Cards)
- * - FAQ Accordion Section (Frequently Asked Questions with 5 expandable items)
  */
 export default function OutdoorKitchenContactView({ project = null }) {
   const [feedbackToast, setFeedbackToast] = useState('');
-  const [messages, setMessages] = useState([
+
+  const defaultCustMsgs = [
     {
       id: 1,
-      sender: 'T&B',
-      senderName: 'Tim',
-      time: 'today 09:12',
-      text: "Hi Sander, the frame is assembled! I just put a few photos in your portal. This week we continue with the worktop.",
-      type: 'incoming'
-    },
-    {
-      id: 2,
       sender: 'SV',
       senderName: 'Sander',
       time: 'Today 09:40 · read',
-      text: "Awesome. Question: can the sink be moved a bit further to the left?",
+      text: "Great look. Question: can the sink be moved a bit more to the left?",
       type: 'outgoing'
     },
     {
-      id: 3,
+      id: 2,
       sender: 'T&B',
-      senderName: 'Tim',
-      time: 'today 09:48',
-      text: "Still possible, the worktop is not cut out yet. I will shift it 15 cm to the left and send you a photo of the marking this afternoon. Cost: zero.",
-      type: 'incoming'
-    },
-    {
-      id: 4,
-      sender: 'SV',
-      senderName: 'Sander',
-      time: 'Today 10:02 · read',
-      text: "Great, let's do that. And can delivery also take place on a Saturday?",
-      type: 'outgoing'
-    },
-    {
-      id: 5,
-      sender: 'T&B',
-      senderName: 'Tim',
-      time: 'today 10:05',
-      text: "In principle we schedule on weekdays. You will find our proposal under Planning & Delivery — if it doesn't fit, click \"Request another day\" and we will see what is possible.",
+      senderName: 'Tim (Admin)',
+      time: 'Today 09:48',
+      text: "Still possible, the slab has not been cut out yet. I'll have it shifted 15 cm to the left and send you a photo of the marking this afternoon. Cost: zero.",
       type: 'incoming'
     }
-  ]);
+  ];
+
+  const [messages, setMessages] = useState(() => {
+    try {
+      const raw = localStorage.getItem('app_project_messages_2026_014');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.customer && Array.isArray(parsed.customer)) {
+          return parsed.customer.map(m => ({
+            id: m.id,
+            sender: m.role === 'customer' ? 'SV' : 'T&B',
+            senderName: m.sender || (m.role === 'customer' ? 'Sander' : 'Tim'),
+            time: m.time || 'Today',
+            text: m.text,
+            type: m.role === 'customer' ? 'outgoing' : 'incoming'
+          }));
+        }
+      }
+    } catch(e) {}
+    return defaultCustMsgs;
+  });
+
+  // Listen for real-time messages sent from Admin
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const raw = localStorage.getItem('app_project_messages_2026_014');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.customer && Array.isArray(parsed.customer)) {
+            setMessages(parsed.customer.map(m => ({
+              id: m.id,
+              sender: m.role === 'customer' ? 'SV' : 'T&B',
+              senderName: m.sender || (m.role === 'customer' ? 'Sander' : 'Tim'),
+              time: m.time || 'Today',
+              text: m.text,
+              type: m.role === 'customer' ? 'outgoing' : 'incoming'
+            })));
+          }
+        }
+      } catch(e) {}
+    };
+
+    window.addEventListener('app_messages_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('app_messages_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   const [inputMsg, setInputMsg] = useState('');
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
@@ -65,16 +84,26 @@ export default function OutdoorKitchenContactView({ project = null }) {
     e.preventDefault();
     if (!inputMsg.trim()) return;
 
-    const newMsg = {
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const rawMsg = {
       id: Date.now(),
-      sender: 'SV',
-      senderName: 'Sander',
-      time: 'Just now',
+      sender: 'Sander de Vries',
+      initials: 'SV',
+      role: 'customer',
       text: inputMsg.trim(),
-      type: 'outgoing'
+      time: `today ${timeNow}`,
+      isRead: false
     };
 
-    setMessages([...messages, newMsg]);
+    // Save to shared store
+    try {
+      const raw = localStorage.getItem('app_project_messages_2026_014');
+      const parsed = raw ? JSON.parse(raw) : { customer: [], partner: [] };
+      const nextCust = [...(parsed.customer || []), rawMsg];
+      localStorage.setItem('app_project_messages_2026_014', JSON.stringify({ ...parsed, customer: nextCust }));
+      window.dispatchEvent(new Event('app_messages_updated'));
+    } catch(e) {}
+
     setInputMsg('');
     setFeedbackToast('Message sent to Tim & Bram!');
     setTimeout(() => setFeedbackToast(''), 3500);

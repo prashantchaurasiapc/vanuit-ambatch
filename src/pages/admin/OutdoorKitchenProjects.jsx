@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckCircle, MessageCircle, ExternalLink, Calendar, 
@@ -35,8 +35,8 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
 
   const [lastUpdated, setLastUpdated] = useState('today 09:05 by Bram');
 
-  // Customer Actions State (Exact match to Screenshot 2)
-  const [customerActions, setCustomerActions] = useState([
+  // Customer Actions State (Synced with Customer Portal)
+  const defaultActions = [
     {
       id: 1,
       status: 'Open',
@@ -51,7 +51,18 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       subtitle: '2 of 4 items checked off by customer · passageway ✓ · subfloor ✓',
       actionType: 'checklist'
     }
-  ]);
+  ];
+
+  const [customerActions, setCustomerActions] = useState(() => {
+    const saved = localStorage.getItem('app_customer_actions');
+    return saved ? JSON.parse(saved) : defaultActions;
+  });
+
+  const saveActions = (newActions) => {
+    setCustomerActions(newActions);
+    localStorage.setItem('app_customer_actions', JSON.stringify(newActions));
+    window.dispatchEvent(new Event('app_data_changed'));
+  };
 
   // Automatic follow-up toggles (Screenshot 2)
   const [followUpWhatsApp, setFollowUpWhatsApp] = useState(true);
@@ -118,8 +129,8 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
   const [newDocTitle, setNewDocTitle] = useState('');
   const [newDocType, setNewDocType] = useState('DRAWING');
 
-  // Messages Tab State (Two Strictly Separated Channels - Exact match to Client Screenshot)
-  const [customerMessagesList, setCustomerMessagesList] = useState([
+  // Default messages structure
+  const defaultCustMsgs = [
     {
       id: 1,
       sender: 'Sander de Vries',
@@ -138,10 +149,9 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       time: 'Tim · 09:48 · ✓ read',
       isRead: true
     }
-  ]);
-  const [inputCustomerMsg, setInputCustomerMsg] = useState('');
+  ];
 
-  const [partnerMessagesList, setPartnerMessagesList] = useState([
+  const defaultPartMsgs = [
     {
       id: 1,
       sender: 'Sven Hoek',
@@ -169,7 +179,58 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       time: 'today 09:57',
       isRead: true
     }
-  ]);
+  ];
+
+  const [customerMessagesList, setCustomerMessagesList] = useState(() => {
+    try {
+      const saved = localStorage.getItem('app_project_messages_2026_014');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.customer) return parsed.customer;
+      }
+    } catch(e) {}
+    return defaultCustMsgs;
+  });
+
+  const [partnerMessagesList, setPartnerMessagesList] = useState(() => {
+    try {
+      const saved = localStorage.getItem('app_project_messages_2026_014');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.partner) return parsed.partner;
+      }
+    } catch(e) {}
+    return defaultPartMsgs;
+  });
+
+  const saveMessagesStore = (cust, part) => {
+    setCustomerMessagesList(cust);
+    setPartnerMessagesList(part);
+    localStorage.setItem('app_project_messages_2026_014', JSON.stringify({ customer: cust, partner: part }));
+    window.dispatchEvent(new Event('app_messages_updated'));
+  };
+
+  // Sync listener across components
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const raw = localStorage.getItem('app_project_messages_2026_014');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.customer) setCustomerMessagesList(parsed.customer);
+          if (parsed.partner) setPartnerMessagesList(parsed.partner);
+        }
+      } catch(e) {}
+    };
+    window.addEventListener('app_messages_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('app_messages_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
+
+  const [inputCustomerMsg, setInputCustomerMsg] = useState('');
   const [inputPartnerMsg, setInputPartnerMsg] = useState('');
   const [quickReplyOpen, setQuickReplyOpen] = useState(false);
 
@@ -285,7 +346,8 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       isRead: false
     };
 
-    setCustomerMessagesList([...customerMessagesList, newMsg]);
+    const nextCust = [...customerMessagesList, newMsg];
+    saveMessagesStore(nextCust, partnerMessagesList);
     setInputCustomerMsg('');
     showToast('✓ Message sent to customer (via Portal + WhatsApp)!');
   };
@@ -305,7 +367,8 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       isRead: false
     };
 
-    setPartnerMessagesList([...partnerMessagesList, newMsg]);
+    const nextPart = [...partnerMessagesList, newMsg];
+    saveMessagesStore(customerMessagesList, nextPart);
     setInputPartnerMsg('');
     showToast('✓ Message sent to partner (via Portal + WhatsApp mirror)!');
   };
@@ -322,7 +385,8 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       time: `Tim · ${timeNow} · shared from customer`,
       isRead: false
     };
-    setPartnerMessagesList([...partnerMessagesList, newPartnerMsg]);
+    const nextPart = [...partnerMessagesList, newPartnerMsg];
+    saveMessagesStore(customerMessagesList, nextPart);
     
     const newLog = {
       id: Date.now(),
@@ -364,7 +428,14 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
   };
 
   const handleRemindAction = (actionTitle) => {
-    showToast(`Reminder sent to customer for: ${actionTitle}`);
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const newLog = {
+      id: Date.now(),
+      date: `Today ${timeNow}`,
+      text: `WhatsApp reminder sent to customer for "${actionTitle}" — Tim`
+    };
+    setLogbook([newLog, ...logbook]);
+    showToast(`✓ WhatsApp reminder sent to customer for: "${actionTitle}"`);
   };
 
   const handleCancelAction = (actionId) => {
@@ -515,9 +586,12 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       
       {/* CARD 1: LIVE — WHAT THE CUSTOMER SEES NOW */}
       <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
-        <span className="text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider block">
-          LIVE — WHAT THE CUSTOMER SEES NOW
-        </span>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider block">
+            LIVE — WHAT THE CUSTOMER SEES NOW
+          </span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Live Synced" />
+        </div>
 
         <div className="bg-white border border-[#D6CFC2] rounded-xl p-4 space-y-3 shadow-2xs">
           <div>
@@ -525,23 +599,51 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
               Hi Sander
             </h4>
             <div className="flex items-center gap-1.5 text-xs font-bold text-[#2E2B25] mt-0.5">
-              <span>In the workshop</span>
+              <span>{activeStep}</span>
               <span>·</span>
               <span className="text-[#555046] font-normal">delivery week 38</span>
             </div>
           </div>
 
           <div className="w-full bg-[#EDE8DF] h-2 rounded-full overflow-hidden">
-            <div className="bg-[#5A5038] h-full rounded-full w-[65%]" />
+            <div 
+              className="bg-[#5A5038] h-full rounded-full transition-all duration-500" 
+              style={{
+                width: activeStep === 'Agreement & Design' ? '25%' 
+                  : activeStep === 'In the workshop' ? '55%' 
+                  : activeStep === 'Ready for delivery' ? '75%' 
+                  : activeStep === 'Delivered' ? '90%' : '100%'
+              }} 
+            />
           </div>
 
-          <div className="px-2.5 py-1 bg-[#FDF2E3] border border-[#F6DCB8] text-[#9E5507] rounded-lg text-[11px] font-bold inline-block">
-            • 1 action open: delivery proposal
-          </div>
+          {(() => {
+            const openActs = customerActions.filter(a => a.status === 'Open');
+            if (openActs.length > 0) {
+              return (
+                <div className="px-2.5 py-1 bg-[#FDF2E3] border border-[#F6DCB8] text-[#9E5507] rounded-lg text-[11px] font-bold inline-block">
+                  • {openActs.length} {openActs.length === 1 ? 'action open' : 'actions open'}: {openActs[0].title}
+                </div>
+              );
+            }
+            return (
+              <div className="px-2.5 py-1 bg-[#E3EFE3] border border-[#C5E1C5] text-[#1E561E] rounded-lg text-[11px] font-bold inline-block">
+                ✓ All customer actions completed
+              </div>
+            );
+          })()}
+
+          {/* Latest customer chat sync */}
+          {customerMessagesList.length > 0 && (
+            <div className="pt-1 text-[11px] text-[#555046] border-t border-[#E6E1D7]/60 flex items-center gap-1.5">
+              <span className="font-bold text-[#1C1C1A]">Latest msg:</span>
+              <span className="truncate italic">"{customerMessagesList[customerMessagesList.length - 1].text}"</span>
+            </div>
+          )}
         </div>
 
         <p className="text-[11px] text-[#555046] leading-relaxed">
-          Refreshes with every change here. "View Customer Portal" button opens the actual portal in preview mode.
+          Refreshes automatically with every change here. Click "View Customer Portal" to open the actual portal.
         </p>
       </div>
 
@@ -594,8 +696,8 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
 
         <div className="space-y-2 text-xs">
           {logbook.map((log) => (
-            <div key={log.id} className="flex items-start gap-2 border-b border-[#E6E1D7]/60 pb-2 last:border-none">
-              <span className="font-mono text-[11px] font-bold text-[#615C52] whitespace-nowrap min-w-[70px]">
+            <div key={log.id} className="flex items-start gap-3 border-b border-[#E6E1D7]/60 pb-2 last:border-none">
+              <span className="font-mono text-[10px] font-bold text-[#615C52] whitespace-nowrap min-w-[82px] pt-0.5">
                 {log.date}
               </span>
               <span className="text-[#2E2B25] font-medium leading-snug">
@@ -2129,74 +2231,6 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
         )}
       </AnimatePresence>
 
-      {/* NEW CUSTOMER ACTION MODAL */}
-      <AnimatePresence>
-        {actionModal && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-[#D6CFC2]"
-            >
-              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
-                <h3 className="font-bold text-base text-[#1C1C1A]">
-                  Create New Customer Action
-                </h3>
-                <button onClick={() => setActionModal(false)} className="text-[#615C52] hover:text-[#1C1C1A] cursor-pointer">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleAddAction} className="space-y-4 text-xs">
-                <div>
-                  <label className="block text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider mb-1.5">
-                    Action Title
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Approve delivery time window"
-                    value={newActionTitle}
-                    onChange={(e) => setNewActionTitle(e.target.value)}
-                    className="w-full p-2.5 bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#283523]/20"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider mb-1.5">
-                    Action Details / Deadline Subtitle
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Scheduled for Sep 15 · reminder in 3 days"
-                    value={newActionSub}
-                    onChange={(e) => setNewActionSub(e.target.value)}
-                    className="w-full p-2.5 bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#283523]/20"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setActionModal(false)}
-                    className="px-4 py-2 bg-white border border-[#D6CFC2] text-[#4F4B44] rounded-xl text-xs font-bold hover:bg-[#FAF8F5] cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-[#283523] text-white font-bold rounded-xl text-xs hover:bg-[#1E291B] cursor-pointer"
-                  >
-                    Add Action
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
       {/* PROJECT CHAT DRAWER MODAL */}
       <ProjectChatDrawer
         isOpen={chatOpen}
@@ -2206,60 +2240,6 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
         partnerName="Sven"
         onShowToast={showToast}
       />
-
-      {/* CUSTOMER PORTAL READ-ONLY PREVIEW MODAL */}
-      <AnimatePresence>
-        {customerPortalModal && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 border border-[#D6CFC2]"
-            >
-              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
-                <h3 className="font-bold text-base text-[#1C1C1A]">
-                  Live Customer Portal Preview — Sander de Vries
-                </h3>
-                <button onClick={() => setCustomerPortalModal(false)} className="text-[#615C52] hover:text-[#1C1C1A] cursor-pointer">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="bg-[#F4F1EA] p-5 rounded-xl space-y-4">
-                <div className="bg-white p-4 rounded-xl border border-[#D6CFC2] space-y-3">
-                  <h4 className="font-bold text-sm text-[#1C1C1A]">
-                    Hi Sander
-                  </h4>
-                  <p className="text-xs font-bold text-[#2E2B25]">
-                    In the workshop · delivery week 38
-                  </p>
-                  
-                  <div className="w-full bg-[#EDE8DF] h-2.5 rounded-full overflow-hidden">
-                    <div className="bg-[#5A5038] h-full rounded-full w-[65%]" />
-                  </div>
-
-                  <div className="p-3 bg-[#FAF8F5] rounded-lg border border-[#E6E1D7] space-y-2 text-xs">
-                    <span className="font-bold text-[#1C1C1A] block">WHAT IS HAPPENING NOW:</span>
-                    <p className="text-[#2E2B25] font-medium italic">{watErNuGebeurt}</p>
-                    <span className="font-bold text-[#1C1C1A] block pt-1">WHAT COMES NEXT:</span>
-                    <p className="text-[#2E2B25] font-medium italic">{watErHiernaKomt}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  onClick={() => setCustomerPortalModal(false)}
-                  className="px-4 py-2 bg-[#283523] text-white font-bold rounded-xl text-xs cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* NEW PROJECT MODAL */}
       <AnimatePresence>
@@ -2433,6 +2413,107 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
                     className="px-4 py-2 bg-[#283523] text-white font-bold rounded-xl text-xs hover:bg-[#1E291B] cursor-pointer"
                   >
                     Confirm Phase
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* NEW CUSTOMER ACTION MODAL */}
+      <AnimatePresence>
+        {actionModal && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-[#D6CFC2]"
+            >
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
+                <h3 className="font-bold text-base text-[#1C1C1A]">
+                  New Customer Action
+                </h3>
+                <button onClick={() => setActionModal(false)} className="text-[#615C52] hover:text-[#1C1C1A] cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!newActionTitle.trim()) return;
+                  const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  const newAct = {
+                    id: Date.now(),
+                    status: 'Open',
+                    title: newActionTitle.trim(),
+                    subtitle: newActionSub.trim() || 'Created today · reminder scheduled Day 3',
+                    actionType: 'custom'
+                  };
+                  setCustomerActions([newAct, ...customerActions]);
+                  setNewActionTitle('');
+                  setNewActionSub('');
+                  setActionModal(false);
+                  
+                  const newLog = {
+                    id: Date.now(),
+                    date: `Today ${timeNow}`,
+                    text: `Customer action created: "${newAct.title}" — Admin`
+                  };
+                  setLogbook([newLog, ...logbook]);
+                  showToast(`✓ New customer action created & sent to Customer Portal!`);
+                }} 
+                className="space-y-4 text-xs"
+              >
+                <div>
+                  <label className="block text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider mb-1.5">
+                    Action Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder='e.g. Check garden gate dimensions & confirm'
+                    value={newActionTitle}
+                    onChange={(e) => setNewActionTitle(e.target.value)}
+                    className="w-full p-2.5 bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#283523]/20"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider mb-1.5">
+                    Subtitle / Instructions
+                  </label>
+                  <input
+                    type="text"
+                    placeholder='e.g. Minimum 90 cm width needed for delivery passage'
+                    value={newActionSub}
+                    onChange={(e) => setNewActionSub(e.target.value)}
+                    className="w-full p-2.5 bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#283523]/20"
+                  />
+                </div>
+
+                <div className="p-3 bg-[#FAF8F5] rounded-xl border border-[#E6E1D7] text-xs text-[#4F4B44] space-y-1">
+                  <p className="font-bold text-[#1C1C1A]">Automated Follow-up Lifecycle:</p>
+                  <p>• Day 0: Action button appears on customer portal.</p>
+                  <p>• Day 3: Automated WhatsApp reminder sent if unconfirmed.</p>
+                  <p>• Day 6: Call task created for project manager.</p>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-[#D6CFC2]">
+                  <button
+                    type="button"
+                    onClick={() => setActionModal(false)}
+                    className="px-4 py-2 bg-white border border-[#D6CFC2] text-[#4F4B44] rounded-xl text-xs font-bold hover:bg-[#FAF8F5] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-[#283523] text-white font-bold rounded-xl text-xs hover:bg-[#1E291B] cursor-pointer"
+                  >
+                    Publish Action
                   </button>
                 </div>
               </form>

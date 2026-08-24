@@ -134,9 +134,16 @@ export default function ProjectChatInboxPage() {
       {/* TOP PORTAL BREADCRUMB BAR matching Screenshot 2 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs border-b border-[#D6CFC2]/60 pb-3">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-[#33422C] font-serif text-sm">Projectenbeheer</span>
+          <button
+            onClick={() => navigate('/admin/projects')}
+            className="p-1.5 px-2.5 bg-[#33422C] hover:bg-[#253120] text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center justify-center cursor-pointer mr-1"
+            title="Terug naar Projecten Overzicht"
+          >
+            ←
+          </button>
+          <span className="font-bold text-[#33422C] font-serif text-sm">Project Management</span>
           <span className="text-dark/40">·</span>
-          <span className="text-dark/60 font-mono text-[11px]">adminportaal</span>
+          <span className="text-[#555046] font-mono text-[11px]">admin portal</span>
         </div>
 
         <div className="flex items-center gap-2">

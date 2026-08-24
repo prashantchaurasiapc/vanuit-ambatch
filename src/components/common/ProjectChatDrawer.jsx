@@ -26,61 +26,101 @@ export default function ProjectChatDrawer({
   const fileInputRef = useRef(null);
   const chatBottomRef = useRef(null);
 
-  // Customer channel messages stream (Strictly isolated - Screenshot 2)
-  const [klantMessages, setKlantMessages] = useState([
+  // Customer channel messages stream (Shared with Workspace Messages Tab)
+  const defaultKlant = [
     {
-      id: 101,
+      id: 1,
       sender: 'Sander de Vries',
       initials: 'SV',
       role: 'klant',
-      text: "Hoi Tim, de foto's zien er top uit!",
-      time: 'vandaag 09:38'
+      text: 'Great look. Question: can the sink be moved a bit more to the left?',
+      time: 'today 09:40'
     },
     {
-      id: 102,
-      sender: 'Sander de Vries',
-      initials: 'SV',
-      role: 'klant',
-      text: 'Mooi man. Vraag: kan de wasbak nog iets meer naar links?',
-      time: 'vandaag 09:40'
-    },
-    {
-      id: 103,
+      id: 2,
       sender: 'Tim',
       initials: 'T',
       role: 'admin',
-      text: 'Kan nog, het blad is nog niet uitgezaagd. Ik laat hem 15 cm naar links schuiven en stuur je vanmiddag een foto van de aftekening. Kosten: niets.',
-      time: 'Tim · 09:48 · ✓ gelezen'
+      text: "Still possible, the slab has not been cut out yet. I'll have it shifted 15 cm to the left and send you a photo of the marking this afternoon. Cost: zero.",
+      time: 'Tim · 09:48 · ✓ read'
     }
-  ]);
+  ];
 
-  // Partner channel messages stream (Strictly isolated - Screenshot 3)
-  const [partnerMessages, setPartnerMessages] = useState([
+  const defaultPartner = [
     {
-      id: 201,
+      id: 1,
       sender: 'Sven Hoek',
       initials: 'SH',
       role: 'partner',
-      text: 'Blad ligt klaar voor het uitzagen. Nog wijzigingen voor ik begin?',
-      time: 'vandaag 09:52'
+      text: 'Slab is ready for cutting. Any changes before I begin?',
+      time: 'today 09:52'
     },
     {
-      id: 202,
+      id: 2,
       sender: 'Tim',
       initials: 'T',
       role: 'admin',
-      text: 'Ja — wasbak 15 cm naar links t.o.v. tekening v2 (klantverzoek). Werkbon is bijgewerkt. Stuur je een foto van de aftekening voor je zaagt?',
-      time: 'Tim · 09:55 · ✓ gelezen'
+      text: 'Yes — sink 15 cm to the left compared to drawing v2 (customer request). Work order updated. Will you send a photo of the marking before cutting?',
+      time: 'Tim · 09:55 · ✓ read'
     },
     {
-      id: 203,
+      id: 3,
       sender: 'Sven Hoek',
       initials: 'SH',
       role: 'partner',
-      text: 'Top, doe ik. 📷 volgt rond 14:00.',
-      time: 'vandaag 09:57'
+      text: 'Great, on it. 📷 follows around 14:00.',
+      time: 'today 09:57'
     }
-  ]);
+  ];
+
+  const [klantMessages, setKlantMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem('app_project_messages_2026_014');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.customer) return parsed.customer;
+      }
+    } catch(e) {}
+    return defaultKlant;
+  });
+
+  const [partnerMessages, setPartnerMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem('app_project_messages_2026_014');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.partner) return parsed.partner;
+      }
+    } catch(e) {}
+    return defaultPartner;
+  });
+
+  const saveDrawerStore = (kMsgs, pMsgs) => {
+    setKlantMessages(kMsgs);
+    setPartnerMessages(pMsgs);
+    localStorage.setItem('app_project_messages_2026_014', JSON.stringify({ customer: kMsgs, partner: pMsgs }));
+    window.dispatchEvent(new Event('app_messages_updated'));
+  };
+
+  // Sync listener across components
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const raw = localStorage.getItem('app_project_messages_2026_014');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.customer) setKlantMessages(parsed.customer);
+          if (parsed.partner) setPartnerMessages(parsed.partner);
+        }
+      } catch(e) {}
+    };
+    window.addEventListener('app_messages_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('app_messages_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   // Auto-scroll to bottom when active channel or messages change
   useEffect(() => {
@@ -98,17 +138,18 @@ export default function ProjectChatDrawer({
     const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newMsg = {
       id: Date.now(),
-      sender: 'Tim',
+      sender: 'Tim (Admin)',
       initials: 'T',
       role: 'admin',
       text: inputKlantMsg.trim(),
-      time: `Tim · ${timeNow} · ✓ verzonden`
+      time: `Tim · ${timeNow} · ✓ sent`
     };
 
-    setKlantMessages((prev) => [...prev, newMsg]);
+    const nextKlant = [...klantMessages, newMsg];
+    saveDrawerStore(nextKlant, partnerMessages);
     setInputKlantMsg('');
     if (onShowToast) {
-      onShowToast('✓ Bericht verzonden naar klant (zichtbaar in klantportaal + WhatsApp)');
+      onShowToast('✓ Message sent to customer (visible in customer portal + WhatsApp)');
     }
   };
 
@@ -119,17 +160,18 @@ export default function ProjectChatDrawer({
     const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newMsg = {
       id: Date.now(),
-      sender: 'Tim',
+      sender: 'Tim (Admin)',
       initials: 'T',
       role: 'admin',
       text: inputPartnerMsg.trim(),
-      time: `Tim · ${timeNow} · ✓ verzonden`
+      time: `Tim · ${timeNow} · ✓ sent`
     };
 
-    setPartnerMessages((prev) => [...prev, newMsg]);
+    const nextPart = [...partnerMessages, newMsg];
+    saveDrawerStore(klantMessages, nextPart);
     setInputPartnerMsg('');
     if (onShowToast) {
-      onShowToast('✓ Bericht verzonden naar partner (Nooit zichtbaar voor de klant!)');
+      onShowToast('✓ Message sent to partner (Never visible to customer!)');
     }
   };
 
