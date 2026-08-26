@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Card from './Card';
 import Button from './Button';
@@ -28,6 +29,7 @@ export const WORKFLOW_STEPS = [
 ];
 
 export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenPartnerWizard }) {
+  const navigate = useNavigate();
   const { t, tStatus, language } = useLanguage();
   const initialStep = lead?.workflowStep || 1;
   const [currentStep, setCurrentStep] = useState(initialStep);
@@ -2545,13 +2547,17 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       <div className="flex flex-col items-end gap-0.5">
                         <button
                           type="button"
-                          onClick={() => advanceStep()}
-                          className="px-5 py-2.5 bg-[#3E4E36] hover:bg-[#2F3C29] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-2 whitespace-nowrap"
+                          onClick={() => {
+                            // Link directly to the beautiful Quote Editor module
+                            navigate('/admin/quotes');
+                            if (onClose) onClose();
+                          }}
+                          className="px-5 py-2.5 bg-[#3E4E36] hover:bg-[#2F3C29] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-2 whitespace-nowrap border-2 border-emerald-400/50"
                         >
-                          <ArrowRight className="w-4 h-4" />
-                          <span>Proceed to Review & Send (Step 5) →</span>
+                          <FileText className="w-4 h-4" />
+                          <span>Open Quote Editor & Build PDF →</span>
                         </button>
-                        <span className="text-[9px] text-dark/50 italic">Navigate to Step 5 (nothing sent yet)</span>
+                        <span className="text-[9px] text-dark/50 italic text-right">Navigates to the 6-step Quote Editor to generate PDF</span>
                       </div>
                     </div>
                   </div>

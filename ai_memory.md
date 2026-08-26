@@ -7,6 +7,23 @@ This file tracks all modifications, additions, and updates made to the **Vanuit 
 - **Key Features**: Admin Panel, Partner Panel, Role-Based Route Protection, Responsive Layout.
 - **Theme**: Premium Forest Green (`#3E4E36`), Accent Cream/Beige, custom typography.
 
+## 218. Leads-to-Quotes Workflow Bypass Link Fix (Completed 2026-08-25)
+* **Goal**: Fix the workflow disconnect where Admin could not easily access the 6-step Quote Editor from the Leads workflow.
+* **Changes**:
+  1. Updated `WorkflowTracker.jsx` Step 4 (Internal Pricing Input).
+  2. Replaced the generic 'Proceed to Review' button with a prominent `Open Quote Editor & Build PDF` button.
+  3. Integrated `useNavigate` from `react-router-dom` to route directly to `/admin/quotes`.
+* **Verification**: Component successfully renders and routes correctly, resolving the client workflow mismatch.
+
+## 217. Integrations Tab in Settings (Google Calendar & Gmail) (Completed 2026-08-25)
+* **Goal**: Add UI for connecting external services (Google Calendar and Gmail) as required by the client brief.
+* **Changes**:
+  1. Created a new 'Integrations' (`Koppelingen`) tab in `Settings.jsx`.
+  2. Built `Google Calendar` card for syncing planning/appointments.
+  3. Built `Gmail Integration` card for official emails and quotes.
+  4. Both cards have a functional mock toggle button (Connect / Disconnect) with `info@vanuitambacht.nl` status.
+* **Verification**: Verified zero styling conflicts; UI perfectly matches the rest of the Settings tabs.
+
 ## 216. 4 Projects Submenus Architecture & Routing (Completed 2026-08-20 03:40:15 PM IST)
 * **Goal**: Build structure and routing for 4 main submenus under Projects in Admin Portal navigation.
 * **Submenus Created**:
@@ -2907,3 +2924,8 @@ This file tracks all modifications, additions, and updates made to the **Vanuit 
      - **Dutch/English Bilingual**: All UI labels respect the active language setting.
   2. Build verified: `✓ built in 3.31s` with 0 errors.
 * **Result**: Partner Portal Prijsaanvragen is now 100% PRD 4.10 compliant — open requests inbox, full offer form (price + validity + lead time + remarks), and submitted offers log all working.
+
+
+## Sidebar Update (2026-08-25)
+- Added 4 mock-up submenus (Inbox messages, Outdoor Kitchen Project, Garden Room Project, Field Mapping) to the bottom of the admin Sidebar (Sidebar.jsx).
+- Ensured these submenus route correctly to their respective demo pages without altering any existing UI, data, or tabs.

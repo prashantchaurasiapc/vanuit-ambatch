@@ -318,13 +318,13 @@ export default function ProjectChatInboxPage() {
 
           {/* INPUT FORM BAR matching Screenshot 2 */}
           <form onSubmit={handleSendMessage} className="space-y-2 pt-2">
-            <div className="bg-white border border-[#D6CFC2] rounded-2xl p-2 flex items-center gap-2 shadow-2xs">
+            <div className="bg-white border border-[#D6CFC2] rounded-2xl p-2 flex flex-wrap sm:flex-nowrap items-center gap-2 shadow-2xs">
               <input
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder={`Antwoord aan ${selectedChat.name.split(' ')[0]}...`}
-                className="flex-1 px-3 py-1.5 text-xs text-dark font-body focus:outline-none placeholder:text-dark/40"
+                className="flex-1 min-w-[120px] px-3 py-1.5 text-xs text-dark font-body focus:outline-none placeholder:text-dark/40"
               />
 
               <button
@@ -339,9 +339,10 @@ export default function ProjectChatInboxPage() {
                 <button
                   type="button"
                   onClick={() => setShowQuickReplyMenu(!showQuickReplyMenu)}
-                  className="px-3 py-1.5 bg-white border border-[#D6CFC2] hover:bg-[#FAF8F5] text-dark/80 text-xs font-bold rounded-xl flex items-center gap-1 cursor-pointer"
+                  className="px-2 sm:px-3 py-1.5 bg-white border border-[#D6CFC2] hover:bg-[#FAF8F5] text-dark/80 text-xs font-bold rounded-xl flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
                 >
-                  <span>Snel antwoord</span>
+                  <span className="hidden sm:inline">Snel antwoord</span>
+                  <span className="sm:hidden">Snel</span>
                   <ChevronDown className="w-3.5 h-3.5 text-dark/50" />
                 </button>
 
@@ -381,7 +382,7 @@ export default function ProjectChatInboxPage() {
 
               <button
                 type="submit"
-                className="px-4 py-2 bg-[#33422C] hover:bg-[#283523] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+                className="px-3 sm:px-4 py-2 bg-[#33422C] hover:bg-[#283523] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 Versturen
               </button>

@@ -318,6 +318,85 @@ export default function Sidebar({ role }) {
           );
         })}
 
+        {role === 'admin' && (
+          <div className="pt-4 pb-2 mt-2 border-t border-white/10 space-y-0.5">
+            {!collapsed && (
+              <span className="text-[9px] font-mono font-bold text-white/40 uppercase tracking-widest block px-2.5 mb-1.5">
+                This Mock-up
+              </span>
+            )}
+            
+            <NavLink
+              to="/admin/projects/inbox-messages"
+              onClick={() => handleNavLinkClick('/admin/projects/inbox-messages')}
+              className={() =>
+                `flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 ${
+                  location.pathname.includes('/admin/projects/inbox')
+                    ? 'bg-white/15 text-white font-medium shadow-xs'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                }`
+              }
+              title="Inbox messages"
+            >
+              <CornerDownRight className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
+              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/admin/projects/inbox') ? 'font-medium' : 'font-normal'}`}>Inbox messages</span>}
+              {!collapsed && (
+                <span className="ml-auto px-1.5 py-0.2 bg-[#D97706] text-white font-mono text-[9px] font-bold rounded-full">
+                  4
+                </span>
+              )}
+            </NavLink>
+
+            <NavLink
+              to="/admin/projects/outdoor-kitchen"
+              onClick={() => handleNavLinkClick('/admin/projects/outdoor-kitchen')}
+              className={() =>
+                `flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 ${
+                  location.pathname.includes('/outdoor-kitchen')
+                    ? 'bg-white/15 text-white font-medium shadow-xs'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                }`
+              }
+              title="Outdoor Kitchen Project"
+            >
+              <CornerDownRight className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
+              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/outdoor-kitchen') ? 'font-medium' : 'font-normal'}`}>Outdoor Kitchen Project</span>}
+            </NavLink>
+
+            <NavLink
+              to="/admin/projects/garden-room"
+              onClick={() => handleNavLinkClick('/admin/projects/garden-room')}
+              className={() =>
+                `flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 ${
+                  location.pathname.includes('/garden-room')
+                    ? 'bg-white/15 text-white font-medium shadow-xs'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                }`
+              }
+              title="Garden Room Project"
+            >
+              <CornerDownRight className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
+              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/garden-room') ? 'font-medium' : 'font-normal'}`}>Garden Room Project</span>}
+            </NavLink>
+
+            <NavLink
+              to="/admin/projects/field-mapping"
+              onClick={() => handleNavLinkClick('/admin/projects/field-mapping')}
+              className={() =>
+                `flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 ${
+                  location.pathname.includes('/field-mapping')
+                    ? 'bg-white/15 text-white font-medium shadow-xs'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                }`
+              }
+              title="Field Mapping"
+            >
+              <CornerDownRight className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
+              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/field-mapping') ? 'font-medium' : 'font-normal'}`}>Field Mapping</span>}
+            </NavLink>
+          </div>
+        )}
+
       </nav>
 
       {/* Logout */}

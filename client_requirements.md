@@ -34,8 +34,8 @@ Current Tabs: Company Details | User Management | Product Fields Configurator | 
 | Categories management tab                           | [MISS] | No category manager tab — only fieldsets tied to hardcoded product types     |
 | Price Breakdown section config                      | [MISS] | Completely missing — no partner price section configuration exists           |
 | Quote/Document Template management                  | [PART] | Only message templates, no quote/document template creation                  |
-| Google Calendar connect UI                          | [MISS] | Missing                                                                      |
-| Gmail connect UI                                    | [MISS] | Missing                                                                      |
+| Google Calendar connect UI                          | [OK]   | Implemented Integrations Tab                                                 |
+| Gmail connect UI                                    | [OK]   | Implemented Integrations Tab                                                 |
 
 ---
 
@@ -158,7 +158,7 @@ File: src/pages/admin/Planning.jsx
 | Day-level planning view                             | [MISS] | Only week-level — no day view exists at all                                  |
 | Week to Day view toggle                             | [MISS] | viewMode toggle does not exist                                               |
 | Mon/Tue/Wed/Thu/Fri/Sat/Sun day cards               | [MISS] | Missing                                                                      |
-| Google Calendar connect UI                          | [MISS] | Missing                                                                      |
+| Google Calendar connect UI                          | [OK]   | Implemented Integrations Tab                                                 |
 
 ---
 
@@ -272,6 +272,16 @@ File: src/pages/admin/Projects.jsx
   - Removed webshop item/status columns and Shipped status
   - Table updated to exact 7-column schema: PROJECT NO., CATEGORY, PROJECT, CUSTOMER, PARTNER, STATUS (To confirm / In production / On site / Completed), VALUE (INCL. VAT), COMPLETION
   - Bilingual NL/EN support for all labels
+
+### PHASE 12 — Admin Portal Project Management Refactor (New PDF Mockups)
+- **Project Detail UI (Outdoor Kitchen & Garden Room)**: [OK] Perfectly implemented in `OutdoorKitchenProjects.jsx` and `GardenRoomProjects.jsx`. Includes phase steppers, right rail live customer view, partner card, and logbook.
+- **Routing Labels (→ KLANT, → PARTNER, INTERN)**: [OK] Implemented in the mock-up pages.
+- **Floating Chat Drawer**: [OK] Implemented in the mock-up pages with Customer (Green) and Partner (Copper) toggle.
+- **Dynamic Tabs**: [OK] Implemented in the mock-up pages (Status & teksten, Klantacties, Levering, Media, etc.).
+- **Global Projects List Table**: [MISS] Generic `ProjectGlobalInbox.jsx` still has old dropdowns and buttons. Needs to be refactored to read-only list with `WIE IS AAN ZET` column, `FASE` pill badges, and row-click navigation.
+- **Global Linkage**: [MISS] Clicking a project in the generic list should open the new perfect mock-up UI instead of the old generic UI.
+- **Leads-to-Quotes Workflow Bypass**: [OK] Updated `WorkflowTracker.jsx` Step 4 to explicitly route the admin directly to the 6-step `/admin/quotes` Quote Editor, solving the workflow mismatch.
+- **Dutch Language Mode**: [PART] App supports EN/NL toggle, but currently paused on EN.
 
 ### PHASE 11 — Garden Room & Poolhouse Customer Portal Extension
 - STEP 0: Existing Customer Portal Codebase Audit & Gap Analysis (COMPLETE)
