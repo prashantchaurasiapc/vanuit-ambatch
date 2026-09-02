@@ -1,4 +1,11 @@
-# AI Memory - Changes & Updates Tracking
+# AI Memory & Client Requirements (vanuit-ambacht)
+
+## Latest Client Feedback (Aug 2026)
+1. **Projects Dashboard Tabs**: Add exactly 3 tabs above the projects table: "All", "Outdoor Kitchens", and "Outdoor Living Spaces".
+2. **Projects Table**: The table must be 100% read-only (no dropdowns or buttons) and contain exactly 6 columns: Project (ID), Customer, Type (Category + Value), Phase (Status), Next Milestone (Date), and Partner. The "Who is responsible" column from the mock-up has been explicitly removed by the client.
+3. **Quotations**: The PDF template must be updated to exactly match the client's original design (fonts, spacing, layout).
+4. **Outdoor Living Spaces**: Different variables and a different quotation template are required for Garden Rooms/Outdoor Living Spaces. (Pending details/implementation).
+ - Changes & Updates Tracking
 
 This file tracks all modifications, additions, and updates made to the **Vanuit Ambacht** project by the AI.
 

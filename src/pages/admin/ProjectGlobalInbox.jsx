@@ -36,6 +36,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
   });
 
   // Search & Filters State
+  const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy] = useState('deadline');
@@ -326,7 +327,13 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       (p.partner || '').toLowerCase().includes(query);
 
     const matchesStatus = statusFilter === 'All' || p.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    
+    const pType = detectProjectType(p);
+    let matchesTab = true;
+    if (activeTab === 'Outdoor Kitchens' && pType !== 'outdoor_kitchen') matchesTab = false;
+    if (activeTab === 'Outdoor Living Spaces' && pType !== 'garden_room') matchesTab = false;
+
+    return matchesSearch && matchesStatus && matchesTab;
   }).sort((a, b) => {
     if (sortBy === 'deadline') return new Date(a.deadline || 0) - new Date(b.deadline || 0);
     if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
@@ -371,7 +378,25 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       </div>
 
       {/* Main Content Area Container matching screenshot */}
-      <div className="bg-[#EAE4D9] border border-[#D6CFC2] rounded-3xl p-4 sm:p-6 space-y-4 shadow-sm">
+      <div className="bg-[#EAE4D9] border border-[#D6CFC2] rounded-3xl p-4 sm:p-5 space-y-2 sm:space-y-3 shadow-sm">
+        
+        {/* Top Tabs (Client Requested) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar border-b border-[#D6CFC2]/60">
+          {['All', 'Outdoor Kitchens', 'Outdoor Living Spaces'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                activeTab === tab
+                  ? 'bg-[#283523] text-white shadow-md'
+                  : 'bg-white text-dark/70 border border-[#D6CFC2] hover:bg-[#FAF8F5]'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
         {/* Search & Filter Bar */}
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
           <div className="relative flex-1 max-w-md">
@@ -456,19 +481,16 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
         {/* ============================================================ */}
         {/* ROW-CARD TABLE (Exact Screenshot Match with Explicit Widths) */}
         {/* ============================================================ */}
-        <div className="w-full overflow-x-auto pb-4 pt-1">
-          <table className="w-full text-left text-xs border-separate border-spacing-y-3.5 min-w-[1600px]">
+        <div className="w-full overflow-x-auto pb-2 pt-0.5">
+          <table className="w-full text-left text-xs border-separate border-spacing-y-2 min-w-[1000px]">
             <thead>
               <tr className="text-[11px] font-heading font-bold text-dark/50 uppercase tracking-wider">
-                <th className="py-2 px-4 w-[110px] min-w-[110px]">PROJECT NO.</th>
-                <th className="py-2 px-4 w-[210px] min-w-[210px]">CATEGORY</th>
-                <th className="py-2 px-4 w-[280px] min-w-[280px]">PROJECT</th>
-                <th className="py-2 px-4 w-[150px] min-w-[150px]">CUSTOMER</th>
-                <th className="py-2 px-4 w-[270px] min-w-[270px]">PARTNER</th>
-                <th className="py-2 px-4 w-[140px] min-w-[140px]">STATUS</th>
-                <th className="py-2 px-4 w-[150px] min-w-[150px]">VALUE (INCL. VAT)</th>
-                <th className="py-2 px-4 w-[140px] min-w-[140px]">COMPLETION</th>
-                <th className="py-2 px-4 w-[220px] min-w-[220px] text-left">ACTIONS</th>
+                <th className="py-1.5 px-3 w-[100px] min-w-[100px]">PROJECT</th>
+                <th className="py-1.5 px-3 w-[180px] min-w-[180px]">CUSTOMER</th>
+                <th className="py-1.5 px-3 w-[170px] min-w-[170px]">TYPE</th>
+                <th className="py-1.5 px-3 w-[120px] min-w-[120px]">PHASE</th>
+                <th className="py-1.5 px-3 w-[140px] min-w-[140px]">NEXT MILESTONE</th>
+                <th className="py-1.5 px-3 w-[180px] min-w-[180px]">PARTNER</th>
               </tr>
             </thead>
             <tbody>
@@ -489,134 +511,63 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                       key={row.id}
                       className="bg-white shadow-xs hover:shadow-md hover:bg-[#FAF8F5]/80 transition-all group cursor-pointer"
                     >
-                      {/* 1. Project No. (Clickable to open project overview) */}
+                      {/* 1. Project No. */}
                       <td 
                         onClick={() => onSelectProject ? onSelectProject(row) : (pType === 'field_mapping' ? navigate('/admin/projects/field-mapping') : pType === 'garden_room' ? navigate('/admin/projects/garden-rooms') : navigate('/admin/projects/outdoor-kitchens'))}
-                        className="py-4 px-4 rounded-l-2xl border-y border-l border-[#E2DDD3] font-mono font-bold text-xs text-primary whitespace-nowrap"
+                        className="py-3 px-3 rounded-l-xl border-y border-l border-[#E2DDD3] font-mono font-bold text-[11px] text-primary whitespace-nowrap"
                         title="Click to open project overview & tabs"
                       >
-                        <span className="inline-flex items-center gap-1 bg-[#EAE4D9] group-hover:bg-[#33422C] group-hover:text-white text-[#33422C] px-2.5 py-1 rounded-md text-xs font-bold transition-all shadow-2xs">
+                        <span className="inline-flex items-center gap-1 bg-[#EAE4D9] group-hover:bg-[#33422C] group-hover:text-white text-[#33422C] px-2 py-1 rounded text-[11px] font-bold transition-all shadow-2xs">
                           {row.id}
                         </span>
                       </td>
 
-                      {/* 2. Category Dropdown Pill (Explicit width, will NEVER shrink) */}
-                      <td 
-                        className="py-4 px-4 border-y border-[#E2DDD3]"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <select
-                          value={pType}
-                          onChange={(e) => handleCategoryTypeChange(row.id, e.target.value)}
-                          className="w-[200px] min-w-[200px] px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-full text-xs font-semibold text-dark/80 focus:outline-none focus:ring-1 focus:ring-primary/40 cursor-pointer shadow-2xs hover:border-primary transition-colors"
-                        >
-                          <option value="outdoor_kitchen">Outdoor Kitchen Project</option>
-                          <option value="garden_room">Garden Room Project</option>
-                          <option value="field_mapping">Field Mapping</option>
-                        </select>
-                      </td>
-
-                      {/* 3. Project Name (Clickable to open project overview) */}
+                      {/* 2. Customer */}
                       <td 
                         onClick={() => onSelectProject ? onSelectProject(row) : (pType === 'field_mapping' ? navigate('/admin/projects/field-mapping') : pType === 'garden_room' ? navigate('/admin/projects/garden-rooms') : navigate('/admin/projects/outdoor-kitchens'))}
-                        className="py-4 px-4 border-y border-[#E2DDD3] font-bold text-dark text-xs whitespace-nowrap"
-                        title="Click to open project overview & tabs"
+                        className="py-3 px-3 border-y border-[#E2DDD3] text-dark text-[11px] font-bold"
                       >
-                        <span className="hover:underline font-bold text-dark group-hover:text-primary transition-colors">
-                          {row.name}
-                        </span>
-                      </td>
-
-                      {/* 4. Customer */}
-                      <td 
-                        onClick={() => onSelectProject ? onSelectProject(row) : (pType === 'field_mapping' ? navigate('/admin/projects/field-mapping') : pType === 'garden_room' ? navigate('/admin/projects/garden-rooms') : navigate('/admin/projects/outdoor-kitchens'))}
-                        className="py-4 px-4 border-y border-[#E2DDD3] text-dark/80 text-xs font-medium whitespace-nowrap"
-                      >
-                        {row.customer}
-                      </td>
-
-                      {/* 5. Partner Assignment (Explicit width, will NEVER shrink) */}
-                      <td className="py-4 px-4 border-y border-[#E2DDD3]" onClick={(e) => e.stopPropagation()}>
-                        <div className="w-[240px] min-w-[240px] space-y-1.5">
-                          {isConfirmed ? (
-                            <div className="flex items-center justify-between gap-1.5 bg-emerald-50 border border-emerald-300 px-3 py-2 rounded-xl text-xs">
-                              <span className="font-bold text-emerald-900 truncate">🔒 {row.partner}</span>
-                              <button
-                                onClick={() => handleUnlockPartnerAssignment(row.id)}
-                                className="text-[10px] text-emerald-700 hover:text-emerald-900 underline font-semibold cursor-pointer flex-shrink-0"
-                              >
-                                Edit
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="space-y-1.5">
-                              <select
-                                value={row.partner || 'Unassigned'}
-                                onChange={(e) => handleInlinePartnerChange(row.id, e.target.value)}
-                                className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs font-semibold text-dark/80 focus:outline-none focus:ring-1 focus:ring-primary/40 cursor-pointer shadow-2xs"
-                              >
-                                <option value="Unassigned">Unassigned</option>
-                                {partnersList.map((p, idx) => (
-                                  <option key={idx} value={p.name}>{p.name}</option>
-                                ))}
-                              </select>
-                              {row.partner && row.partner !== 'Unassigned' && (
-                                <button
-                                  onClick={() => handleConfirmPartnerForGood(row.id)}
-                                  className="w-full py-2 px-3 bg-[#0F5132] hover:bg-[#0c4128] text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
-                                >
-                                  ✓ Confirm Partner
-                                </button>
-                              )}
-                            </div>
-                          )}
+                        <div className="flex flex-col">
+                          <span>{row.customer}</span>
+                          <span className="text-[9px] text-dark/60 font-medium leading-tight">Breda</span> {/* Location placeholder if not in data */}
                         </div>
                       </td>
 
-                      {/* 6. Status Badge */}
-                      <td className="py-4 px-4 border-y border-[#E2DDD3] whitespace-nowrap">
-                        <span className={`inline-block px-3 py-1.5 rounded-full text-[11px] font-bold ${
+                      {/* 3. Type (Category + Value) */}
+                      <td className="py-3 px-3 border-y border-[#E2DDD3] whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-dark text-[11px]">
+                            {pType === 'garden_room' ? 'Outdoor Living Space' : pType === 'outdoor_kitchen' ? 'Outdoor Kitchen' : 'Field Mapping'}
+                          </span>
+                          <span className="text-dark/60 font-mono text-[10px] leading-tight">
+                            € {numericVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* 4. Phase (Status) */}
+                      <td className="py-3 px-3 border-y border-[#E2DDD3] whitespace-nowrap">
+                        <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold ${
                           row.status === 'Completed' ? 'bg-[#D1E7DD] text-[#0F5132]' : isConfirmed ? 'bg-emerald-100 text-emerald-900' : 'bg-[#FFF3CD] text-[#664D03]'
                         }`}>
                           {row.buildStatus || (isConfirmed ? 'In production' : 'To confirm')}
                         </span>
                       </td>
 
-                      {/* 7. Value */}
-                      <td className="py-4 px-4 border-y border-[#E2DDD3] font-mono font-bold text-dark text-xs whitespace-nowrap">
-                        € {numericVal.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
-                      </td>
-
-                      {/* 8. Completion */}
-                      <td className="py-4 px-4 border-y border-[#E2DDD3] font-mono text-dark/70 text-xs whitespace-nowrap">
+                      {/* 5. Next Milestone (Deadline) */}
+                      <td className="py-3 px-3 border-y border-[#E2DDD3] font-mono text-dark text-[11px] whitespace-nowrap font-bold">
                         {row.deadline || '2026-09-15'}
                       </td>
 
-                      {/* 9. Actions (Aligned directly under ACTIONS header) */}
-                      <td className="py-4 px-4 rounded-r-2xl border-y border-r border-[#E2DDD3] whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => setDirectUploadProject(row)}
-                            className="text-primary hover:text-dark px-2 py-1.5 text-xs font-semibold cursor-pointer flex items-center gap-1 transition-colors"
-                            title="Upload Project Photos"
-                          >
-                            <Camera className="w-3.5 h-3.5 text-dark/60" /> 
-                            <span>Photos</span>
-                          </button>
-                          <button 
-                            onClick={() => handleOpenEditModal(row)}
-                            className="text-dark/50 hover:text-dark p-1.5 rounded-lg transition-colors cursor-pointer"
-                            title="Edit Project Details"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteProject(row.id, row.name)}
-                            className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-xl border border-red-200 transition-colors cursor-pointer"
-                            title="Delete Project"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                      {/* 6. Partner (Read Only) */}
+                      <td className="py-3 px-3 rounded-r-xl border-y border-r border-[#E2DDD3] whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-dark text-[11px]">{row.partner || 'Unassigned'}</span>
+                          {isConfirmed ? (
+                            <span className="text-[9px] text-emerald-700 font-bold tracking-wide leading-tight">✓ In production</span>
+                          ) : (
+                            <span className="text-[9px] text-dark/40 font-bold tracking-wide leading-tight">Pending</span>
+                          )}
                         </div>
                       </td>
                     </tr>

@@ -339,7 +339,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
               navigate('/admin/projects/inbox-messages');
               showToast(isEn ? 'Project messages opened...' : 'Projectberichten geopend...');
             }}
-            className="px-3 py-1 bg-white border border-[#D6CFC2] text-dark/70 rounded-xl font-bold text-xs shadow-2xs hover:bg-[#FAF8F5] cursor-pointer flex items-center gap-1.5 transition-all"
+            className="px-2.5 py-1 bg-white border border-[#D6CFC2] text-dark/70 rounded-xl font-bold text-[11px] shadow-2xs hover:bg-[#FAF8F5] cursor-pointer flex items-center gap-1.5 transition-all"
           >
             <span>Inbox</span>
             <strong className="text-[#33422C] bg-[#E3EFE3] px-1.5 py-0.2 rounded font-mono text-[11px]">4</strong>
@@ -350,7 +350,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
               setActiveTab(isEn ? 'Week Planning & Survey' : 'Weekplanning & schouw');
               showToast(isEn ? 'Filtered: 3 tasks waiting for us' : 'Gefilterd: 3 taken wachten op ons');
             }}
-            className="px-3 py-1 bg-[#FDF2E3] text-[#B86B14] border border-[#F6DCB8] rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer hover:bg-[#FCEAD0] transition-all"
+            className="px-2.5 py-1 bg-[#FDF2E3] text-[#B86B14] border border-[#F6DCB8] rounded-xl font-bold text-[11px] flex items-center gap-1.5 shadow-2xs cursor-pointer hover:bg-[#FCEAD0] transition-all"
           >
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
             <span>{isEn ? '3 tasks waiting for us' : '3 taken wachten op ons'}</span>
@@ -358,7 +358,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
 
           <button 
             onClick={() => setNewProjectModal(true)}
-            className="px-4 py-1.5 bg-[#33422C] hover:bg-[#283523] text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs transition-all flex items-center gap-1"
+            className="px-3 py-1 bg-[#33422C] hover:bg-[#283523] text-white rounded-xl font-bold text-[11px] cursor-pointer shadow-xs transition-all flex items-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{isEn ? 'New Project' : 'Nieuw project'}</span>

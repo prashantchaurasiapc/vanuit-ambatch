@@ -55,7 +55,7 @@ function ScaledPDFPreview({ quote, activePage, highlightField }) {
     <div
       ref={containerRef}
       className="w-full bg-[#EDE8DF] p-1.5 rounded-xl border border-[#D6CFC2]/70 overflow-hidden shadow-inner relative"
-      style={{ height: `${Math.min(490, scaledHeight + 12)}px` }}
+      style={{ height: `${scaledHeight + 12}px` }}
     >
       <div
         style={{
@@ -475,8 +475,8 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
         </div>
       </div>
 
-      {/* MOBILE / TABLET TAB SWITCHER (< lg) */}
-      <div className="flex lg:hidden bg-white p-1 rounded-xl border border-[#D6CFC2] gap-1 shadow-xs mb-2">
+      {/* MOBILE / TABLET TAB SWITCHER (< xl) */}
+      <div className="flex xl:hidden bg-white p-1 rounded-xl border border-[#D6CFC2] gap-1 shadow-xs mb-2">
         <button
           onClick={() => setMobileTab('editor')}
           className={`flex-1 py-1.5 text-xs font-bold font-mono rounded-lg transition-all cursor-pointer ${mobileTab === 'editor' ? 'bg-[#33422C] text-white shadow-xs' : 'text-dark/70 hover:bg-[#F8F7F4]'
@@ -494,12 +494,12 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
       </div>
 
       {/* THREE-ZONE MAIN GRID LAYOUT */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start min-h-0 overflow-visible lg:overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-4 items-start min-h-0 overflow-visible xl:overflow-hidden">
 
         {/* ========================================================= */}
         {/* ZONE 1: LEFT COLUMN - STEP NAVIGATION (3 Cols)            */}
         {/* ========================================================= */}
-        <div className={`lg:col-span-3 space-y-3 lg:overflow-y-auto lg:max-h-[calc(100vh-210px)] pr-1 no-scrollbar ${mobileTab === 'preview' ? 'hidden lg:block' : 'block'}`}>
+        <div className={`xl:col-span-3 space-y-3 xl:overflow-y-auto xl:max-h-[calc(100vh-210px)] pr-1 no-scrollbar ${mobileTab === 'preview' ? 'hidden xl:block' : 'block'}`}>
           <div className="bg-white rounded-2xl p-3.5 border border-[#D6CFC2] shadow-xs space-y-2.5">
             <h3 className="font-serif font-bold text-lg text-primary whitespace-nowrap">Quote {quote.id}</h3>
 
@@ -545,7 +545,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
         {/* ========================================================= */}
         {/* ZONE 2: MIDDLE COLUMN - ACTIVE STEP FORM (6 Cols)          */}
         {/* ========================================================= */}
-        <div ref={stepFormRef} className={`lg:col-span-6 space-y-4 lg:overflow-y-auto lg:max-h-[calc(100vh-210px)] pr-2 no-scrollbar ${mobileTab === 'preview' ? 'hidden lg:block' : 'block'}`}>
+        <div ref={stepFormRef} className={`xl:col-span-6 space-y-4 xl:overflow-y-auto xl:max-h-[calc(100vh-210px)] pr-2 no-scrollbar ${mobileTab === 'preview' ? 'hidden xl:block' : 'block'}`}>
 
           {/* Main Title & Subtitle */}
           <div className="space-y-1">
@@ -2191,7 +2191,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
         {/* ========================================================= */}
         {/* ZONE 3: RIGHT COLUMN - MANDATORY LIVE PREVIEW (3 Cols)    */}
         {/* ========================================================= */}
-        <div className={`lg:col-span-3 overflow-y-auto max-h-[calc(100vh-210px)] pr-1 no-scrollbar ${mobileTab === 'editor' ? 'hidden lg:block' : 'block'}`}>
+        <div className={`xl:col-span-3 overflow-y-auto max-h-[calc(100vh-210px)] pr-1 no-scrollbar ${mobileTab === 'editor' ? 'hidden xl:block' : 'block'}`}>
           <div className="bg-white rounded-2xl p-3 border border-[#D6CFC2] shadow-xs space-y-2 font-body relative">
             {/* Live Preview Header */}
             <div className="flex justify-between items-center border-b border-[#D6CFC2]/80 pb-2.5">

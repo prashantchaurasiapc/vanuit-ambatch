@@ -74,7 +74,7 @@ export default function CustomerContact() {
     <div className="space-y-4 max-w-5xl w-full font-body text-[#4A4A43]">
 
       {/* Quick Demo View Switcher Bar (100% Clickable & Instant Toggle) */}
-      <div className="bg-[#FAF7F2] border border-[#E4DED4] p-2.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs shadow-xs">
+      <div className="bg-[#FAF7F2] border border-[#E4DED4] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
         <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-accent" />
           <span>Testing Contact View Switcher:</span>

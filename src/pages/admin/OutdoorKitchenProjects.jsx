@@ -760,7 +760,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
               navigate('/admin/projects/inbox-messages');
               showToast('Opening project inbox messages...');
             }}
-            className="px-3 py-1.5 bg-white border border-[#D6CFC2] text-[#1C1C1A] rounded-xl font-bold text-xs shadow-2xs hover:bg-[#FAF8F5] cursor-pointer flex items-center gap-1.5 transition-all"
+            className="px-2.5 py-1 bg-white border border-[#D6CFC2] text-[#1C1C1A] rounded-xl font-bold text-[11px] shadow-2xs hover:bg-[#FAF8F5] cursor-pointer flex items-center gap-1.5 transition-all"
           >
             <span>Inbox</span>
             <strong className="text-[#283523] bg-[#E3EFE3] px-1.5 py-0.2 rounded font-mono text-[11px]">4</strong>
@@ -771,7 +771,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
               setActiveTab('Customer Actions');
               showToast('Filtered: 3 tasks waiting for review');
             }}
-            className="px-3 py-1.5 bg-[#FDF2E3] text-[#9E5507] border border-[#F6DCB8] rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer hover:bg-[#FCEAD0] transition-all"
+            className="px-2.5 py-1 bg-[#FDF2E3] text-[#9E5507] border border-[#F6DCB8] rounded-xl font-bold text-[11px] flex items-center gap-1.5 shadow-2xs cursor-pointer hover:bg-[#FCEAD0] transition-all"
           >
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
             <span>3 tasks waiting for us</span>
@@ -779,7 +779,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
 
           <button 
             onClick={() => setNewProjectModal(true)}
-            className="px-4 py-1.5 bg-[#283523] hover:bg-[#1E291B] text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs transition-all flex items-center gap-1"
+            className="px-3 py-1 bg-[#283523] hover:bg-[#1E291B] text-white rounded-xl font-bold text-[11px] cursor-pointer shadow-xs transition-all flex items-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New project</span>
