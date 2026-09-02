@@ -2936,3 +2936,7 @@ This file tracks all modifications, additions, and updates made to the **Vanuit 
 ## Sidebar Update (2026-08-25)
 - Added 4 mock-up submenus (Inbox messages, Outdoor Kitchen Project, Garden Room Project, Field Mapping) to the bottom of the admin Sidebar (Sidebar.jsx).
 - Ensured these submenus route correctly to their respective demo pages without altering any existing UI, data, or tabs.
+
+## Fix: Added 'Akkoord geven' button to PublicOfferte.jsx
+- Date: 2026-09-02
+- Details: Added the missing 'Akkoord geven' button to the top header in the public approval view (PublicOfferte.jsx). The button triggers the showApprovalModal to allow customers to sign and accept the quote. Once accepted, the button hides and shows a 'Digitaal Akkoord' badge.
