@@ -218,7 +218,9 @@ export default function FactuurPDFTemplate({ invoice }) {
       {/* 7. PERSONAL NOTE BOX */}
       <div className="bg-[#F5F2EB] p-3.5 rounded-lg border-l-4 border-l-[#33422C] space-y-1">
         <p className="font-heading italic text-xs font-semibold text-[#33422C]">
-          Veel plezier van je buitenkeuken. Vragen of iets nodig? Je weet ons te vinden.
+          {invoice?.productType?.toLowerCase()?.includes('garden') || invoice?.productType?.toLowerCase()?.includes('buitenverblijf') || invoice?.productType?.toLowerCase()?.includes('veranda')
+            ? 'Veel plezier van je nieuwe buitenverblijf. Vragen of iets nodig? Je weet ons te vinden.'
+            : 'Veel plezier van je buitenkeuken. Vragen of iets nodig? Je weet ons te vinden.'}
         </p>
         <p className="text-[9.5px] font-bold uppercase tracking-wider text-[#4A5043] font-mono">
           TIM & BRAM · {compName.toUpperCase()}

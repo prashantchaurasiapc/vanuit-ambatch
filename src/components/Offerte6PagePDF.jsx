@@ -50,6 +50,22 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   const dimensions = config.dimensions || quote?.dimensions || '240 × 80';
   const cleanDimensions = String(dimensions).replace(/\s*cm$/i, '').trim();
 
+  // Category Family Detection (Outdoor Kitchen vs Garden Room / Veranda / Poolhouse)
+  const productTypeLower = String(quote?.productType || quote?.category || quote?.projectCategory || quote?.project || '').toLowerCase();
+  const isGardenRoom = 
+    productTypeLower.includes('garden room') || 
+    productTypeLower.includes('buitenverblijf') || 
+    productTypeLower.includes('veranda') || 
+    productTypeLower.includes('poolhouse');
+
+  const categoryTitle = productTypeLower.includes('poolhouse') 
+    ? (language === 'EN' ? 'exclusive poolhouse' : 'exclusieve poolhouse')
+    : productTypeLower.includes('veranda')
+    ? (language === 'EN' ? 'luxury veranda' : 'luxe veranda')
+    : productTypeLower.includes('garden room') || productTypeLower.includes('buitenverblijf')
+    ? (language === 'EN' ? 'garden room' : 'buitenverblijf')
+    : (language === 'EN' ? 'outdoor kitchen' : 'buitenkeuken');
+
   const optionsTitle = config.optionsTitle || quote?.optionsTitle || 'Big Green Egg Large';
   const deliveryTime = config.deliveryTime || quote?.deliveryTime || (language === 'EN' ? '5 to 10 weeks' : '3 tot 5 weken');
   const woodLifespan = config.woodLifespan || (language === 'EN' ? '20 to 25 years' : '20 tot 25 jaar');
@@ -268,11 +284,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           </div>
 
           {/* 3 Photo Strip */}
-          <div className="grid grid-cols-3 gap-[2px] -mx-6 sm:-mx-10 mt-4 mb-2">
+          <div className="grid grid-cols-3 gap-1.5 h-36 sm:h-44 w-full -mx-6 sm:-mx-10 mt-4 mb-2">
             {coverPhotos.map((pImg, idx) => (
               <div
                 key={idx}
-                className="h-36 sm:h-44 w-full overflow-hidden bg-[#2D3A27] flex-shrink-0"
+                className="relative h-full w-full rounded-xl overflow-hidden bg-[#2D3A27] shadow-xs"
               >
                 <img
                   src={pImg || (idx === 1 ? '/dasbordes images.png' : '/outdoor_project_card.png')}
@@ -281,7 +297,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                     e.target.onerror = null;
                     e.target.src = idx === 1 ? '/dasbordes images.png' : '/outdoor_project_card.png';
                   }}
-                  className="h-full w-full object-cover object-center"
+                  className="absolute inset-0 w-full h-full object-cover object-center"
                 />
               </div>
             ))}
@@ -480,12 +496,59 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   src={config.configPhoto || projectImg}
                   alt="Configuration"
                   onError={(e) => { e.target.onerror = null; e.target.src = projectImg; }}
-                  className="max-h-full max-w-full object-contain rounded-xl"
+                  className="w-full h-full object-cover object-center rounded-xl"
                 />
               </div>
 
-              {/* Front-View Diagram output */}
-              {diagram.show && (
+              {/* Floor-Plan Top-View Diagram for Garden Room / Veranda / Poolhouse */}
+              {isGardenRoom ? (
+                <div className="p-3 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] text-center space-y-2 shadow-xs font-body">
+                  <span className="text-[9px] font-mono uppercase font-bold text-accent tracking-widest block">
+                    {language === 'EN' ? `ARCHITECTURAL FLOOR-PLAN TOP VIEW (${cleanDimensions} CM)` : `PLATTEGROND PLATTEGROND INDELING (${cleanDimensions} CM)`}
+                  </span>
+                  
+                  {/* Visual SVG Top-View Architectural Diagram */}
+                  <div className="relative h-28 bg-white border-2 border-[#33422C] rounded-xl p-2 flex flex-col justify-between shadow-inner">
+                    {/* Roof & Beam Outlines */}
+                    <div className="absolute inset-1 border border-dashed border-[#8A8275] rounded-lg pointer-events-none flex items-center justify-center">
+                      <span className="text-[9px] font-mono text-[#8A8275] uppercase tracking-widest opacity-40 font-bold">
+                        {categoryTitle.toUpperCase()} ONDERDAK
+                      </span>
+                    </div>
+
+                    {/* Top Wall (Closed Timber Wall) */}
+                    <div className="w-full h-2.5 bg-[#33422C] rounded-xs flex items-center justify-center">
+                      <span className="text-[7px] font-mono text-white font-bold uppercase tracking-wider">Achterwand (Hout)</span>
+                    </div>
+
+                    {/* Center Room & Glass Sliding Doors */}
+                    <div className="flex justify-between items-center px-1 my-auto z-10">
+                      {/* Left Corner Post */}
+                      <div className="w-4 h-4 bg-[#D97706] rounded-xs flex items-center justify-center text-[7px] font-mono text-white font-bold">P1</div>
+                      
+                      {/* Glass Door Line */}
+                      <div className="flex-1 mx-2 border-b-2 border-dashed border-[#0284C7] flex justify-center">
+                        <span className="text-[8px] font-mono font-bold text-[#0284C7] bg-white px-1">Glazen Schuifwand (4-Rail)</span>
+                      </div>
+
+                      {/* Right Corner Post */}
+                      <div className="w-4 h-4 bg-[#D97706] rounded-xs flex items-center justify-center text-[7px] font-mono text-white font-bold">P2</div>
+                    </div>
+
+                    {/* Bottom Front Opening */}
+                    <div className="w-full flex justify-between items-center text-[8px] font-mono text-[#33422C] pt-0.5 border-t border-[#D6CFC2]">
+                      <span className="font-bold">Hoekpaal L</span>
+                      <span className="font-bold text-[#D97706]">{cleanDimensions} cm</span>
+                      <span className="font-bold">Hoekpaal R</span>
+                    </div>
+                  </div>
+
+                  <div className="text-[9px] font-mono text-dark/70 border-t border-[#D6CFC2]/60 pt-1 flex justify-between px-1">
+                    <span>Fundering: <strong className="text-primary">Betonpoeren (Stelpost)</strong></span>
+                    <span>Hout: <strong className="text-[#D97706]">{woodType}</strong></span>
+                  </div>
+                </div>
+              ) : diagram.show && (
                 <div className="p-3 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] text-center space-y-2 shadow-xs">
                   <span className="text-[9px] font-mono uppercase font-bold text-accent tracking-widest block">
                     {language === 'EN' ? `FRONT VIEW DIAGRAM (${diagram.totalWidth} CM)` : `VOORAANZEICHT TEKENING (${diagram.totalWidth} CM)`}

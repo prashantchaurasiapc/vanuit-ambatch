@@ -1274,7 +1274,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                     <img
                       src={quote.configuration?.configPhoto || projectImg}
                       alt="Configuration Preview"
-                      className="max-h-full max-w-full object-contain rounded-lg shadow-2xs"
+                      className="w-full h-full object-cover object-center rounded-lg shadow-2xs"
                       onError={(e) => { e.target.onerror = null; e.target.src = projectImg; }}
                     />
                   </div>

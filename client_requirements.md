@@ -965,7 +965,7 @@ Updated: 20 August 2026 (03:40:15 PM IST)
 
 | ID | Task | File | Priority | Effort | Status |
 |----|------|------|----------|--------|--------|
-| A1 | Garden Room PDF (floor-plan + 40/40/20) | `Offerte6PagePDF.jsx` | 🔴 HIGH | Large | [MISS] |
+| A1 | Garden Room PDF (floor-plan + 40/40/20) | `Offerte6PagePDF.jsx` | ✅ DONE | Large | [DONE] 03-Sep-2026 |
 | A2 | Invoice: IBAN/KVK from Settings | `FactuurPDFTemplate.jsx` | ✅ DONE | Small | [DONE] 03-Sep-2026 |
 | A3 | Quote PDF: Company details from Settings | `Offerte6PagePDF.jsx` | ✅ DONE | Small | [DONE] 03-Sep-2026 |
 | A4 | PDF Engine: Puppeteer decision | `pdfGenerator.js` | 🔵 DECISION | Architectural | [PENDING] |

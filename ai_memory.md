@@ -14,6 +14,38 @@ This file tracks all modifications, additions, and updates made to the **Vanuit 
 - **Key Features**: Admin Panel, Partner Panel, Role-Based Route Protection, Responsive Layout.
 - **Theme**: Premium Forest Green (`#3E4E36`), Accent Cream/Beige, custom typography.
 
+## 232. Client Invoice HTML Template Verification & Dynamic Personal Note (Completed 2026-09-03 07:40 PM IST)
+* **Goal**: Audit client's official HTML template (`Vanuit-Ambacht-factuur-template.html`) against `FactuurPDFTemplate.jsx` and ensure 100% structural, typographical, and dynamic field parity.
+* **Changes Made:**
+  1. Verified all elements: Header logo/pill badge, subheader greeting, 4-column summary metadata grid (`FACTUURNUMMER`, `FACTUURDATUM`, `VERVALDATUM`, `REFERENTIE`), customer & company address blocks, line items table (`OMSCHRIJVING`, `AANTAL`, `BEDRAG`), payment info box (`compIban`, `o.v.v. factuurnummer`), and totals card (`Totaal excl. btw`, `Btw 21%`, `Te betalen`).
+  2. **`src/components/FactuurPDFTemplate.jsx`**:
+     - Made personal closing note dynamic (*"Veel plezier van je nieuwe buitenverblijf..."* when product is a Garden Room/Veranda/Poolhouse structure).
+* **Result**: `FactuurPDFTemplate.jsx` is 100% identical to the client's official HTML invoice template.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.85s`).
+
+## 231. Image Aspect Ratio & Uniform Object-Cover Alignment Fix (Completed 2026-09-03 07:28 PM IST)
+* **Goal**: Ensure all uploaded images (landscape, portrait, credit cards, or large high-res photos) fit 100% uniformly inside their container boxes without height stretching, gaps, or misaligned rows.
+* **Changes Made:**
+  1. **`src/components/Offerte6PagePDF.jsx`**:
+     - Cover Page 1: Updated 3-photo footer strip to use strict fixed height containers (`h-36 sm:h-44`) with `absolute inset-0 w-full h-full object-cover object-center`. All 3 photo slots now align 100% flush horizontally.
+     - Page 3: Updated configuration photo to `w-full h-full object-cover object-center` filling the box cleanly without black side borders.
+  2. **`src/components/QuoteEditor.jsx`**:
+     - Updated Step 3 photo upload preview card to `w-full h-full object-cover object-center`.
+* **Result**: Images of any dimensions/proportions automatically crop and fit into uniform pixel-perfect cards without pushing layout borders.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 6.05s`).
+
+## 230. Garden Room, Veranda & Poolhouse Dynamic PDF Support (Task A1 - Completed 2026-09-03 07:15 PM IST)
+* **Goal**: Implement full dynamic support for Garden Room, Veranda, and Poolhouse category products in `Offerte6PagePDF.jsx` and `QuoteEditor.jsx` live preview.
+* **Changes Made:**
+  1. **`src/components/Offerte6PagePDF.jsx`**:
+     - Added `isGardenRoom` detection for `Garden room`, `Veranda`, and `Poolhouse` product categories.
+     - Page 3: Renders an SVG Architectural Floor-Plan Top-View Diagram (Posts, Timber wall, Glass sliding door) instead of cabinet elevation.
+     - Page 4: Renders 3 payment installments (**40% Down Payment / 40% Pre-fab / 20% Delivery**).
+     - Page 5: Adds Step 2 **Inmeting & Locatie Inspectie** (Site Survey step).
+     - Dynamic Page Cover & Headers: Adapts titles dynamically per category (*"Uw luxe veranda op maat"*, *"Uw exclusieve poolhouse op maat"*, etc.).
+* **Result**: Selecting Garden room, Veranda, or Poolhouse from the Product Type dropdown immediately switches Live Preview and PDFs to full Garden Room architecture.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 8.22s`).
+
 ## 229. Digital Approval Stamp Watermark Box on Approved PDF (Task B4 - Completed 2026-09-03 06:18 PM IST)
 * **Goal**: Render an official Forest Green Digital Approval Stamp Box on Page 6 of `Offerte6PagePDF.jsx` when a quote is approved online.
 * **Changes Made:**
