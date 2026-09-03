@@ -306,26 +306,35 @@ export default function Invoices() {
     {
       header: t('screens.invoices.actions'),
       render: (row) => {
-        const isAlreadySent = row.status === 'Verzonden' || row.status === 'Betaald' || row.isSent;
+        const isPaid = row.status === 'Betaald' || row.status === 'Paid';
+        const isSent = row.status === 'Verzonden' || row.status === 'Sent' || row.isSent;
+
         return (
           <div className="flex flex-wrap items-center justify-end gap-1.5">
-            {!isAlreadySent && (
+            {!isPaid && (
               <Button
-                variant="primary"
+                variant="custom"
                 size="sm"
                 onClick={() => setConfirmSendInvoiceModal(row)}
-                className="bg-primary hover:bg-primary/90 text-cream font-bold text-[11px] py-1 px-2.5 shadow-2xs flex items-center gap-1 cursor-pointer"
+                className={`font-bold text-[11px] py-1 px-2.5 shadow-2xs flex items-center gap-1 cursor-pointer transition-all ${
+                  isSent
+                    ? 'bg-[#EDE8DF] hover:bg-[#D6CFC2] text-primary border border-[#D6CFC2]'
+                    : 'bg-primary hover:bg-primary/90 text-cream'
+                }`}
               >
-                <Send className="w-3 h-3 text-amber-300" />
-                {language === 'EN' ? 'Send Invoice' : 'Verstuur Factuur'}
+                <Send className={`w-3 h-3 ${isSent ? 'text-primary' : 'text-amber-300'}`} />
+                {isSent
+                  ? (language === 'EN' ? 'Resend Email' : 'Opnieuw Versturen')
+                  : (language === 'EN' ? 'Send Invoice' : 'Verstuur Factuur')
+                }
               </Button>
             )}
-            {row.status !== 'Betaald' && (
+            {!isPaid && (
               <Button
                 variant="custom"
                 size="sm"
                 onClick={() => handleMarkAsPaid(row.id)}
-                className="bg-green-700 hover:bg-green-800 text-white text-[11px] font-bold py-1 px-2"
+                className="bg-green-700 hover:bg-green-800 text-white text-[11px] font-bold py-1 px-2 cursor-pointer"
               >
                 <Check className="w-3 h-3 mr-1" /> {t('screens.invoices.paid')}
               </Button>
@@ -604,10 +613,19 @@ export default function Invoices() {
                 </div>
               </div>
 
+              <div className="bg-white/80 p-3 rounded-xl border border-[#C4BEB3]/60 space-y-1">
+                <p className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                  {language === 'EN' ? 'RECIPIENT EMAIL:' : 'ONTVANGER E-MAIL:'}
+                </p>
+                <p className="font-mono text-xs font-bold text-dark">
+                  {confirmSendInvoiceModal.email || confirmSendInvoiceModal.customerEmail || `${confirmSendInvoiceModal.customer.toLowerCase().replace(/\s+/g, '.')}@vanuitambacht.nl`}
+                </p>
+              </div>
+
               <p className="text-xs leading-relaxed text-dark/80">
                 {language === 'EN' 
-                  ? `Are you sure you want to send Invoice ${confirmSendInvoiceModal.id} (${confirmSendInvoiceModal.amount}) to ${confirmSendInvoiceModal.customer}?` 
-                  : `Weet u zeker dat u Factuur ${confirmSendInvoiceModal.id} (${confirmSendInvoiceModal.amount}) wilt versturen naar ${confirmSendInvoiceModal.customer}?`}
+                  ? `Send Invoice ${confirmSendInvoiceModal.id} (${confirmSendInvoiceModal.amount}) to ${confirmSendInvoiceModal.customer} via E-mail.` 
+                  : `Factuur ${confirmSendInvoiceModal.id} (${confirmSendInvoiceModal.amount}) verzenden naar ${confirmSendInvoiceModal.customer} per e-mail.`}
               </p>
 
               <div className="flex gap-2 pt-2 justify-end">
@@ -623,7 +641,7 @@ export default function Invoices() {
                   }}
                   className="bg-primary text-cream font-bold cursor-pointer"
                 >
-                  ✓ {language === 'EN' ? 'Confirm & Send' : 'Bevestig & Verstuur'}
+                  ✉️ {language === 'EN' ? 'Confirm & Send Email' : 'Bevestig & Verstuur E-mail'}
                 </Button>
               </div>
             </motion.div>

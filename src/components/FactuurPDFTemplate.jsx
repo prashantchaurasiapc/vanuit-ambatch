@@ -2,6 +2,24 @@ import React from 'react';
 import { Calendar } from 'lucide-react';
 
 export default function FactuurPDFTemplate({ invoice }) {
+  // Extract Company Details dynamically from Settings
+  const companyInfo = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('company_info')) || JSON.parse(localStorage.getItem('app_settings')) || {};
+    } catch (e) {
+      return {};
+    }
+  })();
+
+  const compName = companyInfo.name || 'Vanuit Ambacht';
+  const compAddress = companyInfo.address || 'Koningshof 33, 3451 LM Vleuten';
+  const compEmail = companyInfo.email || 'info@vanuitambacht.nl';
+  const compPhone = companyInfo.phone || '06 82 00 80 25';
+  const compKvk = companyInfo.kvk || 'KVK 93097429';
+  const compVat = companyInfo.vatNumber || 'BTW NL866264863B01';
+  const compIban = companyInfo.iban || 'NL27 ABNA 0132 2698 56';
+  const compWebsite = companyInfo.website || 'vanuitambacht.nl';
+
   // Dynamic Props Extraction with Fallbacks
   const invId = invoice?.id || invoice?.invoiceNumber || 'F-2026-108';
   const customerName = invoice?.customer || invoice?.customerName || 'Bjorn Valk';
@@ -118,10 +136,10 @@ export default function FactuurPDFTemplate({ invoice }) {
 
         <div className="space-y-1">
           <p className="text-[10px] font-bold uppercase text-[#4A5043] tracking-widest">FACTUUR VAN</p>
-          <p className="font-bold text-[#2B3028] text-xs">Vanuit Ambacht</p>
-          <p className="text-[#33382F] font-medium">Koningshof 33, 3451 LM Vleuten</p>
-          <p className="text-[#4A5043] font-mono text-[10px] font-bold">KVK 93097429 · BTW NL866264863B01</p>
-          <p className="text-[#4A5043] font-mono text-[10px] font-bold">info@vanuitambacht.nl · 06 82 00 80 25</p>
+          <p className="font-bold text-[#2B3028] text-xs">{compName}</p>
+          <p className="text-[#33382F] font-medium">{compAddress}</p>
+          <p className="text-[#4A5043] font-mono text-[10px] font-bold">{compKvk} · {compVat}</p>
+          <p className="text-[#4A5043] font-mono text-[10px] font-bold">{compEmail} · {compPhone}</p>
         </div>
       </div>
 
@@ -159,8 +177,8 @@ export default function FactuurPDFTemplate({ invoice }) {
         <div className="bg-[#F5F2EB] p-4 rounded-xl border border-[#E5E0D5] space-y-2">
           <p className="text-[10px] font-bold uppercase text-[#4A5043] tracking-widest">BETAALINFORMATIE</p>
           <p className="text-[11px] text-[#33382F]">Maak het totaalbedrag binnen 14 dagen over op:</p>
-          <p className="font-mono font-bold text-[#2B3028] text-base tracking-wide">NL27 ABNA 0132 2698 56</p>
-          <p className="text-[11px] text-[#33382F]">ten name van <strong className="text-[#2B3028] font-bold">Vanuit Ambacht</strong></p>
+          <p className="font-mono font-bold text-[#2B3028] text-base tracking-wide">{compIban}</p>
+          <p className="text-[11px] text-[#33382F]">ten name van <strong className="text-[#2B3028] font-bold">{compName}</strong></p>
           
           <div className="inline-block bg-[#E8E3D8] text-[#33422C] px-3.5 py-1 rounded-md text-[11px] font-mono font-bold border border-[#D6CFC2] mt-1">
             o.v.v. factuurnummer {invId}
@@ -203,14 +221,14 @@ export default function FactuurPDFTemplate({ invoice }) {
           Veel plezier van je buitenkeuken. Vragen of iets nodig? Je weet ons te vinden.
         </p>
         <p className="text-[9.5px] font-bold uppercase tracking-wider text-[#4A5043] font-mono">
-          TIM & BRAM · VANUIT AMBACHT
+          TIM & BRAM · {compName.toUpperCase()}
         </p>
       </div>
 
       {/* 8. FOOTER */}
       <div className="pt-3 border-t border-[#E5E0D5] flex justify-between items-center text-[10px] text-[#4A5043] font-mono font-semibold">
-        <span className="font-bold text-[#2B3028]">VANUIT AMBACHT</span>
-        <span>Koningshof 33, 3451 LM Vleuten · info@vanuitambacht.nl · vanuitambacht.nl</span>
+        <span className="font-bold text-[#2B3028]">{compName.toUpperCase()}</span>
+        <span>{compAddress} · {compEmail} · {compWebsite}</span>
         <span>1/1</span>
       </div>
     </div>

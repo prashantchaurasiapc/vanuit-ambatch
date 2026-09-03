@@ -2090,9 +2090,10 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                     disabled={quote?.status === 'Draft' || quote?.status === 'Concept' || quote?.status === 'DRAFT'}
                     onClick={() => {
                       if (quote?.status === 'Draft' || quote?.status === 'Concept' || quote?.status === 'DRAFT') return;
-                      const publicUrl = `${window.location.origin}/offerte/${quote.id}`;
+                      const shareToken = quote?.publicToken || quote?.id;
+                      const publicUrl = `${window.location.origin}/offerte/${shareToken}`;
                       navigator.clipboard.writeText(publicUrl);
-                      showToast('Approval link copied to clipboard!');
+                      showToast(language === 'EN' ? 'Public quote approval link copied!' : 'Publieke offerte akkoord-link gekopieerd!');
                     }}
                     className={`px-4 py-2.5 font-bold text-xs rounded-xl shadow-xs transition-all font-mono flex items-center gap-2 ${
                       (quote?.status === 'Draft' || quote?.status === 'Concept' || quote?.status === 'DRAFT')

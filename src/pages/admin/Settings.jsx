@@ -52,7 +52,7 @@ export default function Settings() {
   const [logo, setLogo] = useState(() => localStorage.getItem('brand_logo') || null);
 
   const [companyInfo, setCompanyInfo] = useState(() => {
-    const saved = localStorage.getItem('company_info');
+    const saved = localStorage.getItem('company_info') || localStorage.getItem('app_settings');
     return saved ? JSON.parse(saved) : {
       name: 'Vanuit Ambacht',
       website: 'www.vanuitambacht.nl',
@@ -62,6 +62,8 @@ export default function Settings() {
       country: 'Netherlands',
       kvk: 'KVK-88741029',
       vatNumber: 'NL88741029B01',
+      iban: 'NL91 ABNA 0417 1234 56',
+      bankName: 'ABN AMRO Bank',
       standardVatRate: '21',
       lowVatRate: '9',
       quotePrefix: '#Q-2004',
@@ -371,7 +373,9 @@ export default function Settings() {
   // Save Handlers
   const saveCompanyInfo = () => {
     localStorage.setItem('company_info', JSON.stringify(companyInfo));
-    showToast('Bedrijfsgegevens & Nummering formats opgeslagen! (#Q-2004 / #INV-902)');
+    localStorage.setItem('app_settings', JSON.stringify(companyInfo));
+    window.dispatchEvent(new Event('app_data_changed'));
+    showToast(language === 'EN' ? 'Company details saved successfully!' : 'Bedrijfsgegevens & Nummering formats opgeslagen! (#Q-2004 / #INV-902)');
   };
 
   const saveBrandSettings = () => {
@@ -620,6 +624,13 @@ export default function Settings() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input type="text" value={getDisplayValue('kvk', companyInfo.kvk)} onChange={e => handleCompanyChange('kvk', e.target.value)} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-mono font-bold text-primary text-sm" />
                     <input type="text" value={getDisplayValue('vatNumber', companyInfo.vatNumber)} onChange={e => handleCompanyChange('vatNumber', e.target.value)} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-mono font-bold text-primary text-sm" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'IBAN & Bank Name' : 'IBAN & Banknaam'}</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input type="text" value={companyInfo.iban || ''} onChange={e => handleCompanyChange('iban', e.target.value)} placeholder="NL91 ABNA 0417 1234 56" className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-mono font-bold text-primary text-sm" />
+                    <input type="text" value={companyInfo.bankName || ''} onChange={e => handleCompanyChange('bankName', e.target.value)} placeholder="ABN AMRO Bank" className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-mono font-bold text-primary text-sm" />
                   </div>
                 </div>
               </div>

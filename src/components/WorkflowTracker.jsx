@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Card from './Card';
@@ -16,6 +17,7 @@ import { convertLeadToCustomerOnInvoiceSent } from '../utils/customerConversion'
 import { safeSetItem } from '../utils/storageHelper';
 import { downloadDirectPdfFile } from '../utils/pdfGenerator';
 import CommunicationConfirmModal from './CommunicationConfirmModal';
+import QuoteEditor from './QuoteEditor';
 
 export const WORKFLOW_STEPS = [
   { id: 1, name: 'New lead', desc: 'Contact & first intake', icon: UserPlus, statusKey: 'new', color: 'blue' },
@@ -35,6 +37,8 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const [currentStep, setCurrentStep] = useState(initialStep);
   const isLeadCompleted = currentStep === 8;
   const [autoModalType, setAutoModalType] = useState(null); // 'quote' | 'project' | 'partner' | 'invoice' | null
+  // D1 FIX: Inline Quote Editor Modal — no redirect to /admin/quotes
+  const [showInlineQuoteEditor, setShowInlineQuoteEditor] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
 
   // Communication Confirmation Modal State (Strict No-Auto-Communication Policy)
@@ -49,16 +53,22 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   });
 
   const handleOpenWhatsAppConfirm = (name, phone, text) => {
+    let messageBody = text || customMessageText;
+    if (attachPhotos) {
+      const photoUrl = lead?.renderUrl || lead?.photoUrl || 'https://vanuitambacht.nl/assets/3d_render_preview.png';
+      messageBody += `\n\n📷 3D Render / Project Foto: ${photoUrl}`;
+    }
+
     setCommConfirmModal({
       isOpen: true,
       type: 'whatsapp',
       recipientName: name || customerName,
       recipientContact: phone || customerPhone,
-      messageText: text || customMessageText,
+      messageText: messageBody,
       subject: '',
       onConfirm: () => {
         const cleanPhone = (phone || customerPhone).replace(/[^0-9]/g, '');
-        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text || customMessageText)}`, '_blank');
+        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(messageBody)}`, '_blank');
         setToastMsg(language === 'EN' ? 'WhatsApp opened after user confirmation!' : 'WhatsApp geopend na gebruikersbevestiging!');
         setTimeout(() => setToastMsg(''), 3000);
       }
@@ -819,10 +829,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   // Section 2.3: Auto-Loaded Message Templates & Multiple WhatsApp Photo Attachments
   const [selectedTemplate, setSelectedTemplate] = useState('template1');
   const [attachPhotos, setAttachPhotos] = useState(false);
-  const [attachedPhotos, setAttachedPhotos] = useState([
-    { id: 1, name: '3d_outdoor_kitchen_render.png', url: '/dasbordes images.png' },
-    { id: 2, name: 'garden_site_photo.jpg', url: '/outdoor_project_card.png' }
-  ]);
+  const [attachedPhotos, setAttachedPhotos] = useState([]);
   const fileInputRef = useRef(null);
 
   const handlePhotoUpload = (e) => {
@@ -1470,16 +1477,35 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                      <label className="flex items-center gap-2 text-[11px] text-dark/70 cursor-pointer select-none font-semibold">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <label className="flex items-center gap-2 text-[11px] text-dark/70 cursor-pointer select-none font-semibold">
+                          <input
+                            type="checkbox"
+                            checked={attachPhotos}
+                            onChange={(e) => setAttachPhotos(e.target.checked)}
+                            className="rounded border-[#D6CFC2] text-primary focus:ring-primary/20"
+                          />
+                          <Paperclip className="w-3.5 h-3.5 text-primary" />
+                          <span>{language === 'EN' ? 'Attach project photo / 3D render' : 'Projectfoto / 3D-render bijvoegen'}</span>
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-2.5 py-1 bg-[#EDE8DF] hover:bg-[#D6CFC2]/60 text-primary font-bold text-[10.5px] rounded-lg border border-[#D6CFC2] flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                        >
+                          <span>📁 Upload File / Render</span>
+                        </button>
+
                         <input
-                          type="checkbox"
-                          checked={attachPhotos}
-                          onChange={(e) => setAttachPhotos(e.target.checked)}
-                          className="rounded border-[#D6CFC2] text-primary focus:ring-primary/20"
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handlePhotoUpload}
+                          multiple
+                          accept="image/*,.pdf"
+                          className="hidden"
                         />
-                        <Paperclip className="w-3.5 h-3.5 text-primary" />
-                        <span>{language === 'EN' ? 'Attach project photo / 3D render (WhatsApp)' : 'Projectfoto / 3D-render bijvoegen (WhatsApp)'}</span>
-                      </label>
+                      </div>
 
                       <div className="flex gap-2 flex-wrap">
                         <button
@@ -1504,6 +1530,29 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         </button>
                       </div>
                     </div>
+
+                    {/* Attached Photos / Files Pills List */}
+                    {attachPhotos && attachedPhotos.length > 0 && (
+                      <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-[#D6CFC2]/50 mt-1">
+                        <span className="text-[10px] font-bold text-dark/60 uppercase tracking-wider">Attached Files:</span>
+                        {attachedPhotos.map((photo) => (
+                          <span key={photo.id} className="text-[10px] bg-emerald-50 border border-emerald-300 text-emerald-950 px-2 py-0.5 rounded-md font-mono flex items-center gap-1 shadow-2xs">
+                            <span>📎 {photo.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = attachedPhotos.filter(p => p.id !== photo.id);
+                                setAttachedPhotos(next);
+                                if (next.length === 0) setAttachPhotos(false);
+                              }}
+                              className="text-emerald-700 hover:text-red-600 font-bold ml-1 cursor-pointer"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Card 3: Recommended Next Action Banner (Bottom) */}
@@ -2026,6 +2075,21 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             <strong className="text-xs font-semibold text-dark truncate block" title={submittedPartnerOffer.remarksEN || submittedPartnerOffer.remarksNL}>{submittedPartnerOffer.remarksEN || submittedPartnerOffer.remarksNL || '—'}</strong>
                           </div>
                         </div>
+
+                        {/* ITEMIZED COST BREAKDOWN (FROM PARTNER) */}
+                        {submittedPartnerOffer.breakdownItems && submittedPartnerOffer.breakdownItems.length > 0 && (
+                          <div className="pt-2.5 border-t border-emerald-200/80 space-y-1.5">
+                            <span className="text-[10px] uppercase font-bold text-emerald-950 block tracking-wider">Itemized Cost Breakdown (from Partner)</span>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              {submittedPartnerOffer.breakdownItems.map((bItem, idx) => (
+                                <div key={idx} className="p-2 bg-white/90 rounded-lg border border-emerald-200 text-xs shadow-2xs">
+                                  <span className="text-[9px] text-dark/60 block font-bold truncate">{bItem.sectionIcon} {bItem.label}</span>
+                                  <strong className="font-mono text-emerald-900 text-xs">€ {Number(bItem.amount).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</strong>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -2514,14 +2578,14 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                   </div>
 
                   {/* Step 4 Main Action Bar (STRICTLY NOTHING SENT — Save as Draft) */}
-                  <div className="p-4 bg-[#EDE8DF] border border-[#D6CFC2] rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div>
+                  <div className="p-4 bg-[#EDE8DF] border border-[#D6CFC2] rounded-2xl flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+                    <div className="flex-1 min-w-[280px]">
                       <span className="text-[10px] font-mono font-bold text-accent uppercase tracking-wider block">RECOMMENDED NEXT ACTION</span>
-                      <span className="text-xs font-bold text-primary">Save quote draft — no messages or emails will be sent</span>
+                      <span className="text-xs font-bold text-primary block">Save quote draft — no messages or emails will be sent</span>
                       <span className="text-[10px] text-dark/60 block font-medium">Continue to Step 5 for review. Nothing is sent from Step 4.</span>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-start gap-2.5 flex-wrap">
                       <div className="flex flex-col items-center gap-0.5">
                         <button
                           type="button"
@@ -2547,17 +2611,13 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       <div className="flex flex-col items-end gap-0.5">
                         <button
                           type="button"
-                          onClick={() => {
-                            // Link directly to the beautiful Quote Editor module
-                            navigate('/admin/quotes');
-                            if (onClose) onClose();
-                          }}
+                          onClick={() => setShowInlineQuoteEditor(true)}
                           className="px-5 py-2.5 bg-[#3E4E36] hover:bg-[#2F3C29] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-2 whitespace-nowrap border-2 border-emerald-400/50"
                         >
                           <FileText className="w-4 h-4" />
                           <span>Open Quote Editor & Build PDF →</span>
                         </button>
-                        <span className="text-[9px] text-dark/50 italic text-right">Navigates to the 6-step Quote Editor to generate PDF</span>
+                        <span className="text-[9px] text-dark/50 italic text-right">Opens Quote Editor on this page — no redirect</span>
                       </div>
                     </div>
                   </div>
@@ -4474,6 +4534,61 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
         messageText={commConfirmModal.messageText}
         subject={commConfirmModal.subject}
       />
+
+      {/* ================================================================= */}
+      {/* D1 FIX: INLINE QUOTE EDITOR FULLSCREEN MODAL                      */}
+      {/* Opens on top of Leads page — no navigate(), no URL change          */}
+      {/* ================================================================= */}
+      {/* ================================================================= */}
+      {/* D1 FIX: INLINE QUOTE EDITOR FULLSCREEN PORTAL                     */}
+      {/* Renders via createPortal directly to document.body                */}
+      {/* Matches Image 2 100% — 3 zones, full responsive, smooth scroll    */}
+      {/* ================================================================= */}
+      {showInlineQuoteEditor && createPortal(
+        <div className="fixed inset-0 z-[999999] bg-[#FAF8F5] overflow-y-auto font-body p-2 sm:p-4 md:p-6 select-text">
+          <div className="max-w-[1600px] mx-auto min-h-full flex flex-col space-y-2">
+            {/* Top Info Banner for context */}
+            <div className="bg-[#3E4E36] text-white px-4 py-2 rounded-xl flex justify-between items-center text-xs font-mono shadow-sm flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-emerald-300 uppercase tracking-wider">Leads Workflow</span>
+                <span className="text-white/60">·</span>
+                <span>Building quote for <strong>{lead?.customer || lead?.name || 'Lead'}</strong></span>
+              </div>
+              <span className="bg-emerald-800/80 text-emerald-200 px-2 py-0.5 rounded border border-emerald-600/50 text-[10px]">
+                URL: /admin/leads (Unchanged)
+              </span>
+            </div>
+
+            {/* Quote Editor Component — renders 3 responsive zones matching Image 2 1-to-1 */}
+            <div className="flex-1">
+              <QuoteEditor
+                quoteData={{
+                  id: `OF-${lead?.id ? String(lead.id).replace(/[^0-9]/g, '') : Math.floor(1000 + Math.random() * 9000)}`,
+                  customer: {
+                    name: lead?.customer || lead?.name || 'Jan de Vries',
+                    email: lead?.email || 'jan@example.nl',
+                    phone: lead?.phone || '+31 6 12345678',
+                    address: lead?.address || 'Kerkstraat 12',
+                    city: lead?.city || 'Dongen',
+                  },
+                  project: lead?.project || lead?.productType || 'Custom Outdoor Build',
+                  category: lead?.productType || lead?.category || 'outdoor_kitchen',
+                  amount: lead?.value || lead?.budget || '€ 12.500',
+                }}
+                onClose={() => setShowInlineQuoteEditor(false)}
+                onSaveQuote={(savedQuote, isExplicit) => {
+                  if (isExplicit) {
+                    setShowInlineQuoteEditor(false);
+                    setToastMsg(`Quote ${savedQuote?.id || ''} saved! Back to lead.`);
+                    setTimeout(() => setToastMsg(''), 4000);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

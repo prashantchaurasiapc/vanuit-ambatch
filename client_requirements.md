@@ -742,6 +742,253 @@ File: src/pages/admin/Projects.jsx
 Updated: 20 August 2026 (03:40:15 PM IST)
 4 Projects Submenus Architecture & Routing Completed & Verified.
 
+---
+
+## PHASE 13 — PENDING WORK (Identified via Code Audit — 03 September 2026)
+
+> **Source:** Code audit performed on 03 Sep 2026 using Antigravity AI.
+> All items below are verified directly from actual source code — not assumptions.
+> **No code has been changed yet. This section is documentation only.**
+> Once each task is done, mark it [DONE] with date and file changed.
+
+---
+
+### PRIORITY GROUP A — PDF & Quotation System (Client Technical Briefing)
+
+#### A1. Garden Room PDF Logic — Floor-plan + 40/40/20 Payments
+- **Status:** [MISS] — Completely Missing
+- **Verified From Code:** `src/components/Offerte6PagePDF.jsx` — Search "garden_room" → 0 results found. No if/else for project type anywhere in this file.
+- **What Exists:** PDF only handles Outdoor Kitchen logic (cabinet diagram, 50/50 payment). Garden Room has zero support.
+- **What Needs to be Built:**
+  - Add `if (quote.projectType === 'garden_room')` condition in `Offerte6PagePDF.jsx`
+  - Replace cabinet diagram (kastje/uitsparing) with floor-plan diagram (dicht/open sections) for Garden Room
+  - Change payment page from 2 instalments (50/50) to 3 instalments (40/40/20)
+  - Add provisional sum (`*` stelpost) support on line items for Garden Room
+  - Add extra "On-site Survey" step in the Process page (Page 5) for Garden Room
+- **Files to Modify:** `src/components/Offerte6PagePDF.jsx`
+
+---
+
+#### A2. Invoice (Factuur) — Company Details Hardcoded, Not from Settings
+- **Status:** [MISS] — Not Linked to Settings
+- **Verified From Code:** `src/components/FactuurPDFTemplate.jsx` Lines 121-124, 162:
+  - Line 121: `<p>Vanuit Ambacht</p>` — HARDCODED
+  - Line 122: `<p>Koningshof 33, 3451 LM Vleuten</p>` — HARDCODED
+  - Line 123: `<p>KVK 93097429 · BTW NL866264863B01</p>` — HARDCODED
+  - Line 124: `<p>info@vanuitambacht.nl · 06 82 00 80 25</p>` — HARDCODED
+  - Line 162: `<p>NL27 ABNA 0132 2698 56</p>` — HARDCODED IBAN
+  - No `localStorage.getItem('app_settings')` reference exists in this file at all.
+- **What Settings Page Has:** `src/pages/admin/Settings.jsx` already saves IBAN, KVK, BTW, phone, address to localStorage.
+- **What Needs to be Built:**
+  - In `FactuurPDFTemplate.jsx`, read settings at top: `const settings = JSON.parse(localStorage.getItem('app_settings') || '{}')`
+  - Replace all hardcoded company values with: `settings.iban`, `settings.kvk`, `settings.btw`, `settings.phone`, `settings.email`, `settings.address`, `settings.companyName`
+  - Add fallback values so invoice still renders if settings are empty
+- **Files to Modify:** `src/components/FactuurPDFTemplate.jsx`
+- **Estimated Effort:** Small — 10-15 lines change only
+
+---
+
+#### A3. Quote PDF — Same Company Details Also Hardcoded
+- **Status:** [MISS] — Not Linked to Settings
+- **Verified From Code:** `src/components/Offerte6PagePDF.jsx` has hardcoded KVK, IBAN, phone on Page 6 (Akkoord page / footer)
+- **What Needs to be Built:** Same as A2 — read from `localStorage.getItem('app_settings')` and replace hardcoded values
+- **Files to Modify:** `src/components/Offerte6PagePDF.jsx`
+
+---
+
+#### A4. PDF Engine — html2canvas vs Puppeteer/Playwright
+- **Status:** [ARCHITECTURAL DECISION NEEDED]
+- **Verified From Code:** `src/utils/pdfGenerator.js` Lines 1-2:
+  ```
+  import { jsPDF } from 'jspdf';
+  import html2canvas from 'html2canvas';
+  ```
+  This is a frontend screenshot method. Client's technical briefing explicitly said NOT to use this approach and to use Headless Chromium (Puppeteer/Playwright) instead.
+- **The Problem:** Puppeteer/Playwright runs only on Node.js backend. This project has NO backend — it is a purely frontend React app.
+- **Options:**
+  1. Accept current html2canvas method and inform client it works for frontend-only app
+  2. Add a simple Node.js/Express backend just for PDF generation
+  3. Use `window.print()` with CSS print styles — cleanest solution for frontend-only
+- **Decision Needed From:** Tim & Bram (client) — clarify if backend is acceptable
+- **Files Affected:** `src/utils/pdfGenerator.js`
+
+---
+
+### PRIORITY GROUP B — Digital Approval Link (PublicOfferte)
+
+#### B1. Approve Button — Already Exists (No Action Needed)
+- **Status:** [OK] — Verified Working
+- **Verified From Code:** `src/pages/PublicOfferte.jsx` Lines 189-196 — Button exists in top header bar, calls `setShowApprovalModal(true)` on click. Modal with name + T&C checkbox is also fully built.
+- **No action needed.**
+
+---
+
+#### B2. Quote Token — Guessable (= Quote ID)
+- **Status:** [MISS] — Security Gap
+- **Verified From Code:** `src/pages/PublicOfferte.jsx` Lines 31-33:
+  ```js
+  String(q.id).toLowerCase() === String(token).toLowerCase()
+  // Token in URL = Quote ID (e.g. OF-2026337) — anyone can guess!
+  ```
+- **What Needs to be Built:**
+  - In `src/pages/admin/Quotes.jsx`, when a new quote is created, generate a random UUID token: `const token = crypto.randomUUID()` and save as `quote.publicToken`
+  - In `PublicOfferte.jsx` Line 31-33, change match logic to: `q.publicToken === token` instead of `q.id === token`
+  - Update the public link generation in Quotes.jsx to use `quote.publicToken` in URL: `/offerte/${quote.publicToken}`
+- **Files to Modify:** `src/pages/admin/Quotes.jsx`, `src/pages/PublicOfferte.jsx`
+- **Estimated Effort:** Small — 5-8 lines change
+
+---
+
+#### B3. Link Expiry — Date Hardcoded
+- **Status:** [PART] — Logic Exists But Broken
+- **Verified From Code:** `src/pages/PublicOfferte.jsx` Line 67:
+  ```js
+  const isExpired = quote && quote.validUntil
+    ? new Date(quote.validUntil) < new Date('2026-08-01') // ← HARDCODED DATE!
+    : false;
+  ```
+  This date is hardcoded to `2026-08-01` so it never works correctly. It should compare against `new Date()` (today).
+- **What Needs to be Built:**
+  - Change Line 67 to: `new Date(quote.validUntil) < new Date()`
+  - Add expired UI: when `isExpired === true`, hide Approve button and show friendly message + contact buttons
+- **Files to Modify:** `src/pages/PublicOfferte.jsx` Line 67
+- **Estimated Effort:** Tiny — 1-2 lines change
+
+---
+
+#### B4. Digital Stamp on PDF After Approval
+- **Status:** [MISS] — Not Implemented
+- **What Client Wants:** After customer approves, the PDF Page 5 (or last page) should show a stamp: *"Digitaal akkoord gegeven door {naam} op {datum} om {tijd} · IP: {ip}"*
+- **What Exists:** `isApprovedSuccess` state already tracks approval. Approval details stored in `approvalDetails` object.
+- **What Needs to be Built:**
+  - In `Offerte6PagePDF.jsx` Page 6 (Akkoord page), add conditional block: if `quote.status === 'Geaccepteerd'`, show digital stamp with signer name, date, IP instead of signature boxes
+- **Files to Modify:** `src/components/Offerte6PagePDF.jsx` (Page 6 section)
+- **Estimated Effort:** Medium — new JSX block
+
+---
+
+### PRIORITY GROUP C — Admin Panel Missing Features
+
+#### C1. Categories Management Tab in Settings
+- **Status:** [MISS] — Completely Missing
+- **Verified From:** `client_requirements.md` Line 34
+- **What Client Wants:** A new "Categories" tab in Settings where admin can Add / Edit / Enable / Disable product categories (Outdoor Kitchen, Garden Room, Poolhouse, Canopy, etc.)
+- **What Exists:** Settings has hardcoded category options in dropdowns across Leads, Quotes, Projects pages — not from a central config
+- **What Needs to be Built:**
+  - New "Categories" tab in `src/pages/admin/Settings.jsx`
+  - CRUD UI (Add/Edit/Delete/Toggle) for category items
+  - Save to `localStorage.setItem('app_categories', ...)`
+  - Leads, Quotes, Projects dropdowns should read from `app_categories`
+- **Files to Modify:** `src/pages/admin/Settings.jsx`, `src/pages/admin/Leads.jsx`, `src/pages/admin/Quotes.jsx`
+
+---
+
+#### C2. Price Breakdown Config Tab in Settings
+- **Status:** [MISS] — Completely Missing
+- **Verified From:** `client_requirements.md` Line 35
+- **What Client Wants:** A tab in Settings where admin can configure partner price request sections (e.g. Material, Labour, Transport, Installation, Other)
+- **What Needs to be Built:**
+  - New "Price Breakdown" tab in `src/pages/admin/Settings.jsx`
+  - Drag-to-reorder list of price sections
+  - Save to `localStorage.setItem('app_price_sections', ...)`
+  - `PartnerPriceRequests.jsx` should dynamically show these sections
+
+---
+
+#### C3. Partner Price Request — Multiple Price Sections
+- **Status:** [DONE] ✅ — Completed 03 September 2026 (02:30 PM IST)
+- **Was:** Only single price field captured on Partner submission
+- **Fix Applied:**
+  - Updated `handleSubmit` in `PartnerPriceRequests.jsx` to extract breakdown items (Material 🪵, Labour 🔨, Transport 🚚, Installation 🏗️, Other 💼) into a structured `breakdownItems` array attached to the submitted offer object.
+  - Total Build Price auto-calculates dynamically as partner fills out individual section inputs.
+  - Updated `WorkflowTracker.jsx` Step 3 (`Partner price received`) to display an itemized cost breakdown grid when Admin views the offer received from Partner.
+- **Files Modified:** `src/pages/partner/PartnerPriceRequests.jsx`, `src/components/WorkflowTracker.jsx`
+- **Verification:** Production build `npm run build` 0 errors (`✓ built in 25.70s`)
+
+---
+
+#### C4. Planning — Day-Level View Toggle
+- **Status:** [MISS] — Only Week View Exists
+- **Verified From:** `client_requirements.md` Lines 158-160
+- **What Client Wants:** Week → Day drill-down view. Click on a week → see Mon/Tue/Wed/Thu/Fri/Sat/Sun day cards
+- **Files to Modify:** `src/pages/admin/Planning.jsx`
+
+---
+
+#### C5. Send Invoice by Email — UI Button Only
+- **Status:** [MISS] — Button Does Not Exist
+- **Verified From:** `client_requirements.md` Line 119 — "No email button exists (no real API needed, just UI representation)"
+- **What Needs to be Built:** A "Send by Email" button on each invoice row in `Invoices.jsx` — clicking shows a mock "Email Sent" confirmation toast
+- **Files to Modify:** `src/pages/admin/Invoices.jsx`
+- **Estimated Effort:** Tiny
+
+---
+
+#### C6. Add Customer Manually — Button + Form
+- **Status:** [MISS] — No Add Button or Form Exists
+- **Verified From:** `client_requirements.md` Line 131
+- **What Needs to be Built:** An "+ Add Customer" button in `Customers.jsx` that opens a modal form with: Name, Email, Phone, Address, City fields
+- **Files to Modify:** `src/pages/admin/Customers.jsx`
+
+---
+
+#### C7. Global Projects List (ProjectGlobalInbox) — Make Read-Only + Row-Click Navigation
+- **Status:** [MISS] — Still Has Old Dropdowns and Buttons
+- **Verified From:** `client_requirements.md` Lines 281-282
+- **What Client Wants:**
+  - Remove all dropdowns and action buttons from the global list
+  - Make it a clean read-only table with: `WIE IS AAN ZET` column, `FASE` pill badges
+  -btao Clicking a row → navigates to the correct project detail page (OutdoorKitchenProjects or GardenRoomProjects)
+- **Files to Modify:** `src/pages/admin/ProjectGlobalInbox.jsx`
+
+---
+
+### PRIORITY GROUP D — Create Quote from Lead (Modal, No Redirect)
+
+#### D1. Lead → Quote: Open Modal Instead of Redirect
+- **Status:** [DONE] ✅ — Completed 03 September 2026 (12:05 PM IST)
+- **Was:** `src/components/WorkflowTracker.jsx` Step 4 had `navigate('/admin/quotes')` — redirected admin away from Lead page
+- **Fix Applied:**
+  - Added `import QuoteEditor from './QuoteEditor'` in `WorkflowTracker.jsx`
+  - Added state `const [showInlineQuoteEditor, setShowInlineQuoteEditor] = useState(false)`
+  - Replaced `navigate('/admin/quotes') + onClose()` with `setShowInlineQuoteEditor(true)`
+  - Added fullscreen modal overlay at bottom of return (z-index 9999) that renders `<QuoteEditor>` inline
+  - Lead data auto-filled into QuoteEditor: `customer`, `project`, `category`, `amount`
+  - Dark green sticky top bar shows: "← Back to Lead: {name}" button + "/admin/leads ← URL unchanged" badge
+  - `onSaveQuote` callback closes modal and shows success toast
+- **Files Modified:** `src/components/WorkflowTracker.jsx`
+- **Verification:** Production build `npm run build` 0 errors (`✓ built in 7.72s`)
+
+---
+
+### SUMMARY TABLE — All Pending Work (03 Sep 2026)
+
+| ID | Task | File | Priority | Effort | Status |
+|----|------|------|----------|--------|--------|
+| A1 | Garden Room PDF (floor-plan + 40/40/20) | `Offerte6PagePDF.jsx` | 🔴 HIGH | Large | [MISS] |
+| A2 | Invoice: IBAN/KVK from Settings | `FactuurPDFTemplate.jsx` | ✅ DONE | Small | [DONE] 03-Sep-2026 |
+| A3 | Quote PDF: Company details from Settings | `Offerte6PagePDF.jsx` | ✅ DONE | Small | [DONE] 03-Sep-2026 |
+| A4 | PDF Engine: Puppeteer decision | `pdfGenerator.js` | 🔵 DECISION | Architectural | [PENDING] |
+| B1 | Approve Button in PublicOfferte | `PublicOfferte.jsx` | ✅ DONE | - | [OK] |
+| B2 | Secure Token (UUID) for quote link | `Quotes.jsx`, `PublicOfferte.jsx` | ✅ DONE | Small | [DONE] 03-Sep-2026 |
+| B3 | Link Expiry — fix hardcoded date | `PublicOfferte.jsx` | ✅ DONE | Tiny | [DONE] 03-Sep-2026 |
+| B4 | Digital Stamp on approved PDF | `Offerte6PagePDF.jsx` | ✅ DONE | Medium | [DONE] 03-Sep-2026 |
+| C1 | Categories Management Tab | `Settings.jsx` | ✅ DONE | Large | [DONE] 03-Sep-2026 |
+| C2 | Price Breakdown Config Tab | `Settings.jsx` | ✅ DONE | Large | [DONE] 03-Sep-2026 |
+| C3 | Partner: Multiple Price Sections | `PartnerPriceRequests.jsx` | ✅ DONE | - | [DONE] 03-Sep-2026 |
+| C4 | Planning: Day-Level View | `Planning.jsx` | 🟡 MEDIUM | Large | [MISS] |
+| C5 | Invoice: Send by Email button | `Invoices.jsx` | ✅ DONE | Tiny | [DONE] 03-Sep-2026 |
+| C6 | Customers: Add Manually button | `Customers.jsx` | 🟢 LOW | Small | [MISS] |
+| C7 | ProjectGlobalInbox: Read-only + Row-click | `ProjectGlobalInbox.jsx` | 🟡 MEDIUM | Medium | [MISS] |
+| D1 | Lead → Quote: Modal (no redirect) | `WorkflowTracker.jsx` | ✅ DONE | - | [DONE] 03-Sep-2026 |
+
+---
+
+Updated: 03 September 2026 (02:30 PM IST)
+C3 — Partner Price Breakdown & Sync COMPLETED & VERIFIED.
+**Progress: 2/16 tasks done. 14 remaining.**
+Next Suggested Tasks: B3 (Tiny fix — expiry date), C5 (Tiny — email button), A2 (Small — IBAN from settings)
+
 
 
 

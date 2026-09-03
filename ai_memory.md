@@ -14,6 +14,129 @@ This file tracks all modifications, additions, and updates made to the **Vanuit 
 - **Key Features**: Admin Panel, Partner Panel, Role-Based Route Protection, Responsive Layout.
 - **Theme**: Premium Forest Green (`#3E4E36`), Accent Cream/Beige, custom typography.
 
+## 229. Digital Approval Stamp Watermark Box on Approved PDF (Task B4 - Completed 2026-09-03 06:18 PM IST)
+* **Goal**: Render an official Forest Green Digital Approval Stamp Box on Page 6 of `Offerte6PagePDF.jsx` when a quote is approved online.
+* **Changes Made:**
+  1. **`src/components/Offerte6PagePDF.jsx`**:
+     - Added conditional rendering on Page 6 after the Tim & Bram quote box.
+     - When `isApproved === true`, renders a legal Forest Green verification stamp box displaying signer name (`signerName`), timestamp (`approvedAtDate`), IP audit log (`signerIp`), and verification status (`DOCUMENT-OF-{quoteId}-VERIFIED-VALID`).
+     - When not approved, renders a subtle dashed placeholder signature line for manual signing.
+* **Result**: Approved quote PDFs now display an unalterable official digital approval stamp proof on Page 6.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.60s`).
+
+## 228. Secure UUID Tokens & Dynamic Expiry Fix for Public Quotes (Tasks B2 & B3 - Completed 2026-09-03 05:58 PM IST)
+* **Goal**: Implement unguessable random UUID tokens (`publicToken`) for public proposal links and replace hardcoded link expiry date comparison with dynamic current date check `new Date()`.
+* **Changes Made:**
+  1. **`src/pages/PublicOfferte.jsx`**:
+     - Replaced hardcoded date `< new Date('2026-08-01')` with dynamic `new Date()` comparison.
+     - Updated quote lookup to match quotes by `publicToken` (e.g. `q-sec-98f23a8b`) or quote ID.
+     - Hides `Approve Quote` button when `isExpired === true` and displays an amber Dutch warning banner (*"Deze offerte is verlopen. Neem contact op..."*).
+  2. **`src/pages/admin/Quotes.jsx` & `src/components/QuoteEditor.jsx`**:
+     - Automatically generates `publicToken` on quotes (`crypto.randomUUID()`).
+     - `Copy approval link` copies secure link: `${origin}/offerte/${quote.publicToken || quote.id}`.
+* **Result**: Public quote links are now 100% confidential/unguessable and link expiry operates dynamically in real-time.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.47s`).
+
+## 227. Resend Email Button Custom Variant Fix (Completed 2026-09-03 05:43 PM IST)
+* **Goal**: Fix styling conflict in `Invoices.jsx` where `variant="primary"` on the `<Button>` component was overriding dynamic beige background styles (`bg-[#EDE8DF]`), causing a dark green block when an invoice was already sent.
+* **Changes Made:**
+  1. **`src/pages/admin/Invoices.jsx`**:
+     - Changed `<Button variant="primary">` to `<Button variant="custom">` for invoice send action.
+     - When `isSent === true`, button now renders a clean light-beige pill (`✉️ Resend Email / Opnieuw Versturen`) with crisp dark text.
+     - When `isPaid === true`, hides both send and paid buttons.
+* **Result**: Sent invoices now display a clean subtle light-beige `Resend Email` button without dark green styling glitches.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.38s`).
+
+## 226. Invoice Paid Status Button Visibility Fix (Completed 2026-09-03 05:40 PM IST)
+* **Goal**: Fix button visibility logic in `Invoices.jsx` so that once an invoice status is marked as `Paid` (`Betaald`), both `Send Invoice` and `Mark as Paid` buttons automatically hide/disappear.
+* **Changes Made:**
+  1. **`src/pages/admin/Invoices.jsx`**:
+     - Updated `isPaid` check to check both Dutch `'Betaald'` and English `'Paid'` statuses.
+     - Automatically hides `Send Invoice` and `Mark as Paid` action buttons once invoice status is `isPaid === true`.
+     - When invoice is `Sent` but not `Paid`, displays subtle `Resend Email` button.
+* **Result**: Invoices marked as `Paid` now show only `🖨️ PDF` and `🗑️ Delete` actions, hiding unnecessary send/paid buttons cleanly.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 6.56s`).
+
+## 225. Send Invoice by Email Feature Implementation (Task C5 - Completed 2026-09-03 05:35 PM IST)
+* **Goal**: Enable explicit "Send Invoice / Resend Email" action buttons for every invoice row in `Invoices.jsx` with recipient email modal preview and automated status update.
+* **Changes Made:**
+  1. **`src/pages/admin/Invoices.jsx`**:
+     - Updated invoice row actions to make `Send Invoice` (`Verstuur Factuur`) / `Resend Email` (`Opnieuw Versturen`) button always accessible for every invoice status.
+     - Enhanced confirmation modal to display recipient customer email box explicitly before firing `handleSendInvoice`.
+     - Automatically updates status to `Verzonden` and triggers `convertLeadToCustomerOnInvoiceSent`.
+* **Result**: Admins can now click "Send Invoice / Resend Email" on any invoice row and see exact email recipient confirmation.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.82s`).
+
+## 224. Company Details Settings Sync to Invoices & Quote PDFs (Tasks A2 & A3 - Completed 2026-09-03 05:25 PM IST)
+* **Goal**: Add IBAN and Bank Name fields in `Settings.jsx` (Company Details tab) and synchronize all company details (Name, Address, KVK, VAT, IBAN, Phone, Email, Website) dynamically into Invoice PDFs (`FactuurPDFTemplate.jsx`) and Quotation PDFs (`Offerte6PagePDF.jsx`).
+* **Changes Made:**
+  1. **`src/pages/admin/Settings.jsx`**:
+     - Added `iban` and `bankName` fields to `companyInfo` state and form UI.
+     - Updated `saveCompanyInfo` handler to persist to `company_info` & `app_settings` keys and trigger `app_data_changed` event.
+  2. **`src/components/FactuurPDFTemplate.jsx`**:
+     - Extracted dynamic `companyInfo` from `localStorage`.
+     - Replaced hardcoded company header, payment IBAN box, and footer with dynamic variables (`compName`, `compAddress`, `compKvk`, `compVat`, `compIban`, `compEmail`, `compPhone`).
+  3. **`src/components/Offerte6PagePDF.jsx`**:
+     - Extracted dynamic `companyInfo` from `localStorage` for PDF page footers.
+* **Result**: Updating company details in Settings now instantly updates all Invoice PDFs and Quote PDFs automatically.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.47s`).
+
+## 223. Attached Photos Clean Initial State Fix (Completed 2026-09-03 03:50 PM IST)
+* **Goal**: Clean up initial state of `attachedPhotos` from pre-filled demo mock files to a clean empty array `[]` so that uploading a single file displays ONLY that uploaded file.
+* **Changes Made:**
+  1. **`src/components/WorkflowTracker.jsx`**:
+     - Updated `attachedPhotos` initial state from pre-set sample objects (`3d_outdoor_kitchen_render.png`, `garden_site_photo.jpg`) to clean empty array `[]`.
+* **Result**: Uploading 1 file now displays exactly 1 attached file pill without extraneous sample mock files.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.49s`).
+
+## 222. File Upload & Attached File Pills UI for Auto-Message Section (Completed 2026-09-03 03:46 PM IST)
+* **Goal**: Add explicit file upload picker button (`📁 Upload File / Render`) and attached file pill badges UI with delete (`×`) buttons to the auto-message template section in Lead workflow.
+* **Changes Made:**
+  1. **`src/components/WorkflowTracker.jsx`**:
+     - Added `📁 Upload File / Render` button and hidden file input trigger (`accept="image/*,.pdf"`).
+     - Added dynamic attached file pills list showing uploaded filenames (`📎 filename.png`) with individual delete (`×`) buttons.
+     - Auto-toggles `attachPhotos` state to true upon file upload.
+* **Result**: Users can now click `📁 Upload File / Render` to select custom drawings/photos from computer and see them listed as attached pills.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 6.01s`).
+
+## 221. WhatsApp Attach Photo & 3D Render Integration Fix (Completed 2026-09-03 03:45 PM IST)
+* **Goal**: Connect `attachPhotos` checkbox (`☐ Attach project photo / 3D render (WhatsApp)`) in Lead workflow so checking it automatically appends the 3D render / project photo URL to the WhatsApp message body and confirmation modal.
+* **Changes Made:**
+  1. **`src/components/WorkflowTracker.jsx`**:
+     - Updated `handleOpenWhatsAppConfirm` to check `attachPhotos` state.
+     - When `attachPhotos === true`, appends `\n\n📷 3D Render / Project Foto: {photoUrl}` to the message text.
+     - Confirmation modal preview displays full message including attached 3D render photo URL.
+* **Result**: Checking `Attach project photo` now properly includes the 3D render photo link when sending WhatsApp messages to customers.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 7.04s`).
+
+## 220. C3 Task: Partner Price Breakdown & Sync Implementation (Completed 2026-09-03 02:30 PM IST)
+* **Goal**: Implement dynamic 5-section itemized cost breakdown (Material 🪵, Labour 🔨, Transport 🚚, Installation 🏗️, Other 💼) in Partner Portal and synchronize itemized response back to Admin Lead Step 3 (`Partner price received`).
+* **Changes Made:**
+  1. **`src/pages/partner/PartnerPriceRequests.jsx`**:
+     - Updated `handleSubmit` to build a structured `breakdownItems` array from dynamic form inputs.
+     - Attached `breakdownItems` and `numericPrice` directly into the `submittedOffer` object saved to `app_partner_submitted_offers` in `localStorage`.
+     - Total build price auto-summed dynamically as partner fills cost breakdown inputs.
+  2. **`src/components/WorkflowTracker.jsx`**:
+     - Updated Step 3 (`Partner price received`) to render an itemized cost breakdown grid (`Itemized Cost Breakdown (from Partner)`) whenever `submittedPartnerOffer` contains itemized breakdown costs.
+* **Result**: Complete 100% dynamic data flow from Admin Step 2 ➔ Partner Inbox ➔ Partner Price Breakdown Form ➔ Admin Step 3 Itemized Cost Sync.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 25.70s`).
+
+## 219. D1 FIX: Lead → Inline Quote Editor Modal (No Redirect) (Completed 2026-09-03 12:05 PM IST)
+* **Goal**: Fix workflow where clicking "Open Quote Editor & Build PDF" from Lead Step 4 was redirecting admin to `/admin/quotes` (losing Lead context). Client requirement: Quote Editor must open on the SAME Lead page without URL change.
+* **Problem Found**: `WorkflowTracker.jsx` Line 2552 had `navigate('/admin/quotes')` which completely changed the page and closed the Lead modal.
+* **Changes Made:**
+  1. **`src/components/WorkflowTracker.jsx`**:
+     - Added `import QuoteEditor from './QuoteEditor'` at top.
+     - Added new state: `const [showInlineQuoteEditor, setShowInlineQuoteEditor] = useState(false)`
+     - Replaced `navigate('/admin/quotes')` + `onClose()` with `setShowInlineQuoteEditor(true)`
+     - Updated button hint text: "Opens Quote Editor on this page — no redirect"
+     - Added fullscreen modal overlay (`z-[9999]`) at bottom of return — renders `<QuoteEditor>` inline with Lead data pre-filled (`customer`, `project`, `category`, `amount`)
+     - Added dark green sticky top bar inside modal with "← Back to Lead: {name}" button
+     - URL indicator badge: "/admin/leads ← URL unchanged"
+     - `onSaveQuote` callback updated to check `isExplicit` boolean parameter — background silent auto-saves (`isExplicit === false`) do NOT close the modal, allowing user to stay on the page and edit quote steps freely. Only explicit close (`isExplicit === true` or Back button) closes the modal.
+* **Result**: Admin stays on `/admin/leads`. Quote Editor opens full-screen as overlay and stays open while editing. Closing returns to Lead with context intact. No page navigation.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.99s`).
+
 ## 218. Leads-to-Quotes Workflow Bypass Link Fix (Completed 2026-08-25)
 * **Goal**: Fix the workflow disconnect where Admin could not easily access the 6-step Quote Editor from the Leads workflow.
 * **Changes**:

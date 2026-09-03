@@ -27,9 +27,10 @@ export default function PublicOfferte() {
       const savedQuotes = localStorage.getItem('app_quotes_v2') || localStorage.getItem('app_quotes_v1') || localStorage.getItem('app_quotes');
       const allQuotes = savedQuotes ? JSON.parse(savedQuotes) : defaultQuotes;
       
-      // Match by ID (token can be quote.id like OF-2026-4005 or Q-4004)
+      // Match by Token or ID (publicToken like q-sec-98f23a8b or quote.id like OF-2026332)
       const found = allQuotes.find(
-        (q) => String(q.id).toLowerCase() === String(token).toLowerCase() ||
+        (q) => (q.publicToken && String(q.publicToken).toLowerCase() === String(token).toLowerCase()) ||
+               String(q.id).toLowerCase() === String(token).toLowerCase() ||
                String(q.id).replace(/[^\w]/g, '').toLowerCase() === String(token).replace(/[^\w]/g, '').toLowerCase()
       );
 
@@ -63,8 +64,8 @@ export default function PublicOfferte() {
     loadQuote();
   }, [token]);
 
-  // Check if quote is expired (validUntil check)
-  const isExpired = quote && quote.validUntil ? new Date(quote.validUntil) < new Date('2026-08-01') : false;
+  // Check if quote is expired (validUntil check vs real-time current date)
+  const isExpired = quote && quote.validUntil ? new Date(quote.validUntil) < new Date() : false;
 
   // Handle Digital Approval Submission
   const handleApproveSubmit = (e) => {
@@ -186,7 +187,7 @@ export default function PublicOfferte() {
               <span className="hidden sm:inline">Download PDF</span>
             </button>
 
-            {!(isApprovedSuccess || quote.status === 'Akkoord') && (
+            {!(isApprovedSuccess || quote.status === 'Akkoord' || isExpired) && (
               <button
                 onClick={() => setShowApprovalModal(true)}
                 className="px-4 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-bold flex items-center gap-1.5 transition-colors shadow-lg cursor-pointer tracking-wide border border-emerald-600/50"
@@ -199,9 +200,11 @@ export default function PublicOfferte() {
             <span className={`text-[11px] font-mono font-bold px-3 py-1 rounded-full border ${
               isApprovedSuccess || quote.status === 'Akkoord'
                 ? 'bg-emerald-800/80 text-emerald-200 border-emerald-500/50'
+                : isExpired
+                ? 'bg-amber-800/80 text-amber-200 border-amber-500/50'
                 : 'bg-[#70624F]/40 text-[#FDFBF7] border-[#70624F] hidden sm:inline-block'
             }`}>
-              {isApprovedSuccess || quote.status === 'Akkoord' ? '✓ Digitally Approved' : `Quote ${quote.id}`}
+              {isApprovedSuccess || quote.status === 'Akkoord' ? '✓ Digitally Approved' : isExpired ? '⚠️ Expired Quote' : `Quote ${quote.id}`}
             </span>
           </div>
         </div>
@@ -210,6 +213,29 @@ export default function PublicOfferte() {
       {/* Main 6-Page Offerte Container */}
       <main className="max-w-4xl mx-auto p-3 sm:p-6 space-y-8 mt-4">
         
+        {/* Expired Warning Banner */}
+        {isExpired && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className="p-5 bg-amber-950/90 text-amber-100 rounded-2xl border-2 border-amber-500 shadow-xl space-y-1.5 print:hidden font-body"
+          >
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-6 h-6 text-amber-400 flex-shrink-0" />
+              <div>
+                <h3 className="font-heading font-bold text-base text-amber-200">
+                  {language === 'EN' ? 'This proposal has expired' : 'Deze offerte is verlopen'}
+                </h3>
+                <p className="text-xs text-amber-200/80 mt-0.5">
+                  {language === 'EN' 
+                    ? `The validity period for this quote expired on ${quote.validUntil}. Please contact Vanuit Ambacht for an updated quote.`
+                    : `De geldigheidstermijn voor deze prijsopgave is verstreken op ${quote.validUntil}. Neem contact op met Vanuit Ambacht voor een herziene offerte.`}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Success Banner if Approved */}
         {isApprovedSuccess && (
           <motion.div 
