@@ -575,15 +575,23 @@ export default function Invoices() {
                     Factuur PDF Preview ({pdfInvoice.id})
                   </h3>
                 </div>
-                <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
-                  <Button size="sm" icon={Download} onClick={() => {
-                    const fileName = downloadInvoicePdf(pdfInvoice);
-                    // show toast if possible
-                  }} className="text-xs font-bold">
-                    <span className="hidden sm:inline">Download </span>PDF
-                  </Button>
-                  <button onClick={() => setPdfInvoice(null)} className="p-1.5 text-dark/40 hover:text-dark rounded-lg hover:bg-dark/5 transition-colors">
-                    <X className="w-5 h-5" />
+                <div className="flex items-center gap-2.5 self-end sm:self-auto flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await downloadInvoicePdf(pdfInvoice);
+                    }}
+                    className="px-3.5 py-1.5 bg-[#33422C] hover:bg-[#283523] text-[#FDFBF7] font-mono text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer border border-[#43543A]"
+                  >
+                    <Download className="w-3.5 h-3.5 text-[#D97706]" />
+                    <span>Download PDF</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPdfInvoice(null)}
+                    className="p-1.5 text-dark/50 hover:text-dark rounded-xl hover:bg-dark/5 transition-colors cursor-pointer border border-[#D6CFC2]"
+                  >
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               </div>

@@ -83,63 +83,63 @@ export default function FactuurPDFTemplate({ invoice }) {
   return (
     <div 
       id="printable-factuur" 
-      className="bg-white text-[#2B3028] font-body p-6 max-w-4xl mx-auto rounded-2xl shadow-xl border border-[#D6CFC2] space-y-4 select-text print:shadow-none print:border-none print:p-6 print:m-0 print:max-w-none print:w-full print:bg-white"
+      className="bg-white text-[#2B3028] font-body p-8 sm:p-10 max-w-4xl mx-auto rounded-none shadow-md border border-[#D6CFC2]/60 space-y-5 select-text print:shadow-none print:border-none print:p-8 print:m-0 print:max-w-none print:w-full print:bg-white"
     >
       
       {/* 1. HEADER LOGO & FACTUUR PILL BADGE */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center pt-2">
         <div className="flex items-center gap-3">
-          <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-9 w-auto object-contain" />
+          <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-10 w-auto object-contain" />
         </div>
-        <span className="px-4 py-1.5 rounded-full border border-[#33422C] text-[#33422C] text-xs font-bold uppercase tracking-widest bg-[#F5F2EB]">
+        <span className="px-4 py-1.5 rounded-full border border-[#8A7966] text-[#8A7966] text-[10px] font-mono font-bold uppercase tracking-[0.3em] bg-transparent">
           FACTUUR
         </span>
       </div>
 
       {/* 2. SUBHEADER / GREETING */}
-      <div className="space-y-0.5 pt-1">
-        <p className="text-[10px] font-bold text-[#4A5043] uppercase tracking-widest">FACTUUR {invId}</p>
-        <h1 className="text-2xl font-heading font-bold text-[#33422C]">
+      <div className="space-y-1 pt-2">
+        <p className="text-[9.5px] font-mono font-bold text-[#8A7966] uppercase tracking-[0.25em]">FACTUUR {invId}</p>
+        <h1 className="text-3xl sm:text-4xl font-serif text-[#3E4E36] font-normal leading-tight" style={{ fontFamily: "'Cormorant Garamond', 'Playfair Display', Georgia, serif" }}>
           Bedankt voor je vertrouwen, {firstName}.
         </h1>
       </div>
 
       {/* 3. 4-COLUMN SUMMARY METADATA CARD */}
-      <div className="grid grid-cols-4 gap-3 p-3.5 bg-[#F5F2EB] rounded-xl border border-[#E5E0D5]">
+      <div className="grid grid-cols-4 gap-3 p-4 bg-[#F5F2EB] rounded-xl border border-[#E5E0D5]">
         <div>
-          <p className="text-[9px] font-bold uppercase text-[#4A5043] tracking-wider">FACTUURNUMMER</p>
-          <p className="font-bold text-[#2B3028] text-xs mt-0.5">{invId}</p>
+          <p className="text-[9px] font-mono font-bold uppercase text-[#8A7966] tracking-[0.2em]">FACTUURNUMMER</p>
+          <p className="font-bold text-[#2B3028] text-xs sm:text-sm mt-1 font-mono">{invId}</p>
         </div>
         <div>
-          <p className="text-[9px] font-bold uppercase text-[#4A5043] tracking-wider">FACTUURDATUM</p>
-          <p className="font-bold text-[#2B3028] text-xs mt-0.5">{invoiceDate}</p>
+          <p className="text-[9px] font-mono font-bold uppercase text-[#8A7966] tracking-[0.2em]">FACTUURDATUM</p>
+          <p className="font-bold text-[#2B3028] text-xs sm:text-sm mt-1">{invoiceDate}</p>
         </div>
         <div>
-          <p className="text-[9px] font-bold uppercase text-[#4A5043] tracking-wider">VERVALDATUM</p>
-          <p className="font-bold text-[#2B3028] text-xs mt-0.5">{dueDate}</p>
+          <p className="text-[9px] font-mono font-bold uppercase text-[#8A7966] tracking-[0.2em]">VERVALDATUM</p>
+          <p className="font-bold text-[#2B3028] text-xs sm:text-sm mt-1">{dueDate}</p>
         </div>
         <div>
-          <p className="text-[9px] font-bold uppercase text-[#4A5043] tracking-wider">REFERENTIE</p>
-          <p className="font-bold text-[#2B3028] text-xs mt-0.5">{quoteRef}</p>
+          <p className="text-[9px] font-mono font-bold uppercase text-[#8A7966] tracking-[0.2em]">REFERENTIE</p>
+          <p className="font-bold text-[#2B3028] text-xs sm:text-sm mt-1 font-mono">{quoteRef}</p>
         </div>
       </div>
 
       {/* 4. ADDRESSES 2-COLUMN SECTION */}
-      <div className="grid grid-cols-2 gap-6 text-[11px]">
+      <div className="grid grid-cols-2 gap-8 text-[11.5px] pt-1">
         <div className="space-y-1">
-          <p className="text-[10px] font-bold uppercase text-[#4A5043] tracking-widest">FACTUUR AAN</p>
-          <p className="font-bold text-[#2B3028] text-xs">{customerName}</p>
+          <p className="text-[9.5px] font-mono font-bold uppercase text-[#8A7966] tracking-[0.22em]">FACTUUR AAN</p>
+          <p className="font-bold text-[#2B3028] text-xs sm:text-sm pt-0.5">{customerName}</p>
           <p className="text-[#33382F] font-medium">{addressLine1}</p>
           <p className="text-[#33382F] font-medium">{addressLine2}</p>
-          <p className="text-[#4A5043] font-mono text-[10px] font-bold">{phone}</p>
+          <p className="text-[#8A7966] font-mono text-[10.5px] font-semibold pt-0.5">{phone}</p>
         </div>
 
         <div className="space-y-1">
-          <p className="text-[10px] font-bold uppercase text-[#4A5043] tracking-widest">FACTUUR VAN</p>
-          <p className="font-bold text-[#2B3028] text-xs">{compName}</p>
+          <p className="text-[9.5px] font-mono font-bold uppercase text-[#8A7966] tracking-[0.22em]">FACTUUR VAN</p>
+          <p className="font-bold text-[#2B3028] text-xs sm:text-sm pt-0.5">{compName}</p>
           <p className="text-[#33382F] font-medium">{compAddress}</p>
-          <p className="text-[#4A5043] font-mono text-[10px] font-bold">{compKvk} · {compVat}</p>
-          <p className="text-[#4A5043] font-mono text-[10px] font-bold">{compEmail} · {compPhone}</p>
+          <p className="text-[#8A7966] font-mono text-[10.5px] font-semibold pt-0.5">{compKvk} &nbsp;·&nbsp; {compVat}</p>
+          <p className="text-[#8A7966] font-mono text-[10.5px] font-semibold">{compEmail} &nbsp;·&nbsp; {compPhone}</p>
         </div>
       </div>
 

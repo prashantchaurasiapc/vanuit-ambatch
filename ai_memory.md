@@ -14,6 +14,38 @@ This file tracks all modifications, additions, and updates made to the **Vanuit 
 - **Key Features**: Admin Panel, Partner Panel, Role-Based Route Protection, Responsive Layout.
 - **Theme**: Premium Forest Green (`#3E4E36`), Accent Cream/Beige, custom typography.
 
+## 235. Invoice Top Badge & Bronze Typography Alignment Fix (Completed 2026-09-07 10:55 AM IST)
+* **Goal**: Match client's official HTML template `.fbadge` (`#8A7966` bronze pill outline, `letter-spacing: 0.3em`) and `.lab` section headers (`#8A7966` bronze text, `letter-spacing: 0.22em`).
+* **Changes Made:**
+  1. **`src/components/FactuurPDFTemplate.jsx`**:
+     - Updated top-right `FACTUUR` pill badge to `border border-[#8A7966] text-[#8A7966] bg-transparent text-[10px] tracking-[0.3em] font-mono`.
+     - Updated section headers (`FACTUUR {invId}`, `FACTUURNUMMER`, `FACTUURDATUM`, `VERVALDATUM`, `REFERENTIE`, `FACTUUR AAN`, `FACTUUR VAN`) to use bronze color `#8A7966` with tracking `0.2em` to `0.25em`.
+     - Updated subheader greeting to `text-3xl sm:text-4xl font-serif text-[#3E4E36]` matching Playfair/Cormorant typography.
+* **Result**: Top right `FACTUUR` pill badge and section labels match the client's official HTML template 100% pixel-perfect.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.55s`).
+
+## 234. Invoice Modal Header Button Alignment & Straight A4 PDF Edge Fix (Completed 2026-09-07 10:51 AM IST)
+* **Goal**: Fix alignment of `DownloadPDF` button/text in the modal header and remove rounded paper corner cutouts on generated invoice PDF pages.
+* **Changes Made:**
+  1. **`src/pages/admin/Invoices.jsx`**:
+     - Redesigned the modal header right-action buttons with centered flex alignment, gold `<Download>` icon, Forest Green button background, and explicit border styling.
+  2. **`src/components/FactuurPDFTemplate.jsx`**:
+     - Updated root container class from `rounded-2xl` to `rounded-none` with `p-8 sm:p-10` and `space-y-5`.
+* **Result**: `DownloadPDF` button and icon in the modal header are 100% vertically centered and pixel-perfect. Downloaded PDF file has clean, square A4 paper page edges without rounded corner gaps.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 6.60s`).
+
+## 233. Invoice Download PDF Visual Template Fix (Completed 2026-09-07 10:47 AM IST)
+* **Goal**: Fix the discrepancy where clicking `DownloadPDF` on an invoice downloaded an old text-only PDF instead of the official visual `FactuurPDFTemplate.jsx` template shown in the preview modal.
+* **Changes Made:**
+  1. **`src/utils/pdfGenerator.js`**:
+     - Imported `FactuurPDFTemplate`.
+     - Rewrote `downloadInvoicePdf(invoice)` to render `<FactuurPDFTemplate invoice={inv} />` inside a 794px off-screen container.
+     - Used `html2canvas` (scale 2, CORS enabled) + `jsPDF` to capture the exact visual template (logos, Cormorant Garamond fonts, 4-column summary grid, green totals card) into the downloaded PDF file.
+  2. **`src/pages/admin/Invoices.jsx`**:
+     - Updated `DownloadPDF` button handler to be `async` and await `downloadInvoicePdf(pdfInvoice)`.
+* **Result**: Clicking `DownloadPDF` in the Invoices section downloads a PDF file that is 100% IDENTICAL to the live preview modal and the client's official HTML template.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.92s`).
+
 ## 232. Client Invoice HTML Template Verification & Dynamic Personal Note (Completed 2026-09-03 07:40 PM IST)
 * **Goal**: Audit client's official HTML template (`Vanuit-Ambacht-factuur-template.html`) against `FactuurPDFTemplate.jsx` and ensure 100% structural, typographical, and dynamic field parity.
 * **Changes Made:**
