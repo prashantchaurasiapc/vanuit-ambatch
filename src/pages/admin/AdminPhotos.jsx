@@ -123,7 +123,11 @@ export default function AdminPhotos() {
       if (savedPhotos) {
         const parsedPhotos = JSON.parse(savedPhotos);
         if (Array.isArray(parsedPhotos) && parsedPhotos.length > 0) {
-          setPhotosList(parsedPhotos);
+          const sanitized = parsedPhotos.map(p => ({
+            ...p,
+            img: p.img || p.url || projectImg
+          }));
+          setPhotosList(sanitized);
           return;
         }
       }
@@ -439,7 +443,12 @@ export default function AdminPhotos() {
               <div>
                 {/* Photo Image & Badge Overlay */}
                 <div className="relative h-48 bg-cream-dark/20 overflow-hidden cursor-pointer" onClick={() => setPreviewPhoto(photo)}>
-                  <img src={photo.img} alt={photo.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <img
+                    src={photo.img || projectImg}
+                    alt={photo.title}
+                    onError={(e) => { e.currentTarget.src = projectImg; }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent"></div>
 
                   {/* Project ID & Customer Badge */}

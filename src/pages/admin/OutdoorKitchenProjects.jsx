@@ -498,16 +498,18 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
 
     // Sync with global photos storage for Customer Portal
     const existing = JSON.parse(localStorage.getItem('app_project_photos') || '[]');
+    const targetPhoto = photosList.find(p => p.id === photoId);
     const newPublished = {
       id: `P-${Date.now()}`,
       projectId: '2026-014',
       projectName: 'Sander de Vries — Thermo Fraké 240 cm',
       customer: 'Sander de Vries',
-      title: 'Fitting countertop',
+      title: targetPhoto?.title || 'Fitting countertop',
       description: publishedNote,
       phase: 'In the workshop',
       craftsman: 'Sven Hoek · Hoek Bouw',
       uploaderRole: 'admin',
+      img: targetPhoto?.img || projectImg,
       isShared: true,
       date: new Date().toISOString().split('T')[0]
     };
