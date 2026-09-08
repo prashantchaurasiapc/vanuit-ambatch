@@ -257,6 +257,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
   const [newProjectModal, setNewProjectModal] = useState(false);
   const [newProjectClient, setNewProjectClient] = useState('');
   const [newProjectType, setNewProjectType] = useState('Outdoor Kitchen');
+  const [newProjectBudget, setNewProjectBudget] = useState('€ 3,920.00');
   const [phaseModal, setPhaseModal] = useState(false);
   const [selectedNewPhase, setSelectedNewPhase] = useState('In the workshop');
 

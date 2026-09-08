@@ -14,6 +14,14 @@ This file tracks all modifications, additions, and updates made to the **Vanuit 
 - **Key Features**: Admin Panel, Partner Panel, Role-Based Route Protection, Responsive Layout.
 - **Theme**: Premium Forest Green (`#3E4E36`), Accent Cream/Beige, custom typography.
 
+## 236. OutdoorKitchenProjects Component Crash Fix (`newProjectBudget` ReferenceError) (Completed 2026-09-07 11:20 AM IST)
+* **Goal**: Fix runtime crash on `https://ambatch.netlify.app/admin/projects/outdoor-kitchen` showing Error Boundary screen with `Error: newProjectBudget is not defined`.
+* **Changes Made:**
+  1. **`src/pages/admin/OutdoorKitchenProjects.jsx`**:
+     - Added missing state declaration `const [newProjectBudget, setNewProjectBudget] = useState('€ 3,920.00');` on line 260.
+* **Result**: Outdoor Kitchen Projects page loads cleanly without any Error Boundary crash.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.51s`).
+
 ## 235. Invoice Top Badge & Bronze Typography Alignment Fix (Completed 2026-09-07 10:55 AM IST)
 * **Goal**: Match client's official HTML template `.fbadge` (`#8A7966` bronze pill outline, `letter-spacing: 0.3em`) and `.lab` section headers (`#8A7966` bronze text, `letter-spacing: 0.22em`).
 * **Changes Made:**
