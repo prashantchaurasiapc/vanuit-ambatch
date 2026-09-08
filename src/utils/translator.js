@@ -64,7 +64,7 @@ const DICTIONARY = {
   'buitenverblijf': { EN: 'Garden Room', NL: 'Buitenverblijf' },
   'Buitenverblijf': { EN: 'Garden Room', NL: 'Buitenverblijf' },
   'Buitenverblijven': { EN: 'Garden Rooms', NL: 'Buitenverblijven' },
-  'Outdoor Living': { EN: 'Garden Room', NL: 'Buitenverblijf' },
+  'Outdoor Living': { EN: 'Outdoor Kitchen', NL: 'Buitenkeuken' },
   'Garden Room': { EN: 'Garden Room', NL: 'Buitenverblijf' },
   'Garden Rooms': { EN: 'Garden Rooms', NL: 'Buitenverblijven' },
   'terras': { EN: 'Terrace & Decking', NL: 'Terrassen' },

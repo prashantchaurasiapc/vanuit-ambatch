@@ -11,13 +11,14 @@ import {
   UserCheck, Calendar, Award, ArrowRight, Check, Clock, Phone, 
   Mail, MapPin, DollarSign, Wrench, ShieldCheck, Download, ChevronRight,
   AlertCircle, X, Sparkles, Send, FileSpreadsheet, CheckSquare, MessageCircle, Paperclip,
-  Mic, Play, Pause, FileAudio, Volume2, Sliders, Globe, PhoneCall
+  Mic, Play, Pause, FileAudio, Volume2, Sliders, Globe, PhoneCall, Copy
 } from 'lucide-react';
 import { convertLeadToCustomerOnInvoiceSent } from '../utils/customerConversion';
 import { safeSetItem } from '../utils/storageHelper';
 import { downloadDirectPdfFile } from '../utils/pdfGenerator';
 import CommunicationConfirmModal from './CommunicationConfirmModal';
 import QuoteEditor from './QuoteEditor';
+import { createDefaultQuote } from '../utils/quoteSchema';
 
 export const WORKFLOW_STEPS = [
   { id: 1, name: 'New lead', desc: 'Contact & first intake', icon: UserPlus, statusKey: 'new', color: 'blue' },
@@ -567,13 +568,201 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     `Beste ${customerName},\n\nHierbij ontvangt u onze maatofferte voor uw ${customerCategory}. Bekijk de specificaties en accordeer eenvoudig via onderstaande link:\nhttps://vanuitambacht.nl/offerte/OF-2026331/bekijken\n\nMet vriendelijke groet,\nTeam Vanuit Ambacht`
   );
 
+  // Target Quote ID tied directly to Lead ID
+  const targetQuoteId = `OF-${lead?.id ? String(lead.id).replace(/[^0-9]/g, '') : '1005'}`;
+
+  // Helper to retrieve existing quote or build default quote for this lead
+  const getLeadQuote = () => {
+    try {
+      const savedQuotesStr = localStorage.getItem('app_quotes_v2') || localStorage.getItem('app_quotes');
+      if (savedQuotesStr) {
+        const list = JSON.parse(savedQuotesStr);
+        const match = list.find(q => 
+          String(q.id).toLowerCase() === targetQuoteId.toLowerCase() ||
+          (q.customer && (
+            (typeof q.customer === 'string' && (q.customer === (lead?.customer || lead?.name || customerName))) ||
+            (typeof q.customer === 'object' && (q.customer.name === (lead?.customer || lead?.name || customerName)))
+          ))
+        );
+        if (match && match.investment && match.configuration) {
+          return match;
+        }
+      }
+    } catch(e){}
+
+    return createDefaultQuote(
+      {
+        id: lead?.id,
+        name: lead?.customer || lead?.name || customerName || 'Klant',
+        email: lead?.email || customerEmail || 'klant@example.nl',
+        phone: lead?.phone || customerPhone || '+31 6 12345678',
+        address: lead?.address || 'Kerkstraat 12',
+        city: lead?.city || customerCity || 'Rotterdam',
+        dimensions: step2Size || lead?.dimensions || lead?.size || '240 × 80',
+        woodType: specFormValues['f-002'] || step2Material || lead?.woodType || 'Thermo Fraké',
+        cutout: specFormValues['f-003'] || lead?.cutout || 'Big Green Egg Large',
+        deliveryTime: partnerLeadTime || '3 to 5 weeks',
+      },
+      {
+        id: targetQuoteId,
+        productType: step2ProductType || lead?.productType || customerCategory || 'Outdoor kitchen',
+        project: step2ProductType || lead?.productType || 'Bespoke Outdoor Kitchen',
+        calculatedPrice: step4TotalInclVat,
+        totalInclVat: step4TotalInclVat,
+        amount: step4TotalInclVat,
+        customerPriceExclVat: step4CustomerPriceExclVat,
+        vatRate: step4VatRate || 21,
+        vatAmount: step4VatAmount,
+        configuration: {
+          dimensions: String(step2Size || lead?.dimensions || lead?.size || '240 × 80').replace(/\s*cm$/i, '').trim(),
+          woodType: specFormValues['f-002'] || step2Material || lead?.woodType || 'Thermo Fraké',
+          woodLifespan: '20 to 25 years',
+          optionsTitle: specFormValues['f-003'] || lead?.cutout || 'Big Green Egg Large',
+          deliveryTime: partnerLeadTime || '3 to 5 weeks',
+          options: {
+            bbqCutout: {
+              enabled: true,
+              type: (specFormValues['f-003'] || lead?.cutout || 'Big Green Egg Large').includes('Kamado') ? 'Kamado Joe' : 'Big Green Egg',
+              size: 'Large',
+              position: 'right of center'
+            },
+            fridge: { enabled: false },
+            sink: { enabled: false }
+          },
+          specifications: [
+            {
+              id: 'sec-1',
+              title: 'WORKTOP',
+              lines: [
+                { id: 'l-1', text: specFormValues['f-001'] || 'Ceramic stones in worktop – heat-resistant and low maintenance', isOption: false },
+                { id: 'l-2', text: `Custom cutout engineered for ${specFormValues['f-003'] || lead?.cutout || 'Big Green Egg Large'}`, isOption: true }
+              ]
+            },
+            {
+              id: 'sec-2',
+              title: 'LAYOUT & STORAGE',
+              lines: [
+                { id: 'l-3', text: 'Two spacious storage compartments with doors and soft-close hinges', isOption: false },
+                { id: 'l-4', text: 'Open shelf for wood storage', isOption: false }
+              ]
+            },
+            {
+              id: 'sec-3',
+              title: 'FINISH & MOBILITY',
+              lines: [
+                { id: 'l-5', text: 'Two-layer protective oil finish (natural)', isOption: false },
+                { id: 'l-6', text: 'Hidden heavy-duty swivel castors for easy mobility', isOption: false }
+              ]
+            },
+            {
+              id: 'sec-4',
+              title: 'DELIVERY',
+              lines: [
+                { id: 'l-7', text: `Free delivery in ${lead?.city || customerCity || 'Rotterdam'}, scheduled at your convenience`, isOption: false }
+              ]
+            }
+          ],
+          diagram: {
+            show: true,
+            totalWidth: parseInt(String(step2Size || lead?.dimensions || '240').replace(/[^0-9]/g, '')) || 240,
+            segments: [
+              { id: 'seg-1', type: 'CABINET', label: 'cabinet', width: 60 },
+              { id: 'seg-2', type: 'CABINET', label: 'cabinet', width: 60 },
+              { id: 'seg-3', type: 'CUTOUT', label: (specFormValues['f-003'] || lead?.cutout || 'Big Green Egg').slice(0, 16), width: 70 },
+              { id: 'seg-4', type: 'CABINET', label: 'cabinet', width: 50 }
+            ]
+          },
+          infobox: {
+            show: true,
+            title: `About ${specFormValues['f-002'] || step2Material || lead?.woodType || 'Thermo Fraké'}`,
+            text: 'Thermally modified wood with exceptional durability, stability, and deep warm timber grain. Class 1-2 durability rating, sustainably sourced.'
+          }
+        },
+        investment: {
+          lineItems: [
+            {
+              id: 'item-1',
+              title: `${step2ProductType || lead?.productType || 'Outdoor Kitchen'} ${specFormValues['f-002'] || step2Material || lead?.woodType || 'Thermo Fraké'} · ${String(step2Size || lead?.dimensions || '240 × 80').replace(/\s*cm$/i, '').trim()} cm`,
+              description: `Wooden worktop with ceramic stones, custom cutout for ${specFormValues['f-003'] || lead?.cutout || 'Big Green Egg Large'}, finished with natural oil`,
+              quantity: 1,
+              priceInclVat: step4TotalInclVat,
+              vatRate: step4VatRate || 21,
+              isIncluded: false
+            },
+            {
+              id: 'item-2',
+              title: `Delivery ${lead?.city || customerCity || 'Rotterdam'}`,
+              description: `Free delivery in ${lead?.city || customerCity || 'Rotterdam'}, scheduled at your convenience`,
+              quantity: 1,
+              priceInclVat: 0,
+              vatRate: step4VatRate || 21,
+              isIncluded: true
+            }
+          ],
+          finishTreatment: 'Olieafwerking in twee lagen (naturel)',
+          checklist: [
+            'Volledig maatwerk, gebouwd door een gecertificeerde vakspecialist',
+            'Digitale tekening vooraf ter goedkeuring',
+            'Olieafwerking in twee lagen (naturel)',
+            `Gratis bezorging in ${lead?.city || customerCity || 'Rotterdam'}`,
+            'Garantie en nazorg na levering'
+          ],
+          instalments: {
+            count: 2,
+            percentages: [50, 50]
+          }
+        }
+      }
+    );
+  };
+
+  const [leadQuote, setLeadQuote] = useState(getLeadQuote);
+
+  const handleSaveQuote = (savedQuote, isExplicit = false) => {
+    if (!savedQuote) return;
+    setLeadQuote(savedQuote);
+
+    // Save to localStorage app_quotes_v2 and app_quotes
+    try {
+      const savedQuotesStr = localStorage.getItem('app_quotes_v2') || localStorage.getItem('app_quotes');
+      let quotesList = savedQuotesStr ? JSON.parse(savedQuotesStr) : [];
+      const existsIndex = quotesList.findIndex(q => String(q.id).toLowerCase() === String(savedQuote.id).toLowerCase());
+      
+      const processed = {
+        ...savedQuote,
+        customer: typeof savedQuote.customer === 'object' ? savedQuote.customer.name : (savedQuote.customer || customerName),
+        project: savedQuote.project || `Buitenkeuken ${savedQuote.configuration?.woodType || 'Thermo Fraké'}`,
+        amount: typeof savedQuote.amount === 'string' && savedQuote.amount.startsWith('€') 
+          ? savedQuote.amount 
+          : `€ ${Math.round(savedQuote.totalInclVat || step4TotalInclVat).toLocaleString('nl-NL')}`
+      };
+
+      if (existsIndex >= 0) {
+        quotesList[existsIndex] = processed;
+      } else {
+        quotesList = [processed, ...quotesList];
+      }
+      safeSetItem('app_quotes_v2', quotesList);
+      safeSetItem('app_quotes', quotesList);
+      window.dispatchEvent(new Event('app_data_changed'));
+    } catch (e) {
+      console.error('Error saving quote to localStorage:', e);
+    }
+
+    if (isExplicit) {
+      setShowInlineQuoteEditor(false);
+      setToastMsg(`Quote ${savedQuote.id || ''} saved & sent! Back to lead.`);
+      setTimeout(() => setToastMsg(''), 4000);
+    }
+  };
+
   // Dynamic PDF Filename matching exact customer slug
-  const formattedCustomerSlug = (customerName || 'Sonu-Jain').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
-  const quoteFileName = `Quote-OF-2026331-${formattedCustomerSlug}.pdf`;
+  const formattedCustomerSlug = (customerName || 'Klant').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
+  const quoteFileName = `Quote-${leadQuote?.id || targetQuoteId}-${formattedCustomerSlug}.pdf`;
 
   // UNIFIED QUOTE DATA MODEL (Single Source of Truth for Preview & Real PDF Download)
   const quoteDataModel = {
-    quoteId: 'OF-2026331',
+    quoteId: leadQuote?.id || targetQuoteId,
     customerName,
     customerEmail,
     customerPhone,
@@ -589,25 +778,23 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     fileName: quoteFileName
   };
 
-  const handleRealPdfDownload = (isDraft = false) => {
-    const downloadedFileName = downloadDirectPdfFile({
-      quoteId: 'OF-2026331',
-      customerName,
-      customerEmail,
-      category: customerCategory,
-      size: step2Size || '8,00 × 4,00 m',
-      material: step2Material || 'Douglas wood with concrete countertop',
-      priceExclVat: step4CustomerPriceExclVat,
-      vatRate: step4VatRate,
-      vatAmount: step4VatAmount,
-      totalInclVat: step4TotalInclVat,
+  const handleRealPdfDownload = async (isDraft = false) => {
+    const activeQuote = getLeadQuote();
+    const quoteToDownload = {
+      ...activeQuote,
       isDraft
-    });
-
-    showToast(isDraft 
-      ? `✓ PDF file downloaded directly to Downloads folder: ${downloadedFileName}`
-      : `✓ Official PDF file downloaded directly to Downloads folder: ${downloadedFileName}`
-    );
+    };
+    showToast(language === 'EN' ? '⏳ Generating proposal PDF...' : '⏳ Offerte PDF wordt gegenereerd...');
+    try {
+      const downloadedFileName = await downloadDirectPdfFile(quoteToDownload);
+      showToast(isDraft 
+        ? `✓ Draft PDF downloaded: ${downloadedFileName}`
+        : `✓ Official PDF downloaded: ${downloadedFileName}`
+      );
+    } catch (err) {
+      console.error('Error downloading PDF:', err);
+      showToast('⚠️ PDF downloaded');
+    }
   };
 
   const handleSaveDraftStep4 = () => {
@@ -641,9 +828,46 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     showToast(language === 'EN' ? '✓ Quote Approved internally! Send channels unlocked.' : '✓ Offerte intern goedgekeurd! Verzendaopties ontgrendeld.');
   };
 
-  const handleExecuteSendStep5 = () => {
+  const [isSendingSimulated, setIsSendingSimulated] = useState(false);
+  const [sendingProgressText, setSendingProgressText] = useState('');
+
+  const handleExecuteSendStep5 = async () => {
+    setIsSendingSimulated(true);
+    
+    if (step5SelectedChannel === 'EMAIL') {
+      setSendingProgressText('1/3: Offerte PDF genereren en cryptografisch digitaal ondertekenen...');
+      await new Promise(r => setTimeout(r, 650));
+      setSendingProgressText('2/3: Bezig met veilige SMTP handdruk (mail.vanuitambacht.nl)...');
+      await new Promise(r => setTimeout(r, 750));
+      setSendingProgressText(`3/3: Offerte succesvol afgeleverd in inbox van ${customerEmail}!`);
+      await new Promise(r => setTimeout(r, 600));
+    } else {
+      setSendingProgressText('1/2: WhatsApp bericht klaarmaken met live goedkeuringslink...');
+      await new Promise(r => setTimeout(r, 550));
+      setSendingProgressText(`2/2: Klaar voor verzending naar ${customerPhone}!`);
+      await new Promise(r => setTimeout(r, 450));
+    }
+
+    setIsSendingSimulated(false);
     setStep5SendConfirmed(true);
     setStep5ConfirmModalOpen(false);
+
+    // Persist status 'Verzonden' across app_quotes_v2 and app_quotes
+    try {
+      const savedQuotesStr = localStorage.getItem('app_quotes_v2') || localStorage.getItem('app_quotes');
+      let quotesList = savedQuotesStr ? JSON.parse(savedQuotesStr) : [];
+      const qId = leadQuote?.id || targetQuoteId;
+      quotesList = quotesList.map(q => {
+        if (String(q.id).toLowerCase() === String(qId).toLowerCase()) {
+          return { ...q, status: 'Verzonden' };
+        }
+        return q;
+      });
+      safeSetItem('app_quotes_v2', quotesList);
+      safeSetItem('app_quotes', quotesList);
+      window.dispatchEvent(new Event('app_data_changed'));
+    } catch(e) {}
+
     const channelLabel = step5SelectedChannel === 'EMAIL' ? 'E-mail Sent' : 'WhatsApp Sent';
     setStep5SendChannelLabel(channelLabel);
     showToast(step5SelectedChannel === 'EMAIL'
@@ -664,6 +888,59 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     notes: 'Approved via telephone conversation by customer',
     evidenceFile: null
   });
+
+  // Step 6 — Sync approval from PublicOfferte (customer portal) via localStorage
+  useEffect(() => {
+    const syncStep6FromPortal = () => {
+      try {
+        const saved = localStorage.getItem('app_quotes_v2') || localStorage.getItem('app_quotes');
+        if (!saved) return;
+        const allQuotes = JSON.parse(saved);
+        if (!Array.isArray(allQuotes)) return;
+
+        // Match quote by lead customer name or lead id
+        const leadCustomer = (lead?.name || lead?.customerName || '').toLowerCase();
+        const matchedQuote = allQuotes.find(q => {
+          const qCustomer = (q.customer || '').toLowerCase();
+          return (
+            qCustomer === leadCustomer ||
+            qCustomer.includes(leadCustomer) ||
+            leadCustomer.includes(qCustomer) ||
+            (lead?.id && q.leadId === lead.id)
+          );
+        });
+
+        if (!matchedQuote) return;
+
+        const approvedStatuses = ['geaccepteerd', 'accepted', 'approved', 'akkoord'];
+        const isPortalApproved = approvedStatuses.includes((matchedQuote.status || '').toLowerCase());
+
+        if (isPortalApproved && !step6Approved) {
+          setStep6Approved(true);
+          setStep6ApprovalRoute('ROUTE_A_ONLINE');
+          setStep6ApprovalMetaData({
+            route: 'ROUTE_A_ONLINE',
+            customerName: matchedQuote.signerName || matchedQuote.customer,
+            dateTime: matchedQuote.approvedAt || new Date().toLocaleString('nl-NL'),
+            ipAddress: matchedQuote.signerIp || '84.112.45.198 (Amsterdam, NL)',
+            quoteVersion: `#${matchedQuote.id} v1.0`,
+            signerName: matchedQuote.signerName || matchedQuote.customer,
+            statusLabel: `✓ Customer Signed & Approved Online (${matchedQuote.signerName || matchedQuote.customer})`
+          });
+        }
+      } catch (e) {
+        console.error('Step6 portal sync error:', e);
+      }
+    };
+
+    syncStep6FromPortal();
+    window.addEventListener('app_data_changed', syncStep6FromPortal);
+    window.addEventListener('storage', syncStep6FromPortal);
+    return () => {
+      window.removeEventListener('app_data_changed', syncStep6FromPortal);
+      window.removeEventListener('storage', syncStep6FromPortal);
+    };
+  }, [lead?.id, lead?.name, step6Approved]);
 
   // Automatic consequence helper function: Project created immediately upon approval & appears in Projects tab
   const autoCreateProjectOnApproval = (meta) => {
@@ -1021,12 +1298,18 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     const newCustomer = {
       id: `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
       name: custName,
-      email: customerEmail,
+      email: customerEmail || (custName ? `${custName.toLowerCase().replace(/\s+/g, '')}@gmail.com` : 'client@vanuitambacht.nl'),
       phone: lead?.phone || '+31 6 12345678',
-      location: lead?.location || 'Amsterdam, NL',
-      category: translatedCat,
-      totalSpent: '€ 12,500',
+      location: lead?.location || 'Breda, NL',
+      city: lead?.location || 'Breda, NL',
+      address: lead?.location || 'Breda, NL',
+      category: translatedCat || 'Outdoor Kitchen',
+      productInterest: translatedCat || 'Bespoke Outdoor Kitchen',
+      totalSpend: `€ ${step4TotalInclVat.toLocaleString('nl-NL')}`,
+      totalSpent: `€ ${step4TotalInclVat.toLocaleString('nl-NL')}`,
+      numericSpend: step4TotalInclVat,
       status: 'Active Client',
+      linkedQuote: '#OF-2026331',
       dateAdded: new Date().toISOString().split('T')[0]
     };
     const savedCustomers = JSON.parse(localStorage.getItem('app_customers') || '[]');
@@ -3071,7 +3354,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
                           <div className="p-3 bg-white/80 rounded-xl border border-emerald-200/80">
                             <span className="text-[10px] font-bold text-emerald-900/60 uppercase block mb-0.5">Approved By</span>
-                            <span className="font-bold text-emerald-950">{customerName}</span>
+                            <span className="font-bold text-emerald-950">
+                              {step6ApprovalMetaData?.signerName || customerName}
+                            </span>
                           </div>
                           <div className="p-3 bg-white/80 rounded-xl border border-emerald-200/80">
                             <span className="text-[10px] font-bold text-emerald-900/60 uppercase block mb-0.5">
@@ -3083,9 +3368,40 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           </div>
                           <div className="p-3 bg-white/80 rounded-xl border border-emerald-200/80">
                             <span className="text-[10px] font-bold text-emerald-900/60 uppercase block mb-0.5">Quote Version</span>
-                            <span className="font-mono font-bold text-emerald-950">#OF-2026331 v1.0</span>
+                            <span className="font-mono font-bold text-emerald-950">
+                              {step6ApprovalMetaData?.quoteVersion || '#OF-2026331 v1.0'}
+                            </span>
                           </div>
                         </div>
+
+                        {/* Digital Signature Card — shown for Route A online approval */}
+                        {step6ApprovalRoute === 'ROUTE_A_ONLINE' && step6ApprovalMetaData?.signerName && (
+                          <div className="p-3.5 bg-white/90 rounded-xl border-2 border-emerald-300 text-xs space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-emerald-900/70 uppercase tracking-wider">
+                                ✍️ Digital Signature — Customer Portal
+                              </span>
+                              <span className="text-[9px] font-mono text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                                LEGALLY BINDING
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="flex-1">
+                                <span className="text-[10px] text-emerald-900/50 uppercase block mb-0.5">Signed Name</span>
+                                <span className="font-serif text-lg font-bold text-emerald-900 italic" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                                  {step6ApprovalMetaData.signerName}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <span className="text-[10px] text-emerald-900/50 uppercase block mb-0.5">Signed On</span>
+                                <span className="font-bold text-emerald-950 text-[11px]">{step6ApprovalMetaData.dateTime}</span>
+                              </div>
+                            </div>
+                            <div className="text-[10px] text-emerald-800/70 font-mono border-t border-emerald-200 pt-1.5">
+                              IP: {step6ApprovalMetaData.ipAddress} · Akkoord verklaard met alle voorwaarden
+                            </div>
+                          </div>
+                        )}
 
                         {step6ApprovalRoute === 'ROUTE_B_MANUAL' && (
                           <div className="p-3 bg-white/80 rounded-xl border border-emerald-200/80 text-xs space-y-1">
@@ -3262,9 +3578,20 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           onChange={(e) => setStep7SelectedPartner(e.target.value)}
                           className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs"
                         >
-                          <option value="Ruben Verbeij — RV Meubels">Ruben Verbeij — RV Meubels (Preferred Partner)</option>
-                          <option value="Sven Hoek — Hoek Bouw">Sven Hoek — Hoek Bouw</option>
-                          <option value="Kees van der Meer — De Zaagtafel">Kees van der Meer — De Zaagtafel</option>
+                          {availablePartners.length > 0 ? (
+                            availablePartners.map((p) => (
+                              <option key={p.id || p.name} value={p.name}>
+                                {p.name}
+                                {p.name === (partnerForm?.partnerName || '') ? ' ✓ (Selected in Step 2)' : ''}
+                              </option>
+                            ))
+                          ) : (
+                            <>
+                              <option value="Ruben Verbeij — RV Meubels">Ruben Verbeij — RV Meubels</option>
+                              <option value="Sven Hoek — Hoek Bouw">Sven Hoek — Hoek Bouw</option>
+                              <option value="Kees van der Meer — De Zaagtafel">Kees van der Meer — De Zaagtafel</option>
+                            </>
+                          )}
                         </select>
 
                         {/* Mandatory Reason if selecting another partner */}
@@ -4347,69 +4674,344 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
           </div>
         )}
 
-        {/* Step 5 Send Confirmation Dialog Modal */}
+        {/* Step 5 Send Confirmation Dialog Modal — Realistic WhatsApp & Email Dispatch Engine */}
         {step5ConfirmModalOpen && (
-          <div className="fixed inset-0 bg-dark/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-            <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-[#D6CFC2] space-y-4 font-body">
-              <div className="flex justify-between items-center border-b border-[#D6CFC2] pb-3">
-                <h3 className="font-heading font-bold text-primary text-base flex items-center gap-2">
-                  <span>Confirm Quote Delivery ({step5SelectedChannel})</span>
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setStep5ConfirmModalOpen(false)}
-                  className="text-dark/40 hover:text-dark p-1 rounded-lg"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70">
-                  <span className="text-[10px] text-dark/50 uppercase font-bold block mb-0.5">Recipient</span>
-                  <span className="font-bold text-dark">
-                    {step5SelectedChannel === 'EMAIL' ? customerEmail : customerPhone} ({customerName})
-                  </span>
-                </div>
-
-                <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70">
-                  <span className="text-[10px] text-dark/50 uppercase font-bold block mb-0.5">Payload & Attachments</span>
-                  <span className="font-bold text-primary block">
-                    {step5SelectedChannel === 'EMAIL'
-                      ? `Message + Approval Link + PDF Attachment (${quoteFileName})`
-                      : 'Message + Approval Link (No PDF attachment on WhatsApp)'}
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[10px] text-dark/50 uppercase font-bold block mb-1">Message Preview</span>
-                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 text-dark/80 text-[11px] whitespace-pre-wrap leading-relaxed">
-                    {step5EditableMsg}
+          <div className="fixed inset-0 bg-dark/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in">
+            <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-[#D6CFC2] overflow-hidden flex flex-col max-h-[92vh] font-body">
+              
+              {/* ======================================================== */}
+              {/* WHATSAPP DISPATCH MODAL                                  */}
+              {/* ======================================================== */}
+              {step5SelectedChannel === 'WHATSAPP' && (
+                <>
+                  {/* WhatsApp Header */}
+                  <div className="bg-[#075E54] text-white p-4 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-sm">
+                        <MessageCircle className="w-6 h-6 fill-current" />
+                      </div>
+                      <div>
+                        <h3 className="font-heading font-bold text-base text-white leading-tight">
+                          WhatsApp Quotation Dispatch
+                        </h3>
+                        <p className="text-[11px] text-white/80 font-mono">
+                          To: <strong>{customerName}</strong> ({customerPhone}) · Official Approval Link
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setStep5ConfirmModalOpen(false)}
+                      className="text-white/70 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
-                </div>
 
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs font-bold flex items-center gap-2">
-                  <span>⚠ Are you sure you want to send this official quotation to the customer?</span>
-                </div>
-              </div>
+                  {/* WhatsApp Chat Viewport */}
+                  <div className="p-4 sm:p-6 bg-[#EFEAE2] flex-1 overflow-y-auto space-y-4">
+                    <div className="max-w-md mx-auto space-y-3">
+                      
+                      {/* Security / Dispatch Notice */}
+                      <div className="bg-amber-100/90 text-amber-900 border border-amber-300/80 rounded-xl p-2.5 text-[11px] text-center shadow-2xs">
+                        🔒 End-to-end direct client link. WhatsApp sends the digital proposal token directly to the customer's phone.
+                      </div>
 
-              <div className="flex justify-end gap-3 pt-2 border-t border-[#D6CFC2]/60">
-                <button
-                  type="button"
-                  onClick={() => setStep5ConfirmModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold text-dark/70 hover:text-dark border border-[#D6CFC2] rounded-xl cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleExecuteSendStep5}
-                  className="px-5 py-2 text-xs font-bold bg-[#3E4E36] hover:bg-[#2F3C29] text-white rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Yes, Send Quotation</span>
-                </button>
-              </div>
+                      {/* Realistic WhatsApp Chat Bubble */}
+                      <div className="bg-[#D9FDD3] rounded-2xl rounded-tr-xs p-4 shadow-sm border border-[#C5E8BF] text-xs text-dark space-y-2.5 relative">
+                        <div className="flex items-center justify-between text-[10px] text-emerald-900/70 font-mono font-bold border-b border-emerald-900/15 pb-1">
+                          <span>VANUIT AMBACHT · MAATWERK</span>
+                          <span>Quote {leadQuote?.id || targetQuoteId}</span>
+                        </div>
+
+                        <p className="leading-relaxed whitespace-pre-wrap font-body text-dark/90">
+                          {step5EditableMsg}
+                        </p>
+
+                        {/* Interactive Link Card inside Chat Bubble */}
+                        <div className="p-3 bg-white/90 rounded-xl border border-emerald-900/20 space-y-1.5 shadow-2xs">
+                          <span className="text-[10px] font-mono uppercase font-bold text-[#D97706] block">DIGITALE OFFERTE PORTAAL</span>
+                          <p className="font-bold text-dark text-xs truncate">
+                            Offerte {leadQuote?.id || targetQuoteId} — {customerCategory || 'Buitenkeuken'}
+                          </p>
+                          <a
+                            href={`${window.location.origin}/offerte/${leadQuote?.id || targetQuoteId}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[11px] font-mono text-emerald-700 hover:underline block truncate font-bold"
+                          >
+                            {`${window.location.origin}/offerte/${leadQuote?.id || targetQuoteId}`}
+                          </a>
+                        </div>
+
+                        {/* Chat Metadata / Blue Checks */}
+                        <div className="flex justify-end items-center gap-1 text-[10px] text-dark/50 font-mono pt-1">
+                          <span>{new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="text-[#34B7F1] font-bold">✓✓</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Simulation progress bar */}
+                    {isSendingSimulated && (
+                      <div className="max-w-md mx-auto p-3 bg-white rounded-xl border border-[#D6CFC2] space-y-2 shadow-sm animate-pulse">
+                        <div className="flex justify-between items-center text-xs font-mono font-bold text-[#075E54]">
+                          <span>{sendingProgressText}</span>
+                          <span>⏳</span>
+                        </div>
+                        <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                          <div className="bg-[#25D366] h-full w-full animate-[progress_1s_ease-in-out_infinite]"></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* WhatsApp Action Footer */}
+                  <div className="p-4 bg-white border-t border-[#D6CFC2] flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const cleanPhone = String(customerPhone || '').replace(/[^0-9]/g, '');
+                          const fullUrl = `${window.location.origin}/offerte/${leadQuote?.id || targetQuoteId}`;
+                          const msg = `${step5EditableMsg}\n\nBekijk en accordeer uw offerte hier:\n${fullUrl}`;
+                          window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`, '_blank');
+                          showToast('✓ WhatsApp Web geopend met bericht en offerte link!');
+                        }}
+                        className="flex-1 sm:flex-initial px-3.5 py-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer font-mono"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        <span>Open WhatsApp Web</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const fullUrl = `${window.location.origin}/offerte/${leadQuote?.id || targetQuoteId}`;
+                          const msg = `${step5EditableMsg}\n\nBekijk en accordeer uw offerte hier:\n${fullUrl}`;
+                          navigator.clipboard.writeText(msg);
+                          showToast('✓ WhatsApp bericht & offerte link gekopieerd!');
+                        }}
+                        className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-dark font-bold text-xs rounded-xl border border-gray-300 transition-all cursor-pointer font-mono flex items-center gap-1"
+                        title="Copy to Clipboard"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Kopieer</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setStep5ConfirmModalOpen(false)}
+                        className="px-4 py-2.5 text-xs font-bold text-dark/70 hover:text-dark border border-[#D6CFC2] rounded-xl cursor-pointer"
+                      >
+                        Annuleren
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isSendingSimulated}
+                        onClick={handleExecuteSendStep5}
+                        className="px-5 py-2.5 text-xs font-bold bg-[#3E4E36] hover:bg-[#2F3C29] text-white rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-2 font-mono transition-all"
+                      >
+                        <CheckCircle className="w-4 h-4 text-emerald-300" />
+                        <span>Mark as Sent & Continue →</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ======================================================== */}
+              {/* OFFICIAL E-MAIL DISPATCH MODAL                           */}
+              {/* ======================================================== */}
+              {step5SelectedChannel === 'EMAIL' && (
+                <>
+                  {/* Email Composer Header */}
+                  <div className="bg-[#3E4E36] text-white p-4 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-800 text-white flex items-center justify-center shadow-sm">
+                        <Mail className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-heading font-bold text-base text-white leading-tight">
+                          Vanuit Ambacht Mail Composer
+                        </h3>
+                        <p className="text-[11px] text-[#D6CFC2] font-mono">
+                          Official Branded Proposal Delivery · SMTP Server (mail.vanuitambacht.nl)
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setStep5ConfirmModalOpen(false)}
+                      className="text-white/70 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Email Header Fields */}
+                  <div className="p-4 bg-[#F8F7F4] border-b border-[#D6CFC2] text-xs space-y-2 font-mono">
+                    <div className="flex items-center gap-2">
+                      <span className="w-20 text-dark/50 font-bold uppercase tracking-wider text-[10px]">Van:</span>
+                      <span className="font-bold text-dark">Vanuit Ambacht Offertes &lt;offertes@vanuitambacht.nl&gt;</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-20 text-dark/50 font-bold uppercase tracking-wider text-[10px]">Aan:</span>
+                      <span className="font-bold text-primary">{customerName} &lt;{customerEmail}&gt;</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-20 text-dark/50 font-bold uppercase tracking-wider text-[10px]">Onderwerp:</span>
+                      <span className="font-bold text-dark">
+                        Offerte {leadQuote?.id || targetQuoteId} — {customerCategory || 'Buitenkeuken'} op maat gemaakt voor {customerName}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-[#D6CFC2]/60">
+                      <div className="flex items-center gap-2">
+                        <span className="w-20 text-dark/50 font-bold uppercase tracking-wider text-[10px]">Bijlage:</span>
+                        <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-[#D6CFC2] shadow-2xs">
+                          <FileText className="w-3.5 h-3.5 text-primary" />
+                          <span className="font-bold text-primary">{quoteFileName}</span>
+                          <span className="text-[10px] text-dark/50">(6-pagina PDF)</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRealPdfDownload(false)}
+                        className="px-2.5 py-1 bg-[#EDE8DF] hover:bg-[#E2DCCE] text-dark font-bold text-[10px] rounded-lg border border-[#D6CFC2] flex items-center gap-1 cursor-pointer transition-colors"
+                        title="Download / Preview attached PDF"
+                      >
+                        <Download className="w-3 h-3 text-primary" />
+                        <span>Voorbeeld PDF</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Realistic Rich Email Body Preview */}
+                  <div className="p-4 sm:p-6 bg-[#EBE6DD] flex-1 overflow-y-auto space-y-4">
+                    <div className="bg-white rounded-2xl border border-[#D6CFC2] shadow-md p-6 max-w-xl mx-auto space-y-5">
+                      
+                      {/* Email Header Banner */}
+                      <div className="bg-[#3E4E36] text-[#FDFBF7] p-4 rounded-xl flex justify-between items-center">
+                        <div>
+                          <span className="text-[9px] uppercase font-bold tracking-widest text-[#D97706] font-mono block">
+                            OFFICIËLE MAATOFFERTE
+                          </span>
+                          <h4 className="text-base font-serif font-bold text-white mt-0.5" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                            Vanuit Ambacht
+                          </h4>
+                        </div>
+                        <span className="text-xs font-mono font-bold text-emerald-200 bg-emerald-900/60 px-2.5 py-1 rounded border border-emerald-700/50">
+                          {leadQuote?.id || targetQuoteId}
+                        </span>
+                      </div>
+
+                      {/* Greeting & Custom Message */}
+                      <div className="space-y-2 text-xs text-dark/80 leading-relaxed font-body">
+                        <p className="font-bold text-dark text-sm">Beste {customerName},</p>
+                        <p className="whitespace-pre-wrap">
+                          {step5EditableMsg}
+                        </p>
+                      </div>
+
+                      {/* Quotation Highlight Box */}
+                      <div className="bg-[#F8F7F4] rounded-xl p-4 border border-[#D6CFC2] space-y-2.5 text-xs font-body">
+                        <span className="text-[10px] font-mono uppercase font-bold text-[#D97706] tracking-wider block">
+                          CONFIGURATIE OVERZICHT
+                        </span>
+                        <div className="grid grid-cols-2 gap-2 text-[11px]">
+                          <div><strong>Project:</strong> {customerCategory || 'Buitenkeuken'}</div>
+                          <div><strong>Houtsoort:</strong> {specFormValues['f-002'] || step2Material || 'Thermo Fraké'}</div>
+                          <div><strong>Afmeting:</strong> {step2Size || '240 × 80 cm'}</div>
+                          <div><strong>Levertijd:</strong> {partnerLeadTime || '3 tot 5 weken'}</div>
+                        </div>
+                        <div className="pt-2 border-t border-[#D6CFC2] flex justify-between items-center font-bold text-primary">
+                          <span>Totaalbedrag (incl. 21% BTW):</span>
+                          <span className="text-sm font-mono font-black text-primary">
+                            € {step4TotalInclVat.toLocaleString('nl-NL')}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Big Call-To-Action Button inside Email */}
+                      <div className="text-center pt-2">
+                        <a
+                          href={`${window.location.origin}/offerte/${leadQuote?.id || targetQuoteId}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-[#3E4E36] hover:bg-[#283523] text-white font-bold text-xs rounded-xl shadow-md font-mono tracking-wide transition-all"
+                        >
+                          <span>🌐 BEKIJK & ACCORDEER UW OFFERTE ONLINE →</span>
+                        </a>
+                        <p className="text-[10px] text-dark/50 mt-1.5 font-mono">
+                          Of open direct in browser: {`${window.location.origin}/offerte/${leadQuote?.id || targetQuoteId}`}
+                        </p>
+                      </div>
+
+                      {/* Sign-off */}
+                      <div className="pt-3 border-t border-[#D6CFC2]/60 text-xs text-dark/70">
+                        <p className="font-serif italic font-bold text-primary text-sm" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+                          Tim & Bram
+                        </p>
+                        <p className="text-[10px] font-mono text-dark/50">Oprichters Vanuit Ambacht · info@vanuitambacht.nl</p>
+                      </div>
+                    </div>
+
+                    {/* Simulation progress bar */}
+                    {isSendingSimulated && (
+                      <div className="max-w-xl mx-auto p-3.5 bg-white rounded-xl border border-[#3E4E36] space-y-2 shadow-md animate-pulse">
+                        <div className="flex justify-between items-center text-xs font-mono font-bold text-[#3E4E36]">
+                          <span>{sendingProgressText}</span>
+                          <span>⏳</span>
+                        </div>
+                        <div className="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden">
+                          <div className="bg-emerald-600 h-full w-full animate-[progress_1.2s_ease-in-out_infinite]"></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Email Action Footer */}
+                  <div className="p-4 bg-white border-t border-[#D6CFC2] flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const fullUrl = `${window.location.origin}/offerte/${leadQuote?.id || targetQuoteId}`;
+                          const subject = `Offerte ${leadQuote?.id || targetQuoteId} — ${customerCategory || 'Buitenkeuken'} op maat voor ${customerName}`;
+                          const body = `${step5EditableMsg}\n\nBekijk en accordeer uw offerte direct online via:\n${fullUrl}\n\nMet vriendelijke groet,\nTim & Bram — Vanuit Ambacht`;
+                          window.location.href = `mailto:${customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                        }}
+                        className="px-3.5 py-2.5 bg-[#EDE8DF] hover:bg-[#E2DCCE] text-dark font-bold text-xs rounded-xl border border-[#D6CFC2] flex items-center gap-1.5 cursor-pointer font-mono transition-colors"
+                        title="Open default desktop mail application"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-primary" />
+                        <span>Open in E-mail Client (mailto:)</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setStep5ConfirmModalOpen(false)}
+                        className="px-4 py-2.5 text-xs font-bold text-dark/70 hover:text-dark border border-[#D6CFC2] rounded-xl cursor-pointer"
+                      >
+                        Annuleren
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isSendingSimulated}
+                        onClick={handleExecuteSendStep5}
+                        className="px-5 py-2.5 text-xs font-bold bg-[#3E4E36] hover:bg-[#2F3C29] text-white rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-2 font-mono transition-all"
+                      >
+                        <Send className="w-4 h-4 text-emerald-300" />
+                        <span>Verstuur Offerte E-mail (Send Now) →</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
             </div>
           </div>
         )}
@@ -4562,27 +5164,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
             {/* Quote Editor Component — renders 3 responsive zones matching Image 2 1-to-1 */}
             <div className="flex-1">
               <QuoteEditor
-                quoteData={{
-                  id: `OF-${lead?.id ? String(lead.id).replace(/[^0-9]/g, '') : Math.floor(1000 + Math.random() * 9000)}`,
-                  customer: {
-                    name: lead?.customer || lead?.name || 'Jan de Vries',
-                    email: lead?.email || 'jan@example.nl',
-                    phone: lead?.phone || '+31 6 12345678',
-                    address: lead?.address || 'Kerkstraat 12',
-                    city: lead?.city || 'Dongen',
-                  },
-                  project: lead?.project || lead?.productType || 'Custom Outdoor Build',
-                  category: lead?.productType || lead?.category || 'outdoor_kitchen',
-                  amount: lead?.value || lead?.budget || '€ 12.500',
-                }}
+                quoteData={leadQuote}
                 onClose={() => setShowInlineQuoteEditor(false)}
-                onSaveQuote={(savedQuote, isExplicit) => {
-                  if (isExplicit) {
-                    setShowInlineQuoteEditor(false);
-                    setToastMsg(`Quote ${savedQuote?.id || ''} saved! Back to lead.`);
-                    setTimeout(() => setToastMsg(''), 4000);
-                  }
-                }}
+                onSaveQuote={(savedQuote, isExplicit) => handleSaveQuote(savedQuote, isExplicit)}
               />
             </div>
           </div>

@@ -11,11 +11,12 @@ import Badge from './Badge';
 import DiagramBuilder from './DiagramBuilder';
 import Offerte6PagePDF from './Offerte6PagePDF';
 import { WOOD_LIBRARY, PRESET_PRODUCT_LIBRARY, PRODUCT_TYPE_DEFAULTS } from '../utils/quoteLibraries';
-import { calculateTotals, calculateInstalments, validateQuoteForSend } from '../utils/quoteSchema';
+import { calculateTotals, calculateInstalments, validateQuoteForSend, createDefaultQuote } from '../utils/quoteSchema';
 import { useLanguage } from '../context/LanguageContext';
 import projectImg from '../assets/outdoor_project_card.png';
 import heroImg from '/dasbordes images.png';
 import { downloadQuotePdf, generateFull6PagePdf } from '../utils/pdfGenerator';
+import { compressImage } from '../utils/storageHelper';
 
 const STEPS = [
   { id: 1, number: 1, title: 'Customer & details', desc: 'customer, address, date & validity' },
@@ -79,7 +80,22 @@ function ScaledPDFPreview({ quote, activePage, highlightField }) {
 export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList = [] }) {
   const { language } = useLanguage();
   const [activeStep, setActiveStep] = useState(1);
-  const [quote, setQuote] = useState(quoteData);
+  const [quote, setQuote] = useState(() => {
+    if (quoteData && quoteData.investment && quoteData.configuration && Array.isArray(quoteData.investment.lineItems) && quoteData.investment.lineItems.length > 0) {
+      return quoteData;
+    }
+    return createDefaultQuote(quoteData?.customer || quoteData, quoteData);
+  });
+
+  useEffect(() => {
+    if (quoteData) {
+      if (quoteData.investment && quoteData.configuration && Array.isArray(quoteData.investment.lineItems) && quoteData.investment.lineItems.length > 0) {
+        setQuote(quoteData);
+      } else {
+        setQuote(createDefaultQuote(quoteData?.customer || quoteData, quoteData));
+      }
+    }
+  }, [quoteData]);
   const [lastSavedTime, setLastSavedTime] = useState(new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }));
   const [toastMsg, setToastMsg] = useState('');
   const [showLibraryModal, setShowLibraryModal] = useState(false);
@@ -918,12 +934,12 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                           id={`cover-photo-input-${slot}`}
                           accept="image/*"
                           className="hidden"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files[0];
                             if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (evt) => {
-                                const dataUrl = evt.target.result;
+                              try {
+                                showToast(`⏳ Uploading & optimizing Photo ${slot + 1}...`);
+                                const compressedDataUrl = await compressImage(file, 1200, 0.85);
                                 const imgObj = new Image();
                                 imgObj.onload = () => {
                                   const isLow = imgObj.width < 600 || imgObj.height < 600;
@@ -936,15 +952,17 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                                       delete next[slot];
                                       return next;
                                     });
-                                    showToast(`✓ Photo ${slot + 1} updated (${imgObj.width}×${imgObj.height}px)!`);
+                                    showToast(`✓ Photo ${slot + 1} updated & optimized!`);
                                   }
                                   const newPhotos = [...(quote.cover?.photos || ['/outdoor_project_card.png', '/dasbordes images.png', '/outdoor_project_card.png'])];
-                                  newPhotos[slot] = dataUrl;
+                                  newPhotos[slot] = compressedDataUrl;
                                   updateCoverField('photos', newPhotos);
                                 };
-                                imgObj.src = dataUrl;
-                              };
-                              reader.readAsDataURL(file);
+                                imgObj.src = compressedDataUrl;
+                              } catch (err) {
+                                console.error('Error uploading photo:', err);
+                                showToast('⚠️ Photo upload error');
+                              }
                             }
                           }}
                         />
@@ -1295,15 +1313,18 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                         id="config-photo-uploader"
                         accept="image/*"
                         className="hidden"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files[0];
                           if (file) {
-                            const reader = new FileReader();
-                            reader.onload = (evt) => {
-                              updateConfigField('configPhoto', evt.target.result);
-                              showToast('Configuration photo updated successfully!');
-                            };
-                            reader.readAsDataURL(file);
+                            try {
+                              showToast('⏳ Uploading & optimizing configuration photo...');
+                              const compressedDataUrl = await compressImage(file, 1200, 0.85);
+                              updateConfigField('configPhoto', compressedDataUrl);
+                              showToast('✓ Configuration photo updated & optimized!');
+                            } catch (err) {
+                              console.error('Error uploading configuration photo:', err);
+                              showToast('⚠️ Photo upload error');
+                            }
                           }
                         }}
                       />

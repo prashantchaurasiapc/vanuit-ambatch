@@ -241,8 +241,15 @@ Kenmerk: EREF-2026-9006`;
         finalStatus = projectRef !== '-' ? 'Matched' : ruleResult.status;
       }
 
+      const resolvedCounterName = tx.counterName || tx.customerName || (tx.description && tx.description.includes('Factuur Betaling:') ? tx.description.replace('Factuur Betaling:', '').split('(')[0].trim() : '') || 'Direct Settlement';
+      const resolvedCounterIban = tx.counterIban || (tx.invoiceRef ? `${tx.invoiceRef} · iDEAL` : 'NL•• ABNA Direct');
+      const resolvedEref = tx.eref || tx.invoiceRef || tx.id || 'REF-DIRECT';
+
       return {
         ...tx,
+        counterName: resolvedCounterName,
+        counterIban: resolvedCounterIban,
+        eref: resolvedEref,
         category: isReviewedAlready ? tx.category : ruleResult.category,
         matchReason: isReviewedAlready ? tx.matchReason : (ruleResult.matchReason || tx.matchReason),
         status: finalStatus,
@@ -540,66 +547,120 @@ Kenmerk: EREF-2026-9006`;
     }
   };
 
-  // Category Badge Rendering Helper (Full Text Visible, No Text Clipping)
-  const renderCategoryBadge = (category) => {
-    if (category === 'Revenue – Outdoor Kitchens') return <span className="px-2 py-1 bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-bold rounded-md whitespace-nowrap">Revenue – Outdoor Kitchens 💰</span>;
-    if (category === 'Revenue – bol.com') return <span className="px-2 py-1 bg-teal-100 text-teal-900 border border-teal-300 text-[10px] font-bold rounded-md whitespace-nowrap">Revenue – bol.com 📦</span>;
-    if (category === 'Purchasing (Inkoop)') return <span className="px-2 py-1 bg-blue-100 text-blue-900 border border-blue-300 text-[10px] font-bold rounded-md whitespace-nowrap">Purchasing (Inkoop) 🔨</span>;
-    if (category === 'Transport – Smart Fulfilment') return <span className="px-2 py-1 bg-purple-100 text-purple-900 border border-purple-300 text-[10px] font-bold rounded-md whitespace-nowrap">Transport – Smart Fulfilment 🚚</span>;
-    if (category === 'Advertising – Meta Ads') return <span className="px-2 py-1 bg-pink-100 text-pink-900 border border-pink-300 text-[10px] font-bold rounded-md whitespace-nowrap">Advertising – Meta Ads 📣</span>;
-    if (category === 'Software') return <span className="px-2 py-1 bg-indigo-100 text-indigo-900 border border-indigo-300 text-[10px] font-bold rounded-md whitespace-nowrap">Software 💻</span>;
-    if (category === 'Payment Provider Fees') return <span className="px-2 py-1 bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold rounded-md whitespace-nowrap">Payment Provider Fees 💳</span>;
-    if (category === 'Shipping Costs') return <span className="px-2 py-1 bg-cyan-100 text-cyan-900 border border-cyan-300 text-[10px] font-bold rounded-md whitespace-nowrap">Shipping Costs 📮</span>;
-    if (category === 'Bank Charges') return <span className="px-2 py-1 bg-[#EDE8DF] text-dark/80 border border-[#D6CFC2] text-[10px] font-bold rounded-md whitespace-nowrap">Bank Charges 🏦</span>;
-    if (category === 'Office Supplies') return <span className="px-2 py-1 bg-slate-100 text-slate-900 border border-slate-300 text-[10px] font-bold rounded-md whitespace-nowrap">Office Supplies 📎</span>;
-    if (category === 'Customer Gifts') return <span className="px-2 py-1 bg-rose-100 text-rose-900 border border-rose-300 text-[10px] font-bold rounded-md whitespace-nowrap">Customer Gifts 🎁</span>;
-    if (category === 'Travel / Entertainment') return <span className="px-2 py-1 bg-orange-100 text-orange-900 border border-orange-300 text-[10px] font-bold rounded-md whitespace-nowrap">Travel / Entertainment 🍽️</span>;
-    if (category === 'Internal Transfer / Kruispost') return <span className="px-2 py-1 bg-gray-200 text-gray-900 border border-gray-400 text-[10px] font-bold rounded-md whitespace-nowrap">Internal Transfer / Kruispost 🔄</span>;
-    if (category === 'Credit Card Suspense') return <span className="px-2 py-1 bg-violet-100 text-violet-900 border border-violet-300 text-[10px] font-bold rounded-md whitespace-nowrap">Credit Card Suspense 💳</span>;
-    if (category === 'VAT Settlement') return <span className="px-2 py-1 bg-sky-100 text-sky-900 border border-sky-300 text-[10px] font-bold rounded-md whitespace-nowrap">VAT Settlement 🏛️</span>;
-    if (category === 'Private Withdrawal') return <span className="px-2 py-1 bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold rounded-md whitespace-nowrap">Private Withdrawal 👤</span>;
-    if (category === 'Review Item / Vraagpost') return <span className="px-2 py-1 bg-amber-500 text-white font-bold text-[10px] rounded-md whitespace-nowrap">Review Item / Vraagpost ⚠️</span>;
-    return <span className="px-2 py-1 bg-[#EDE8DF] text-primary font-bold text-[10px] rounded-md whitespace-nowrap">{category}</span>;
+  // Category Badge Rendering Helper (Full Text Visible, Elegant Design)
+  const renderCategoryBadge = (rawCategory) => {
+    if (!rawCategory) return <span className="px-2.5 py-1 bg-[#EDE8DF] text-primary font-bold text-[10px] rounded-lg">Uncategorized</span>;
+    const norm = rawCategory.replace(/[—–]/g, '-').replace(/\s+/g, ' ').trim();
+
+    if (norm.includes('Revenue') && norm.includes('Outdoor Kitchens')) {
+      return <span className="px-2.5 py-1 bg-emerald-50 text-emerald-900 border border-emerald-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Revenue · Outdoor Kitchens 🌿</span>;
+    }
+    if (norm.includes('Revenue') && norm.includes('bol.com')) {
+      return <span className="px-2.5 py-1 bg-teal-50 text-teal-900 border border-teal-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Revenue · bol.com 📦</span>;
+    }
+    if (norm.includes('Purchasing') || norm.includes('Inkoop')) {
+      return <span className="px-2.5 py-1 bg-sky-50 text-sky-900 border border-sky-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Purchasing (Inkoop) 🔨</span>;
+    }
+    if (norm.includes('Transport') || norm.includes('Fulfilment')) {
+      return <span className="px-2.5 py-1 bg-purple-50 text-purple-900 border border-purple-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Transport · Fulfilment 🚚</span>;
+    }
+    if (norm.includes('Advertising') || norm.includes('Meta')) {
+      return <span className="px-2.5 py-1 bg-pink-50 text-pink-900 border border-pink-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Advertising · Meta Ads 📣</span>;
+    }
+    if (norm.includes('Software')) {
+      return <span className="px-2.5 py-1 bg-indigo-50 text-indigo-900 border border-indigo-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Software 💻</span>;
+    }
+    if (norm.includes('Payment Provider')) {
+      return <span className="px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Payment Provider Fees 💳</span>;
+    }
+    if (norm.includes('Shipping')) {
+      return <span className="px-2.5 py-1 bg-cyan-50 text-cyan-900 border border-cyan-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Shipping Costs 📮</span>;
+    }
+    if (norm.includes('Bank Charges')) {
+      return <span className="px-2.5 py-1 bg-[#EDE8DF] text-dark/80 border border-[#D6CFC2] text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Bank Charges 🏦</span>;
+    }
+    if (norm.includes('Office Supplies')) {
+      return <span className="px-2.5 py-1 bg-slate-100 text-slate-900 border border-slate-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Office Supplies 📎</span>;
+    }
+    if (norm.includes('Customer Gifts')) {
+      return <span className="px-2.5 py-1 bg-rose-50 text-rose-900 border border-rose-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Customer Gifts 🎁</span>;
+    }
+    if (norm.includes('Travel') || norm.includes('Entertainment')) {
+      return <span className="px-2.5 py-1 bg-orange-50 text-orange-900 border border-orange-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Travel / Dining 🍽️</span>;
+    }
+    if (norm.includes('Internal Transfer') || norm.includes('Kruispost')) {
+      return <span className="px-2.5 py-1 bg-stone-100 text-stone-900 border border-stone-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Internal Transfer 🔄</span>;
+    }
+    if (norm.includes('Credit Card')) {
+      return <span className="px-2.5 py-1 bg-violet-50 text-violet-900 border border-violet-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Credit Card Suspense 💳</span>;
+    }
+    if (norm.includes('VAT Settlement')) {
+      return <span className="px-2.5 py-1 bg-sky-50 text-sky-900 border border-sky-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">VAT Settlement 🏛️</span>;
+    }
+    if (norm.includes('Private Withdrawal')) {
+      return <span className="px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-300/80 text-[10px] font-bold rounded-lg whitespace-nowrap shadow-2xs inline-flex items-center gap-1.5">Private Withdrawal 👤</span>;
+    }
+    if (norm.includes('Review Item') || norm.includes('Vraagpost')) {
+      return <span className="px-2.5 py-1 bg-amber-500 text-white font-bold text-[10px] rounded-lg whitespace-nowrap shadow-xs inline-flex items-center gap-1">Review Item / Vraagpost ⚠️</span>;
+    }
+    return <span className="px-2.5 py-1 bg-[#EDE8DF] text-primary font-bold text-[10px] rounded-lg whitespace-nowrap border border-[#D6CFC2]">{rawCategory}</span>;
   };
 
   // Bank Transactions Table Columns (Tab 1)
   const columns = [
     { 
       header: 'Date & Type', 
-      style: { minWidth: '100px' },
+      style: { minWidth: '110px' },
       render: (row) => (
-        <div className="space-y-0.5 whitespace-nowrap">
-          <p className="font-mono text-xs font-bold text-dark">{row.date}</p>
-          <span className="text-[9px] font-bold uppercase text-dark/60 bg-[#EDE8DF] px-1.5 py-0.5 rounded border border-[#D6CFC2]">
-            {row.type}
+        <div className="space-y-1 whitespace-nowrap">
+          <p className="font-semibold text-xs text-dark tracking-tight">{row.date}</p>
+          <span className="text-[9px] font-bold uppercase tracking-wider text-dark/70 bg-[#EDE8DF] px-2 py-0.5 rounded-full border border-[#D6CFC2]/70 inline-block">
+            {row.type || 'Transfer'}
           </span>
         </div>
       ) 
     },
     { 
       header: 'Counterparty / IBAN', 
-      style: { minWidth: '150px', maxWidth: '200px' },
-      render: (row) => (
-        <div className="min-w-[140px]">
-          <p className="font-bold text-dark text-xs truncate max-w-[180px]" title={row.counterName}>{row.counterName}</p>
-          <p className="text-[10px] text-dark/50 font-mono truncate">{row.counterIban}</p>
-        </div>
-      ) 
+      style: { minWidth: '160px', maxWidth: '220px' },
+      render: (row) => {
+        const displayName = row.counterName 
+          || row.customerName 
+          || (row.description && row.description.includes('Factuur Betaling:') ? row.description.replace('Factuur Betaling:', '').split('(')[0].trim() : '') 
+          || 'Direct Settlement';
+        const displayIban = row.counterIban 
+          || (row.invoiceRef ? `${row.invoiceRef} · Direct Betaling` : 'NL•• ABNA Direct');
+
+        return (
+          <div className="min-w-[150px]">
+            <p className="font-bold text-dark text-xs truncate max-w-[200px]" title={displayName}>
+              {displayName}
+            </p>
+            <p className="text-[10px] text-dark/60 font-mono tracking-wider truncate mt-0.5" title={displayIban}>
+              {displayIban}
+            </p>
+          </div>
+        );
+      } 
     },
     { 
       header: 'Description / Reference', 
-      style: { minWidth: '220px', maxWidth: '320px' },
+      style: { minWidth: '240px', maxWidth: '340px', whiteSpace: 'normal' },
       render: (row) => (
-        <div className="space-y-0.5">
-          <p className="font-medium text-dark text-xs leading-snug">{row.description}</p>
-          <p className="text-[9.5px] text-dark/50 font-mono">EREF: {row.eref}</p>
+        <div className="space-y-1">
+          <p className="font-medium text-dark text-xs leading-snug break-words">{row.description}</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[9.5px] text-dark/60 font-mono bg-[#EDE8DF]/60 px-1.5 py-0.5 rounded border border-[#D6CFC2]/60 tracking-wider">
+              EREF: {row.eref || row.invoiceRef || row.id || 'REF-DIRECT'}
+            </span>
+          </div>
           {row.bolSpecification && (
             <button
               onClick={() => setBolSpecModalTx(row)}
-              className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 text-[10px] font-bold rounded-md hover:bg-blue-100 transition-colors"
+              className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 text-[10px] font-bold rounded-md hover:bg-blue-100 transition-colors shadow-2xs"
             >
-              <FileText className="w-3 h-3 text-blue-600" />
-              <span>bol.com Payout Spec (Gross €{row.bolSpecification.grossSales} - Fee €{row.bolSpecification.commissionFees} = Net €{row.bolSpecification.netPayout})</span>
+              <FileText className="w-3 h-3 text-blue-600 flex-shrink-0" />
+              <span>bol.com Payout Spec (Net €{row.bolSpecification.netPayout})</span>
             </button>
           )}
         </div>
@@ -607,23 +668,31 @@ Kenmerk: EREF-2026-9006`;
     },
     { 
       header: 'Amount (€)', 
-      style: { minWidth: '100px' },
+      style: { minWidth: '120px' },
       render: (row) => (
-        <div className="font-mono font-bold text-xs whitespace-nowrap">
-          {row.credit > 0 && <span className="text-emerald-700">+ € {Number(row.credit).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>}
-          {row.debit > 0 && <span className="text-red-600">- € {Number(row.debit).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>}
+        <div className="tabular-nums font-semibold text-xs whitespace-nowrap">
+          {row.credit > 0 && (
+            <span className="text-emerald-700 bg-emerald-50/90 px-2.5 py-1 rounded-lg border border-emerald-200/80 inline-block font-bold">
+              + € {Number(row.credit).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+            </span>
+          )}
+          {row.debit > 0 && (
+            <span className="text-red-700 bg-red-50/90 px-2.5 py-1 rounded-lg border border-red-200/80 inline-block font-bold">
+              - € {Number(row.debit).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+            </span>
+          )}
         </div>
       ) 
     },
-    { header: 'Category', style: { minWidth: '170px' }, render: (row) => renderCategoryBadge(row.category) },
+    { header: 'Category', style: { minWidth: '180px' }, render: (row) => renderCategoryBadge(row.category) },
     { 
       header: 'Recognition / Match Reason', 
-      style: { minWidth: '210px' },
+      style: { minWidth: '220px' },
       render: (row) => (
-        <span className={`text-[10px] font-bold px-2 py-1 rounded-md border inline-block max-w-full text-left leading-tight break-words sm:whitespace-nowrap ${
+        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border inline-block max-w-full text-left leading-tight break-words sm:whitespace-nowrap shadow-2xs ${
           row.status === 'Review Needed' || row.category === 'Review Item / Vraagpost'
-            ? 'bg-amber-100 text-amber-900 border-amber-300 font-sans'
-            : 'bg-[#EDE8DF] text-dark/80 border-[#D6CFC2]'
+            ? 'bg-amber-50 text-amber-900 border-amber-300/80'
+            : 'bg-[#EDE8DF]/80 text-dark/80 border-[#D6CFC2]'
         }`}>
           ⚡ {row.matchReason || 'No Matching Rule — Review Required'}
         </span>
@@ -631,9 +700,9 @@ Kenmerk: EREF-2026-9006`;
     },
     { 
       header: 'Project / Order', 
-      style: { minWidth: '110px' },
+      style: { minWidth: '120px' },
       render: (row) => (
-        <span className={`font-mono font-bold text-xs px-2 py-0.5 rounded-md border whitespace-nowrap ${
+        <span className={`font-mono font-bold text-xs px-2.5 py-1 rounded-lg border whitespace-nowrap shadow-2xs inline-block ${
           row.projectRef && row.projectRef !== '-'
             ? 'text-primary bg-primary/10 border-primary/20'
             : 'text-dark/40 bg-gray-100 border-gray-200'
@@ -652,7 +721,7 @@ Kenmerk: EREF-2026-9006`;
             size="sm"
             variant="ghost"
             onClick={() => setReclassifyModalTx(row)}
-            className="text-primary hover:bg-[#D6CFC2]/40 text-[10px] py-1 px-2 font-bold"
+            className="text-primary hover:bg-[#D6CFC2]/40 text-[10px] py-1 px-2 font-bold rounded-lg"
             title="Review / Reclassify Category"
           >
             <Tag className="w-3 h-3 mr-1 text-accent" /> Review
@@ -661,7 +730,7 @@ Kenmerk: EREF-2026-9006`;
             size="sm"
             variant="ghost"
             onClick={() => { setManualAllocateTx(row); setSelectedTargetOrderId(row.projectRef && row.projectRef !== '-' ? row.projectRef : ''); }}
-            className="text-dark/70 hover:bg-[#D6CFC2]/40 text-[10px] py-1 px-1.5 font-bold"
+            className="text-dark/70 hover:bg-[#D6CFC2]/40 text-[10px] py-1 px-1.5 font-bold rounded-lg"
             title="Link to Project / Order"
           >
             <FolderOpen className="w-3.5 h-3.5 mr-1 text-primary" /> Link
@@ -734,43 +803,51 @@ Kenmerk: EREF-2026-9006`;
 
       {/* Financial Overview Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card noPadding className="p-3 bg-[#F8F7F4]">
+        <Card noPadding className="p-3.5 bg-[#F8F7F4] border border-[#D6CFC2]/70 rounded-2xl shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold text-dark/50 uppercase tracking-wider">Total Bank Balance</span>
-            <Landmark className="w-4 h-4 text-primary" />
+            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Landmark className="w-3.5 h-3.5 text-primary" />
+            </div>
           </div>
-          <p className="text-lg font-heading font-bold text-primary mt-1 font-mono">
+          <p className="text-xl font-heading font-bold text-primary mt-1.5 tabular-nums">
             € {bankBalance.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
           </p>
         </Card>
 
-        <Card noPadding className="p-3 bg-[#F8F7F4]">
+        <Card noPadding className="p-3.5 bg-[#F8F7F4] border border-[#D6CFC2]/70 rounded-2xl shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold text-dark/50 uppercase tracking-wider">Total Credits</span>
-            <ArrowDownRight className="w-4 h-4 text-emerald-700" />
+            <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center">
+              <ArrowDownRight className="w-3.5 h-3.5 text-emerald-700" />
+            </div>
           </div>
-          <p className="text-lg font-heading font-bold text-emerald-800 mt-1 font-mono">
+          <p className="text-xl font-heading font-bold text-emerald-800 mt-1.5 tabular-nums">
             € {totalIncome.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
           </p>
         </Card>
 
-        <Card noPadding className="p-3 bg-[#F8F7F4]">
+        <Card noPadding className="p-3.5 bg-[#F8F7F4] border border-[#D6CFC2]/70 rounded-2xl shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold text-dark/50 uppercase tracking-wider">Total Debits</span>
-            <ArrowUpRight className="w-4 h-4 text-red-600" />
+            <div className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center">
+              <ArrowUpRight className="w-3.5 h-3.5 text-red-600" />
+            </div>
           </div>
-          <p className="text-lg font-heading font-bold text-red-700 mt-1 font-mono">
+          <p className="text-xl font-heading font-bold text-red-700 mt-1.5 tabular-nums">
             € {totalExpense.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
           </p>
         </Card>
 
-        <Card noPadding className="p-3 bg-[#F8F7F4]">
+        <Card noPadding className="p-3.5 bg-[#F8F7F4] border border-[#D6CFC2]/70 rounded-2xl shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold text-dark/50 uppercase tracking-wider">Review Items (Pending)</span>
-            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+            </div>
           </div>
-          <p className="text-lg font-heading font-bold text-amber-800 mt-1 font-mono">
-            {reviewItemsCount} Transactions
+          <p className="text-xl font-heading font-bold text-amber-800 mt-1.5 tabular-nums">
+            {reviewItemsCount} <span className="text-xs font-normal text-dark/60 font-body">Transactions</span>
           </p>
         </Card>
       </div>
@@ -779,17 +856,17 @@ Kenmerk: EREF-2026-9006`;
       {/* TAB 1: BANK TRANSACTIONS LIST WITH FILTERS                */}
       {/* ========================================================= */}
       {activeTab === 'transactions' && (
-        <Card p="p-4" className="space-y-4">
+        <Card p="p-4" className="space-y-4 rounded-2xl border border-[#D6CFC2]/80 bg-[#F8F7F4]">
           {/* Filter Bar */}
-          <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 bg-[#EDE8DF]/40 p-3 rounded-xl border border-[#D6CFC2]">
-            <div className="relative flex-1 min-w-0">
+          <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 bg-[#EDE8DF]/60 p-3 rounded-2xl border border-[#D6CFC2]">
+            <div className="relative flex-1 min-w-[220px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark/40" />
               <input 
                 type="text" 
-                placeholder="Search by name, IBAN, description or reference (EREF)..."
+                placeholder="Search counterparty, IBAN, description or EREF..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
+                className="w-full pl-9 pr-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43] placeholder:text-dark/40"
               />
             </div>
 
@@ -798,7 +875,7 @@ Kenmerk: EREF-2026-9006`;
               <select
                 value={typeFilter}
                 onChange={e => setTypeFilter(e.target.value)}
-                className="w-full sm:w-auto px-2.5 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-semibold text-dark text-xs focus:outline-none"
+                className="w-full sm:w-auto px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl font-medium text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
                 <option value="All">All Types (Credit/Debit)</option>
                 <option value="Credit">Credit (+)</option>
@@ -809,7 +886,7 @@ Kenmerk: EREF-2026-9006`;
               <select
                 value={categoryFilter}
                 onChange={e => setCategoryFilter(e.target.value)}
-                className="w-full sm:w-auto px-2.5 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-semibold text-dark text-xs focus:outline-none max-w-full sm:max-w-[200px] truncate"
+                className="w-full sm:w-auto px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl font-medium text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 max-w-full sm:max-w-[200px] truncate"
               >
                 <option value="All">All Categories</option>
                 {BOOKKEEPING_CATEGORIES.map(cat => (
@@ -821,7 +898,7 @@ Kenmerk: EREF-2026-9006`;
               <select
                 value={reviewStatusFilter}
                 onChange={e => setReviewStatusFilter(e.target.value)}
-                className="w-full sm:w-auto px-2.5 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-semibold text-dark text-xs focus:outline-none"
+                className="w-full sm:w-auto px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl font-medium text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
                 <option value="All">All Statuses</option>
                 <option value="Recognized">Recognized</option>
@@ -831,10 +908,10 @@ Kenmerk: EREF-2026-9006`;
               </select>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button size="sm" icon={Plus} onClick={() => setModalOpen(true)} className="flex-1 sm:flex-none py-1.5 text-xs font-bold justify-center">
-                  + Transaction
+                <Button size="sm" icon={Plus} onClick={() => setModalOpen(true)} className="flex-1 sm:flex-none py-2 px-3 text-xs font-bold justify-center rounded-xl">
+                  Transaction
                 </Button>
-                <Button size="sm" icon={UploadCloud} onClick={() => setImportModalOpen(true)} className="flex-1 sm:flex-none py-1.5 text-xs font-bold bg-emerald-800 hover:bg-emerald-900 text-white border-0 justify-center">
+                <Button size="sm" icon={UploadCloud} onClick={() => setImportModalOpen(true)} className="flex-1 sm:flex-none py-2 px-3 text-xs font-bold bg-emerald-800 hover:bg-emerald-900 text-white border-0 justify-center rounded-xl shadow-xs">
                   Import Statement
                 </Button>
               </div>
@@ -1222,22 +1299,22 @@ Kenmerk: EREF-2026-9006`;
                   {reviewItemsList.map(tx => (
                     <tr key={tx.id} className="align-top hover:bg-cream/20">
                       <td className="py-3 px-3 whitespace-nowrap">
-                        <p className="font-bold text-dark font-mono text-xs">{tx.date}</p>
-                        <span className="text-[9px] uppercase font-mono text-dark/50 bg-[#EDE8DF] px-1 py-0.5 rounded">{tx.type}</span>
+                        <p className="font-semibold text-dark text-xs">{tx.date}</p>
+                        <span className="text-[9px] uppercase font-bold text-dark/60 bg-[#EDE8DF] px-1.5 py-0.5 rounded border border-[#D6CFC2]/70 inline-block mt-0.5">{tx.type}</span>
                       </td>
                       <td className="py-3 px-3">
-                        <p className="font-bold text-dark">{tx.counterName}</p>
-                        <p className="text-[10px] font-mono text-dark/50">{tx.counterIban}</p>
+                        <p className="font-bold text-dark text-xs">{tx.counterName || tx.customerName || 'Direct Settlement'}</p>
+                        <p className="text-[10px] font-mono tracking-wider text-dark/50 mt-0.5">{tx.counterIban || 'NL•• Direct Betaling'}</p>
                       </td>
                       <td className="py-3 px-3 space-y-0.5 max-w-[240px]">
-                        <p className="font-medium text-dark leading-snug">{tx.description}</p>
-                        <p className="text-[9.5px] font-mono text-dark/40">Ref: {tx.eref}</p>
+                        <p className="font-medium text-dark leading-snug text-xs">{tx.description}</p>
+                        <p className="text-[9.5px] font-mono text-dark/50 bg-[#EDE8DF]/50 px-1 py-0.5 rounded inline-block tracking-wider">Ref: {tx.eref || tx.invoiceRef || '-'}</p>
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-bold whitespace-nowrap">
-                        {tx.credit > 0 && <span className="text-emerald-700">+ € {Number(tx.credit).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>}
-                        {tx.debit > 0 && <span className="text-red-600">- € {Number(tx.debit).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>}
+                      <td className="py-3 px-3 text-right tabular-nums font-semibold whitespace-nowrap text-xs">
+                        {tx.credit > 0 && <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold border border-emerald-200/80">+ € {Number(tx.credit).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>}
+                        {tx.debit > 0 && <span className="text-red-700 bg-red-50 px-2 py-0.5 rounded font-bold border border-red-200/80">- € {Number(tx.debit).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>}
                       </td>
-                      <td className="py-3 px-3 text-amber-900 text-[11px] leading-tight max-w-[200px]">
+                      <td className="py-3 px-3 text-amber-900 text-[11px] leading-tight max-w-[200px] font-medium">
                         {tx.reviewReason || 'No configured counterparty or invoice matching rule found.'}
                       </td>
                       <td className="py-3 px-3 text-center">

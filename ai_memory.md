@@ -14,6 +14,42 @@ This file tracks all modifications, additions, and updates made to the **Vanuit 
 - **Key Features**: Admin Panel, Partner Panel, Role-Based Route Protection, Responsive Layout.
 - **Theme**: Premium Forest Green (`#3E4E36`), Accent Cream/Beige, custom typography.
 
+## 238. Real Interactive WhatsApp & Email Proposal Dispatch Engines (Completed 2026-09-08)
+* **Goal**: Replace superficial dummy dialogs with fully interactive, realistic WhatsApp and Email dispatch engines in Workflow Step 5 (Review & Send).
+* **Changes Made**:
+  1. **Interactive WhatsApp Dispatch Modal**:
+     - Genuine WhatsApp dark green header with WhatsApp icon and customer phone info.
+     - Realistic chat bubble with formatted proposal message, Vanuit Ambacht company tag, active digital proposal portal link (`/offerte/{quoteId}`), and blue double checkmarks.
+     - Real action buttons: **"Open WhatsApp Web"** (triggers actual `https://api.whatsapp.com/send` window), **"Kopieer Bericht"**, and **"Mark as Sent & Continue"**.
+  2. **Official Vanuit Ambacht Email Dispatch Modal**:
+     - Authentic enterprise mail composer showing sender (`offertes@vanuitambacht.nl`), recipient (`customerEmail`), and dynamic subject.
+     - PDF attachment pill (`Quote-{id}-{customer}.pdf`) with direct preview & download button.
+     - Rich Dutch enterprise email body preview with `#3E4E36` brand header, personalized greeting, live configuration summary, CTA button linking directly to the proposal, and Tim & Bram founders signature.
+     - Interactive delivery simulation showing 3 animated steps (PDF encryption, SMTP server handshake, and delivery confirmation).
+     - Integrated `mailto:` desktop mail client trigger.
+  3. **Automatic Quote Status Synchronization**:
+     - When sending is executed via either channel, the quote's status is automatically updated from `Draft` to `Verzonden` in `app_quotes_v2` and `app_quotes`, advancing the workflow to Step 6 (Customer Approval).
+* **Verification**: Verified production build `npm run build` passed cleanly with 0 errors.
+
+## 237. Uploaded Photos Persistence & Real 6-Page PDF Generation Engine Fix (Completed 2026-09-08)
+* **Goal**: Ensure that uploaded photos in Quote Editor (Cover Photos Slots 1, 2, 3 and Configuration Photo) persist dynamically into `localStorage` (`app_quotes_v2` and `app_quotes`) and render 100% 1-to-1 in both the public proposal (`/offerte/:token`) and the downloaded PDF proposal, eliminating fallback to hardcoded dummy text/images.
+* **Root Causes Identified**:
+  1. **Missing Workflow Persistence**: When `QuoteEditor` was opened from `WorkflowTracker.jsx`, `onSaveQuote` only closed the modal without saving `savedQuote` to `app_quotes_v2` / `app_quotes`.
+  2. **Uncompressed Base64 Quota Exhaustion**: Large uncompressed photo uploads exceeded browser `localStorage` 5MB quota, causing writes to be dropped.
+  3. **Canvas Taint Error in PDF Generator**: In `pdfGenerator.js`, `allowTaint: true` and `left: -9999px` off-screen positioning caused `canvas.toDataURL()` to throw `SecurityError: Tainted canvases may not be exported`, dropping silently into `downloadDirectPdfFileFallback` which rendered hardcoded single-page text without photos.
+* **Changes Made**:
+  1. **`src/components/QuoteEditor.jsx`**: Integrated `compressImage(file, 1200, 0.85)` in Step 2 Cover Photo slots and Step 3 Configuration Photo uploaders. Images are now compressed client-side to crisp ~80KB payloads, saving effortlessly without quota issues.
+  2. **`src/components/WorkflowTracker.jsx`**:
+     - Added unified `leadQuote` state and `handleSaveQuote` function that updates `app_quotes_v2` and `app_quotes` in `localStorage` and triggers `app_data_changed`.
+     - Bound `<QuoteEditor quoteData={leadQuote} onSaveQuote={handleSaveQuote} />`.
+     - Updated `handleRealPdfDownload` to pass the full dynamic `leadQuote` with all custom photos and configuration to `downloadDirectPdfFile`.
+  3. **`src/utils/pdfGenerator.js`**:
+     - Fixed `generateFull6PagePdf` off-screen geometry (`position: absolute; left: 0; top: 0; z-index: -99999; pointer-events: none`).
+     - Replaced `allowTaint: true` with `allowTaint: false` and `useCORS: true` to prevent `SecurityError`.
+     - Added pre-loading listener for all `<img>` tags (`img.complete && img.naturalWidth !== 0`) before capturing canvas.
+     - Updated `downloadDirectPdfFile` to be async and dynamically fall back with real quote data (no hardcoded 'Sonu Jain' or 3495).
+* **Verification**: Production build `npm run build` passed cleanly with 0 errors.
+
 ## 236. OutdoorKitchenProjects Component Crash Fix (`newProjectBudget` ReferenceError) (Completed 2026-09-07 11:20 AM IST)
 * **Goal**: Fix runtime crash on `https://ambatch.netlify.app/admin/projects/outdoor-kitchen` showing Error Boundary screen with `Error: newProjectBudget is not defined`.
 * **Changes Made:**
@@ -3135,3 +3171,22 @@ This file tracks all modifications, additions, and updates made to the **Vanuit 
 ## Fix: Added 'Akkoord geven' button to PublicOfferte.jsx
 - Date: 2026-09-02
 - Details: Added the missing 'Akkoord geven' button to the top header in the public approval view (PublicOfferte.jsx). The button triggers the showApprovalModal to allow customers to sign and accept the quote. Once accepted, the button hides and shows a 'Digitaal Akkoord' badge.
+
+## 97. Dynamic Quote Data & Specification Flow Fix in WorkflowTracker (Completed 2026-09-08)
+* **Goal**: Fix the zero-total and hardcoded defaults issue when opening Quote Editor from WorkflowTracker Step 4 (`Open Quote Editor & Build PDF →`).
+* **Root Cause**: `WorkflowTracker.jsx` previously passed a flat partial object to `<QuoteEditor />` without `investment.lineItems`, calculated totals, or configured specs. `QuoteEditor.jsx` initialized with raw prop without creating default schema structure, causing totals to show `€ 0,00` and validation warnings with fallback placeholder dimensions.
+* **Changes**:
+  1. Updated `src/utils/quoteSchema.js`:
+     - Made `createDefaultQuote()` dynamically accept and map `calculatedPrice`, `totalInclVat`, `dimensions`, `woodType`, `cutout`, `deliveryTime`, and custom `investment.lineItems`.
+## 99. 100% Dynamic Quote Validity & Expiry Calculation Fix (Completed 2026-09-08)
+* **Goal**: Completely remove hardcoded static dates from PublicOfferte fallback and ensure all generated proposals automatically compute valid dates from creation timestamp.
+* **Root Cause**: `src/pages/PublicOfferte.jsx` contained hardcoded `date: '2026-08-04'` and `validUntil: '2026-09-03'` in its fallback branch, which triggered an expired status because the system date was beyond September 3rd.
+* **Changes**:
+  1. Modified `src/pages/PublicOfferte.jsx`:
+     - Replaced hardcoded static dates with dynamic `today` (`new Date()`) and `defaultValidUntil` (`today + 30 days`).
+     - Added automatic validity check safeguard ensuring proposals maintain at least a 30-day active validity window from creation.
+  2. Verified production build with Vite (`✓ built in 7.91s` with 0 errors).
+* **Result**: All public quote approval URLs render active with the green 'Approve Quote' CTA button and zero false-positive expired warnings.
+
+
+

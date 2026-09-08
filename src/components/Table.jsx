@@ -35,7 +35,8 @@ export default function Table({ columns, data, keyField = 'id', getRowClassName,
               {columns.map((col, cIdx) => {
                 const headerRaw = typeof col.header === 'string' ? col.header : '';
                 const isActions = headerRaw.toLowerCase().includes('action') || headerRaw.toLowerCase().includes('actie');
-                const cellContent = col.render ? col.render(row) : row[col.accessor];
+                const renderFn = col.render || col.cell;
+                const cellContent = renderFn ? renderFn(row) : row[col.accessor];
                 const headerText = typeof col.header === 'string' ? tStatus(col.header) : col.header;
 
                 // 1. Actions Column: Render at bottom as clean action bar
@@ -117,10 +118,10 @@ export default function Table({ columns, data, keyField = 'id', getRowClassName,
                   {columns.map((col, index) => (
                     <td 
                       key={index} 
-                      className={`px-6 py-3.5 text-xs font-body text-dark/80 first:rounded-l-xl last:rounded-r-xl border-t border-b border-[#C4BEB3]/30 first:border-l last:border-r transition-colors duration-300 group-hover:bg-[#EDE8DF]/50 ${col.className || ''}`}
-                      style={{ background: '#F8F7F4', whiteSpace: 'nowrap', ...col.style }}
+                      className={`px-5 py-3 text-xs font-body text-dark/90 first:rounded-l-xl last:rounded-r-xl border-t border-b border-[#C4BEB3]/30 first:border-l last:border-r transition-colors duration-300 group-hover:bg-[#EDE8DF]/60 ${col.className || ''}`}
+                      style={{ background: '#F8F7F4', ...col.style, whiteSpace: col.style?.whiteSpace || 'nowrap' }}
                     >
-                      {col.render ? col.render(row) : row[col.accessor]}
+                      {col.render ? col.render(row) : (col.cell ? col.cell(row) : row[col.accessor])}
                     </td>
                   ))}
                 </tr>

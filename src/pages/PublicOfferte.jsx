@@ -2,17 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, CheckCircle, Check, X, ShieldCheck, Clock, Download, MessageSquare, Mail, Phone, Lock, Sparkles, AlertCircle, Printer } from 'lucide-react';
+import { FileText, CheckCircle, Check, X, ShieldCheck, Clock, Download, MessageSquare, Mail, Phone, Lock, Sparkles, AlertCircle, AlertTriangle, Printer } from 'lucide-react';
 import { mockQuotes as defaultQuotes } from '../utils/mockData';
 import { safeSetItem } from '../utils/storageHelper';
 import Offerte6PagePDF from '../components/Offerte6PagePDF';
 import { downloadDirectPdfFile } from '../utils/pdfGenerator';
+import { createDefaultQuote } from '../utils/quoteSchema';
+import { useLanguage } from '../context/LanguageContext';
 import outdoorProjectCard from '../assets/outdoor_project_card.png';
 import outdoorLivingLogin from '../assets/outdoor_living_login.png';
 
 
 export default function PublicOfferte() {
   const { token } = useParams();
+  const { language = 'NL' } = useLanguage() || {};
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
@@ -34,8 +37,24 @@ export default function PublicOfferte() {
                String(q.id).replace(/[^\w]/g, '').toLowerCase() === String(token).replace(/[^\w]/g, '').toLowerCase()
       );
 
+      const today = new Date().toISOString().split('T')[0];
+      const defaultValidUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
       if (found) {
-        setQuote(found);
+        let fullQuote = (found.investment && found.configuration && Array.isArray(found.investment.lineItems) && found.investment.lineItems.length > 0)
+          ? found
+          : createDefaultQuote(found.customer || found, found);
+
+        // Ensure validity date is active (at least 30 days from creation or from now)
+        if (!fullQuote.validUntil || new Date(fullQuote.validUntil) < new Date(today)) {
+          fullQuote = {
+            ...fullQuote,
+            date: fullQuote.date || today,
+            validUntil: defaultValidUntil
+          };
+        }
+
+        setQuote(fullQuote);
         if (found.signerName) setSignerName(found.signerName);
         if (found.status === 'Akkoord' || found.status === 'Accepted' || found.status === 'Approved') {
           setIsApprovedSuccess(true);
@@ -48,15 +67,22 @@ export default function PublicOfferte() {
       } else {
         // Fallback default quote for testing if token not found
         const fallback = allQuotes[0] || defaultQuotes[0];
-        setQuote({
-          ...fallback,
-          id: token || 'OF-2026-4005',
-          customer: 'Jan de Vries',
-          project: 'Exclusieve Outdoor Kitchen - Maatwerk',
-          amount: '€ 11.300',
-          date: '2026-08-04',
-          validUntil: '2026-09-03'
-        });
+        setQuote(createDefaultQuote(
+          {
+            name: 'Jan de Vries',
+            email: 'jan@example.nl',
+            city: 'Dongen'
+          },
+          {
+            ...fallback,
+            id: token || 'OF-2026-4005',
+            customer: 'Jan de Vries',
+            project: 'Exclusieve Outdoor Kitchen - Maatwerk',
+            amount: '€ 11.300',
+            date: today,
+            validUntil: defaultValidUntil
+          }
+        ));
       }
       setLoading(false);
     };

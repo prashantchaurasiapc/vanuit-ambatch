@@ -18,18 +18,36 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
   const phone = customerData?.phone || customerData?.customerPhone || (typeof existingCustomer === 'object' ? existingCustomer.phone : null) || '+31 6 12345678';
   const address = customerData?.address || (typeof existingCustomer === 'object' ? existingCustomer.address : null) || 'Keizersgracht 420';
 
-  const defaultWood = WOOD_LIBRARY[0]; // Thermo Fraké
-  const defaultProductType = 'Outdoor kitchen';
-  const productDefaults = PRODUCT_TYPE_DEFAULTS[defaultProductType];
+  const woodName = existingQuote?.configuration?.woodType || existingQuote?.woodType || customerData?.woodType || customerData?.material || 'Thermo Fraké';
+  const defaultWood = WOOD_LIBRARY.find(w => w.name.toLowerCase() === woodName.toLowerCase()) || WOOD_LIBRARY[0];
+  const defaultProductType = existingQuote?.productType || customerData?.productType || 'Outdoor kitchen';
+  const productDefaults = PRODUCT_TYPE_DEFAULTS[defaultProductType] || PRODUCT_TYPE_DEFAULTS['Outdoor kitchen'];
 
-  const initialLineItems = existingQuote?.items || [
+  const dimensions = existingQuote?.configuration?.dimensions || existingQuote?.dimensions || customerData?.dimensions || customerData?.size || '240 × 80';
+  const cleanDimensions = String(dimensions).replace(/\s*cm$/i, '').trim();
+  const cutoutName = existingQuote?.configuration?.optionsTitle || existingQuote?.cutout || customerData?.cutout || 'Big Green Egg Large';
+  const deliveryTime = existingQuote?.configuration?.deliveryTime || existingQuote?.deliveryTime || customerData?.deliveryTime || '3 to 5 weeks';
+
+  let targetPrice = 3495;
+  if (existingQuote?.calculatedPrice && Number(existingQuote.calculatedPrice) > 0) {
+    targetPrice = Number(existingQuote.calculatedPrice);
+  } else if (existingQuote?.totalInclVat && Number(existingQuote.totalInclVat) > 0) {
+    targetPrice = Number(existingQuote.totalInclVat);
+  } else if (typeof existingQuote?.amount === 'number' && existingQuote.amount > 0) {
+    targetPrice = existingQuote.amount;
+  } else if (typeof existingQuote?.amount === 'string') {
+    const parsed = Number(existingQuote.amount.replace(/[^0-9.,]/g, '').replace(',', '.'));
+    if (parsed > 0) targetPrice = parsed;
+  }
+
+  const initialLineItems = existingQuote?.investment?.lineItems || existingQuote?.items || [
     {
       id: 'item-1',
-      title: `Outdoor Kitchen ${defaultWood.name}`,
-      description: `Wooden worktop with ceramic stones, custom cutout for Big Green Egg Large, finished with natural oil`,
+      title: `${defaultProductType} ${woodName} · ${cleanDimensions} cm`,
+      description: `Wooden worktop with ceramic stones, custom cutout for ${cutoutName}, finished with natural oil`,
       quantity: 1,
-      priceInclVat: 3495,
-      vatRate: 21,
+      priceInclVat: targetPrice,
+      vatRate: existingQuote?.vatRate || 21,
       isIncluded: false
     },
     {
@@ -38,7 +56,7 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
       description: `Free delivery in ${city}, scheduled at your convenience`,
       quantity: 1,
       priceInclVat: 0,
-      vatRate: 21,
+      vatRate: existingQuote?.vatRate || 21,
       isIncluded: true
     }
   ];
@@ -62,7 +80,7 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
       email: email
     },
 
-    productType: existingQuote?.productType || defaultProductType,
+    productType: defaultProductType,
 
     cover: existingQuote?.cover || {
       titleLine1: productDefaults.titleLine1,
@@ -77,16 +95,16 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
     },
 
     configuration: existingQuote?.configuration || {
-      dimensions: '240 × 80',
-      woodType: defaultWood.name,
-      woodLifespan: defaultWood.lifespan,
-      optionsTitle: 'Big Green Egg Large',
-      deliveryTime: '3 to 5 weeks',
+      dimensions: cleanDimensions,
+      woodType: woodName,
+      woodLifespan: defaultWood.lifespan || '20 to 25 years',
+      optionsTitle: cutoutName,
+      deliveryTime: deliveryTime,
 
       options: {
         bbqCutout: {
           enabled: true,
-          type: 'Big Green Egg',
+          type: cutoutName.includes('Egg') ? 'Big Green Egg' : cutoutName.includes('Kamado') ? 'Kamado Joe' : 'Custom Barbecue',
           size: 'Large',
           position: 'right of center'
         },

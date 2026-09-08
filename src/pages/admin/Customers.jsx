@@ -158,21 +158,33 @@ export default function Customers() {
     }
   ];
 
+  const normalizeCustomerRecord = (c) => ({
+    ...c,
+    productInterest: c.productInterest || c.category || 'Bespoke Outdoor Kitchen',
+    totalSpend: c.totalSpend || c.totalSpent || (c.numericSpend ? `€ ${Number(c.numericSpend).toLocaleString('nl-NL')}` : '€ 108,537'),
+    city: c.city || c.location || c.address || 'Breda, NL',
+    address: c.address || c.location || c.city || 'Breda, NL',
+    email: c.email || (c.name ? `${c.name.toLowerCase().replace(/\s+/g, '')}@gmail.com` : 'client@vanuitambacht.nl'),
+    linkedQuote: c.linkedQuote || '#OF-2026331',
+    linkedProject: c.linkedProject || '#PRJ-L-1005'
+  });
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem('app_customers');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setCustomers(parsed);
+          const normalized = parsed.map(normalizeCustomerRecord);
+          setCustomers(normalized);
           return;
         }
       }
     } catch (e) {
       console.error(e);
     }
-    setCustomers(initialMockCustomers);
-    localStorage.setItem('app_customers', JSON.stringify(initialMockCustomers));
+    setCustomers(initialMockCustomers.map(normalizeCustomerRecord));
+    localStorage.setItem('app_customers', JSON.stringify(initialMockCustomers.map(normalizeCustomerRecord)));
   }, []);
 
   // Listen to global app_data_changed event for real-time customer auto-conversion
@@ -182,7 +194,7 @@ export default function Customers() {
         const saved = localStorage.getItem('app_customers');
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) setCustomers(parsed);
+          if (Array.isArray(parsed)) setCustomers(parsed.map(normalizeCustomerRecord));
         }
       } catch (e) {}
     };
@@ -205,7 +217,7 @@ export default function Customers() {
   const totalCustomersCount = customers.length;
   const activeProjectsCount = customers.reduce((acc, curr) => acc + (curr.activeProjects || 1), 0);
   const totalRevenue = customers.reduce((acc, curr) => {
-    const val = typeof curr.numericSpend === 'number' ? curr.numericSpend : parseFloat((curr.totalSpend || '0').replace(/[^0-9.]/g, '')) || 0;
+    const val = typeof curr.numericSpend === 'number' ? curr.numericSpend : parseFloat((curr.totalSpend || curr.totalSpent || '0').replace(/[^0-9.]/g, '')) || 0;
     return acc + val;
   }, 0);
 
@@ -213,30 +225,33 @@ export default function Customers() {
     {
       header: language === 'EN' ? 'CUSTOMER / CLIENT' : 'KLANT / CLIENT',
       accessor: 'name',
-      cell: (row) => (
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm border border-primary/20 flex-shrink-0">
-            {row.name ? row.name.split(' ').map(n => n[0]).join('') : 'C'}
+      render: (row) => {
+        const email = row.email || (row.name ? `${row.name.toLowerCase().replace(/\s+/g, '')}@gmail.com` : 'client@vanuitambacht.nl');
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm border border-primary/20 flex-shrink-0">
+              {row.name ? row.name.split(' ').map(n => n[0]).join('') : 'C'}
+            </div>
+            <div>
+              <p className="font-bold text-dark text-xs sm:text-sm hover:text-primary transition-colors cursor-pointer" onClick={() => setSelectedCustomer(row)}>
+                {row.name}
+              </p>
+              <p className="text-[11px] text-dark/50 font-mono">{email}</p>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-dark text-xs sm:text-sm hover:text-primary transition-colors cursor-pointer" onClick={() => setSelectedCustomer(row)}>
-              {row.name}
-            </p>
-            <p className="text-[11px] text-dark/50 font-mono">{row.email}</p>
-          </div>
-        </div>
-      )
+        );
+      }
     },
     {
       header: language === 'EN' ? 'CONTACT & LOCATION' : 'CONTACT & LOCATIE',
       accessor: 'phone',
-      cell: (row) => (
+      render: (row) => (
         <div className="text-xs space-y-0.5">
           <p className="font-medium text-dark flex items-center gap-1">
-            <Phone className="w-3 h-3 text-primary/70" /> {row.phone}
+            <Phone className="w-3 h-3 text-primary/70" /> {row.phone || '+31 6 12345678'}
           </p>
           <p className="text-dark/50 flex items-center gap-1 truncate max-w-[200px]">
-            <MapPin className="w-3 h-3 text-primary/70" /> {row.city || row.address || 'Amsterdam, NL'}
+            <MapPin className="w-3 h-3 text-primary/70" /> {row.city || row.address || row.location || 'Breda, NL'}
           </p>
         </div>
       )
@@ -244,13 +259,13 @@ export default function Customers() {
     {
       header: language === 'EN' ? 'PRODUCT INTEREST' : 'PRODUCT INTERESSE',
       accessor: 'productInterest',
-      cell: (row) => (
+      render: (row) => (
         <div className="text-xs">
           <span className="font-semibold text-dark block truncate max-w-[220px]">
-            {row.productInterest || 'Bespoke Outdoor Kitchen'}
+            {row.productInterest || row.category || 'Bespoke Outdoor Kitchen'}
           </span>
           <span className="text-[10px] text-dark/50 font-mono">
-            Quote: {row.linkedQuote || '#Q-4001'}
+            Quote: {row.linkedQuote || row.quoteId || '#OF-2026331'}
           </span>
         </div>
       )
@@ -258,10 +273,10 @@ export default function Customers() {
     {
       header: language === 'EN' ? 'CONTRACT VALUE' : 'CONTRACT WAARDE',
       accessor: 'totalSpend',
-      cell: (row) => (
+      render: (row) => (
         <div>
           <span className="font-bold text-primary text-xs sm:text-sm block">
-            {row.totalSpend || '€ 12,500'}
+            {row.totalSpend || row.totalSpent || '€ 108,537'}
           </span>
           <span className="text-[10px] text-dark/50 font-mono">
             {row.convertedDate ? `Converted: ${row.convertedDate}` : 'Active Client'}
@@ -272,16 +287,16 @@ export default function Customers() {
     {
       header: 'STATUS',
       accessor: 'status',
-      cell: (row) => (
-        <Badge variant={row.status === 'Active' ? 'success' : 'neutral'}>
-          {row.status === 'Active' ? (language === 'EN' ? 'Active Client' : 'Actieve Klant') : (language === 'EN' ? 'Closed' : 'Afgerond')}
+      render: (row) => (
+        <Badge variant={row.status === 'Active' || row.status === 'Active Client' ? 'success' : 'neutral'}>
+          {row.status === 'Active' || row.status === 'Active Client' ? (language === 'EN' ? 'Active Client' : 'Actieve Klant') : (language === 'EN' ? 'Closed' : 'Afgerond')}
         </Badge>
       )
     },
     {
       header: 'ACTIONS',
       accessor: 'id',
-      cell: (row) => (
+      render: (row) => (
         <div className="flex items-center justify-end gap-1.5">
           <Button 
             variant="outline" 

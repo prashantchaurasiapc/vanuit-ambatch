@@ -122,61 +122,80 @@ export async function generateFull6PagePdf(quoteData) {
   const cleanCustomerName = String(customerName).replace(/[\\/:*?"<>|]/g, '').trim();
   const fileName = `Quote-${quoteId} ${cleanCustomerName}.pdf`;
 
-  // Create temporary off-screen container for 6 pages
+  // Create temporary container for 6 pages (placed off viewport but with valid positive geometry)
   const tempDiv = document.createElement('div');
-  tempDiv.style.position = 'fixed';
-  tempDiv.style.left = '-9999px';
+  tempDiv.style.position = 'absolute';
   tempDiv.style.top = '0';
+  tempDiv.style.left = '0';
   tempDiv.style.width = '794px';
-  tempDiv.style.zIndex = '-9999';
+  tempDiv.style.zIndex = '-99999';
+  tempDiv.style.opacity = '1';
+  tempDiv.style.pointerEvents = 'none';
   tempDiv.style.backgroundColor = '#FFFFFF';
   document.body.appendChild(tempDiv);
 
-  const root = createRoot(tempDiv);
+  let root = null;
+  try {
+    root = createRoot(tempDiv);
 
-  // Render all 6 pages inside Offerte6PagePDF (activePage="all")
-  root.render(
-    React.createElement(Offerte6PagePDF, { quote: quote, activePage: 'all' })
-  );
+    // Render all 6 pages inside Offerte6PagePDF (activePage="all")
+    root.render(
+      React.createElement(Offerte6PagePDF, { quote: quote, activePage: 'all' })
+    );
 
-  // Wait 600ms for images, fonts and React layout render
-  await new Promise(resolve => setTimeout(resolve, 600));
+    // Wait for React DOM commit and all image elements to complete loading
+    await new Promise(resolve => setTimeout(resolve, 350));
+    const imgs = Array.from(tempDiv.querySelectorAll('img'));
+    await Promise.all(
+      imgs.map(img => {
+        if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+        return new Promise(resolve => {
+          img.onload = resolve;
+          img.onerror = resolve;
+          setTimeout(resolve, 1500); // safety timeout
+        });
+      })
+    );
+    await new Promise(resolve => setTimeout(resolve, 250));
 
-  const pageElements = Array.from(tempDiv.querySelectorAll('.offerte-pdf-page'));
+    const pageElements = Array.from(tempDiv.querySelectorAll('.offerte-pdf-page'));
 
-  if (pageElements.length > 0) {
-    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    if (pageElements.length > 0) {
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
-    for (let i = 0; i < pageElements.length; i++) {
-      const el = pageElements[i];
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#FFFFFF',
-        logging: false
-      });
+      for (let i = 0; i < pageElements.length; i++) {
+        const el = pageElements[i];
+        const canvas = await html2canvas(el, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: '#FFFFFF',
+          logging: false,
+          windowWidth: 1200
+        });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      if (i > 0) {
-        pdf.addPage('a4', 'portrait');
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        if (i > 0) {
+          pdf.addPage('a4', 'portrait');
+        }
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
       }
-      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+
+      pdf.save(fileName);
+      return fileName;
+    } else {
+      return downloadQuotePdfFallback(quote);
     }
-
-    pdf.save(fileName);
-
-    root.unmount();
+  } catch (err) {
+    console.error('[PDF Generator] 6-Page rendering failed, falling back to direct vector engine:', err);
+    return downloadDirectPdfFileFallback(quote);
+  } finally {
+    if (root) {
+      try { root.unmount(); } catch(e){}
+    }
     if (document.body.contains(tempDiv)) {
       document.body.removeChild(tempDiv);
     }
-    return fileName;
-  } else {
-    root.unmount();
-    if (document.body.contains(tempDiv)) {
-      document.body.removeChild(tempDiv);
-    }
-    return downloadQuotePdfFallback(quote);
   }
 }
 
@@ -332,16 +351,20 @@ export function downloadQuotePdfFallback(quote) {
  * Generates an official, beautiful branded PDF document matching the preview 100%
  * and calls doc.save("Quote-{number} {customer}.pdf") to trigger an actual file download.
  */
-export function downloadDirectPdfFile(quoteData = {}) {
+export async function downloadDirectPdfFile(quoteData = {}) {
   const quoteObj = quoteData?.quote || quoteData || {};
   const quoteId = quoteObj.id || quoteObj.quoteId || 'OF-2026331';
   const custObj = typeof quoteObj.customer === 'object' ? quoteObj.customer : null;
-  const customerName = custObj?.name || quoteObj.customer || quoteObj.customerName || 'Jan de Vries';
+  const customerName = custObj?.name || quoteObj.customer || quoteObj.customerName || 'Klant';
   const cleanCustomerName = String(customerName).replace(/[\\/:*?"<>|]/g, '').trim();
   const fileName = `Quote-${quoteId} ${cleanCustomerName}.pdf`;
 
-  generateFull6PagePdf(quoteData).catch(() => downloadDirectPdfFileFallback(quoteData));
-  return fileName;
+  try {
+    return await generateFull6PagePdf(quoteObj);
+  } catch (err) {
+    console.warn('[downloadDirectPdfFile] 6-page render failed, falling back to direct vector engine:', err);
+    return downloadDirectPdfFileFallback(quoteObj);
+  }
 }
 
 export function downloadDirectPdfFileFallback(quoteData = {}) {
@@ -349,12 +372,12 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
   const quote = quoteData.quote || quoteData;
   const quoteId = quote.id || quote.quoteId || 'OF-2026331';
   
-  const rawCustomer = typeof quote.customer === 'object' ? quote.customer.name : quote.customer;
-  const customerName = rawCustomer || quote.customerName || 'Sonu Jain';
-  const customerEmail = quote.customerEmail || quote.email || 'klant@vanuitambacht.nl';
-  const customerPhone = quote.customerPhone || quote.phone || '+31 6 12345678';
+  const custObj = typeof quote.customer === 'object' ? quote.customer : null;
+  const customerName = custObj?.name || quote.customer || quote.customerName || 'Klant';
+  const customerEmail = custObj?.email || quote.customerEmail || quote.email || 'klant@vanuitambacht.nl';
+  const customerPhone = custObj?.phone || quote.customerPhone || quote.phone || '+31 6 12345678';
 
-  const category = quote.category || quote.project || 'Buitenkeukens';
+  const category = quote.category || quote.productType || quote.project || 'Buitenkeukens';
   const woodType = quote.woodType || quote.configuration?.woodType || 'Thermo Fraké';
   const dimensions = quote.dimensions || quote.configuration?.dimensions || '240 × 80 cm';
 
@@ -366,6 +389,10 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
   const fileName = `Quote-${quoteId} ${cleanCustomerName}.pdf`;
 
   // Itemized breakdown & totals
+  const totalFallbackAmt = typeof quote.amount === 'number'
+    ? quote.amount
+    : (quote.totalInclVat || quote.calculatedPrice || parseFloat(String(quote.amount || '0').replace(/[^0-9.]/g, '')) || 0);
+
   const items = (quote.items && quote.items.length > 0)
     ? quote.items
     : (quote.investment?.lineItems && quote.investment.lineItems.length > 0)
@@ -374,7 +401,7 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
         {
           description: `Outdoor Kitchen ${woodType} (${dimensions})`,
           quantity: 1,
-          unitPrice: typeof quote.amount === 'number' ? quote.amount : parseFloat(String(quote.amount || '3495').replace(/[^0-9.]/g, '')) || 3495
+          unitPrice: totalFallbackAmt
         }
       ];
 
@@ -384,10 +411,7 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
     return acc + (qty * prc);
   }, 0);
 
-  const totalIncl = typeof quote.amount === 'number'
-    ? quote.amount
-    : (parseFloat(String(quote.amount || '0').replace(/[^0-9.]/g, '')) || subtotalExcl || 3495);
-
+  const totalIncl = totalFallbackAmt || subtotalExcl;
   const totalExcl = Math.round((totalIncl / 1.21) * 100) / 100;
   const vatAmount = Math.round((totalIncl - totalExcl) * 100) / 100;
 

@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
-import { 
-  Plus, Search, Filter, Trash2, Edit2, X, CheckCircle, RotateCcw, 
-  MapPin, Calendar, UserCheck, Layers, FileText, CheckSquare, 
+import {
+  Plus, Search, Filter, Trash2, Edit2, X, CheckCircle, RotateCcw,
+  MapPin, Calendar, UserCheck, Layers, FileText, CheckSquare,
   Sparkles, Truck, ShoppingBag, Download, Camera, Image as ImageIcon,
   Lock, Check, ChevronDown, FolderOpen
 } from 'lucide-react';
@@ -41,12 +41,12 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy] = useState('deadline');
   const [showFilterPanel, setShowFilterPanel] = useState(false);
-  
+
   // Toast & Modal State
   const [toastMsg, setToastMsg] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
-  
+
   // Select values for dropdown bindings
   const [customerSelect, setCustomerSelect] = useState('Other');
   const [partnerSelect, setPartnerSelect] = useState('Unassigned');
@@ -71,7 +71,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
           if (Array.isArray(parsed) && parsed.length > 0) {
             setProjects(parsed);
           } else setProjects(mockProjects);
-        } catch(e) { setProjects(mockProjects); }
+        } catch (e) { setProjects(mockProjects); }
       } else {
         setProjects(mockProjects);
         localStorage.setItem('app_projects', JSON.stringify(mockProjects));
@@ -87,7 +87,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
         const parsed = JSON.parse(savedLeads);
         if (Array.isArray(parsed) && parsed.length > 0) setLeadsList(parsed);
         else setLeadsList(mockLeads);
-      } catch(e) { setLeadsList(mockLeads); }
+      } catch (e) { setLeadsList(mockLeads); }
     } else {
       setLeadsList(mockLeads);
     }
@@ -99,7 +99,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
         const parsed = JSON.parse(savedPartners);
         if (Array.isArray(parsed) && parsed.length > 0) setPartnersList(parsed);
         else setPartnersList(mockPartners);
-      } catch(e) { setPartnersList(mockPartners); }
+      } catch (e) { setPartnersList(mockPartners); }
     } else {
       setPartnersList(mockPartners);
     }
@@ -280,7 +280,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       }
       setSelectedUploadFiles(prev => [...prev, ...compressedFiles]);
       showToast(`Added ${compressedFiles.length} photo(s) for upload!`);
-    } catch(err) {
+    } catch (err) {
       console.error(err);
     } finally {
       setIsUploading(false);
@@ -320,14 +320,14 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
   // Process & Filter Projects
   const filteredProjects = projects.filter(p => {
     const query = searchQuery.toLowerCase();
-    const matchesSearch = 
+    const matchesSearch =
       (p.name || '').toLowerCase().includes(query) ||
       (p.customer || '').toLowerCase().includes(query) ||
       (p.id || '').toLowerCase().includes(query) ||
       (p.partner || '').toLowerCase().includes(query);
 
     const matchesStatus = statusFilter === 'All' || p.status === statusFilter;
-    
+
     const pType = detectProjectType(p);
     let matchesTab = true;
     if (activeTab === 'Outdoor Kitchens' && pType !== 'outdoor_kitchen') matchesTab = false;
@@ -347,10 +347,10 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       {/* Toast Notification */}
       <AnimatePresence>
         {toastMsg && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            exit={{ opacity: 0, y: -20 }} 
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             className="fixed top-20 right-4 z-[99999] flex items-center gap-2 bg-[#33422C] text-white px-4 py-3 rounded-xl shadow-xl text-xs font-body font-semibold"
           >
             <CheckCircle className="w-4 h-4 text-[#D97706]" />
@@ -366,8 +366,8 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
             {language === 'NL' ? 'Projecten & Installatie Beheer' : 'Projects & Installation Management'}
           </h2>
           <p className="text-xs text-dark/70 mt-1 font-body">
-            {language === 'NL' 
-              ? 'Beheer actieve installaties, koppel vakmannen en bekijk bouwtekeningen.' 
+            {language === 'NL'
+              ? 'Beheer actieve installaties, koppel vakmannen en bekijk bouwtekeningen.'
               : 'Manage active installations, partner assignments, and technical blueprints.'}
           </p>
         </div>
@@ -379,18 +379,17 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
       {/* Main Content Area Container matching screenshot */}
       <div className="bg-[#EAE4D9] border border-[#D6CFC2] rounded-3xl p-4 sm:p-5 space-y-2 sm:space-y-3 shadow-sm">
-        
+
         {/* Top Tabs (Client Requested) */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar border-b border-[#D6CFC2]/60">
           {['All', 'Outdoor Kitchens', 'Outdoor Living Spaces'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                activeTab === tab
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === tab
                   ? 'bg-[#283523] text-white shadow-md'
                   : 'bg-white text-dark/70 border border-[#D6CFC2] hover:bg-[#FAF8F5]'
-              }`}
+                }`}
             >
               {tab}
             </button>
@@ -410,9 +409,9 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              variant={showFilterPanel ? 'primary' : 'outline'} 
-              icon={Filter} 
+            <Button
+              variant={showFilterPanel ? 'primary' : 'outline'}
+              icon={Filter}
               onClick={() => setShowFilterPanel(!showFilterPanel)}
               size="sm"
               className="text-xs border-[#D6CFC2] bg-white shadow-2xs"
@@ -420,9 +419,9 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
               {language === 'NL' ? 'Filters' : 'Filters'}
             </Button>
             {(searchQuery || statusFilter !== 'All') && (
-              <Button 
-                variant="ghost" 
-                icon={RotateCcw} 
+              <Button
+                variant="ghost"
+                icon={RotateCcw}
                 onClick={() => { setSearchQuery(''); setStatusFilter('All'); }}
                 size="sm"
                 className="text-xs text-dark/65"
@@ -449,11 +448,10 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                     <button
                       key={st}
                       onClick={() => setStatusFilter(st)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                        statusFilter === st
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${statusFilter === st
                           ? 'bg-primary text-cream border-primary shadow-xs'
                           : 'bg-white text-dark/70 border-[#D6CFC2] hover:bg-[#EDE8DF]/60'
-                      }`}
+                        }`}
                     >
                       {st}
                     </button>
@@ -507,12 +505,12 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                   const numericVal = Number(row.numericAmount || (typeof row.amount === 'string' ? parseFloat(row.amount.replace(/[^\d.-]/g, '')) : row.amount) || 15180);
 
                   return (
-                    <tr 
+                    <tr
                       key={row.id}
                       className="bg-white shadow-xs hover:shadow-md hover:bg-[#FAF8F5]/80 transition-all group cursor-pointer"
                     >
                       {/* 1. Project No. */}
-                      <td 
+                      <td
                         onClick={() => onSelectProject ? onSelectProject(row) : (pType === 'field_mapping' ? navigate('/admin/projects/field-mapping') : pType === 'garden_room' ? navigate('/admin/projects/garden-rooms') : navigate('/admin/projects/outdoor-kitchens'))}
                         className="py-3 px-3 rounded-l-xl border-y border-l border-[#E2DDD3] font-mono font-bold text-[11px] text-primary whitespace-nowrap"
                         title="Click to open project overview & tabs"
@@ -523,7 +521,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                       </td>
 
                       {/* 2. Customer */}
-                      <td 
+                      <td
                         onClick={() => onSelectProject ? onSelectProject(row) : (pType === 'field_mapping' ? navigate('/admin/projects/field-mapping') : pType === 'garden_room' ? navigate('/admin/projects/garden-rooms') : navigate('/admin/projects/outdoor-kitchens'))}
                         className="py-3 px-3 border-y border-[#E2DDD3] text-dark text-[11px] font-bold"
                       >
@@ -547,9 +545,8 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
                       {/* 4. Phase (Status) */}
                       <td className="py-3 px-3 border-y border-[#E2DDD3] whitespace-nowrap">
-                        <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                          row.status === 'Completed' ? 'bg-[#D1E7DD] text-[#0F5132]' : isConfirmed ? 'bg-emerald-100 text-emerald-900' : 'bg-[#FFF3CD] text-[#664D03]'
-                        }`}>
+                        <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold ${row.status === 'Completed' ? 'bg-[#D1E7DD] text-[#0F5132]' : isConfirmed ? 'bg-emerald-100 text-emerald-900' : 'bg-[#FFF3CD] text-[#664D03]'
+                          }`}>
                           {row.buildStatus || (isConfirmed ? 'In production' : 'To confirm')}
                         </span>
                       </td>
@@ -600,8 +597,8 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                     <span>Upload Project Progress Photos</span>
                   </h3>
                 </div>
-                <button 
-                  onClick={() => setDirectUploadProject(null)} 
+                <button
+                  onClick={() => setDirectUploadProject(null)}
                   className="p-1 text-dark/40 hover:text-dark rounded-lg hover:bg-white/40 transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -632,7 +629,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                 <label className="block text-[11px] font-bold text-dark/60 uppercase tracking-wider">
                   SELECT PHOTO FILES (DRAG & DROP OR BROWSE) *
                 </label>
-                <div 
+                <div
                   onClick={() => directFileInputRef.current && directFileInputRef.current.click()}
                   className="border-2 border-dashed border-[#D6CFC2] hover:border-primary/60 bg-white/70 hover:bg-white p-6 rounded-2xl text-center cursor-pointer space-y-1.5 transition-colors shadow-2xs"
                 >
@@ -643,13 +640,13 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                   <p className="text-[10px] text-dark/50 font-body">
                     PNG, JPG, WEBP · Multiple files supported
                   </p>
-                  <input 
-                    type="file" 
-                    ref={directFileInputRef} 
-                    multiple 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={handleDirectFileSelect} 
+                  <input
+                    type="file"
+                    ref={directFileInputRef}
+                    multiple
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleDirectFileSelect}
                   />
                 </div>
               </div>
