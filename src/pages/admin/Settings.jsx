@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Badge from '../../components/Badge';
-import { Building2, Upload, Palette, Bell, Save, CheckCircle, Users, Plus, Trash2, Edit2, Shield, Sliders, Hash, Percent, X, UserPlus, ToggleLeft, ToggleRight, FileText, MessageSquare, Layers, Wrench, FileCode, FolderPlus, DollarSign, TrendingUp, PieChart, Eye, EyeOff, Lock, Key } from 'lucide-react';
+import { Building2, Upload, Palette, Bell, Save, CheckCircle, Users, Plus, Trash2, Edit2, Shield, Sliders, Hash, Percent, X, UserPlus, ToggleLeft, ToggleRight, FileText, MessageSquare, Layers, Wrench, FileCode, FolderPlus, DollarSign, TrendingUp, PieChart, Eye, EyeOff, Lock, Key, Link2, Calendar, Mail } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function Settings() {
@@ -52,7 +52,7 @@ export default function Settings() {
   const [logo, setLogo] = useState(() => localStorage.getItem('brand_logo') || null);
 
   const [companyInfo, setCompanyInfo] = useState(() => {
-    const saved = localStorage.getItem('company_info');
+    const saved = localStorage.getItem('company_info') || localStorage.getItem('app_settings');
     return saved ? JSON.parse(saved) : {
       name: 'Vanuit Ambacht',
       website: 'www.vanuitambacht.nl',
@@ -62,6 +62,8 @@ export default function Settings() {
       country: 'Netherlands',
       kvk: 'KVK-88741029',
       vatNumber: 'NL88741029B01',
+      iban: 'NL91 ABNA 0417 1234 56',
+      bankName: 'ABN AMRO Bank',
       standardVatRate: '21',
       lowVatRate: '9',
       quotePrefix: '#Q-2004',
@@ -244,6 +246,21 @@ export default function Settings() {
   // -------------------------------------------------------------
   // 7. PROFIT & LOSS CONFIGURATION & TARGET MARGINS STATE
   // -------------------------------------------------------------
+  const [integrations, setIntegrations] = useState(() => {
+    const saved = localStorage.getItem('app_integrations');
+    return saved ? JSON.parse(saved) : {
+      googleCalendar: false,
+      gmail: false
+    };
+  });
+  
+  const handleToggleIntegration = (key) => {
+    const updated = { ...integrations, [key]: !integrations[key] };
+    setIntegrations(updated);
+    localStorage.setItem('app_integrations', JSON.stringify(updated));
+    showToast(language === 'EN' ? 'Integration settings updated!' : 'Koppelingen bijgewerkt!');
+  };
+
   const [plConfig, setPlConfig] = useState(() => {
     const saved = localStorage.getItem('app_pl_config_v1') || localStorage.getItem('app_pl_settings');
     return saved ? JSON.parse(saved) : {
@@ -356,7 +373,9 @@ export default function Settings() {
   // Save Handlers
   const saveCompanyInfo = () => {
     localStorage.setItem('company_info', JSON.stringify(companyInfo));
-    showToast('Bedrijfsgegevens & Nummering formats opgeslagen! (#Q-2004 / #INV-902)');
+    localStorage.setItem('app_settings', JSON.stringify(companyInfo));
+    window.dispatchEvent(new Event('app_data_changed'));
+    showToast(language === 'EN' ? 'Company details saved successfully!' : 'Bedrijfsgegevens & Nummering formats opgeslagen! (#Q-2004 / #INV-902)');
   };
 
   const saveBrandSettings = () => {
@@ -560,6 +579,15 @@ export default function Settings() {
           <MessageSquare className="w-4 h-4 flex-shrink-0 text-primary" />
           <span>{language === 'EN' ? 'Message Templates' : 'Berichtsjablonen'}</span>
         </button>
+        <button
+          onClick={() => setActiveTab('Integrations')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold font-body transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${
+            activeTab === 'Integrations' ? 'bg-primary text-cream shadow-sm' : 'bg-white/80 text-dark/70 hover:bg-[#EDE8DF]'
+          }`}
+        >
+          <Link2 className="w-4 h-4 flex-shrink-0 text-primary" />
+          <span>{language === 'EN' ? 'Integrations' : 'Koppelingen'}</span>
+        </button>
       </div>
 
       {/* ========================================================= */}
@@ -596,6 +624,13 @@ export default function Settings() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input type="text" value={getDisplayValue('kvk', companyInfo.kvk)} onChange={e => handleCompanyChange('kvk', e.target.value)} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-mono font-bold text-primary text-sm" />
                     <input type="text" value={getDisplayValue('vatNumber', companyInfo.vatNumber)} onChange={e => handleCompanyChange('vatNumber', e.target.value)} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-mono font-bold text-primary text-sm" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'IBAN & Bank Name' : 'IBAN & Banknaam'}</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input type="text" value={companyInfo.iban || ''} onChange={e => handleCompanyChange('iban', e.target.value)} placeholder="NL91 ABNA 0417 1234 56" className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-mono font-bold text-primary text-sm" />
+                    <input type="text" value={companyInfo.bankName || ''} onChange={e => handleCompanyChange('bankName', e.target.value)} placeholder="ABN AMRO Bank" className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-mono font-bold text-primary text-sm" />
                   </div>
                 </div>
               </div>
@@ -1401,6 +1436,83 @@ export default function Settings() {
           </div>
         )}
       </AnimatePresence>
+      {/* ========================================================= */}
+      {/* INTEGRATIONS TAB (GOOGLE CALENDAR & GMAIL)                  */}
+      {/* ========================================================= */}
+      {activeTab === 'Integrations' && (
+        <div className="space-y-6 font-body text-[#4A4A43]">
+          <div className="bg-[#EDE8DF]/60 p-4 rounded-xl border border-[#D6CFC2] flex flex-col gap-1">
+            <h3 className="font-heading font-bold text-primary text-base">
+              {language === 'EN' ? 'External Integrations' : 'Externe Koppelingen'}
+            </h3>
+            <p className="text-dark/60 text-xs">
+              {language === 'EN'
+                ? 'Connect external tools like Google Calendar and Gmail to sync appointments and automate emails.'
+                : 'Koppel externe tools zoals Google Calendar en Gmail om afspraken te synchroniseren en e-mails te automatiseren.'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Google Calendar Card */}
+            <Card title={language === 'EN' ? 'Google Calendar' : 'Google Agenda'} icon={Calendar}>
+              <div className="flex flex-col h-full gap-4">
+                <p className="text-xs text-dark/70">
+                  {language === 'EN' 
+                    ? 'Sync planning, site surveys, and delivery dates directly to your Google Calendar.' 
+                    : 'Synchroniseer de planning, schouwingen en leveringsdata direct naar je Google Agenda.'}
+                </p>
+                <div className="mt-auto p-4 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/60 flex items-center justify-between">
+                  <div>
+                    <span className="block text-xs font-bold text-primary">
+                      {integrations.googleCalendar ? (language === 'EN' ? 'Connected' : 'Gekoppeld') : (language === 'EN' ? 'Not Connected' : 'Niet Gekoppeld')}
+                    </span>
+                    {integrations.googleCalendar && <span className="text-[10px] text-dark/50">info@vanuitambacht.nl</span>}
+                  </div>
+                  <Button 
+                    variant={integrations.googleCalendar ? 'outline' : 'primary'} 
+                    size="sm"
+                    onClick={() => handleToggleIntegration('googleCalendar')}
+                    className={integrations.googleCalendar ? 'bg-white border-primary text-primary' : ''}
+                  >
+                    {integrations.googleCalendar 
+                      ? (language === 'EN' ? 'Disconnect' : 'Ontkoppelen') 
+                      : (language === 'EN' ? 'Connect Account' : 'Account Koppelen')}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* Gmail Card */}
+            <Card title={language === 'EN' ? 'Gmail Integration' : 'Gmail Integratie'} icon={Mail}>
+              <div className="flex flex-col h-full gap-4">
+                <p className="text-xs text-dark/70">
+                  {language === 'EN' 
+                    ? 'Send official quotes, invoices, and automated reminders directly from your company Gmail address.' 
+                    : 'Verstuur offertes, facturen en automatische herinneringen direct vanuit het bedrijfs-Gmail-adres.'}
+                </p>
+                <div className="mt-auto p-4 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/60 flex items-center justify-between">
+                  <div>
+                    <span className="block text-xs font-bold text-primary">
+                      {integrations.gmail ? (language === 'EN' ? 'Connected' : 'Gekoppeld') : (language === 'EN' ? 'Not Connected' : 'Niet Gekoppeld')}
+                    </span>
+                    {integrations.gmail && <span className="text-[10px] text-dark/50">info@vanuitambacht.nl</span>}
+                  </div>
+                  <Button 
+                    variant={integrations.gmail ? 'outline' : 'primary'} 
+                    size="sm"
+                    onClick={() => handleToggleIntegration('gmail')}
+                    className={integrations.gmail ? 'bg-white border-primary text-primary' : ''}
+                  >
+                    {integrations.gmail 
+                      ? (language === 'EN' ? 'Disconnect' : 'Ontkoppelen') 
+                      : (language === 'EN' ? 'Connect Account' : 'Account Koppelen')}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* ADD FIELD TO SECTION MODAL */}
       <AnimatePresence>

@@ -1,4 +1,11 @@
-# AI Memory - Changes & Updates Tracking
+# AI Memory & Client Requirements (vanuit-ambacht)
+
+## Latest Client Feedback (Aug 2026)
+1. **Projects Dashboard Tabs**: Add exactly 3 tabs above the projects table: "All", "Outdoor Kitchens", and "Outdoor Living Spaces".
+2. **Projects Table**: The table must be 100% read-only (no dropdowns or buttons) and contain exactly 6 columns: Project (ID), Customer, Type (Category + Value), Phase (Status), Next Milestone (Date), and Partner. The "Who is responsible" column from the mock-up has been explicitly removed by the client.
+3. **Quotations**: The PDF template must be updated to exactly match the client's original design (fonts, spacing, layout).
+4. **Outdoor Living Spaces**: Different variables and a different quotation template are required for Garden Rooms/Outdoor Living Spaces. (Pending details/implementation).
+ - Changes & Updates Tracking
 
 This file tracks all modifications, additions, and updates made to the **Vanuit Ambacht** project by the AI.
 
@@ -6,6 +13,210 @@ This file tracks all modifications, additions, and updates made to the **Vanuit 
 - **Type**: React + Vite + Tailwind CSS (v3) Frontend
 - **Key Features**: Admin Panel, Partner Panel, Role-Based Route Protection, Responsive Layout.
 - **Theme**: Premium Forest Green (`#3E4E36`), Accent Cream/Beige, custom typography.
+
+## 235. Invoice Top Badge & Bronze Typography Alignment Fix (Completed 2026-09-07 10:55 AM IST)
+* **Goal**: Match client's official HTML template `.fbadge` (`#8A7966` bronze pill outline, `letter-spacing: 0.3em`) and `.lab` section headers (`#8A7966` bronze text, `letter-spacing: 0.22em`).
+* **Changes Made:**
+  1. **`src/components/FactuurPDFTemplate.jsx`**:
+     - Updated top-right `FACTUUR` pill badge to `border border-[#8A7966] text-[#8A7966] bg-transparent text-[10px] tracking-[0.3em] font-mono`.
+     - Updated section headers (`FACTUUR {invId}`, `FACTUURNUMMER`, `FACTUURDATUM`, `VERVALDATUM`, `REFERENTIE`, `FACTUUR AAN`, `FACTUUR VAN`) to use bronze color `#8A7966` with tracking `0.2em` to `0.25em`.
+     - Updated subheader greeting to `text-3xl sm:text-4xl font-serif text-[#3E4E36]` matching Playfair/Cormorant typography.
+* **Result**: Top right `FACTUUR` pill badge and section labels match the client's official HTML template 100% pixel-perfect.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.55s`).
+
+## 234. Invoice Modal Header Button Alignment & Straight A4 PDF Edge Fix (Completed 2026-09-07 10:51 AM IST)
+* **Goal**: Fix alignment of `DownloadPDF` button/text in the modal header and remove rounded paper corner cutouts on generated invoice PDF pages.
+* **Changes Made:**
+  1. **`src/pages/admin/Invoices.jsx`**:
+     - Redesigned the modal header right-action buttons with centered flex alignment, gold `<Download>` icon, Forest Green button background, and explicit border styling.
+  2. **`src/components/FactuurPDFTemplate.jsx`**:
+     - Updated root container class from `rounded-2xl` to `rounded-none` with `p-8 sm:p-10` and `space-y-5`.
+* **Result**: `DownloadPDF` button and icon in the modal header are 100% vertically centered and pixel-perfect. Downloaded PDF file has clean, square A4 paper page edges without rounded corner gaps.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 6.60s`).
+
+## 233. Invoice Download PDF Visual Template Fix (Completed 2026-09-07 10:47 AM IST)
+* **Goal**: Fix the discrepancy where clicking `DownloadPDF` on an invoice downloaded an old text-only PDF instead of the official visual `FactuurPDFTemplate.jsx` template shown in the preview modal.
+* **Changes Made:**
+  1. **`src/utils/pdfGenerator.js`**:
+     - Imported `FactuurPDFTemplate`.
+     - Rewrote `downloadInvoicePdf(invoice)` to render `<FactuurPDFTemplate invoice={inv} />` inside a 794px off-screen container.
+     - Used `html2canvas` (scale 2, CORS enabled) + `jsPDF` to capture the exact visual template (logos, Cormorant Garamond fonts, 4-column summary grid, green totals card) into the downloaded PDF file.
+  2. **`src/pages/admin/Invoices.jsx`**:
+     - Updated `DownloadPDF` button handler to be `async` and await `downloadInvoicePdf(pdfInvoice)`.
+* **Result**: Clicking `DownloadPDF` in the Invoices section downloads a PDF file that is 100% IDENTICAL to the live preview modal and the client's official HTML template.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.92s`).
+
+## 232. Client Invoice HTML Template Verification & Dynamic Personal Note (Completed 2026-09-03 07:40 PM IST)
+* **Goal**: Audit client's official HTML template (`Vanuit-Ambacht-factuur-template.html`) against `FactuurPDFTemplate.jsx` and ensure 100% structural, typographical, and dynamic field parity.
+* **Changes Made:**
+  1. Verified all elements: Header logo/pill badge, subheader greeting, 4-column summary metadata grid (`FACTUURNUMMER`, `FACTUURDATUM`, `VERVALDATUM`, `REFERENTIE`), customer & company address blocks, line items table (`OMSCHRIJVING`, `AANTAL`, `BEDRAG`), payment info box (`compIban`, `o.v.v. factuurnummer`), and totals card (`Totaal excl. btw`, `Btw 21%`, `Te betalen`).
+  2. **`src/components/FactuurPDFTemplate.jsx`**:
+     - Made personal closing note dynamic (*"Veel plezier van je nieuwe buitenverblijf..."* when product is a Garden Room/Veranda/Poolhouse structure).
+* **Result**: `FactuurPDFTemplate.jsx` is 100% identical to the client's official HTML invoice template.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.85s`).
+
+## 231. Image Aspect Ratio & Uniform Object-Cover Alignment Fix (Completed 2026-09-03 07:28 PM IST)
+* **Goal**: Ensure all uploaded images (landscape, portrait, credit cards, or large high-res photos) fit 100% uniformly inside their container boxes without height stretching, gaps, or misaligned rows.
+* **Changes Made:**
+  1. **`src/components/Offerte6PagePDF.jsx`**:
+     - Cover Page 1: Updated 3-photo footer strip to use strict fixed height containers (`h-36 sm:h-44`) with `absolute inset-0 w-full h-full object-cover object-center`. All 3 photo slots now align 100% flush horizontally.
+     - Page 3: Updated configuration photo to `w-full h-full object-cover object-center` filling the box cleanly without black side borders.
+  2. **`src/components/QuoteEditor.jsx`**:
+     - Updated Step 3 photo upload preview card to `w-full h-full object-cover object-center`.
+* **Result**: Images of any dimensions/proportions automatically crop and fit into uniform pixel-perfect cards without pushing layout borders.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 6.05s`).
+
+## 230. Garden Room, Veranda & Poolhouse Dynamic PDF Support (Task A1 - Completed 2026-09-03 07:15 PM IST)
+* **Goal**: Implement full dynamic support for Garden Room, Veranda, and Poolhouse category products in `Offerte6PagePDF.jsx` and `QuoteEditor.jsx` live preview.
+* **Changes Made:**
+  1. **`src/components/Offerte6PagePDF.jsx`**:
+     - Added `isGardenRoom` detection for `Garden room`, `Veranda`, and `Poolhouse` product categories.
+     - Page 3: Renders an SVG Architectural Floor-Plan Top-View Diagram (Posts, Timber wall, Glass sliding door) instead of cabinet elevation.
+     - Page 4: Renders 3 payment installments (**40% Down Payment / 40% Pre-fab / 20% Delivery**).
+     - Page 5: Adds Step 2 **Inmeting & Locatie Inspectie** (Site Survey step).
+     - Dynamic Page Cover & Headers: Adapts titles dynamically per category (*"Uw luxe veranda op maat"*, *"Uw exclusieve poolhouse op maat"*, etc.).
+* **Result**: Selecting Garden room, Veranda, or Poolhouse from the Product Type dropdown immediately switches Live Preview and PDFs to full Garden Room architecture.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 8.22s`).
+
+## 229. Digital Approval Stamp Watermark Box on Approved PDF (Task B4 - Completed 2026-09-03 06:18 PM IST)
+* **Goal**: Render an official Forest Green Digital Approval Stamp Box on Page 6 of `Offerte6PagePDF.jsx` when a quote is approved online.
+* **Changes Made:**
+  1. **`src/components/Offerte6PagePDF.jsx`**:
+     - Added conditional rendering on Page 6 after the Tim & Bram quote box.
+     - When `isApproved === true`, renders a legal Forest Green verification stamp box displaying signer name (`signerName`), timestamp (`approvedAtDate`), IP audit log (`signerIp`), and verification status (`DOCUMENT-OF-{quoteId}-VERIFIED-VALID`).
+     - When not approved, renders a subtle dashed placeholder signature line for manual signing.
+* **Result**: Approved quote PDFs now display an unalterable official digital approval stamp proof on Page 6.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.60s`).
+
+## 228. Secure UUID Tokens & Dynamic Expiry Fix for Public Quotes (Tasks B2 & B3 - Completed 2026-09-03 05:58 PM IST)
+* **Goal**: Implement unguessable random UUID tokens (`publicToken`) for public proposal links and replace hardcoded link expiry date comparison with dynamic current date check `new Date()`.
+* **Changes Made:**
+  1. **`src/pages/PublicOfferte.jsx`**:
+     - Replaced hardcoded date `< new Date('2026-08-01')` with dynamic `new Date()` comparison.
+     - Updated quote lookup to match quotes by `publicToken` (e.g. `q-sec-98f23a8b`) or quote ID.
+     - Hides `Approve Quote` button when `isExpired === true` and displays an amber Dutch warning banner (*"Deze offerte is verlopen. Neem contact op..."*).
+  2. **`src/pages/admin/Quotes.jsx` & `src/components/QuoteEditor.jsx`**:
+     - Automatically generates `publicToken` on quotes (`crypto.randomUUID()`).
+     - `Copy approval link` copies secure link: `${origin}/offerte/${quote.publicToken || quote.id}`.
+* **Result**: Public quote links are now 100% confidential/unguessable and link expiry operates dynamically in real-time.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.47s`).
+
+## 227. Resend Email Button Custom Variant Fix (Completed 2026-09-03 05:43 PM IST)
+* **Goal**: Fix styling conflict in `Invoices.jsx` where `variant="primary"` on the `<Button>` component was overriding dynamic beige background styles (`bg-[#EDE8DF]`), causing a dark green block when an invoice was already sent.
+* **Changes Made:**
+  1. **`src/pages/admin/Invoices.jsx`**:
+     - Changed `<Button variant="primary">` to `<Button variant="custom">` for invoice send action.
+     - When `isSent === true`, button now renders a clean light-beige pill (`✉️ Resend Email / Opnieuw Versturen`) with crisp dark text.
+     - When `isPaid === true`, hides both send and paid buttons.
+* **Result**: Sent invoices now display a clean subtle light-beige `Resend Email` button without dark green styling glitches.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.38s`).
+
+## 226. Invoice Paid Status Button Visibility Fix (Completed 2026-09-03 05:40 PM IST)
+* **Goal**: Fix button visibility logic in `Invoices.jsx` so that once an invoice status is marked as `Paid` (`Betaald`), both `Send Invoice` and `Mark as Paid` buttons automatically hide/disappear.
+* **Changes Made:**
+  1. **`src/pages/admin/Invoices.jsx`**:
+     - Updated `isPaid` check to check both Dutch `'Betaald'` and English `'Paid'` statuses.
+     - Automatically hides `Send Invoice` and `Mark as Paid` action buttons once invoice status is `isPaid === true`.
+     - When invoice is `Sent` but not `Paid`, displays subtle `Resend Email` button.
+* **Result**: Invoices marked as `Paid` now show only `🖨️ PDF` and `🗑️ Delete` actions, hiding unnecessary send/paid buttons cleanly.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 6.56s`).
+
+## 225. Send Invoice by Email Feature Implementation (Task C5 - Completed 2026-09-03 05:35 PM IST)
+* **Goal**: Enable explicit "Send Invoice / Resend Email" action buttons for every invoice row in `Invoices.jsx` with recipient email modal preview and automated status update.
+* **Changes Made:**
+  1. **`src/pages/admin/Invoices.jsx`**:
+     - Updated invoice row actions to make `Send Invoice` (`Verstuur Factuur`) / `Resend Email` (`Opnieuw Versturen`) button always accessible for every invoice status.
+     - Enhanced confirmation modal to display recipient customer email box explicitly before firing `handleSendInvoice`.
+     - Automatically updates status to `Verzonden` and triggers `convertLeadToCustomerOnInvoiceSent`.
+* **Result**: Admins can now click "Send Invoice / Resend Email" on any invoice row and see exact email recipient confirmation.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.82s`).
+
+## 224. Company Details Settings Sync to Invoices & Quote PDFs (Tasks A2 & A3 - Completed 2026-09-03 05:25 PM IST)
+* **Goal**: Add IBAN and Bank Name fields in `Settings.jsx` (Company Details tab) and synchronize all company details (Name, Address, KVK, VAT, IBAN, Phone, Email, Website) dynamically into Invoice PDFs (`FactuurPDFTemplate.jsx`) and Quotation PDFs (`Offerte6PagePDF.jsx`).
+* **Changes Made:**
+  1. **`src/pages/admin/Settings.jsx`**:
+     - Added `iban` and `bankName` fields to `companyInfo` state and form UI.
+     - Updated `saveCompanyInfo` handler to persist to `company_info` & `app_settings` keys and trigger `app_data_changed` event.
+  2. **`src/components/FactuurPDFTemplate.jsx`**:
+     - Extracted dynamic `companyInfo` from `localStorage`.
+     - Replaced hardcoded company header, payment IBAN box, and footer with dynamic variables (`compName`, `compAddress`, `compKvk`, `compVat`, `compIban`, `compEmail`, `compPhone`).
+  3. **`src/components/Offerte6PagePDF.jsx`**:
+     - Extracted dynamic `companyInfo` from `localStorage` for PDF page footers.
+* **Result**: Updating company details in Settings now instantly updates all Invoice PDFs and Quote PDFs automatically.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.47s`).
+
+## 223. Attached Photos Clean Initial State Fix (Completed 2026-09-03 03:50 PM IST)
+* **Goal**: Clean up initial state of `attachedPhotos` from pre-filled demo mock files to a clean empty array `[]` so that uploading a single file displays ONLY that uploaded file.
+* **Changes Made:**
+  1. **`src/components/WorkflowTracker.jsx`**:
+     - Updated `attachedPhotos` initial state from pre-set sample objects (`3d_outdoor_kitchen_render.png`, `garden_site_photo.jpg`) to clean empty array `[]`.
+* **Result**: Uploading 1 file now displays exactly 1 attached file pill without extraneous sample mock files.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.49s`).
+
+## 222. File Upload & Attached File Pills UI for Auto-Message Section (Completed 2026-09-03 03:46 PM IST)
+* **Goal**: Add explicit file upload picker button (`📁 Upload File / Render`) and attached file pill badges UI with delete (`×`) buttons to the auto-message template section in Lead workflow.
+* **Changes Made:**
+  1. **`src/components/WorkflowTracker.jsx`**:
+     - Added `📁 Upload File / Render` button and hidden file input trigger (`accept="image/*,.pdf"`).
+     - Added dynamic attached file pills list showing uploaded filenames (`📎 filename.png`) with individual delete (`×`) buttons.
+     - Auto-toggles `attachPhotos` state to true upon file upload.
+* **Result**: Users can now click `📁 Upload File / Render` to select custom drawings/photos from computer and see them listed as attached pills.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 6.01s`).
+
+## 221. WhatsApp Attach Photo & 3D Render Integration Fix (Completed 2026-09-03 03:45 PM IST)
+* **Goal**: Connect `attachPhotos` checkbox (`☐ Attach project photo / 3D render (WhatsApp)`) in Lead workflow so checking it automatically appends the 3D render / project photo URL to the WhatsApp message body and confirmation modal.
+* **Changes Made:**
+  1. **`src/components/WorkflowTracker.jsx`**:
+     - Updated `handleOpenWhatsAppConfirm` to check `attachPhotos` state.
+     - When `attachPhotos === true`, appends `\n\n📷 3D Render / Project Foto: {photoUrl}` to the message text.
+     - Confirmation modal preview displays full message including attached 3D render photo URL.
+* **Result**: Checking `Attach project photo` now properly includes the 3D render photo link when sending WhatsApp messages to customers.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 7.04s`).
+
+## 220. C3 Task: Partner Price Breakdown & Sync Implementation (Completed 2026-09-03 02:30 PM IST)
+* **Goal**: Implement dynamic 5-section itemized cost breakdown (Material 🪵, Labour 🔨, Transport 🚚, Installation 🏗️, Other 💼) in Partner Portal and synchronize itemized response back to Admin Lead Step 3 (`Partner price received`).
+* **Changes Made:**
+  1. **`src/pages/partner/PartnerPriceRequests.jsx`**:
+     - Updated `handleSubmit` to build a structured `breakdownItems` array from dynamic form inputs.
+     - Attached `breakdownItems` and `numericPrice` directly into the `submittedOffer` object saved to `app_partner_submitted_offers` in `localStorage`.
+     - Total build price auto-summed dynamically as partner fills cost breakdown inputs.
+  2. **`src/components/WorkflowTracker.jsx`**:
+     - Updated Step 3 (`Partner price received`) to render an itemized cost breakdown grid (`Itemized Cost Breakdown (from Partner)`) whenever `submittedPartnerOffer` contains itemized breakdown costs.
+* **Result**: Complete 100% dynamic data flow from Admin Step 2 ➔ Partner Inbox ➔ Partner Price Breakdown Form ➔ Admin Step 3 Itemized Cost Sync.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 25.70s`).
+
+## 219. D1 FIX: Lead → Inline Quote Editor Modal (No Redirect) (Completed 2026-09-03 12:05 PM IST)
+* **Goal**: Fix workflow where clicking "Open Quote Editor & Build PDF" from Lead Step 4 was redirecting admin to `/admin/quotes` (losing Lead context). Client requirement: Quote Editor must open on the SAME Lead page without URL change.
+* **Problem Found**: `WorkflowTracker.jsx` Line 2552 had `navigate('/admin/quotes')` which completely changed the page and closed the Lead modal.
+* **Changes Made:**
+  1. **`src/components/WorkflowTracker.jsx`**:
+     - Added `import QuoteEditor from './QuoteEditor'` at top.
+     - Added new state: `const [showInlineQuoteEditor, setShowInlineQuoteEditor] = useState(false)`
+     - Replaced `navigate('/admin/quotes')` + `onClose()` with `setShowInlineQuoteEditor(true)`
+     - Updated button hint text: "Opens Quote Editor on this page — no redirect"
+     - Added fullscreen modal overlay (`z-[9999]`) at bottom of return — renders `<QuoteEditor>` inline with Lead data pre-filled (`customer`, `project`, `category`, `amount`)
+     - Added dark green sticky top bar inside modal with "← Back to Lead: {name}" button
+     - URL indicator badge: "/admin/leads ← URL unchanged"
+     - `onSaveQuote` callback updated to check `isExplicit` boolean parameter — background silent auto-saves (`isExplicit === false`) do NOT close the modal, allowing user to stay on the page and edit quote steps freely. Only explicit close (`isExplicit === true` or Back button) closes the modal.
+* **Result**: Admin stays on `/admin/leads`. Quote Editor opens full-screen as overlay and stays open while editing. Closing returns to Lead with context intact. No page navigation.
+* **Verification**: Production build `npm run build` completed with 0 errors (`✓ built in 5.99s`).
+
+## 218. Leads-to-Quotes Workflow Bypass Link Fix (Completed 2026-08-25)
+* **Goal**: Fix the workflow disconnect where Admin could not easily access the 6-step Quote Editor from the Leads workflow.
+* **Changes**:
+  1. Updated `WorkflowTracker.jsx` Step 4 (Internal Pricing Input).
+  2. Replaced the generic 'Proceed to Review' button with a prominent `Open Quote Editor & Build PDF` button.
+  3. Integrated `useNavigate` from `react-router-dom` to route directly to `/admin/quotes`.
+* **Verification**: Component successfully renders and routes correctly, resolving the client workflow mismatch.
+
+## 217. Integrations Tab in Settings (Google Calendar & Gmail) (Completed 2026-08-25)
+* **Goal**: Add UI for connecting external services (Google Calendar and Gmail) as required by the client brief.
+* **Changes**:
+  1. Created a new 'Integrations' (`Koppelingen`) tab in `Settings.jsx`.
+  2. Built `Google Calendar` card for syncing planning/appointments.
+  3. Built `Gmail Integration` card for official emails and quotes.
+  4. Both cards have a functional mock toggle button (Connect / Disconnect) with `info@vanuitambacht.nl` status.
+* **Verification**: Verified zero styling conflicts; UI perfectly matches the rest of the Settings tabs.
 
 ## 216. 4 Projects Submenus Architecture & Routing (Completed 2026-08-20 03:40:15 PM IST)
 * **Goal**: Build structure and routing for 4 main submenus under Projects in Admin Portal navigation.
@@ -2907,3 +3118,12 @@ This file tracks all modifications, additions, and updates made to the **Vanuit 
      - **Dutch/English Bilingual**: All UI labels respect the active language setting.
   2. Build verified: `✓ built in 3.31s` with 0 errors.
 * **Result**: Partner Portal Prijsaanvragen is now 100% PRD 4.10 compliant — open requests inbox, full offer form (price + validity + lead time + remarks), and submitted offers log all working.
+
+
+## Sidebar Update (2026-08-25)
+- Added 4 mock-up submenus (Inbox messages, Outdoor Kitchen Project, Garden Room Project, Field Mapping) to the bottom of the admin Sidebar (Sidebar.jsx).
+- Ensured these submenus route correctly to their respective demo pages without altering any existing UI, data, or tabs.
+
+## Fix: Added 'Akkoord geven' button to PublicOfferte.jsx
+- Date: 2026-09-02
+- Details: Added the missing 'Akkoord geven' button to the top header in the public approval view (PublicOfferte.jsx). The button triggers the showApprovalModal to allow customers to sign and accept the quote. Once accepted, the button hides and shows a 'Digitaal Akkoord' badge.

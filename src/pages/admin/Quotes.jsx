@@ -121,6 +121,15 @@ export default function Quotes() {
     ]
   });
 
+  const generateToken = () => {
+    try {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return 'q-sec-' + crypto.randomUUID().slice(0, 8);
+      }
+    } catch(e){}
+    return 'q-sec-' + Math.random().toString(36).substring(2, 10);
+  };
+
   // Load quotes from localStorage on mount with bulletproof fallback
   useEffect(() => {
     try {
@@ -131,6 +140,7 @@ export default function Quotes() {
           const safeQuotes = parsed.map(q => ({
             ...q,
             id: q.id || `Q-${Math.floor(4000 + Math.random() * 1000)}`,
+            publicToken: q.publicToken || generateToken(),
             customer: q.customer || 'Onbekend',
             project: q.project || 'Maatwerk Keuken',
             amount: q.amount || '€ 5,000',
@@ -154,6 +164,7 @@ export default function Quotes() {
     // Fallback default quotes
     const enrichedDefaults = defaultQuotes.map(q => ({
       ...q,
+      publicToken: q.publicToken || generateToken(),
       status: q.status === 'Draft' ? 'Concept' : q.status === 'Accepted' ? 'Geaccepteerd' : q.status,
       discountPercent: 0,
       items: Array.isArray(q.items) ? q.items : [

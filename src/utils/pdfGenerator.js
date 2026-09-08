@@ -3,6 +3,7 @@ import html2canvas from 'html2canvas';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import Offerte6PagePDF from '../components/Offerte6PagePDF';
+import FactuurPDFTemplate from '../components/FactuurPDFTemplate';
 
 // ─────────────────────────────────────────────────────────────────
 // VANUIT AMBACHT — Unified Real PDF Generator
@@ -548,114 +549,56 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
  * Download a real invoice PDF.
  * @param {object} invoice - invoice row object
  */
-export function downloadInvoicePdf(invoice) {
-  const id       = invoice?.id || 'INV-001';
-  const customer = typeof invoice?.customer === 'object'
-    ? (invoice.customer.name || 'Klant')
-    : (invoice?.customer || 'Klant');
-  const quoteId  = invoice?.quoteId || '—';
-  const type     = invoice?.type || 'Factuur';
-  const rawAmount = invoice?.amount || '€ 0';
-  let numAmt = Number(invoice?.numericAmount) || 0;
-  if (!numAmt && rawAmount) {
-    // Parse "€ 12.500,00" or "€ 12500"
-    const cleaned = String(rawAmount).replace(/[^0-9,/.-]/g, '').replace(/\./g, '').replace(',', '.');
-    numAmt = parseFloat(cleaned) || 0;
+export async function downloadInvoicePdf(invoice) {
+  const inv = invoice?.invoice || invoice || {};
+  const id = inv.id || inv.invoiceNumber || 'INV-001';
+  const customer = typeof inv.customer === 'object'
+    ? (inv.customer.name || 'Klant')
+    : (inv.customer || 'Klant');
+  const cleanCustomerName = String(customer).replace(/[\\/:*?"<>|]/g, '').trim();
+  const fileName = `Factuur-${id}-${cleanCustomerName}.pdf`;
+
+  // Create temporary off-screen container for rendering FactuurPDFTemplate
+  const tempDiv = document.createElement('div');
+  tempDiv.style.position = 'fixed';
+  tempDiv.style.left = '-9999px';
+  tempDiv.style.top = '0';
+  tempDiv.style.width = '794px';
+  tempDiv.style.zIndex = '-9999';
+  tempDiv.style.backgroundColor = '#FFFFFF';
+  document.body.appendChild(tempDiv);
+
+  const root = createRoot(tempDiv);
+  root.render(React.createElement(FactuurPDFTemplate, { invoice: inv }));
+
+  // Wait 500ms for images, fonts and React layout render
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  const targetEl = tempDiv.querySelector('#printable-factuur') || tempDiv.firstElementChild || tempDiv;
+
+  const canvas = await html2canvas(targetEl, {
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: '#FFFFFF',
+    logging: false
+  });
+
+  const imgData = canvas.toDataURL('image/jpeg', 0.98);
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+  const imgProps = pdf.getImageProperties(imgData);
+  const pdfWidth = 210;
+  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+  pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, Math.min(pdfHeight, 297));
+  pdf.save(fileName);
+
+  root.unmount();
+  if (document.body.contains(tempDiv)) {
+    document.body.removeChild(tempDiv);
   }
-  const amount = rawAmount !== '€ 0' ? rawAmount : `€ ${numAmt.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`;
-  const status   = invoice?.status || 'Openstaand';
-  const dueDate  = invoice?.dueDate || '—';
-  const creDate  = invoice?.createdDate || new Date().toISOString().split('T')[0];
 
-  const fileName = `Factuur-${id}-${slugify(customer)}.pdf`;
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-
-  let y = drawHeader(doc, 'OFFICIËLE FACTUUR', `Vanuit Ambacht • ${id} • ${creDate}`, id);
-
-  y = sectionTitle(doc, 'Factuur Details', y);
-  y = infoRow(doc, 'Factuur Nr.',    id,       y);
-  y = infoRow(doc, 'Klant',         customer, y);
-  y = infoRow(doc, 'Offerte Ref.',   quoteId,  y);
-  y = infoRow(doc, 'Factuurdatum',   creDate,  y);
-  y = infoRow(doc, 'Vervaldatum',    dueDate,  y);
-  y = infoRow(doc, 'Status',         status,   y);
-  y += 6;
-
-  // Amount table
-  y = sectionTitle(doc, 'Bedrag Overzicht', y);
-
-  doc.setFillColor(...BRAND.primary);
-  doc.rect(14, y, 182, 7, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(237, 232, 223);
-  doc.text('OMSCHRIJVING', 17, y + 4.5);
-  doc.text('BEDRAG', 182, y + 4.5, { align: 'right' });
-  y += 9;
-
-  const exclVat  = numAmt / 1.21;
-  const vatAmt   = numAmt - exclVat;
-
-  const row = (label, val, shade = false) => {
-    if (shade) {
-      doc.setFillColor(248, 247, 244);
-      doc.rect(14, y - 3, 182, 7, 'F');
-    }
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(...BRAND.dark);
-    doc.text(label, 17, y + 0.5);
-    doc.text(val, 182, y + 0.5, { align: 'right' });
-    y += 7;
-  };
-
-  row(type,     `€ ${exclVat.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`, true);
-  row('BTW 21%',`€ ${vatAmt.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`,  false);
-
-  y += 2;
-  doc.setFillColor(...BRAND.primary);
-  doc.rect(14, y - 3, 182, 10, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.setTextColor(237, 232, 223);
-  doc.text('TOTAAL INCL. BTW', 17, y + 3.5);
-  doc.text(amount, 182, y + 3.5, { align: 'right' });
-  y += 16;
-
-  // Payment info box
-  y = sectionTitle(doc, 'Betalingsinformatie', y);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...BRAND.dark);
-  doc.text('Bankrekeningnummer:', 17, y + 1);
-  doc.setFont('helvetica', 'bold');
-  doc.text('NL91 ABNA 0412 8892 10',  80, y + 1);
-  y += 7;
-  doc.setFont('helvetica', 'normal');
-  doc.text('Bedrijfsnaam:', 17, y + 1);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Vanuit Ambacht B.V.', 80, y + 1);
-  y += 7;
-  doc.setFont('helvetica', 'normal');
-  doc.text('KVK / BTW:', 17, y + 1);
-  doc.setFont('helvetica', 'bold');
-  doc.text('KVK 84729102 • BTW NL863492817B01', 80, y + 1);
-  y += 14;
-
-  // Status badge
-  const isPaid = ['Betaald', 'Paid'].includes(status);
-  doc.setFillColor(...(isPaid ? [240, 253, 244] : [254, 243, 199]));
-  doc.roundedRect(14, y, 182, 10, 2, 2, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.setTextColor(...(isPaid ? [22, 101, 52] : [146, 64, 14]));
-  doc.text(
-    isPaid ? `✓  BETAALD — Dank voor uw betaling` : `⚠  OPENSTAAND — Gelieve te betalen voor ${dueDate}`,
-    105, y + 6.5, { align: 'center' }
-  );
-
-  drawFooter(doc, 1);
-  doc.save(fileName);
   return fileName;
 }
 

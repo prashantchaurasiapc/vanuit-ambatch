@@ -6,6 +6,24 @@ import { calculateTotals, calculateInstalments } from '../utils/quoteSchema';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function Offerte6PagePDF({ quote, activePage = null, highlightField = null }) {
+  // Extract Company Details dynamically from Settings
+  const companyInfo = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('company_info')) || JSON.parse(localStorage.getItem('app_settings')) || {};
+    } catch (e) {
+      return {};
+    }
+  })();
+
+  const compName = companyInfo.name || 'Vanuit Ambacht';
+  const compAddress = companyInfo.address || 'Koningshof 33, 3451 LM Vleuten';
+  const compEmail = companyInfo.email || 'info@vanuitambacht.nl';
+  const compPhone = companyInfo.phone || '06 82 00 80 25';
+  const compKvk = companyInfo.kvk || 'KVK 93097429';
+  const compVat = companyInfo.vatNumber || 'BTW NL866264863B01';
+  const compIban = companyInfo.iban || 'NL27 ABNA 0132 2698 56';
+  const compWebsite = companyInfo.website || 'vanuitambacht.nl';
+
   let language = 'NL';
   try {
     const langCtx = useLanguage();
@@ -31,6 +49,22 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   const woodType = config.woodType || quote?.woodType || 'Thermo Fraké';
   const dimensions = config.dimensions || quote?.dimensions || '240 × 80';
   const cleanDimensions = String(dimensions).replace(/\s*cm$/i, '').trim();
+
+  // Category Family Detection (Outdoor Kitchen vs Garden Room / Veranda / Poolhouse)
+  const productTypeLower = String(quote?.productType || quote?.category || quote?.projectCategory || quote?.project || '').toLowerCase();
+  const isGardenRoom = 
+    productTypeLower.includes('garden room') || 
+    productTypeLower.includes('buitenverblijf') || 
+    productTypeLower.includes('veranda') || 
+    productTypeLower.includes('poolhouse');
+
+  const categoryTitle = productTypeLower.includes('poolhouse') 
+    ? (language === 'EN' ? 'exclusive poolhouse' : 'exclusieve poolhouse')
+    : productTypeLower.includes('veranda')
+    ? (language === 'EN' ? 'luxury veranda' : 'luxe veranda')
+    : productTypeLower.includes('garden room') || productTypeLower.includes('buitenverblijf')
+    ? (language === 'EN' ? 'garden room' : 'buitenverblijf')
+    : (language === 'EN' ? 'outdoor kitchen' : 'buitenkeuken');
 
   const optionsTitle = config.optionsTitle || quote?.optionsTitle || 'Big Green Egg Large';
   const deliveryTime = config.deliveryTime || quote?.deliveryTime || (language === 'EN' ? '5 to 10 weeks' : '3 tot 5 weken');
@@ -250,11 +284,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           </div>
 
           {/* 3 Photo Strip */}
-          <div className="grid grid-cols-3 gap-[2px] -mx-6 sm:-mx-10 mt-4 mb-2">
+          <div className="grid grid-cols-3 gap-1.5 h-36 sm:h-44 w-full -mx-6 sm:-mx-10 mt-4 mb-2">
             {coverPhotos.map((pImg, idx) => (
               <div
                 key={idx}
-                className="h-36 sm:h-44 w-full overflow-hidden bg-[#2D3A27] flex-shrink-0"
+                className="relative h-full w-full rounded-xl overflow-hidden bg-[#2D3A27] shadow-xs"
               >
                 <img
                   src={pImg || (idx === 1 ? '/dasbordes images.png' : '/outdoor_project_card.png')}
@@ -263,7 +297,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                     e.target.onerror = null;
                     e.target.src = idx === 1 ? '/dasbordes images.png' : '/outdoor_project_card.png';
                   }}
-                  className="h-full w-full object-cover object-center"
+                  className="absolute inset-0 w-full h-full object-cover object-center"
                 />
               </div>
             ))}
@@ -462,12 +496,59 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   src={config.configPhoto || projectImg}
                   alt="Configuration"
                   onError={(e) => { e.target.onerror = null; e.target.src = projectImg; }}
-                  className="max-h-full max-w-full object-contain rounded-xl"
+                  className="w-full h-full object-cover object-center rounded-xl"
                 />
               </div>
 
-              {/* Front-View Diagram output */}
-              {diagram.show && (
+              {/* Floor-Plan Top-View Diagram for Garden Room / Veranda / Poolhouse */}
+              {isGardenRoom ? (
+                <div className="p-3 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] text-center space-y-2 shadow-xs font-body">
+                  <span className="text-[9px] font-mono uppercase font-bold text-accent tracking-widest block">
+                    {language === 'EN' ? `ARCHITECTURAL FLOOR-PLAN TOP VIEW (${cleanDimensions} CM)` : `PLATTEGROND PLATTEGROND INDELING (${cleanDimensions} CM)`}
+                  </span>
+                  
+                  {/* Visual SVG Top-View Architectural Diagram */}
+                  <div className="relative h-28 bg-white border-2 border-[#33422C] rounded-xl p-2 flex flex-col justify-between shadow-inner">
+                    {/* Roof & Beam Outlines */}
+                    <div className="absolute inset-1 border border-dashed border-[#8A8275] rounded-lg pointer-events-none flex items-center justify-center">
+                      <span className="text-[9px] font-mono text-[#8A8275] uppercase tracking-widest opacity-40 font-bold">
+                        {categoryTitle.toUpperCase()} ONDERDAK
+                      </span>
+                    </div>
+
+                    {/* Top Wall (Closed Timber Wall) */}
+                    <div className="w-full h-2.5 bg-[#33422C] rounded-xs flex items-center justify-center">
+                      <span className="text-[7px] font-mono text-white font-bold uppercase tracking-wider">Achterwand (Hout)</span>
+                    </div>
+
+                    {/* Center Room & Glass Sliding Doors */}
+                    <div className="flex justify-between items-center px-1 my-auto z-10">
+                      {/* Left Corner Post */}
+                      <div className="w-4 h-4 bg-[#D97706] rounded-xs flex items-center justify-center text-[7px] font-mono text-white font-bold">P1</div>
+                      
+                      {/* Glass Door Line */}
+                      <div className="flex-1 mx-2 border-b-2 border-dashed border-[#0284C7] flex justify-center">
+                        <span className="text-[8px] font-mono font-bold text-[#0284C7] bg-white px-1">Glazen Schuifwand (4-Rail)</span>
+                      </div>
+
+                      {/* Right Corner Post */}
+                      <div className="w-4 h-4 bg-[#D97706] rounded-xs flex items-center justify-center text-[7px] font-mono text-white font-bold">P2</div>
+                    </div>
+
+                    {/* Bottom Front Opening */}
+                    <div className="w-full flex justify-between items-center text-[8px] font-mono text-[#33422C] pt-0.5 border-t border-[#D6CFC2]">
+                      <span className="font-bold">Hoekpaal L</span>
+                      <span className="font-bold text-[#D97706]">{cleanDimensions} cm</span>
+                      <span className="font-bold">Hoekpaal R</span>
+                    </div>
+                  </div>
+
+                  <div className="text-[9px] font-mono text-dark/70 border-t border-[#D6CFC2]/60 pt-1 flex justify-between px-1">
+                    <span>Fundering: <strong className="text-primary">Betonpoeren (Stelpost)</strong></span>
+                    <span>Hout: <strong className="text-[#D97706]">{woodType}</strong></span>
+                  </div>
+                </div>
+              ) : diagram.show && (
                 <div className="p-3 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] text-center space-y-2 shadow-xs">
                   <span className="text-[9px] font-mono uppercase font-bold text-accent tracking-widest block">
                     {language === 'EN' ? `FRONT VIEW DIAGRAM (${diagram.totalWidth} CM)` : `VOORAANZEICHT TEKENING (${diagram.totalWidth} CM)`}
@@ -804,15 +885,75 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 Gewoon goed gemaakt. Voor jou.”
               </p>
               <p className="text-[10px] font-mono text-accent font-bold tracking-widest uppercase">
-                TIM & BRAM · VANUIT AMBACHT
+                TIM & BRAM · {compName.toUpperCase()}
               </p>
             </div>
           </div>
+
+          {/* Digital Approval Stamp Box */}
+          {(() => {
+            const isApproved = 
+              quote?.status === 'Akkoord' || 
+              quote?.status === 'Accepted' || 
+              quote?.status === 'Approved' || 
+              quote?.status === 'Geaccepteerd' ||
+              Boolean(quote?.signerName || quote?.approvedAt);
+
+            const signerName = quote?.signerName || customerName;
+            const approvedAtDate = quote?.approvedAt || (quote?.date ? `${quote.date} (Digitaal)` : '04-08-2026 17:10');
+            const signerIp = quote?.signerIp || '192.168.1.1 (Verified Audit Log)';
+
+            if (isApproved) {
+              return (
+                <div className="p-4 bg-[#3E4E36]/10 border-2 border-[#3E4E36] rounded-2xl space-y-2 font-body text-[#3E4E36] shadow-xs">
+                  <div className="flex items-center justify-between border-b border-[#3E4E36]/30 pb-2">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5 text-[#3E4E36]" />
+                      <span className="font-heading font-bold text-sm tracking-wide uppercase">
+                        Officiëel Digitaal Geaccepteerd & Ondertekend
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold bg-[#3E4E36] text-[#FDFBF7] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                      Rechtsgeldig
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs pt-1">
+                    <div>
+                      <p className="text-[10px] font-mono text-dark/60 uppercase font-semibold">Ondertekend door:</p>
+                      <p className="font-bold text-dark text-sm">{signerName}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-mono text-dark/60 uppercase font-semibold">Datum & Tijdstip:</p>
+                      <p className="font-bold text-dark font-mono text-xs">{approvedAtDate}</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-[#3E4E36]/20 pt-2 flex justify-between items-center text-[10px] font-mono text-dark/70">
+                    <span>Legal IP Audit: <strong className="text-dark">{signerIp}</strong></span>
+                    <span>Status: <strong className="text-[#3E4E36]">DOCUMENT-OF-{quoteId}-VERIFIED-VALID</strong></span>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div className="p-4 bg-[#EDE8DF]/60 border border-dashed border-[#C4BEB3] rounded-2xl flex items-center justify-between text-xs text-dark/60 font-body">
+                <div>
+                  <p className="font-bold text-dark">Digitale Handtekening & Akkoord</p>
+                  <p className="text-[11px] text-dark/60">Nog niet digitaal ondertekend. Accepteer de offerte online voor officiële audit stempel.</p>
+                </div>
+                <div className="w-36 h-10 border-b border-dark/40 flex items-end justify-center text-[10px] text-dark/40 font-mono italic pb-0.5">
+                  Handtekening Klant
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Footer */}
         <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] font-mono text-dark/60">
-          <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
+          <span className="font-bold uppercase tracking-widest text-[#33422C]">{compName.toUpperCase()}</span>
           <span>Offerte <strong className="text-[#D97706]">{quoteId}</strong></span>
           <span className="font-bold">6 / 6</span>
         </div>

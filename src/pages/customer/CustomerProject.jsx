@@ -203,7 +203,7 @@ export default function CustomerProject() {
     return (
       <div className="space-y-4 max-w-5xl w-full font-body text-[#4A4A43]">
         {/* Quick Demo View Switcher for Design Tab */}
-        <div className="bg-[#FAF7F2] border border-[#E4DED4] p-2.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs shadow-xs">
+        <div className="bg-[#FAF7F2] border border-[#E4DED4] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
           <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-accent" />
             <span>Testing Design View Switcher:</span>
@@ -212,7 +212,7 @@ export default function CustomerProject() {
             <button
               type="button"
               onClick={() => handleSwitchTypeDirectly('outdoor_kitchen')}
-              className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
                 !isGardenRoom
                   ? 'bg-primary text-cream shadow-xs'
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
@@ -224,7 +224,7 @@ export default function CustomerProject() {
             <button
               type="button"
               onClick={() => handleSwitchTypeDirectly('garden_room')}
-              className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
                 isGardenRoom
                   ? 'bg-primary text-cream shadow-xs'
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
@@ -253,7 +253,7 @@ export default function CustomerProject() {
       <div className="space-y-4 max-w-5xl w-full font-body text-[#4A4A43]">
 
         {/* Quick Demo View Switcher for Planning Tab */}
-        <div className="bg-[#FAF7F2] border border-[#E4DED4] p-2.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs shadow-xs">
+        <div className="bg-[#FAF7F2] border border-[#E4DED4] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
           <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-accent" />
             <span>Testing Planning View Switcher:</span>
@@ -262,7 +262,7 @@ export default function CustomerProject() {
             <button
               type="button"
               onClick={() => handleSwitchTypeDirectly('outdoor_kitchen')}
-              className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
                 !isGardenRoom
                   ? 'bg-primary text-cream shadow-xs'
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
@@ -274,7 +274,7 @@ export default function CustomerProject() {
             <button
               type="button"
               onClick={() => handleSwitchTypeDirectly('garden_room')}
-              className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
                 isGardenRoom
                   ? 'bg-primary text-cream shadow-xs'
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
@@ -303,7 +303,7 @@ export default function CustomerProject() {
 
 
         {/* Quick Demo View Switcher for Payments Tab */}
-        <div className="bg-[#FAF7F2] border border-[#E4DED4] p-2.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs shadow-xs">
+        <div className="bg-[#FAF7F2] border border-[#E4DED4] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
           <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-accent" />
             <span>Testing Payments View Switcher:</span>
@@ -312,7 +312,7 @@ export default function CustomerProject() {
             <button
               type="button"
               onClick={() => handleSwitchTypeDirectly('outdoor_kitchen')}
-              className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
                 !isGardenRoom
                   ? 'bg-primary text-cream shadow-xs'
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
@@ -324,7 +324,7 @@ export default function CustomerProject() {
             <button
               type="button"
               onClick={() => handleSwitchTypeDirectly('garden_room')}
-              className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
                 isGardenRoom
                   ? 'bg-primary text-cream shadow-xs'
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
@@ -351,7 +351,7 @@ export default function CustomerProject() {
       <div className="space-y-3.5 max-w-4xl w-full font-body text-[#4A4A43]">
 
         {/* Quick Demo View Switcher for Handover Tab */}
-        <div className="bg-[#FAF7F2] border border-[#E4DED4] p-2.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs shadow-xs">
+        <div className="bg-[#FAF7F2] border border-[#E4DED4] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
           <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-accent" />
             <span>Testing Handover View Switcher:</span>
@@ -360,7 +360,7 @@ export default function CustomerProject() {
             <button
               type="button"
               onClick={() => handleSwitchTypeDirectly('outdoor_kitchen')}
-              className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
                 !isGardenRoom
                   ? 'bg-primary text-cream shadow-xs'
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
@@ -372,7 +372,7 @@ export default function CustomerProject() {
             <button
               type="button"
               onClick={() => handleSwitchTypeDirectly('garden_room')}
-              className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
                 isGardenRoom
                   ? 'bg-primary text-cream shadow-xs'
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
@@ -400,7 +400,7 @@ export default function CustomerProject() {
     return (
       <div className="space-y-3.5 max-w-4xl w-full font-body text-[#4A4A43]">
         {/* Quick Demo View Switcher for Mobile View Tab */}
-        <div className="bg-[#FAF7F2] border border-[#E4DED4] p-2.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs shadow-xs">
+        <div className="bg-[#FAF7F2] border border-[#E4DED4] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
           <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-accent" />
             <span>Testing Mobile View Switcher:</span>
@@ -409,7 +409,7 @@ export default function CustomerProject() {
             <button
               type="button"
               onClick={() => handleSwitchTypeDirectly('outdoor_kitchen')}
-              className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
                 !isGardenRoom
                   ? 'bg-primary text-cream shadow-xs'
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
@@ -421,7 +421,7 @@ export default function CustomerProject() {
             <button
               type="button"
               onClick={() => handleSwitchTypeDirectly('garden_room')}
-              className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
                 isGardenRoom
                   ? 'bg-primary text-cream shadow-xs'
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
@@ -448,7 +448,7 @@ export default function CustomerProject() {
 
 
       {/* Quick Demo View Switcher */}
-      <div className="bg-[#EDE8DF] border border-[#C4BEB3] p-2.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs shadow-xs">
+      <div className="bg-[#EDE8DF] border border-[#C4BEB3] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
         <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-accent" />
           <span>Testing View Switcher:</span>

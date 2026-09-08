@@ -197,10 +197,41 @@ export default function PartnerPriceRequests() {
       showToast(language === 'NL' ? '⚠️ Vul alle verplichte velden in.' : '⚠️ Please fill all required fields.');
       return;
     }
+
+    // Extract itemized cost breakdown fields (Material, Labour, Transport, Installation, Other)
+    const breakdownItems = [];
+    (partnerBreakdownSchema || []).forEach(sec => {
+      if (sec.fields) {
+        sec.fields.forEach(f => {
+          const val = parseFloat(form[f.id]);
+          if (!isNaN(val) && val > 0) {
+            breakdownItems.push({
+              label: f.label,
+              sectionIcon: sec.icon || '📦',
+              sectionTitle: sec.title,
+              amount: val
+            });
+          }
+        });
+      } else {
+        const val = parseFloat(form[sec.id]);
+        if (!isNaN(val) && val > 0) {
+          breakdownItems.push({
+            label: sec.label || sec.title,
+            sectionIcon: sec.icon || '📦',
+            sectionTitle: sec.title,
+            amount: val
+          });
+        }
+      }
+    });
+
     const submittedOffer = {
       ...req,
       submittedOn: new Date().toLocaleDateString(language === 'NL' ? 'nl-NL' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
       price: `€ ${parseFloat(form.price).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`,
+      numericPrice: parseFloat(form.price) || 0,
+      breakdownItems,
       validityNL: form.validity,
       validityEN: form.validity,
       leadTimeNL: `${form.leadTime} weken`,

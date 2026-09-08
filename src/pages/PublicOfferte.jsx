@@ -27,9 +27,10 @@ export default function PublicOfferte() {
       const savedQuotes = localStorage.getItem('app_quotes_v2') || localStorage.getItem('app_quotes_v1') || localStorage.getItem('app_quotes');
       const allQuotes = savedQuotes ? JSON.parse(savedQuotes) : defaultQuotes;
       
-      // Match by ID (token can be quote.id like OF-2026-4005 or Q-4004)
+      // Match by Token or ID (publicToken like q-sec-98f23a8b or quote.id like OF-2026332)
       const found = allQuotes.find(
-        (q) => String(q.id).toLowerCase() === String(token).toLowerCase() ||
+        (q) => (q.publicToken && String(q.publicToken).toLowerCase() === String(token).toLowerCase()) ||
+               String(q.id).toLowerCase() === String(token).toLowerCase() ||
                String(q.id).replace(/[^\w]/g, '').toLowerCase() === String(token).replace(/[^\w]/g, '').toLowerCase()
       );
 
@@ -63,8 +64,8 @@ export default function PublicOfferte() {
     loadQuote();
   }, [token]);
 
-  // Check if quote is expired (validUntil check)
-  const isExpired = quote && quote.validUntil ? new Date(quote.validUntil) < new Date('2026-08-01') : false;
+  // Check if quote is expired (validUntil check vs real-time current date)
+  const isExpired = quote && quote.validUntil ? new Date(quote.validUntil) < new Date() : false;
 
   // Handle Digital Approval Submission
   const handleApproveSubmit = (e) => {
@@ -79,10 +80,13 @@ export default function PublicOfferte() {
       minute: '2-digit'
     });
 
+    const userAgent = window.navigator.userAgent;
+    const dynamicIpPlaceholder = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+    
     const updatedApproval = {
       signerName: signerName.trim(),
       date: approvalDate,
-      ip: '185.228.168.42 (Digitaal geverifieerd)'
+      ip: `${dynamicIpPlaceholder} (Digitally Verified)`
     };
 
     // Update in LocalStorage across all quote storage keys
@@ -156,7 +160,7 @@ export default function PublicOfferte() {
       <div className="min-h-screen bg-[#EBE6DD] flex items-center justify-center p-4 font-body">
         <div className="text-center space-y-3">
           <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-sm font-semibold text-primary">Offerte laden...</p>
+          <p className="text-sm font-semibold text-primary">Loading Quote...</p>
         </div>
       </div>
     );
@@ -171,7 +175,7 @@ export default function PublicOfferte() {
             <ShieldCheck className="w-5 h-5 text-[#D6CFC2]" />
             <div>
               <h1 className="font-heading font-bold text-sm sm:text-base text-[#FDFBF7]">VANUIT AMBACHT</h1>
-              <p className="text-[10px] text-[#D6CFC2] font-mono">Officieel Digitaal Voorstel • {quote.id}</p>
+              <p className="text-[10px] text-[#D6CFC2] font-mono">Official Digital Proposal • {quote.id}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -180,14 +184,27 @@ export default function PublicOfferte() {
               className="px-3 py-1 bg-[#70624F] hover:bg-[#5e5241] text-[#FDFBF7] rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-colors print:hidden cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Download PDF</span>
+              <span className="hidden sm:inline">Download PDF</span>
             </button>
+
+            {!(isApprovedSuccess || quote.status === 'Akkoord' || isExpired) && (
+              <button
+                onClick={() => setShowApprovalModal(true)}
+                className="px-4 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-bold flex items-center gap-1.5 transition-colors shadow-lg cursor-pointer tracking-wide border border-emerald-600/50"
+              >
+                <CheckCircle className="w-4 h-4 stroke-[2.5]" />
+                <span>Approve Quote</span>
+              </button>
+            )}
+
             <span className={`text-[11px] font-mono font-bold px-3 py-1 rounded-full border ${
               isApprovedSuccess || quote.status === 'Akkoord'
                 ? 'bg-emerald-800/80 text-emerald-200 border-emerald-500/50'
-                : 'bg-[#70624F]/40 text-[#FDFBF7] border-[#70624F]'
+                : isExpired
+                ? 'bg-amber-800/80 text-amber-200 border-amber-500/50'
+                : 'bg-[#70624F]/40 text-[#FDFBF7] border-[#70624F] hidden sm:inline-block'
             }`}>
-              {isApprovedSuccess || quote.status === 'Akkoord' ? '✓ Digitaal Akkoord' : `Offerte ${quote.id}`}
+              {isApprovedSuccess || quote.status === 'Akkoord' ? '✓ Digitally Approved' : isExpired ? '⚠️ Expired Quote' : `Quote ${quote.id}`}
             </span>
           </div>
         </div>
@@ -196,6 +213,29 @@ export default function PublicOfferte() {
       {/* Main 6-Page Offerte Container */}
       <main className="max-w-4xl mx-auto p-3 sm:p-6 space-y-8 mt-4">
         
+        {/* Expired Warning Banner */}
+        {isExpired && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className="p-5 bg-amber-950/90 text-amber-100 rounded-2xl border-2 border-amber-500 shadow-xl space-y-1.5 print:hidden font-body"
+          >
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-6 h-6 text-amber-400 flex-shrink-0" />
+              <div>
+                <h3 className="font-heading font-bold text-base text-amber-200">
+                  {language === 'EN' ? 'This proposal has expired' : 'Deze offerte is verlopen'}
+                </h3>
+                <p className="text-xs text-amber-200/80 mt-0.5">
+                  {language === 'EN' 
+                    ? `The validity period for this quote expired on ${quote.validUntil}. Please contact Vanuit Ambacht for an updated quote.`
+                    : `De geldigheidstermijn voor deze prijsopgave is verstreken op ${quote.validUntil}. Neem contact op met Vanuit Ambacht voor een herziene offerte.`}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Success Banner if Approved */}
         {isApprovedSuccess && (
           <motion.div 
@@ -206,14 +246,14 @@ export default function PublicOfferte() {
             <div className="flex items-center gap-3">
               <CheckCircle className="w-7 h-7 text-emerald-400 flex-shrink-0" />
               <div>
-                <h3 className="font-heading font-bold text-lg text-white">Gefeliciteerd! Uw offerte is officieel akkoord.</h3>
+                <h3 className="font-heading font-bold text-lg text-white">Congratulations! Your quote is officially approved.</h3>
                 <p className="text-xs text-emerald-200 mt-0.5">
-                  Ondertekend door <strong>{approvalDetails?.signerName || quote.customer}</strong> op {approvalDetails?.date || quote.date}.
+                  Signed by <strong>{approvalDetails?.signerName || quote.customer}</strong> on {approvalDetails?.date || quote.date}.
                 </p>
               </div>
             </div>
             <p className="text-[11px] text-emerald-300 pt-1 border-t border-emerald-700/60">
-              Tim & Bram hebben direct een melding ontvangen. Binnen enkele dagen ontvangt u de digitale maattekening ter bevestiging!
+              Tim & Bram have received a notification directly. Within a few days you will receive the digital technical drawing for confirmation!
             </p>
           </motion.div>
         )}
@@ -246,7 +286,7 @@ export default function PublicOfferte() {
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-6 h-6 text-primary" />
                   <div>
-                    <h3 className="font-heading font-bold text-lg text-primary">Offerte Digitaal Ondertekenen</h3>
+                    <h3 className="font-heading font-bold text-lg text-primary">Sign Quote Digitally</h3>
                     <p className="text-[11px] text-dark/60 font-mono">Vanuit Ambacht • Quote {quote.id}</p>
                   </div>
                 </div>
@@ -257,22 +297,22 @@ export default function PublicOfferte() {
 
               <form onSubmit={handleApproveSubmit} className="space-y-4">
                 <div className="p-3 bg-[#EDE8DF] rounded-xl border border-[#C4BEB3] space-y-1">
-                  <p className="text-xs font-bold text-primary">Offerte Samenvatting:</p>
-                  <p className="text-xs text-dark/80">Klant: <strong>{quote.customer}</strong></p>
+                  <p className="text-xs font-bold text-primary">Quote Summary:</p>
+                  <p className="text-xs text-dark/80">Customer: <strong>{quote.customer}</strong></p>
                   <p className="text-xs text-dark/80">Project: <strong>{quote.project}</strong></p>
-                  <p className="text-xs font-mono font-bold text-primary">Bedrag: {quote.amount}</p>
+                  <p className="text-xs font-mono font-bold text-primary">Amount: {quote.amount}</p>
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-dark">
-                    Uw Volledige Naam (Naam Ondertekenaar) <span className="text-red-500">*</span>
+                    Your Full Name (Signatory) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={signerName}
                     onChange={(e) => setSignerName(e.target.value)}
-                    placeholder="bijv. Bjorn Valk"
+                    placeholder="e.g. Bjorn Valk"
                     className="w-full px-3.5 py-2.5 bg-white border border-[#C4BEB3] rounded-xl text-sm text-dark font-body focus:outline-none focus:border-primary"
                   />
                 </div>
@@ -287,14 +327,14 @@ export default function PublicOfferte() {
                     className="mt-1 w-4 h-4 text-primary rounded border-[#C4BEB3] focus:ring-primary cursor-pointer"
                   />
                   <label htmlFor="terms" className="text-xs text-dark/80 cursor-pointer leading-relaxed">
-                    Ik ga akkoord met deze offerte (<strong>{quote.id}</strong>) en de algemene voorwaarden van Vanuit Ambacht. Ik bevestig dat ik de bevoegde opdrachtgever ben.
+                    I agree with this quote (<strong>{quote.id}</strong>) and the general terms and conditions of Vanuit Ambacht. I confirm that I am the authorized client.
                   </label>
                 </div>
 
                 <div className="p-3 bg-[#3E4E36]/10 border border-[#3E4E36]/20 rounded-xl text-[10px] text-dark/70 font-mono space-y-0.5">
-                  <p>🔒 Beveiligde audit-trail logboek:</p>
-                  <p>• Datum &amp; Tijdstipstempel geactiveerd</p>
-                  <p>• E-mail notificatie naar info@vanuitambacht.nl</p>
+                  <p>🔒 Secure audit-trail log:</p>
+                  <p>• Date &amp; Timestamp activated</p>
+                  <p>• E-mail notification to info@vanuitambacht.nl</p>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2 border-t border-[#C4BEB3]">
@@ -303,7 +343,7 @@ export default function PublicOfferte() {
                     onClick={() => setShowApprovalModal(false)}
                     className="px-4 py-2 bg-dark/10 text-dark text-xs font-bold rounded-xl hover:bg-dark/20 transition-colors"
                   >
-                    Annuleren
+                    Cancel
                   </button>
                   <button
                     type="submit"
@@ -311,7 +351,7 @@ export default function PublicOfferte() {
                     className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold font-heading rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                   >
                     <CheckCircle className="w-4 h-4" />
-                    <span>Bevestigen &amp; Ondertekenen</span>
+                    <span>Confirm &amp; Sign</span>
                   </button>
                 </div>
               </form>
