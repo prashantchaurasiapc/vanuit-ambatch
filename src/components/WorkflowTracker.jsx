@@ -508,6 +508,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const customerName = lead?.name || lead?.customerName || 'Sonu Jain';
   const customerEmail = lead?.email || `${(lead?.name || 'sonu.jain').toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`;
   const customerPhone = lead?.phone || '+31 6 12345678';
+  const customerCity = lead?.city || lead?.location || 'Rotterdam';
   const customerCategory = lead?.category || (lead?.company?.toLowerCase().includes('snijplanken') ? 'Snijplanken' : 'Buitenkeukens');
   
   const translateCategory = (cat) => {
