@@ -85,14 +85,14 @@ export default function DiagramBuilder({ diagram, onChange }) {
           {/* Segments Repeater Controls */}
           <div className="space-y-2.5">
             {segments.map((seg, idx) => (
-              <div key={seg.id || idx} className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 p-2 bg-[#F8F7F4] border border-[#D6CFC2]/70 rounded-xl">
+              <div key={seg.id || idx} className="flex flex-nowrap items-center gap-1.5 p-1.5 bg-[#F8F7F4] border border-[#D6CFC2]/70 rounded-xl">
                 <span className="text-dark/40 font-mono cursor-grab px-1">::</span>
 
                 {/* Segment Type Selector */}
                 <select
                   value={seg.type || 'CABINET'}
                   onChange={(e) => handleSegmentChange(idx, 'type', e.target.value)}
-                  className="px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-dark focus:outline-none"
+                  className="px-1.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-dark focus:outline-none min-w-[70px]"
                 >
                   <option value="CABINET">cabinet</option>
                   <option value="CUTOUT">cutout</option>
@@ -107,16 +107,16 @@ export default function DiagramBuilder({ diagram, onChange }) {
                   value={seg.label || ''}
                   onChange={(e) => handleSegmentChange(idx, 'label', e.target.value)}
                   placeholder="Label e.g. kastje"
-                  className="px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark flex-1 min-w-[120px] focus:outline-none font-body"
+                  className="px-2 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark flex-1 min-w-[30px] focus:outline-none font-body"
                 />
 
                 {/* Width input */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   <input
                     type="number"
                     value={seg.width || ''}
                     onChange={(e) => handleSegmentChange(idx, 'width', Math.max(5, Number(e.target.value) || 0))}
-                    className="w-16 px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-center font-mono focus:outline-none"
+                    className="w-14 px-1.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-center font-mono focus:outline-none"
                   />
                   <span className="text-xs font-bold text-dark/60">cm</span>
                 </div>
@@ -126,7 +126,7 @@ export default function DiagramBuilder({ diagram, onChange }) {
                   type="button"
                   disabled={segments.length <= 1}
                   onClick={() => handleRemoveSegment(idx)}
-                  className="p-1.5 text-dark/40 hover:text-red-600 disabled:opacity-20 ml-auto border border-[#D6CFC2] rounded-lg bg-white"
+                  className="p-1 text-dark/40 hover:text-red-600 disabled:opacity-20 ml-auto border border-[#D6CFC2] rounded-lg bg-white flex-shrink-0"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -150,7 +150,7 @@ export default function DiagramBuilder({ diagram, onChange }) {
 
           {/* Dynamic Interactive Visual Schematic Box matching Screenshot 2 */}
           <div className="p-4 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/80 space-y-2">
-            <div className="flex items-stretch gap-1.5 h-16 w-full bg-white p-2 rounded-lg border border-[#D6CFC2]">
+            <div className="flex items-stretch gap-1.5 h-12 w-full bg-white p-1.5 rounded-lg border border-[#D6CFC2]">
               {segments.map((seg, idx) => {
                 const isCutout = seg.type === 'CUTOUT';
                 const flexVal = Math.max(1, Number(seg.width) || 50);

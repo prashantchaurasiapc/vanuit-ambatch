@@ -12,8 +12,8 @@ export default function MainLayout({ role }) {
           <TopNav />
         </div>
         
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-4 lg:p-6 relative z-0">
-          <div className="max-w-7xl mx-auto w-full">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-4 lg:p-5 relative z-0 flex flex-col">
+          <div className="w-full flex-1 flex flex-col">
             <Outlet />
           </div>
         </main>

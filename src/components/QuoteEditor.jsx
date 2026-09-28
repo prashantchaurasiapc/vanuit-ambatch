@@ -104,6 +104,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
   const [showSendModal, setShowSendModal] = useState(false);
   const [previewPage, setPreviewPage] = useState(1);
   const [mobileTab, setMobileTab] = useState('editor');
+  const [showPreview, setShowPreview] = useState(false);
   const [highlightField, setHighlightField] = useState(null);
   const [showFieldLabels, setShowFieldLabels] = useState(true);
   const [photoWarnings, setPhotoWarnings] = useState({});
@@ -434,6 +435,113 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
     showToast(`"${libItem.title}" toegevoegd uit bibliotheek!`);
   };
 
+  // Checklist helpers in Step 4
+  const handleChecklistChange = (index, val) => {
+    if (isApproved) return;
+    const currentList = [...(quote.investment?.checklist || [
+      'Volledig maatwerk, gebouwd door een gecertificeerde vakspecialist',
+      'Digitale tekening vooraf ter goedkeuring',
+      'Olieafwerking in twee lagen (naturel)',
+      `Gratis bezorging in ${quote.customer?.city || 'Dongen'}`,
+      'Garantie en nazorg na levering'
+    ])];
+    currentList[index] = val;
+    updateInvestmentField('checklist', currentList);
+  };
+
+  const handleAddChecklistItem = () => {
+    if (isApproved) return;
+    const currentList = [...(quote.investment?.checklist || [
+      'Volledig maatwerk, gebouwd door een gecertificeerde vakspecialist',
+      'Digitale tekening vooraf ter goedkeuring',
+      'Olieafwerking in twee lagen (naturel)',
+      `Gratis bezorging in ${quote.customer?.city || 'Dongen'}`,
+      'Garantie en nazorg na levering'
+    ])];
+    updateInvestmentField('checklist', [...currentList, 'Nieuw inbegrepen onderdeel']);
+  };
+
+  const handleRemoveChecklistItem = (index) => {
+    if (isApproved) return;
+    const currentList = [...(quote.investment?.checklist || [])].filter((_, i) => i !== index);
+    updateInvestmentField('checklist', currentList);
+  };
+
+  const handleResetChecklistDefaults = () => {
+    if (isApproved) return;
+    const defaultList = [
+      'Volledig maatwerk, gebouwd door een gecertificeerde vakspecialist',
+      'Digitale tekening vooraf ter goedkeuring',
+      'Olieafwerking in twee lagen (naturel)',
+      `Gratis bezorging in ${quote.customer?.city || 'Dongen'}`,
+      'Garantie en nazorg na levering'
+    ];
+    updateInvestmentField('checklist', defaultList);
+    showToast('Checklist hersteld naar standaard!');
+  };
+
+  // Instalment labels helper
+  const handleUpdateInstalmentLabel = (index, label) => {
+    if (isApproved) return;
+    const inst = quote.investment?.instalments || { count: 2, percentages: [50, 50], labels: ['Bij akkoord', 'Bij levering'] };
+    const currentLabels = [...(inst.labels || ['Bij akkoord', 'Bij levering', 'Na montage'])];
+    currentLabels[index] = label;
+    updateInvestmentField('instalments', { ...inst, labels: currentLabels });
+  };
+
+  // Process Steps helpers in Step 5
+  const handleProcessStepChange = (index, field, val) => {
+    if (isApproved) return;
+    const currentSteps = [...(quote.letterAndProcess?.processSteps || [
+      { step: '1', title: 'Akkoord op de offerte', desc: 'Bevestig eenvoudig per mail of WhatsApp, of onderteken de akkoordpagina. Vanaf dat moment nemen wij alles uit handen.', badge: '' },
+      { step: '2', title: 'Digitale tekening ter bevestiging', desc: 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.', badge: '' },
+      { step: '3', title: 'Productie door onze vakspecialist', desc: 'Jouw keuken wordt met de hand gemaakt door een gecertificeerde vakspecialist. Tussentijds houden we je op de hoogte.', badge: '3 TOT 5 WEKEN' },
+      { step: '4', title: `Bezorging in ${quote.customer?.city || 'Dongen'}`, desc: `We leveren de keuken op een moment dat jou uitkomt in ${quote.customer?.city || 'Dongen'}. Dankzij de zes zwenkwielen staat hij direct op de juiste plek.`, badge: 'GRATIS' },
+      { step: '5', title: 'Garantie & nazorg', desc: 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.', badge: '' }
+    ])];
+    currentSteps[index] = { ...currentSteps[index], [field]: val };
+    updateLetterField('processSteps', currentSteps);
+  };
+
+  const handleAddProcessStep = () => {
+    if (isApproved) return;
+    const currentSteps = [...(quote.letterAndProcess?.processSteps || [])];
+    const newStepNum = String(currentSteps.length + 1);
+    updateLetterField('processSteps', [
+      ...currentSteps,
+      { step: newStepNum, title: 'Nieuwe processtap', desc: 'Beschrijving van deze stap.', badge: '' }
+    ]);
+  };
+
+  const handleRemoveProcessStep = (index) => {
+    if (isApproved) return;
+    const currentSteps = [...(quote.letterAndProcess?.processSteps || [])].filter((_, i) => i !== index);
+    updateLetterField('processSteps', currentSteps);
+  };
+
+  const handleResetProcessStepDefaults = () => {
+    if (isApproved) return;
+    const defaultSteps = [
+      { step: '1', title: 'Akkoord op de offerte', desc: 'Bevestig eenvoudig per mail of WhatsApp, of onderteken de akkoordpagina. Vanaf dat moment nemen wij alles uit handen.', badge: '' },
+      { step: '2', title: 'Digitale tekening ter bevestiging', desc: 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.', badge: '' },
+      { step: '3', title: 'Productie door onze vakspecialist', desc: 'Jouw keuken wordt met de hand gemaakt door een gecertificeerde vakspecialist. Tussentijds houden we je op de hoogte.', badge: '3 TOT 5 WEKEN' },
+      { step: '4', title: `Bezorging in ${quote.customer?.city || 'Dongen'}`, desc: `We leveren de keuken op een moment dat jou uitkomt in ${quote.customer?.city || 'Dongen'}. Dankzij de zes zwenkwielen staat hij direct op de juiste plek.`, badge: 'GRATIS' },
+      { step: '5', title: 'Garantie & nazorg', desc: 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.', badge: '' }
+    ];
+    updateLetterField('processSteps', defaultSteps);
+    showToast('Processtappen hersteld naar standaard!');
+  };
+
+  // Spec section title helper
+  const handleSpecSectionTitleChange = (secIndex, val) => {
+    if (isApproved) return;
+    setQuote(prev => {
+      const specs = [...(prev.configuration?.specifications || [])];
+      specs[secIndex] = { ...specs[secIndex], title: val };
+      return { ...prev, configuration: { ...prev.configuration, specifications: specs } };
+    });
+  };
+
   // Validation
   const validation = validateQuoteForSend(quote);
 
@@ -452,7 +560,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
   };
 
   return (
-    <div className="w-full flex-1 flex flex-col justify-between font-body text-[#4A4A43] overflow-hidden">
+    <div className="w-full h-full flex flex-col font-body text-[#4A4A43] overflow-hidden">
       {/* Toast Notification */}
       <AnimatePresence>
         {toastMsg && (
@@ -464,95 +572,92 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
       </AnimatePresence>
 
       {/* TOP EDITOR NAVIGATION / STATUS BAR */}
-      <div className="flex-shrink-0 bg-white p-2 sm:p-3 rounded-2xl border border-[#D6CFC2] shadow-xs flex items-center justify-between gap-2 mb-2.5">
+      <div className="flex-shrink-0 bg-white px-3 sm:px-4 py-2.5 rounded-2xl border border-[#D6CFC2] shadow-xs flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={onClose}
-            className="px-2.5 sm:px-3 py-1.5 bg-[#EDE8DF] hover:bg-[#E2DDD3] text-primary rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer flex-shrink-0"
+            className="px-3 py-1.5 bg-white hover:bg-[#EDE8DF] text-primary border border-[#D6CFC2] rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer flex-shrink-0 shadow-2xs"
           >
-            <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <ArrowLeft className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Back to Quotes</span>
             <span className="inline sm:hidden">Back</span>
           </button>
-          <div className="h-4 w-[1px] bg-[#D6CFC2] hidden sm:block"></div>
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="font-serif font-bold text-xs sm:text-base text-primary truncate">Quote Editor</span>
-            <span className="font-mono text-[10px] sm:text-xs text-amber-800 bg-amber-100 px-1.5 sm:px-2 py-0.5 rounded-md font-bold flex-shrink-0">{quote.id}</span>
-            <Badge variant={quote.status === 'Approved' || quote.status === 'Geaccepteerd' ? 'success' : quote.status === 'Sent' || quote.status === 'Verzonden' ? 'info' : 'default'}>
-              {quote.status}
-            </Badge>
+          <div className="h-5 w-[1px] bg-[#D6CFC2] hidden sm:block flex-shrink-0"></div>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-sans font-semibold text-xs sm:text-sm text-dark truncate">Quote Editor</span>
+            <span className="font-mono text-[10px] sm:text-xs text-[#D97706] bg-[#FEF3C7] border border-[#FDE68A] px-2 py-0.5 rounded-lg font-bold flex-shrink-0 tracking-wide">{quote.id}</span>
+            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg flex-shrink-0 border ${
+              quote.status === 'Approved' || quote.status === 'Geaccepteerd'
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                : quote.status === 'Sent' || quote.status === 'Verzonden'
+                  ? 'bg-blue-100 text-blue-800 border-blue-200'
+                  : 'bg-[#F8F7F4] text-dark/60 border-[#D6CFC2]'
+            }`}>{quote.status || 'Draft'}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-[9.5px] sm:text-[11px] font-mono text-dark/60 bg-[#F8F7F4] px-2 sm:px-3 py-1 rounded-xl border border-[#D6CFC2] whitespace-nowrap">
-            🟢 Draft · {lastSavedTime}
-          </span>
+          <div className="flex items-center gap-1.5 text-[11px] font-mono text-dark/60 bg-[#F8F7F4] px-3 py-1.5 rounded-xl border border-[#D6CFC2] whitespace-nowrap">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></span>
+            <span>Draft · {lastSavedTime}</span>
+          </div>
         </div>
       </div>
 
-      {/* MOBILE / TABLET TAB SWITCHER (< xl) */}
-      <div className="flex xl:hidden bg-white p-1 rounded-xl border border-[#D6CFC2] gap-1 shadow-xs mb-2">
-        <button
-          onClick={() => setMobileTab('editor')}
-          className={`flex-1 py-1.5 text-xs font-bold font-mono rounded-lg transition-all cursor-pointer ${mobileTab === 'editor' ? 'bg-[#33422C] text-white shadow-xs' : 'text-dark/70 hover:bg-[#F8F7F4]'
-            }`}
-        >
-          📝 Form Editor
-        </button>
-        <button
-          onClick={() => setMobileTab('preview')}
-          className={`flex-1 py-1.5 text-xs font-bold font-mono rounded-lg transition-all cursor-pointer ${mobileTab === 'preview' ? 'bg-[#33422C] text-white shadow-xs' : 'text-dark/70 hover:bg-[#F8F7F4]'
-            }`}
-        >
-          👁️ Live Preview (Page {previewPage}/6)
-        </button>
-      </div>
-
-      {/* THREE-ZONE MAIN GRID LAYOUT */}
-      <div className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-4 items-start min-h-0 overflow-visible xl:overflow-hidden">
+      {/* TWO-COLUMN LAYOUT: Left Step Nav + Right Content (+ optional Live Preview) */}
+      <div className="flex-1 flex gap-3 items-start min-h-0 overflow-hidden">
 
         {/* ========================================================= */}
-        {/* ZONE 1: LEFT COLUMN - STEP NAVIGATION (3 Cols)            */}
+        {/* ZONE 1: LEFT STEP NAVIGATION (fixed width)               */}
         {/* ========================================================= */}
-        <div className={`xl:col-span-3 space-y-3 xl:overflow-y-auto xl:max-h-[calc(100vh-210px)] pr-1 no-scrollbar ${mobileTab === 'preview' ? 'hidden xl:block' : 'block'}`}>
-          <div className="bg-white rounded-2xl p-3.5 border border-[#D6CFC2] shadow-xs space-y-2.5">
-            <h3 className="font-serif font-bold text-lg text-primary whitespace-nowrap">Quote {quote.id}</h3>
+        <div className="w-[180px] flex-shrink-0 overflow-y-auto max-h-[calc(100vh-175px)] no-scrollbar space-y-3">
+          <div className="bg-white rounded-2xl p-2.5 border border-[#D6CFC2] shadow-xs space-y-1.5">
+            <div className="flex items-baseline justify-between">
+              <h3 className="font-sans font-bold text-sm text-dark tracking-tight">Quote {quote.id}</h3>
+            </div>
 
-            <nav className="space-y-1.5">
+            <nav className="space-y-0.5">
               {STEPS.map((step) => {
                 const isActive = activeStep === step.id;
                 const isCompleted = activeStep > step.id;
-                const dynamicSub = step.id === 1 ? `${quote.customer?.name || 'Bjorn Valk'} · ${quote.customer?.city || 'Dongen'}` : step.desc;
+                const dynamicSub = step.id === 1
+                  ? `${quote.customer?.name || 'Bjorn Valk'} · ${quote.customer?.city || 'Dongen'}`
+                  : step.desc;
 
                 return (
                   <button
                     key={step.id}
                     onClick={() => handleStepClick(step.id)}
-                    className={`w-full text-left py-2 px-2.5 rounded-xl transition-all flex items-center gap-2.5 cursor-pointer ${isActive
-                      ? 'bg-[#33422C] text-[#FDFBF7] shadow-sm font-bold'
-                      : 'hover:bg-[#F8F7F4] text-dark border border-transparent'
-                      }`}
+                    className={`w-full text-left py-1.5 px-3 rounded-xl transition-all flex items-center gap-3 cursor-pointer ${
+                      isActive
+                        ? 'bg-[#1C2B1A] text-[#FDFBF7] shadow-md'
+                        : 'hover:bg-[#F8F7F4] text-dark'
+                    }`}
                   >
-                    <span className={`w-5 h-5 rounded-full text-[11px] font-mono font-bold flex items-center justify-center flex-shrink-0 ${isActive
-                      ? 'bg-white text-[#33422C]'
-                      : isCompleted
-                        ? 'bg-[#33422C] text-white'
-                        : 'border border-[#D6CFC2] text-dark/60'
-                      }`}>
+                    <span className={`w-5 h-5 rounded-full text-[10px] font-mono font-bold flex items-center justify-center flex-shrink-0 border ${
+                      isActive
+                        ? 'bg-white text-[#1C2B1A] border-white/40'
+                        : isCompleted
+                          ? 'bg-[#33422C] text-white border-[#33422C]'
+                          : 'border-[#C4BEB3] text-dark/50'
+                    }`}>
                       {isCompleted ? '✓' : step.number}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className={`text-xs font-bold leading-tight whitespace-nowrap ${isActive ? 'text-white' : 'text-dark'}`}>{step.title}</p>
-                      <p className={`text-[10px] truncate mt-0.5 ${isActive ? 'text-white/80' : 'text-dark/50'}`}>{dynamicSub}</p>
+                      <p className={`text-xs font-semibold leading-tight ${
+                        isActive ? 'text-white' : isCompleted ? 'text-dark' : 'text-dark/80'
+                      }`}>{step.title}</p>
+                      <p className={`text-[10px] truncate mt-0.5 leading-tight ${
+                        isActive ? 'text-white/70' : 'text-dark/45'
+                      }`}>{dynamicSub}</p>
                     </div>
                   </button>
                 );
               })}
             </nav>
 
-            <div className="pt-2 border-t border-[#D6CFC2]/60 text-[10px] font-mono text-dark/60 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <div className="pt-1.5 border-t border-[#E8E3DB] text-[10px] font-mono text-dark/50 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
               <span>Auto-saved as draft · {lastSavedTime}</span>
             </div>
           </div>
@@ -561,39 +666,37 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
         {/* ========================================================= */}
         {/* ZONE 2: MIDDLE COLUMN - ACTIVE STEP FORM (6 Cols)          */}
         {/* ========================================================= */}
-        <div ref={stepFormRef} className={`xl:col-span-6 space-y-4 xl:overflow-y-auto xl:max-h-[calc(100vh-210px)] pr-2 no-scrollbar ${mobileTab === 'preview' ? 'hidden xl:block' : 'block'}`}>
+        <div ref={stepFormRef} className="flex-1 min-w-0 space-y-4 overflow-y-auto max-h-[calc(100vh-175px)] pr-1 no-scrollbar">
 
-          {/* Main Title & Subtitle */}
-          <div className="space-y-1">
-            <h2 className="font-serif font-bold text-3xl text-primary">{STEPS[activeStep - 1].title}</h2>
-            <p className="text-xs text-dark/60 font-body">
-              {activeStep === 1
-                ? 'Everything here returns automatically on every page of the quote — choose once, never retype.'
-                : activeStep === 2
-                  ? 'Page 1 of the quote. The subtitle writes itself based on step 3.'
-                  : activeStep === 3
-                    ? 'Page 3 — the most dynamic page. Everything here differs per quote.'
-                    : activeStep === 4
-                      ? 'Page 4. Totals and instalment amounts calculate themselves — try it: change a price.'
-                      : STEPS[activeStep - 1].desc}
-            </p>
-          </div>
+          {/* Main Title & Subtitle (Only on Step 1) */}
+          {activeStep === 1 && (
+            <div className="space-y-1 mb-4">
+              <h2 className="font-serif font-bold text-3xl text-primary">{STEPS[activeStep - 1].title}</h2>
+              <p className="text-xs text-dark/60 font-body">
+                Everything here returns automatically on every page of the quote — choose once, never retype.
+              </p>
+            </div>
+          )}
 
           {/* STEP 1: CUSTOMER & DETAILS */}
           {activeStep === 1 && (
             <div className="space-y-4">
 
               {/* CARD 1: CUSTOMER */}
-              <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-3.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">CUSTOMER</span>
+              <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">CUSTOMER DETAILS</span>
+                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE</span>
+                </div>
 
+                {/* Pre-fill from Leads Selector */}
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">CUSTOMER</label>
-                    <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono">AUTOMATIC</span>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">QUICK SELECT FROM LEADS</label>
+                    <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">OPTIONAL PRE-FILL</span>
                   </div>
                   <select
-                    value={quote.customer?.name || 'Bjorn Valk'}
+                    value={quote.customer?.name || ''}
                     onFocus={() => setHighlightField('customer')}
                     onBlur={() => setHighlightField(null)}
                     onChange={(e) => {
@@ -610,6 +713,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                         setQuote(prev => ({
                           ...prev,
                           customer: {
+                            ...(prev.customer || {}),
                             name: fullName,
                             firstName: first,
                             city: cityVal,
@@ -622,6 +726,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                         setQuote(prev => ({
                           ...prev,
                           customer: {
+                            ...(prev.customer || {}),
                             name: 'Bjorn Valk',
                             firstName: 'Bjorn',
                             city: 'Dongen',
@@ -630,66 +735,137 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                             email: 'bjorn@mail.nl'
                           }
                         }));
-                      } else {
+                      } else if (selectedName) {
                         updateCustomerField('name', selectedName);
                       }
                     }}
                     className="w-full px-3.5 py-2.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-primary cursor-pointer"
                   >
+                    <option value="">-- Choose lead or enter details below --</option>
                     <option value="Bjorn Valk">Bjorn Valk (Lead)</option>
                     {leadsList.filter(l => l.name !== 'Bjorn Valk').map((lead, idx) => (
                       <option key={idx} value={lead.name}>{lead.name} (Lead)</option>
                     ))}
                   </select>
-                  <p className="text-[11px] text-dark/50 italic mt-1 font-body">Fills name, first name, address, city and email throughout the quote</p>
+                  <p className="text-[11px] text-dark/50 italic mt-1 font-body">Selecting a lead pre-fills the fields below; all fields remain freely editable</p>
                 </div>
 
-                {/* Grey Customer Card Summary */}
-                <div className="p-4 bg-[#EFECE6] rounded-xl border border-[#D6CFC2]/70 space-y-1.5 text-xs text-dark/80 font-body">
-                  <p className="font-semibold text-dark">
-                    {quote.customer?.name || 'Bjorn Valk'} · {quote.customer?.address || 'Dongeheuvel 3'}, <strong className="font-bold text-primary">{quote.customer?.city || 'Dongen'}</strong> · {quote.customer?.phone || '+31 6 53562542'} · {quote.customer?.email || 'bjorn@mail.nl'}
-                  </p>
-                  <div className="flex justify-between items-center text-[11px] pt-0.5">
-                    <span className="text-emerald-700 font-bold flex items-center gap-1">
-                      <span>✓</span> email present (needed for the approval link)
-                    </span>
-                    <span className="text-dark/60 underline cursor-pointer hover:text-dark">edit in customer record</span>
+                {/* Direct Editable Customer Fields Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1 border-t border-[#D6CFC2]/60">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">CUSTOMER NAME (FULL)</label>
+                    <input
+                      type="text"
+                      value={quote.customer?.name || ''}
+                      onFocus={() => setHighlightField('customer')}
+                      onBlur={() => setHighlightField(null)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const first = val.trim().split(' ')[0] || '';
+                        setQuote(prev => ({
+                          ...prev,
+                          customer: {
+                            ...(prev.customer || {}),
+                            name: val,
+                            firstName: prev.customer?.firstName && prev.customer.firstName !== (prev.customer.name || '').split(' ')[0] ? prev.customer.firstName : first
+                          }
+                        }));
+                      }}
+                      placeholder="e.g. Bjorn Valk"
+                      className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">FIRST NAME (FOR SALUTATION)</label>
+                    <input
+                      type="text"
+                      value={quote.customer?.firstName || ''}
+                      onChange={(e) => updateCustomerField('firstName', e.target.value)}
+                      placeholder="e.g. Bjorn"
+                      className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">ADDRESS / STREET</label>
+                    <input
+                      type="text"
+                      value={quote.customer?.address || ''}
+                      onChange={(e) => updateCustomerField('address', e.target.value)}
+                      placeholder="e.g. Dongeheuvel 3, 5101 WE"
+                      className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-dark text-xs focus:outline-none focus:border-primary font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">CITY / DELIVERY LOCATION</label>
+                    <input
+                      type="text"
+                      value={quote.customer?.city || ''}
+                      onChange={(e) => updateCustomerField('city', e.target.value)}
+                      placeholder="e.g. Dongen"
+                      className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">PHONE NUMBER</label>
+                    <input
+                      type="text"
+                      value={quote.customer?.phone || ''}
+                      onChange={(e) => updateCustomerField('phone', e.target.value)}
+                      placeholder="e.g. +31 6 53562542"
+                      className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-dark text-xs focus:outline-none focus:border-primary font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">EMAIL ADDRESS</label>
+                    <input
+                      type="email"
+                      value={quote.customer?.email || ''}
+                      onChange={(e) => updateCustomerField('email', e.target.value)}
+                      placeholder="e.g. bjorn@mail.nl"
+                      className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-dark text-xs focus:outline-none focus:border-primary font-medium"
+                    />
                   </div>
                 </div>
               </div>
 
               {/* CARD 2: QUOTE */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
-                <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">QUOTE</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">QUOTE METADATA</span>
 
-                {/* Row 1: Quote Number & Status */}
+                {/* Row 1: Quote Number & Project Name */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">QUOTE NUMBER</label>
-                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono">AUTOMATIC</span>
+                      <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE</span>
                     </div>
                     <input
                       type="text"
-                      disabled
-                      value={quote.id}
-                      className="w-full px-3.5 py-2.5 bg-[#EFECE6] border border-[#D6CFC2] rounded-xl font-bold font-mono text-dark"
+                      value={quote.id || ''}
+                      onChange={(e) => setQuote(prev => ({ ...prev, id: e.target.value }))}
+                      className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl font-bold font-mono text-dark text-xs focus:outline-none focus:border-primary"
                     />
-                    <p className="text-[10px] text-dark/50 mt-1 font-body">🔒 automatic counter — not editable</p>
+                    <p className="text-[10px] text-dark/50 mt-1 font-body">Quote reference code shown on all pages of the proposal</p>
                   </div>
 
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">STATUS</label>
-                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono">AUTOMATIC</span>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">PROJECT TITLE</label>
+                      <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE</span>
                     </div>
-                    <div className="pt-0.5">
-                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#EFECE6] text-dark text-xs font-bold rounded-full border border-[#D6CFC2]">
-                        <span className="w-2 h-2 rounded-full bg-dark"></span>
-                        <span>{quote.status}</span>
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-dark/50 mt-1.5 font-body">becomes Verzonden (sent) / Akkoord (approved) / Verlopen (expired) via the flow</p>
+                    <input
+                      type="text"
+                      value={quote.project || ''}
+                      onChange={(e) => setQuote(prev => ({ ...prev, project: e.target.value }))}
+                      placeholder="e.g. Maatwerk Buitenkeuken Thermo Fraké"
+                      className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary"
+                    />
+                    <p className="text-[10px] text-dark/50 mt-1 font-body">Internal project name shown in the quotes table and dashboard</p>
                   </div>
                 </div>
 
@@ -698,7 +874,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                   <div>
                     <div className="flex items-center gap-1.5 mb-1">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">QUOTE DATE</label>
-                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">AUTOMATIC</span>
+                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">EDITABLE</span>
                     </div>
                     <input
                       type="date"
@@ -708,13 +884,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                       onChange={(e) => setQuote(prev => ({ ...prev, date: e.target.value }))}
                       className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark"
                     />
-                    <p className="text-[10px] text-dark/50 mt-1 font-body">default today</p>
+                    <p className="text-[10px] text-dark/50 mt-1 font-body">Default today</p>
                   </div>
 
                   <div>
                     <div className="flex items-center gap-1.5 mb-1">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">VALID UNTIL</label>
-                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">AUTOMATIC</span>
+                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">EDITABLE</span>
                     </div>
                     <input
                       type="date"
@@ -724,13 +900,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                       onChange={(e) => setQuote(prev => ({ ...prev, validUntil: e.target.value }))}
                       className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark"
                     />
-                    <p className="text-[10px] text-dark/50 mt-1 font-body">default +30 days - also drives the badge on p4, the terms line on p5 and the approval-link expiry</p>
+                    <p className="text-[10px] text-dark/50 mt-1 font-body">Default +30 days</p>
                   </div>
 
                   <div>
                     <div className="flex items-center gap-1.5 mb-1">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">PRODUCT TYPE</label>
-                      <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">MANUAL</span>
+                      <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">SELECT</span>
                     </div>
                     <select
                       value={quote.productType || 'Outdoor kitchen'}
@@ -744,7 +920,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                       <option value="Veranda">Veranda</option>
                       <option value="Poolhouse">Poolhouse</option>
                     </select>
-                    <p className="text-[10px] text-dark/50 mt-1 font-body">selects template + default texts</p>
+                    <p className="text-[10px] text-dark/50 mt-1 font-body">Selects template + default texts</p>
                   </div>
                 </div>
 
@@ -756,51 +932,8 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
           {activeStep === 2 && (
             <div className="space-y-4">
 
-              {/* CARD 1: TITLE & SUBTITLE */}
-              <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">COVER TITLES & SUBTITLE</span>
-                  <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded font-mono uppercase">PAGE 1 COVER</span>
-                </div>
-
-                {/* Title Line 1 & Title Line 2 */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">TITLE LINE 1</label>
-                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">EDITABLE</span>
-                    </div>
-                    <input
-                      type="text"
-                      value={quote.cover?.titleLine1 !== undefined ? quote.cover.titleLine1 : 'Uw buitenkeuken,'}
-                      onFocus={() => setHighlightField('title')}
-                      onBlur={() => setHighlightField(null)}
-                      onChange={(e) => updateCoverField('titleLine1', e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary"
-                      placeholder="Uw buitenkeuken,"
-                    />
-                    <p className="text-[10px] text-dark/50 mt-1 font-body">Main cover title (top line)</p>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">TITLE LINE 2</label>
-                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">EDITABLE</span>
-                    </div>
-                    <input
-                      type="text"
-                      value={quote.cover?.titleLine2 !== undefined ? quote.cover.titleLine2 : 'op maat gemaakt.'}
-                      onFocus={() => setHighlightField('title')}
-                      onBlur={() => setHighlightField(null)}
-                      onChange={(e) => updateCoverField('titleLine2', e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary"
-                      placeholder="op maat gemaakt."
-                    />
-                    <p className="text-[10px] text-dark/50 mt-1 font-body">Main cover title (italic bottom line)</p>
-                  </div>
-                </div>
-
-                {/* Subtitle Section */}
+              {/* CARD 1: DYNAMIC SUBTITLE CONFIGURATION */}
+              <div className="bg-white rounded-2xl p-4 border border-[#D6CFC2] shadow-2xs space-y-3">
                 {(() => {
                   const woodVal = quote.configuration?.woodType || 'Thermo Fraké';
                   const dimVal = (quote.configuration?.dimensions || '240 × 80').replace(/\s*cm$/i, '').trim();
@@ -809,47 +942,40 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                   const isOverride = quote.cover?.subtitleOverrideEnabled || false;
 
                   return (
-                    <div className="space-y-2 pt-2 border-t border-[#D6CFC2]/60">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">SUBTITLE</label>
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase ${isOverride ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800'
-                            }`}>
-                            {isOverride ? 'CUSTOM OVERRIDE' : 'AUTOMATIC (STEP 3)'}
-                          </span>
-                        </div>
-                      </div>
-
+                    <>
                       {isOverride ? (
-                        <div>
-                          <input
-                            type="text"
-                            value={quote.cover?.customSubtitle || ''}
-                            onFocus={() => setHighlightField('wood')}
-                            onBlur={() => setHighlightField(null)}
-                            onChange={(e) => updateCoverField('customSubtitle', e.target.value)}
-                            className="w-full px-3.5 py-2.5 bg-white border border-amber-400 rounded-xl font-bold text-dark text-xs focus:outline-none focus:ring-2 focus:ring-amber-300"
-                            placeholder={autoSubString}
-                          />
-                          <p className="text-[10px] text-amber-800 mt-1 font-body">Custom override active — replaces automatic configuration string in preview & PDF</p>
-                        </div>
+                        <input
+                          type="text"
+                          value={quote.cover?.customSubtitle !== undefined ? quote.cover.customSubtitle : ''}
+                          onFocus={() => setHighlightField('wood')}
+                          onBlur={() => setHighlightField(null)}
+                          onChange={(e) => updateCoverField('customSubtitle', e.target.value)}
+                          className="w-full px-4 py-3.5 bg-white border border-amber-400 rounded-xl font-mono font-bold text-dark text-xs focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                          placeholder={autoSubString}
+                        />
                       ) : (
-                        <div className="p-3.5 bg-[#EFECE6] rounded-xl border border-[#D6CFC2]/70 font-semibold text-xs text-dark flex items-center justify-between">
-                          <span className="font-mono text-xs">{autoSubString}</span>
-                          <span className="text-[10px] text-dark/50 italic font-body">Follows Step 3</span>
+                        <div className="w-full px-4 py-3.5 bg-[#F8F7F4] border border-[#E2DDD3] rounded-xl flex items-center justify-between">
+                          <span className="font-mono font-bold text-dark text-xs">{autoSubString}</span>
+                          <span className="text-[11px] text-dark/50 italic font-body">Follows Step 3</span>
                         </div>
                       )}
-
-                      <label className="flex items-center gap-2 cursor-pointer text-[11px] text-dark/70 pt-1">
-                        <input
-                          type="checkbox"
+                      
+                      <label className="flex items-center gap-2.5 cursor-pointer pt-1 px-1">
+                        <input 
+                          type="checkbox" 
                           checked={isOverride}
-                          onChange={(e) => updateCoverField('subtitleOverrideEnabled', e.target.checked)}
-                          className="w-4 h-4 rounded text-primary border-[#D6CFC2] focus:ring-primary/20 cursor-pointer"
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            updateCoverField('subtitleOverrideEnabled', checked);
+                            if (!checked) {
+                              updateCoverField('customSubtitle', '');
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-[#D6CFC2] text-primary focus:ring-primary cursor-pointer"
                         />
-                        <span className="font-medium">Enable Custom Subtitle Override (manual text entry)</span>
+                        <span className="text-[13px] text-dark/70 font-body">Enable Custom Subtitle Override (manual text entry)</span>
                       </label>
-                    </div>
+                    </>
                   );
                 })()}
               </div>
@@ -901,7 +1027,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                         </div>
 
                         {/* Image Preview Box */}
-                        <div className="h-28 w-full rounded-lg overflow-hidden border border-[#D6CFC2] bg-white relative group">
+                        <div className="aspect-[4/3] w-full rounded-lg overflow-hidden border border-[#D6CFC2] bg-white relative group">
                           <img
                             src={currentPhoto}
                             alt={label}
@@ -1004,96 +1130,115 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
 
               {/* CARD 1: STAT TILES (ALWAYS 4) */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
-                <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">STAT TILES (ALWAYS 4)</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-dark/60 font-mono block">STAT TILES (ALWAYS 4)</span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+
                   {/* Tile 1: Dimensions */}
-                  <div className="p-3.5 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2">
+                  <div className="p-4 bg-[#F8F7F4] rounded-2xl border border-[#E2DDD3] space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">DIMENSIONS</label>
-                      <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">MANUAL</span>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-dark/55 font-mono">DIMENSIONS</label>
+                      <span className="bg-[#FEF3C7] text-[#92400E] text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border border-[#FDE68A]">MANUAL</span>
                     </div>
                     <input
                       type="text"
                       value={quote.configuration?.dimensions || '240 × 80'}
                       onChange={(e) => updateConfigField('dimensions', e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs"
-                      placeholder="e.g. 240 × 80"
+                      className="w-full px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="e.g. 4x1.2m"
                     />
                     <input
                       type="text"
-                      value="centimeter"
-                      disabled
-                      className="w-full px-3 py-1.5 bg-[#EFECE6] border border-[#D6CFC2]/60 rounded-lg text-xs font-semibold text-dark/70"
+                      value={quote.configuration?.dimensionsUnit || 'centimeter'}
+                      onChange={(e) => updateConfigField('dimensionsUnit', e.target.value)}
+                      className="w-full px-3 py-1.5 bg-[#EFECE8] border border-[#D6CFC2] rounded-lg text-xs font-medium text-dark/70"
+                      placeholder="e.g. centimeter"
                     />
-                    <p className="text-[10px] text-dark/50 font-body">value: {(quote.configuration?.dimensions || '').length}/16 chars</p>
+                    <p className="text-[10px] text-dark/40 font-body italic">
+                      value: {(quote.configuration?.dimensions || '240 × 80').length}/{16} chars
+                    </p>
                   </div>
 
                   {/* Tile 2: Wood Type */}
-                  <div className="p-3.5 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2">
+                  <div className="p-4 bg-[#F8F7F4] rounded-2xl border border-[#E2DDD3] space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">WOOD TYPE</label>
-                      <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">LIBRARY OR FREE TEXT</span>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-dark/55 font-mono">WOOD TYPE</label>
+                      <span className="bg-[#EFF6FF] text-[#1E40AF] text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border border-[#BFDBFE]">LIBRARY OR FREE TEXT</span>
                     </div>
                     <select
-                      value={quote.configuration?.woodType || 'Thermo Fraké'}
-                      onChange={(e) => handleWoodTypeSelect(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs cursor-pointer"
+                      value={WOOD_LIBRARY.some(w => w.name === (quote.configuration?.woodType || 'Thermo Fraké')) ? (quote.configuration?.woodType || 'Thermo Fraké') : 'custom'}
+                      onChange={(e) => {
+                        if (e.target.value !== 'custom') {
+                          handleWoodTypeSelect(e.target.value);
+                        }
+                      }}
+                      className="w-full px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
                     >
                       {WOOD_LIBRARY.map((w) => (
                         <option key={w.id} value={w.name}>{w.name}</option>
                       ))}
+                      <option value="custom">Aangepaste houtsoort (vrije tekst)</option>
                     </select>
                     <input
                       type="text"
-                      value={`lifespan ${quote.configuration?.woodLifespan || (language === 'EN' ? '20 to 25 years' : '20 tot 25 jaar')}`}
-                      disabled
-                      className="w-full px-3 py-1.5 bg-[#EFECE6] border border-[#D6CFC2]/60 rounded-lg text-xs font-semibold text-dark/70"
+                      value={quote.configuration?.woodLifespan !== undefined ? quote.configuration.woodLifespan : (language === 'EN' ? '20 to 25 years' : '20 tot 25 jaar')}
+                      onChange={(e) => updateConfigField('woodLifespan', e.target.value)}
+                      placeholder="lifespan e.g. 20 to 25 years"
+                      className="w-full px-3 py-1.5 bg-[#EFECE8] border border-[#D6CFC2] rounded-lg text-xs font-medium text-dark/70"
                     />
-                    <p className="text-[10px] text-dark/50 font-body">a library choice fills the infobox + subtitle + line item automatically · custom wood type = fill in yourself</p>
+                    <p className="text-[10px] text-dark/40 font-body italic">
+                      a library choice fills the infobox + subtitle + line item automatically · custom wood type can be filled manually
+                    </p>
                   </div>
 
                   {/* Tile 3: Cutout */}
-                  <div className="p-3.5 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2">
+                  <div className="p-4 bg-[#F8F7F4] rounded-2xl border border-[#E2DDD3] space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">{language === 'EN' ? 'CUTOUT' : 'UITSPARING'}</label>
-                      <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">FOLLOWS OPTIONS</span>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-dark/55 font-mono">{language === 'EN' ? 'CUTOUT' : 'UITSPARING'}</label>
+                      <span className="bg-[#F0FDF4] text-[#166534] text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border border-[#BBF7D0]">FOLLOWS OPTIONS</span>
                     </div>
                     <input
                       type="text"
                       value={quote.configuration?.optionsTitle || 'Big Green Egg'}
                       onChange={(e) => updateConfigField('optionsTitle', e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs"
+                      className="w-full px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                     <input
                       type="text"
-                      value={language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden'}
-                      disabled
-                      className="w-full px-3 py-1.5 bg-[#EFECE6] border border-[#D6CFC2]/60 rounded-lg text-xs font-semibold text-dark/70"
+                      value={quote.configuration?.optionsSubtext !== undefined ? quote.configuration.optionsSubtext : (language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden')}
+                      onChange={(e) => updateConfigField('optionsSubtext', e.target.value)}
+                      placeholder="e.g. Large, right of center"
+                      className="w-full px-3 py-1.5 bg-[#EFECE8] border border-[#D6CFC2] rounded-lg text-xs font-medium text-dark/70"
                     />
-                    <p className="text-[10px] text-dark/50 font-body">filled from the "Options & features" block below · freely editable afterwards</p>
+                    <p className="text-[10px] text-dark/40 font-body italic">
+                      filled from the "Options & features" block below · freely editable afterwards
+                    </p>
                   </div>
 
                   {/* Tile 4: Delivery Time */}
-                  <div className="p-3.5 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2">
+                  <div className="p-4 bg-[#F8F7F4] rounded-2xl border border-[#E2DDD3] space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">DELIVERY TIME</label>
-                      <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">MANUAL</span>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-dark/55 font-mono">DELIVERY TIME</label>
+                      <span className="bg-[#FEF3C7] text-[#92400E] text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border border-[#FDE68A]">MANUAL</span>
                     </div>
                     <input
                       type="text"
                       value={quote.configuration?.deliveryTime || (language === 'EN' ? '3 to 5 weeks' : '3 tot 5 weken')}
                       onChange={(e) => updateConfigField('deliveryTime', e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs"
+                      className="w-full px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                     <input
                       type="text"
-                      value={language === 'EN' ? 'upon drawing approval' : 'na akkoord op tekening'}
-                      disabled
-                      className="w-full px-3 py-1.5 bg-[#EFECE6] border border-[#D6CFC2]/60 rounded-lg text-xs font-semibold text-dark/70"
+                      value={quote.configuration?.deliverySubtext !== undefined ? quote.configuration.deliverySubtext : (language === 'EN' ? 'upon drawing approval' : 'na akkoord op tekening')}
+                      onChange={(e) => updateConfigField('deliverySubtext', e.target.value)}
+                      placeholder="e.g. upon drawing approval"
+                      className="w-full px-3 py-1.5 bg-[#EFECE8] border border-[#D6CFC2] rounded-lg text-xs font-medium text-dark/70"
                     />
-                    <p className="text-[10px] text-dark/50 font-body">also appears as the badge at process step "Production" (p6)</p>
+                    <p className="text-[10px] text-dark/40 font-body italic">
+                      also appears as the badge at process step "Production" (p6)
+                    </p>
                   </div>
+
                 </div>
               </div>
 
@@ -1119,7 +1264,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                       />
                       <span>BBQ Cutout</span>
                     </label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <select
                         value={quote.configuration?.options?.bbqCutout?.type || 'Big Green Egg'}
                         onChange={(e) => {
@@ -1153,9 +1298,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                       </select>
                       <input
                         type="text"
-                        value={language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden'}
-                        disabled
-                        className="px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold text-dark/80"
+                        value={quote.configuration?.optionsSubtext !== undefined ? quote.configuration.optionsSubtext : (language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden')}
+                        onChange={(e) => updateConfigField('optionsSubtext', e.target.value)}
+                        className="px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold text-dark/80 w-48 max-w-full"
                       />
                     </div>
                   </div>
@@ -1233,10 +1378,32 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                 <div className="space-y-4">
                   {(quote.configuration?.specifications || []).map((sec, secIdx) => (
                     <div key={sec.id || secIdx} className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs text-dark/80 font-mono uppercase tracking-wider">{sec.title}</span>
-                        {sec.title === 'BEZORGING' && (
-                          <span className="bg-[#EFECE6] text-dark/70 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">DEFAULT</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-1">
+                          <input
+                            type="text"
+                            value={sec.title}
+                            onChange={(e) => handleSpecSectionTitleChange(secIdx, e.target.value)}
+                            className="font-bold text-xs text-dark/80 font-mono uppercase tracking-wider bg-transparent border-b border-transparent hover:border-[#D6CFC2] focus:border-primary focus:outline-none px-1 py-0.5"
+                            placeholder="SECTION TITLE"
+                          />
+                          {sec.title === 'BEZORGING' && (
+                            <span className="bg-[#EFECE6] text-dark/70 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">DEFAULT</span>
+                          )}
+                        </div>
+                        {(quote.configuration?.specifications || []).length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const specs = [...(quote.configuration?.specifications || [])].filter((_, idx) => idx !== secIdx);
+                              updateConfigField('specifications', specs);
+                              showToast('Sectie verwijderd');
+                            }}
+                            className="p-1 text-dark/30 hover:text-red-600 transition-colors"
+                            title="Sectie verwijderen"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
                         )}
                       </div>
 
@@ -1277,17 +1444,17 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
 
               {/* CARD 4: CONFIGURATION PHOTO (PAGE 3 HERO PHOTO) */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-3.5 font-body">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono whitespace-nowrap">
                       {language === 'EN' ? 'CONFIGURATION PHOTO (PAGE 3)' : 'CONFIGURATIE FOTO (PAGINA 3)'}
                     </span>
-                    <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">CUSTOM PHOTO</span>
+                    <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase whitespace-nowrap">CUSTOM PHOTO</span>
                   </div>
-                  <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">APPEARS ON PROPOSAL PAGE 3</span>
+                  <span className="text-[10px] font-mono font-bold text-dark/50 uppercase whitespace-nowrap">APPEARS ON PROPOSAL PAGE 3</span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-4 bg-[#F8F7F4] p-4 rounded-xl border border-[#D6CFC2]/70">
+                <div className="flex flex-wrap items-center gap-4 bg-[#F8F7F4] p-4 rounded-xl border border-[#D6CFC2]/70">
                   <div className="relative w-full sm:w-60 h-40 rounded-xl overflow-hidden border border-[#D6CFC2] flex-shrink-0 bg-[#EAE5DC] flex items-center justify-center p-1.5 shadow-inner">
                     <img
                       src={quote.configuration?.configPhoto || projectImg}
@@ -1297,7 +1464,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                     />
                   </div>
 
-                  <div className="space-y-2 flex-1 text-xs">
+                  <div className="space-y-2 flex-1 text-xs min-w-[250px]">
                     <p className="font-bold text-dark text-xs">
                       {language === 'EN' ? 'Upload Custom 3D / Project Photo' : 'Upload Aangepaste 3D / Projectfoto'}
                     </p>
@@ -1307,7 +1474,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                         : 'Deze foto wordt getoond op Pagina 3 van de offerte naast de specificaties en het vooraanzicht.'}
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <div className="flex flex-col items-start gap-2 pt-2">
                       <input
                         type="file"
                         id="config-photo-uploader"
@@ -1463,13 +1630,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                   {(quote.investment?.lineItems || []).map((item, idx) => (
                     <div key={item.id || idx} className="p-4 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2.5">
                       {/* Row 1: Title, Qty, Price, VAT, Included */}
-                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 text-xs">
+                      <div className="flex flex-wrap xl:flex-nowrap items-center gap-2.5 text-xs">
                         <input
                           type="text"
                           value={item.title || ''}
                           onChange={(e) => handleLineItemChange(idx, 'title', e.target.value)}
                           placeholder="Line item title"
-                          className="w-full sm:flex-1 px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary"
+                          className="w-full xl:flex-1 px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary min-w-[200px]"
                         />
 
                         <div className="flex items-center gap-1.5">
@@ -1578,47 +1745,80 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                 <p className="text-[10px] text-dark/50 font-body">leave empty = the line disappears from the checklist</p>
               </div>
 
-              {/* CARD 3: CHECKLIST INBEGREPEN */}
+              {/* CARD 3: CHECKLIST INBEGREPEN — FULLY EDITABLE */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">CHECKLIST "INBEGREPEN BIJ JOUW INVESTERING" (3-6 LINES)</span>
-                  <span className="bg-[#EFECE6] text-dark/70 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">DEFAULT</span>
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">CHECKLIST "INBEGREPEN BIJ JOUW INVESTERING"</span>
+                    <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAddChecklistItem}
+                      disabled={isApproved}
+                      className="px-3 py-1 bg-[#33422C] text-white text-xs font-bold rounded-lg font-mono hover:bg-[#283523] cursor-pointer shadow-2xs disabled:opacity-40"
+                    >
+                      + item
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetChecklistDefaults}
+                      disabled={isApproved}
+                      className="px-3 py-1 bg-white border border-[#D6CFC2] text-dark/70 text-xs font-bold rounded-lg font-mono hover:bg-[#EFECE6] cursor-pointer disabled:opacity-40"
+                    >
+                      ↺ Reset
+                    </button>
+                  </div>
+                </div>
+
+                {/* Editable checklist title */}
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">SECTION HEADING (in PDF)</label>
+                  <input
+                    type="text"
+                    value={quote.investment?.checklistTitle || 'Inbegrepen bij jouw investering'}
+                    onChange={(e) => updateInvestmentField('checklistTitle', e.target.value)}
+                    disabled={isApproved}
+                    className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-primary disabled:opacity-60"
+                    placeholder="Inbegrepen bij jouw investering"
+                  />
                 </div>
 
                 <div className="space-y-2 text-xs">
-                  <div className="p-3 bg-white border border-[#D6CFC2] rounded-xl flex items-center gap-2.5 shadow-2xs">
-                    <span className="text-[#33422C] font-bold">✓</span>
-                    <span className="font-medium text-dark">Volledig maatwerk, gebouwd door een gecertificeerde vakspecialist</span>
-                  </div>
-
-                  <div className="p-3 bg-white border border-[#D6CFC2] rounded-xl flex items-center gap-2.5 shadow-2xs">
-                    <span className="text-[#33422C] font-bold">✓</span>
-                    <span className="font-medium text-dark">Digitale tekening vooraf ter goedkeuring</span>
-                  </div>
-
-                  {quote.investment?.finishTreatment && (
-                    <div className="p-3 bg-white border border-[#D6CFC2] rounded-xl flex items-center justify-between gap-2.5 shadow-2xs">
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-[#33422C] font-bold">✓</span>
-                        <span className="font-medium text-dark">{quote.investment?.finishTreatment}</span>
-                      </div>
-                      <span className="text-[10px] font-mono text-dark/40 italic">← finish field</span>
+                  {(quote.investment?.checklist || [
+                    'Volledig maatwerk, gebouwd door een gecertificeerde vakspecialist',
+                    'Digitale tekening vooraf ter goedkeuring',
+                    `Gratis bezorging in ${quote.customer?.city || 'Dongen'}`,
+                    'Garantie en nazorg na levering'
+                  ]).map((cLine, cIdx) => (
+                    <div key={cIdx} className="flex items-center gap-2.5 p-3 bg-white border border-[#D6CFC2] rounded-xl shadow-2xs hover:border-primary/40 transition-all">
+                      <span className="text-[#33422C] font-bold flex-shrink-0">✓</span>
+                      <input
+                        type="text"
+                        value={cLine}
+                        onChange={(e) => handleChecklistChange(cIdx, e.target.value)}
+                        disabled={isApproved}
+                        className="flex-1 bg-transparent border-none focus:outline-none text-xs text-dark font-body font-medium disabled:opacity-70"
+                        placeholder="Checklist item..."
+                      />
+                      {String(cLine).includes('{city}') && (
+                        <span className="text-[9px] font-mono text-dark/40 italic flex-shrink-0">{'{city} token'}</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveChecklistItem(cIdx)}
+                        disabled={isApproved || (quote.investment?.checklist || []).length <= 1}
+                        className="p-1 text-dark/30 hover:text-red-600 transition-colors flex-shrink-0 disabled:opacity-20"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  )}
-
-                  <div className="p-3 bg-white border border-[#D6CFC2] rounded-xl flex items-center justify-between gap-2.5 shadow-2xs">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[#33422C] font-bold">✓</span>
-                      <span className="font-medium text-dark">Gratis bezorging in {quote.customer?.city || 'Dongen'}</span>
-                    </div>
-                    <span className="text-[10px] font-mono text-dark/50">{`{city} automatic`}</span>
-                  </div>
-
-                  <div className="p-3 bg-white border border-[#D6CFC2] rounded-xl flex items-center gap-2.5 shadow-2xs">
-                    <span className="text-[#33422C] font-bold">✓</span>
-                    <span className="font-medium text-dark">Garantie en nazorg na levering</span>
-                  </div>
+                  ))}
                 </div>
+                <p className="text-[10px] text-dark/50 font-body">
+                  Use <code className="bg-[#EFECE6] px-1 rounded">{'{city}'}</code> and <code className="bg-[#EFECE6] px-1 rounded">{'{finish}'}</code> tokens — they are replaced automatically in the PDF.
+                </p>
               </div>
 
               {/* CARD 4: TOTALS */}
@@ -1669,14 +1869,14 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
 
                 return (
                   <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
-                    <div className="flex flex-wrap justify-between items-center gap-2">
-                      <div className="flex items-center gap-3">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-wrap items-center gap-4">
                         <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">PAYMENT INSTALMENTS</span>
-                        <div className="flex items-center gap-1 font-mono text-[10px]">
+                        <div className="flex items-center gap-2 font-mono text-xs">
                           <button
                             type="button"
                             onClick={() => handleSetCount(2)}
-                            className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${count === 2 ? 'bg-[#33422C] text-white' : 'bg-[#EFECE6] text-dark/70 hover:bg-[#E2DDD3]'
+                            className={`px-3 py-1.5 rounded-md font-bold transition-all cursor-pointer ${count === 2 ? 'bg-[#33422C] text-white' : 'bg-[#EFECE6] text-dark/70 hover:bg-[#E2DDD3]'
                               }`}
                           >
                             2 Instalments (50/50)
@@ -1684,7 +1884,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                           <button
                             type="button"
                             onClick={() => handleSetCount(3)}
-                            className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${count === 3 ? 'bg-[#33422C] text-white' : 'bg-[#EFECE6] text-dark/70 hover:bg-[#E2DDD3]'
+                            className={`px-3 py-1.5 rounded-md font-bold transition-all cursor-pointer ${count === 3 ? 'bg-[#33422C] text-white' : 'bg-[#EFECE6] text-dark/70 hover:bg-[#E2DDD3]'
                               }`}
                           >
                             3 Instalments (30/40/30)
@@ -1692,34 +1892,49 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                         </div>
                       </div>
 
-                      <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-md ${isSumValid ? 'text-emerald-800 bg-emerald-100' : 'text-red-800 bg-red-100'
-                        }`}>
-                        SUM = {pSum}% {isSumValid ? '✓' : '⚠️ Must equal 100%'}
-                      </span>
+                      <div>
+                        <span className={`inline-block text-xs font-mono font-bold px-2.5 py-1 rounded-md ${isSumValid ? 'text-emerald-800 bg-emerald-100' : 'text-red-800 bg-red-100'
+                          }`}>
+                          SUM = {pSum}% {isSumValid ? '✓' : '⚠️ Must equal 100%'}
+                        </span>
+                      </div>
                     </div>
 
                     <div className={`grid grid-cols-1 ${count === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
-                      {instCards.map((inst, idx) => (
-                        <div key={idx} className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-3 shadow-2xs">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-dark/70 font-mono block">
-                            INSTALMENT {idx + 1} · {idx === 0 ? 'BIJ AKKOORD (ON APPROVAL)' : idx === 1 ? (count === 3 ? 'BIJ START BOUW (PRODUCTION)' : 'BIJ LEVERING (ON DELIVERY)') : 'BIJ LEVERING (ON DELIVERY)'}
-                          </span>
-                          <div className="flex items-center gap-2">
+                      {instCards.map((inst, idx) => {
+                        const currentLabels = quote.investment?.instalments?.labels || (count === 3 ? ['Bij akkoord', 'Bij start bouw', 'Bij levering'] : ['Bij akkoord', 'Bij levering']);
+                        const currentLabel = currentLabels[idx] !== undefined ? currentLabels[idx] : inst.label;
+                        return (
+                          <div key={idx} className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-3 shadow-2xs">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-dark/70 font-mono block">
+                              INSTALMENT {idx + 1}
+                            </span>
+                            {/* Editable label */}
                             <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              value={pArr[idx] ?? inst.percentage}
-                              onChange={(e) => handleUpdatePct(idx, e.target.value)}
-                              className="w-16 px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-center font-mono text-dark focus:outline-none focus:border-primary"
+                              type="text"
+                              value={currentLabel}
+                              onChange={(e) => handleUpdateInstalmentLabel(idx, e.target.value)}
+                              disabled={isApproved}
+                              className="w-full px-2.5 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-bold text-dark focus:outline-none focus:border-primary disabled:opacity-60"
+                              placeholder={idx === 0 ? 'Bij akkoord' : idx === 1 && count === 3 ? 'Bij start bouw' : 'Bij levering'}
                             />
-                            <span className="font-bold text-xs font-mono text-dark">%</span>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={pArr[idx] ?? inst.percentage}
+                                onChange={(e) => handleUpdatePct(idx, e.target.value)}
+                                className="w-16 px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-center font-mono text-dark focus:outline-none focus:border-primary"
+                              />
+                              <span className="font-bold text-xs font-mono text-dark">%</span>
+                            </div>
+                            <p className="text-sm font-bold font-mono text-primary">
+                              € {inst.amount.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+                            </p>
                           </div>
-                          <p className="text-sm font-bold font-mono text-primary">
-                            € {inst.amount.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     <p className="text-[11px] text-dark/60 font-body">
@@ -1887,66 +2102,185 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
 
               </div>
 
-              {/* CARD 2: PROCESS STEPS (P6, 4-6 STEPS) */}
+              {/* CARD 2: PROCESS STEPS (P6) — FULLY EDITABLE */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-3.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">PROCESS STEPS (P6, 4-6 STEPS)</span>
-
-                <div className="space-y-2">
-                  {/* Step 1 */}
-                  <div className="bg-white border border-[#D6CFC2] rounded-xl p-3.5 flex items-center justify-between text-xs shadow-2xs">
-                    <div className="flex items-center gap-3 font-bold text-dark">
-                      <span className="w-5 font-mono text-center">1</span>
-                      <span>Akkoord op de offerte</span>
-                    </div>
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">PROCESS STEPS (P6, 4-6 STEPS)</span>
+                    <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE</span>
                   </div>
-
-                  {/* Step 2 */}
-                  <div className="bg-white border border-[#D6CFC2] rounded-xl p-3.5 flex items-center justify-between text-xs shadow-2xs">
-                    <div className="flex items-center gap-3 font-bold text-dark">
-                      <span className="w-5 font-mono text-center">2</span>
-                      <span>Digitale tekening ter bevestiging</span>
-                    </div>
-                  </div>
-
-                  {/* Step 3 */}
-                  <div className="bg-white border border-[#D6CFC2] rounded-xl p-3.5 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 text-xs shadow-2xs">
-                    <div className="flex items-center gap-3 font-bold text-dark">
-                      <span className="w-5 font-mono text-center">3</span>
-                      <span>Productie door onze vakspecialist</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="bg-[#EFECE6] border border-[#D6CFC2] text-dark/80 font-mono font-bold text-[10px] px-2.5 py-1 rounded-md uppercase">
-                        {quote.configuration?.deliveryTime?.toUpperCase() || '3 TOT 5 WEKEN'}
-                      </span>
-                      <span className="text-[10px] font-mono text-dark/50">← delivery time from step 3</span>
-                    </div>
-                  </div>
-
-                  {/* Step 4 */}
-                  <div className="bg-white border border-[#D6CFC2] rounded-xl p-3.5 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 text-xs shadow-2xs">
-                    <div className="flex items-center gap-3 font-bold text-dark">
-                      <span className="w-5 font-mono text-center">4</span>
-                      <span>Bezorging in {quote.customer?.city || 'Dongen'}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {((quote.investment?.lineItems || []).find(i => (i.title || i.description || '').toLowerCase().includes('bezorging'))?.priceInclVat === 0 ||
-                        (quote.investment?.lineItems || []).find(i => (i.title || i.description || '').toLowerCase().includes('bezorging'))?.isIncluded !== false) && (
-                          <span className="bg-emerald-100 text-emerald-800 font-mono font-bold text-[10px] px-2.5 py-1 rounded-md uppercase">
-                            GRATIS
-                          </span>
-                        )}
-                      <span className="text-[10px] font-mono text-dark/50">badge only when the delivery price is € 0</span>
-                    </div>
-                  </div>
-                  {/* Step 5 */}
-                  <div className="bg-white border border-[#D6CFC2] rounded-xl p-3.5 flex items-center justify-between text-xs shadow-2xs">
-                    <div className="flex items-center gap-3 font-bold text-dark">
-                      <span className="w-5 font-mono text-center">5</span>
-                      <span>Garantie & nazorg</span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAddProcessStep}
+                      disabled={isApproved}
+                      className="px-3 py-1 bg-[#33422C] text-white text-xs font-bold rounded-lg font-mono hover:bg-[#283523] cursor-pointer shadow-2xs disabled:opacity-40"
+                    >
+                      + step
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetProcessStepDefaults}
+                      disabled={isApproved}
+                      className="px-3 py-1 bg-white border border-[#D6CFC2] text-dark/70 text-xs font-bold rounded-lg font-mono hover:bg-[#EFECE6] cursor-pointer disabled:opacity-40"
+                    >
+                      ↺ Reset
+                    </button>
                   </div>
                 </div>
 
+                <div className="space-y-3 text-xs">
+                  {(quote.letterAndProcess?.processSteps || [
+                    { step: '1', title: 'Akkoord op de offerte', desc: 'Bevestig eenvoudig per mail of WhatsApp, of onderteken de akkoordpagina. Vanaf dat moment nemen wij alles uit handen.', badge: '' },
+                    { step: '2', title: 'Digitale tekening ter bevestiging', desc: 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.', badge: '' },
+                    { step: '3', title: 'Productie door onze vakspecialist', desc: 'Jouw keuken wordt met de hand gemaakt door een gecertificeerde vakspecialist. Tussentijds houden we je op de hoogte.', badge: '3 TOT 5 WEKEN' },
+                    { step: '4', title: `Bezorging in ${quote.customer?.city || 'Dongen'}`, desc: `We leveren de keuken op een moment dat jou uitkomt in ${quote.customer?.city || 'Dongen'}. Dankzij de zes zwenkwielen staat hij direct op de juiste plek.`, badge: 'GRATIS' },
+                    { step: '5', title: 'Garantie & nazorg', desc: 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.', badge: '' }
+                  ]).map((ps, psIdx) => (
+                    <div key={psIdx} className="p-3.5 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 font-mono font-bold text-dark/70 text-xs">
+                          <span className="w-5 h-5 bg-[#33422C] text-white rounded-full flex items-center justify-center text-[10px] flex-shrink-0">{ps.step}</span>
+                          <input
+                            type="text"
+                            value={ps.title}
+                            onChange={(e) => handleProcessStepChange(psIdx, 'title', e.target.value)}
+                            disabled={isApproved}
+                            placeholder="Step title"
+                            className="flex-1 px-2 py-1 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-dark focus:outline-none focus:border-primary disabled:opacity-60"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveProcessStep(psIdx)}
+                          disabled={isApproved || (quote.letterAndProcess?.processSteps || []).length <= 1}
+                          className="p-1 text-dark/30 hover:text-red-600 transition-colors flex-shrink-0 disabled:opacity-20"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="flex gap-2">
+                        <textarea
+                          rows={2}
+                          value={ps.desc}
+                          onChange={(e) => handleProcessStepChange(psIdx, 'desc', e.target.value)}
+                          disabled={isApproved}
+                          placeholder="Step description..."
+                          className="flex-1 px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark focus:outline-none font-body disabled:opacity-60"
+                        />
+                        <input
+                          type="text"
+                          value={ps.badge}
+                          onChange={(e) => handleProcessStepChange(psIdx, 'badge', e.target.value)}
+                          disabled={isApproved}
+                          placeholder="Badge (optional)"
+                          className="w-28 px-2 py-1 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-dark uppercase focus:outline-none disabled:opacity-60"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-dark/50 font-body">Title, description, and badge are all editable. Leave badge empty to hide it.</p>
+              </div>
+
+              {/* CARD 3: APPROVAL PAGE (P5) */}
+              <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">APPROVAL PAGE (P5)</span>
+                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">APPROVAL TITLE</label>
+                    <input
+                      type="text"
+                      value={quote.letterAndProcess?.approvalTitle || 'Akkoord op de offerte'}
+                      onChange={(e) => updateLetterField('approvalTitle', e.target.value)}
+                      disabled={isApproved}
+                      className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary disabled:opacity-60"
+                      placeholder="Akkoord op de offerte"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">APPROVAL SUBHEADING</label>
+                    <input
+                      type="text"
+                      value={quote.letterAndProcess?.approvalSubheading || 'Zo geeft u akkoord'}
+                      onChange={(e) => updateLetterField('approvalSubheading', e.target.value)}
+                      disabled={isApproved}
+                      className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary disabled:opacity-60"
+                      placeholder="Zo geeft u akkoord"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">APPROVAL TEXT</label>
+                  <textarea
+                    rows={3}
+                    value={quote.letterAndProcess?.approvalText || 'Geef akkoord via de handtekeningpagina, per e-mail, of via WhatsApp. Na uw bevestiging nemen wij het volledig over.'}
+                    onChange={(e) => updateLetterField('approvalText', e.target.value)}
+                    disabled={isApproved}
+                    className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none font-body disabled:opacity-60"
+                    placeholder="Approval text..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-1 border-t border-[#D6CFC2]/60">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">SIGN-OFF NAME</label>
+                    <input
+                      type="text"
+                      value={quote.letterAndProcess?.signoffName || 'Tim & Bram'}
+                      onChange={(e) => updateLetterField('signoffName', e.target.value)}
+                      disabled={isApproved}
+                      className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary disabled:opacity-60"
+                      placeholder="Tim & Bram"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">SIGN-OFF ROLE</label>
+                    <input
+                      type="text"
+                      value={quote.letterAndProcess?.signoffRole || 'Vanuit Ambacht'}
+                      onChange={(e) => updateLetterField('signoffRole', e.target.value)}
+                      disabled={isApproved}
+                      className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary disabled:opacity-60"
+                      placeholder="Vanuit Ambacht"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 4: CLOSING QUOTE (P6 BOTTOM) */}
+              <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">CLOSING QUOTE (P6 BOTTOM)</span>
+                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE</span>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">QUOTE TEXT</label>
+                  <textarea
+                    rows={2}
+                    value={quote.letterAndProcess?.closingQuote || '"Wij bouwen niet alleen buitenkeukens. Wij bouwen ervaringen."'}
+                    onChange={(e) => updateLetterField('closingQuote', e.target.value)}
+                    disabled={isApproved}
+                    className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none font-body disabled:opacity-60"
+                    placeholder='"Wij bouwen niet alleen buitenkeukens..."'
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">QUOTE AUTHOR</label>
+                  <input
+                    type="text"
+                    value={quote.letterAndProcess?.closingAuthor || '— Tim & Bram, Vanuit Ambacht'}
+                    onChange={(e) => updateLetterField('closingAuthor', e.target.value)}
+                    disabled={isApproved}
+                    className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary disabled:opacity-60"
+                    placeholder="— Tim & Bram, Vanuit Ambacht"
+                  />
+                </div>
               </div>
 
             </div>
@@ -2211,9 +2545,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
         </div>
 
         {/* ========================================================= */}
-        {/* ZONE 3: RIGHT COLUMN - MANDATORY LIVE PREVIEW (3 Cols)    */}
+        {/* ZONE 3: LIVE PREVIEW - always visible                     */}
         {/* ========================================================= */}
-        <div className={`xl:col-span-3 overflow-y-auto max-h-[calc(100vh-210px)] pr-1 no-scrollbar ${mobileTab === 'editor' ? 'hidden xl:block' : 'block'}`}>
+        <div className="w-[180px] flex-shrink-0 overflow-y-auto max-h-[calc(100vh-175px)] pr-1 no-scrollbar">
           <div className="bg-white rounded-2xl p-3 border border-[#D6CFC2] shadow-xs space-y-2 font-body relative">
             {/* Live Preview Header */}
             <div className="flex justify-between items-center border-b border-[#D6CFC2]/80 pb-2.5">

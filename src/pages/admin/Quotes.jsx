@@ -197,8 +197,10 @@ export default function Quotes() {
     
     const processedQuote = {
       ...updatedQuote,
-      customer: updatedQuote.customer?.name || updatedQuote.customer || 'Bjorn Valk',
-      project: `Buitenkeuken ${updatedQuote.configuration?.woodType || 'Thermo Fraké'}`,
+      customer: typeof updatedQuote.customer === 'object' && updatedQuote.customer !== null
+        ? updatedQuote.customer
+        : { name: updatedQuote.customer || 'Bjorn Valk' },
+      project: updatedQuote.project || `Buitenkeuken ${updatedQuote.configuration?.woodType || 'Thermo Fraké'}`,
       amount: formattedAmt
     };
 

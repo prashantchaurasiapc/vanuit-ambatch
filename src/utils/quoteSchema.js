@@ -94,14 +94,17 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
       ]
     },
 
-    configuration: existingQuote?.configuration || {
+    configuration: {
       dimensions: cleanDimensions,
+      dimensionsUnit: existingQuote?.configuration?.dimensionsUnit || 'centimeter',
       woodType: woodName,
-      woodLifespan: defaultWood.lifespan || '20 to 25 years',
+      woodLifespan: existingQuote?.configuration?.woodLifespan || defaultWood.lifespan || '20 tot 25 jaar',
       optionsTitle: cutoutName,
+      optionsSubtext: existingQuote?.configuration?.optionsSubtext || 'Large, rechts van het midden',
       deliveryTime: deliveryTime,
+      deliverySubtext: existingQuote?.configuration?.deliverySubtext || 'na akkoord op tekening',
 
-      options: {
+      options: existingQuote?.configuration?.options || {
         bbqCutout: {
           enabled: true,
           type: cutoutName.includes('Egg') ? 'Big Green Egg' : cutoutName.includes('Kamado') ? 'Kamado Joe' : 'Custom Barbecue',
@@ -116,7 +119,7 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
         }
       },
 
-      specifications: [
+      specifications: existingQuote?.configuration?.specifications || [
         {
           id: 'sec-1',
           title: 'WORKTOP',
@@ -137,7 +140,7 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
           id: 'sec-3',
           title: 'FINISH & MOBILITY',
           lines: [
-            { id: 'l-5', text: 'Two-layer protective oil finish (natural)', isOption: false },
+            { id: 'l-5', text: 'Two-layer protective oil finish (naturel)', isOption: false },
             { id: 'l-6', text: 'Hidden heavy-duty swivel castors for easy mobility', isOption: false }
           ]
         },
@@ -150,9 +153,9 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
         }
       ],
 
-      configPhoto: projectImg,
+      configPhoto: existingQuote?.configuration?.configPhoto || projectImg,
 
-      diagram: {
+      diagram: existingQuote?.configuration?.diagram || {
         show: true,
         totalWidth: 240,
         segments: [
@@ -163,39 +166,64 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
         ]
       },
 
-      infobox: {
+      infobox: existingQuote?.configuration?.infobox || {
         show: true,
         title: defaultWood.infoboxTitle,
         text: defaultWood.infoboxText
-      }
+      },
+      ...(existingQuote?.configuration || {})
     },
 
-    investment: existingQuote?.investment || {
+    investment: {
+      sectionTitle: existingQuote?.investment?.sectionTitle || '04 · INVESTERING',
+      title: existingQuote?.investment?.title || 'Heldere prijs, alles inbegrepen',
       lineItems: initialLineItems,
-      finishTreatment: 'Olieafwerking in twee lagen (naturel)',
-      checklist: [
+      finishTreatment: existingQuote?.investment?.finishTreatment !== undefined ? existingQuote.investment.finishTreatment : 'Olieafwerking in twee lagen (naturel)',
+      checklistTitle: existingQuote?.investment?.checklistTitle || 'INBEGREPEN BIJ JOUW INVESTERING',
+      checklist: existingQuote?.investment?.checklist || [
         'Volledig maatwerk, gebouwd door een gecertificeerde vakspecialist',
         'Digitale tekening vooraf ter goedkeuring',
         'Olieafwerking in twee lagen (naturel)',
         `Gratis bezorging in ${city}`,
         'Garantie en nazorg na levering'
       ],
+      validityNote: existingQuote?.investment?.validityNote || `Deze offerte is geldig tot en met ${validUntilDate}`,
+      ...(existingQuote?.investment || {}),
       instalments: {
-        count: 2,
-        percentages: [50, 50]
+        count: existingQuote?.investment?.instalments?.count || 2,
+        percentages: existingQuote?.investment?.instalments?.percentages || [50, 50],
+        labels: existingQuote?.investment?.instalments?.labels || (
+          (existingQuote?.investment?.instalments?.count || 2) === 3
+            ? ['Bij akkoord', 'Bij start bouw', 'Bij levering']
+            : ['Bij akkoord', 'Bij levering']
+        )
       }
     },
 
-    letterAndProcess: existingQuote?.letterAndProcess || {
-      salutation: `Beste ${firstName},`,
-      letterParagraphs: [...productDefaults.letterParagraphs],
-      uspCards: [
+    letterAndProcess: {
+      salutation: existingQuote?.letterAndProcess?.salutation || `Beste ${firstName},`,
+      letterParagraphs: existingQuote?.letterAndProcess?.letterParagraphs || [...productDefaults.letterParagraphs],
+      signoffName: existingQuote?.letterAndProcess?.signoffName || 'Tim & Bram',
+      signoffRole: existingQuote?.letterAndProcess?.signoffRole || 'Oprichters Vanuit Ambacht',
+      uspCards: existingQuote?.letterAndProcess?.uspCards || [
         { id: 1, title: 'VAKSPECIALISTEN', desc: 'Met de hand gebouwd in onze eigen werkplaats met oog voor detail.' },
         { id: 2, title: 'ÉÉN AANSPREEKPUNT', desc: 'Direct contact met Tim & Bram vanaf ontwerp tot bezorging.' },
         { id: 3, title: 'GARANTIE & NAZORG', desc: 'Productgarantie en persoonlijke nazorg bij u aan huis.' },
         { id: 4, title: 'BEWUST ONLINE', desc: 'Geen dure showroom, maar de scherpste prijs voor topkwaliteit.' }
       ],
-      processSteps: [...productDefaults.processSteps]
+      processSteps: existingQuote?.letterAndProcess?.processSteps || [
+        { step: '1', title: 'Akkoord op de offerte', desc: 'Bevestig eenvoudig per mail of WhatsApp, of onderteken de akkoordpagina. Vanaf dat moment nemen wij alles uit handen.', badge: '' },
+        { step: '2', title: 'Digitale tekening ter bevestiging', desc: 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.', badge: '' },
+        { step: '3', title: 'Productie door onze vakspecialist', desc: 'Jouw keuken wordt met de hand gemaakt door een gecertificeerde vakspecialist. Tussentijds houden we je op de hoogte.', badge: deliveryTime.toUpperCase() },
+        { step: '4', title: `Bezorging in ${city}`, desc: `We leveren de keuken op een moment dat jou uitkomt in ${city}. Dankzij de zes zwenkwielen staat hij direct op de juiste plek.`, badge: 'GRATIS' },
+        { step: '5', title: 'Garantie & nazorg', desc: 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.', badge: '' }
+      ],
+      approvalTitle: existingQuote?.letterAndProcess?.approvalTitle || 'Zullen we hem gaan maken?',
+      approvalSubheading: existingQuote?.letterAndProcess?.approvalSubheading || 'Akkoord geven kan in één minuut',
+      approvalText: existingQuote?.letterAndProcess?.approvalText || 'Stuur een korte bevestiging per WhatsApp of mail, of onderteken hieronder. Daarna ontvang je het definitieve ontwerp met technische tekening ter bevestiging en gaan we voor je aan de slag.',
+      closingQuote: existingQuote?.letterAndProcess?.closingQuote || '“Geen massa. Geen standaardoplossing.\nGewoon goed gemaakt. Voor jou.”',
+      closingAuthor: existingQuote?.letterAndProcess?.closingAuthor || 'TIM & BRAM · VANUIT AMBACHT',
+      ...(existingQuote?.letterAndProcess || {})
     },
 
     company: existingQuote?.company || {
@@ -237,20 +265,22 @@ export function calculateTotals(lineItems = []) {
   };
 }
 
-export function calculateInstalments(totalInclVat, count = 2, percentages = [50, 50]) {
+export function calculateInstalments(totalInclVat, count = 2, percentages = [50, 50], customLabels = null) {
   if (!percentages || percentages.length === 0) return [];
   const validCount = Math.min(3, Math.max(2, count));
   const validP = percentages.slice(0, validCount);
 
   let accumulated = 0;
   const result = validP.map((pct, idx) => {
+    const defaultLabel = idx === 0 ? 'Bij akkoord' : (validCount === 3 && idx === 1 ? 'Bij start bouw' : 'Bij levering');
+    const label = (Array.isArray(customLabels) && customLabels[idx]) ? customLabels[idx] : defaultLabel;
     if (idx === validP.length - 1) {
       // Last instalment gets exact remainder
       const remainder = Math.round((totalInclVat - accumulated) * 100) / 100;
       return {
         step: idx + 1,
         percentage: pct,
-        label: idx === 0 ? 'Bij akkoord (50%)' : idx === 1 ? 'Bij levering' : 'Na montage',
+        label: label,
         amount: remainder
       };
     }
@@ -259,7 +289,7 @@ export function calculateInstalments(totalInclVat, count = 2, percentages = [50,
     return {
       step: idx + 1,
       percentage: pct,
-      label: idx === 0 ? 'Bij akkoord' : 'Bij levering',
+      label: label,
       amount: amt
     };
   });

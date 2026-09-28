@@ -147,8 +147,8 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   const vatAmount = totals.vatAmount ?? 0;
 
   // Instalments Calculation
-  const instalmentsConfig = quote?.investment?.instalments || { count: 2, percentages: [50, 50] };
-  const instalmentCards = calculateInstalments(totalIncl, instalmentsConfig.count, instalmentsConfig.percentages);
+  const instalmentsConfig = quote?.investment?.instalments || { count: 2, percentages: [50, 50], labels: ['Bij akkoord', 'Bij levering'] };
+  const instalmentCards = calculateInstalments(totalIncl, instalmentsConfig.count, instalmentsConfig.percentages, instalmentsConfig.labels);
 
   const finishTreatment = quote?.investment?.finishTreatment || (language === 'EN' ? 'Two-layer protective oil finish (natural)' : 'Olieafwerking in twee lagen (naturel)');
 
@@ -345,9 +345,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   <p key={idx}>{para}</p>
                 ))}
                 <div className="pt-1">
-                  <p className="font-serif font-bold text-primary text-base italic" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Tim & Bram</p>
+                  <p className="font-serif font-bold text-primary text-base italic" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+                    {quote?.letterAndProcess?.signoffName || 'Tim & Bram'}
+                  </p>
                   <p className="text-[10px] text-accent font-bold font-mono tracking-widest uppercase">
-                    {language === 'EN' ? 'FOUNDERS VANUIT AMBACHT' : 'OPRICHTERS VANUIT AMBACHT'}
+                    {quote?.letterAndProcess?.signoffRole ? quote.letterAndProcess.signoffRole.toUpperCase() : (language === 'EN' ? 'FOUNDERS VANUIT AMBACHT' : 'OPRICHTERS VANUIT AMBACHT')}
                   </p>
                 </div>
               </div>
@@ -435,7 +437,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 {language === 'EN' ? 'DIMENSIONS' : 'AFMETING'}
               </span>
               <p className="text-lg sm:text-xl font-serif text-[#D97706] leading-tight font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{cleanDimensions}</p>
-              <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">centimeter</span>
+              <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">{config.dimensionsUnit || 'centimeter'}</span>
             </div>
 
             <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
@@ -443,7 +445,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 {language === 'EN' ? 'WOOD TYPE' : 'HOUTSOORT'}
               </span>
               <p className="text-lg sm:text-xl font-serif text-[#D97706] leading-tight font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{woodType}</p>
-              <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">{woodLifespan}</span>
+              <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">{config.woodLifespan || woodLifespan}</span>
             </div>
 
             <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
@@ -452,7 +454,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               </span>
               <p className="text-lg sm:text-xl font-serif text-[#D97706] leading-tight font-normal truncate" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{tile3Value}</p>
               <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
-                {tile3Subtext}
+                {config.optionsSubtext || tile3Subtext}
               </span>
             </div>
 
@@ -616,8 +618,12 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           </div>
 
           <div className="space-y-1">
-            <span className="text-[10px] font-mono text-accent font-bold uppercase tracking-wider block">04 · INVESTERING</span>
-            <h3 className="text-2xl sm:text-3xl font-serif text-primary font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Heldere prijs, alles inbegrepen</h3>
+            <span className="text-[10px] font-mono text-accent font-bold uppercase tracking-wider block">
+              {quote?.investment?.sectionTitle || '04 · INVESTERING'}
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-serif text-primary font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+              {quote?.investment?.title || 'Heldere prijs, alles inbegrepen'}
+            </h3>
           </div>
 
           {/* Line Items Table */}
@@ -652,7 +658,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           {/* Included Checklist + Totals Card */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
             <div className="p-5 sm:p-6 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] space-y-3.5 shadow-xs">
-              <p className="font-mono text-[10px] uppercase font-bold text-accent tracking-widest">INBEGREPEN BIJ JOUW INVESTERING</p>
+              <p className="font-mono text-[10px] uppercase font-bold text-accent tracking-widest">
+                {quote?.investment?.checklistTitle || 'INBEGREPEN BIJ JOUW INVESTERING'}
+              </p>
               <ul className="space-y-2 text-xs text-dark/80 font-body">
                 {(quote?.investment?.checklist || [
                   'Volledig maatwerk, met de hand gemaakt',
@@ -662,7 +670,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   'Garantie op het product én nazorg na levering'
                 ]).map((cLine, cIdx) => (
                   <li key={cIdx} className="flex items-center gap-2.5">
-                    <span className="text-[#33422C] font-bold">✓</span> {cLine.replace('{city}', city).replace('{finish}', finishTreatment)}
+                    <span className="text-[#33422C] font-bold">✓</span> {typeof cLine === 'string' ? cLine.replace('{city}', city).replace('{finish}', finishTreatment) : (cLine?.text || '')}
                   </li>
                 ))}
               </ul>
@@ -687,7 +695,12 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               </div>
 
               <div className="p-3 bg-[#EAE5DC] text-primary text-[11px] font-body rounded-xl font-medium flex items-center justify-center gap-2 border border-[#E2DDD3]">
-                <span>Deze offerte is geldig tot en met <strong className="text-[#D97706]">{validUntil}</strong></span>
+                <span>
+                  {quote?.investment?.validityNote
+                    ? quote.investment.validityNote.replace('{validUntil}', validUntil)
+                    : <>Deze offerte is geldig tot en met <strong className="text-[#D97706]">{validUntil}</strong></>
+                  }
+                </span>
               </div>
             </div>
           </div>
@@ -738,14 +751,18 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
           <div className="space-y-1">
             <span className="text-[10px] font-mono text-accent font-bold uppercase tracking-wider block">05 · AKKOORD</span>
-            <h3 className="text-2xl font-serif font-bold text-primary" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Zullen we hem gaan maken?</h3>
+            <h3 className="text-2xl font-serif font-bold text-primary" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+              {quote?.letterAndProcess?.approvalTitle || 'Zullen we hem gaan maken?'}
+            </h3>
           </div>
 
           <div className="p-6 sm:p-7 bg-[#35442E] text-[#FDFBF7] rounded-2xl space-y-4 shadow-sm border border-[#43543A] relative overflow-hidden">
             <div className="relative z-10 space-y-1.5">
-              <h4 className="text-xl font-serif text-[#FDFBF7] font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Akkoord geven kan in één minuut</h4>
+              <h4 className="text-xl font-serif text-[#FDFBF7] font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+                {quote?.letterAndProcess?.approvalSubheading || 'Akkoord geven kan in één minuut'}
+              </h4>
               <p className="text-xs text-[#E5DFD5] leading-relaxed max-w-xl">
-                Stuur een korte bevestiging per WhatsApp of mail, of onderteken hieronder. Daarna ontvang je het definitieve ontwerp met technische tekening ter bevestiging en gaan we voor je aan de slag.
+                {quote?.letterAndProcess?.approvalText || 'Stuur een korte bevestiging per WhatsApp of mail, of onderteken hieronder. Daarna ontvang je het definitieve ontwerp met technische tekening ter bevestiging en gaan we voor je aan de slag.'}
               </p>
             </div>
 
@@ -782,8 +799,10 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               <span className="text-[10px] font-mono uppercase font-bold text-accent tracking-widest block">NAMENS VANUIT AMBACHT</span>
               <div className="pt-2 space-y-4 font-body">
                 <div className="relative pb-1 border-b-2 border-[#33422C]">
-                  <span className="font-serif italic text-[#33422C] text-xl font-medium block h-7" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Tim & Bram</span>
-                  <span className="text-[10px] font-mono text-dark/60 block mt-1">Naam</span>
+                  <span className="font-serif italic text-[#33422C] text-xl font-medium block h-7" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+                    {quote?.letterAndProcess?.signoffName || 'Tim & Bram'}
+                  </span>
+                  <span className="text-[10px] font-mono text-dark/60 block mt-1">Naam · {quote?.letterAndProcess?.signoffRole || 'Vanuit Ambacht'}</span>
                 </div>
                 <div className="pb-1 border-b-2 border-[#33422C]">
                   <span className="block h-6"></span>
@@ -843,49 +862,54 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
           <div className="space-y-1">
             <span className="text-[10px] font-mono text-accent font-bold uppercase tracking-wider block">06 · VAN AKKOORD TOT ACHTERTUIN</span>
-            <h3 className="text-2xl sm:text-3xl font-serif text-primary font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Zo werkt het in vijf stappen</h3>
+            <h3 className="text-2xl sm:text-3xl font-serif text-primary font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+              {quote?.letterAndProcess?.processTitle || 'Zo werkt het in vijf stappen'}
+            </h3>
           </div>
 
           {/* 5 Vertical Process Steps */}
           <div className="relative pt-2 pl-2">
             <div className="absolute left-[23px] top-6 bottom-8 w-[2px] bg-[#C4BEB3]"></div>
             <div className="space-y-6 relative z-10">
-              {[
+              {(quote?.letterAndProcess?.processSteps || [
                 { step: '1', title: 'Akkoord op de offerte', desc: 'Bevestig eenvoudig per mail of WhatsApp, of onderteken de akkoordpagina. Vanaf dat moment nemen wij alles uit handen.' },
                 { step: '2', title: 'Digitale tekening ter bevestiging', desc: 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.' },
                 { step: '3', title: 'Productie door onze vakspecialist', badge: deliveryTime.toUpperCase(), desc: 'Jouw keuken wordt met de hand gemaakt door een gecertificeerde vakspecialist. Tussentijds houden we je op de hoogte.' },
                 { step: '4', title: `Bezorging in ${city}`, badge: isFreeDelivery ? 'GRATIS' : null, desc: `We leveren de keuken op een moment dat jou uitkomt in ${city}. Dankzij de zes zwenkwielen staat hij direct op de juiste plek.` },
                 { step: '5', title: 'Garantie & nazorg', desc: 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.' }
-              ].map((s) => (
-                <div key={s.step} className="flex items-start gap-4">
-                  <div className="w-9 h-9 rounded-full bg-[#33422C] text-[#FDFBF7] font-bold text-sm flex items-center justify-center flex-shrink-0 shadow-xs border-2 border-[#FDFBF7]">
-                    {s.step}
-                  </div>
-                  <div className="space-y-0.5 pt-1">
-                    <div className="flex items-center gap-3">
-                      <p className="font-bold text-[#33422C] text-sm sm:text-base font-body">{s.title}</p>
-                      {s.badge && (
-                        <span className="bg-[#EAE5DC] text-[#D97706] text-[9px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-[#E2DDD3]">
-                          {s.badge}
-                        </span>
-                      )}
+              ]).map((s, sIdx) => {
+                const stepNum = s.step || s.stepNumber || sIdx + 1;
+                const stepBadge = s.badge !== undefined && s.badge !== '' ? s.badge : (sIdx === 2 ? deliveryTime.toUpperCase() : sIdx === 3 && isFreeDelivery ? 'GRATIS' : null);
+                return (
+                  <div key={stepNum} className="flex items-start gap-4">
+                    <div className="w-9 h-9 rounded-full bg-[#33422C] text-[#FDFBF7] font-bold text-sm flex items-center justify-center flex-shrink-0 shadow-xs border-2 border-[#FDFBF7]">
+                      {stepNum}
                     </div>
-                    <p className="text-xs text-dark/75 leading-relaxed font-body max-w-2xl">{s.desc}</p>
+                    <div className="space-y-0.5 pt-1">
+                      <div className="flex items-center gap-3">
+                        <p className="font-bold text-[#33422C] text-sm sm:text-base font-body">{s.title}</p>
+                        {stepBadge && (
+                          <span className="bg-[#EAE5DC] text-[#D97706] text-[9px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-[#E2DDD3]">
+                            {stepBadge}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-dark/75 leading-relaxed font-body max-w-2xl">{s.desc}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           <div className="p-5 sm:p-6 bg-[#F4EFE6] border border-[#E2DDD3] rounded-2xl flex items-stretch gap-4 shadow-xs">
             <div className="w-1 bg-[#33422C] rounded-full flex-shrink-0"></div>
             <div className="space-y-1.5">
-              <p className="text-base sm:text-xl font-serif italic text-[#33422C] leading-snug" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
-                “Geen massa. Geen standaardoplossing.<br />
-                Gewoon goed gemaakt. Voor jou.”
+              <p className="text-base sm:text-xl font-serif italic text-[#33422C] leading-snug whitespace-pre-line" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+                {quote?.letterAndProcess?.closingQuote || '“Geen massa. Geen standaardoplossing.\nGewoon goed gemaakt. Voor jou.”'}
               </p>
               <p className="text-[10px] font-mono text-accent font-bold tracking-widest uppercase">
-                TIM & BRAM · {compName.toUpperCase()}
+                {quote?.letterAndProcess?.closingAuthor || `TIM & BRAM · ${compName.toUpperCase()}`}
               </p>
             </div>
           </div>

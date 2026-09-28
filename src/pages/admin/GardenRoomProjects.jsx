@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckCircle, MessageCircle, ExternalLink, Calendar, 
@@ -15,7 +15,13 @@ export default function GardenRoomProjects({ onBackToOverview }) {
   const isEn = language !== 'NL';
 
   // State matching Screenshot 2 (Garden Room Project Detail: PROJECT 2026-021)
-  const [activeStep, setActiveStep] = useState(isEn ? 'Survey (Schouw)' : 'Schouw');
+  const [activeStep, setActiveStep] = useState(() => {
+    return localStorage.getItem('gardenRoom_activeStep') || (isEn ? 'Survey (Schouw)' : 'Schouw');
+  });
+
+  useEffect(() => {
+    localStorage.setItem('gardenRoom_activeStep', activeStep);
+  }, [activeStep]);
   const [activeTab, setActiveTab] = useState(isEn ? 'Week Planning & Survey' : 'Weekplanning & schouw');
   const [toastMsg, setToastMsg] = useState('');
 

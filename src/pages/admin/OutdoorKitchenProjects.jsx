@@ -14,7 +14,13 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
   const navigate = useNavigate();
 
   // State matching Outdoor Kitchen Project
-  const [activeStep, setActiveStep] = useState('In the workshop');
+  const [activeStep, setActiveStep] = useState(() => {
+    return localStorage.getItem('outdoorKitchen_activeStep') || 'In the workshop';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('outdoorKitchen_activeStep', activeStep);
+  }, [activeStep]);
   const [activeTab, setActiveTab] = useState('Customer Actions');
   const [toastMsg, setToastMsg] = useState('');
 
