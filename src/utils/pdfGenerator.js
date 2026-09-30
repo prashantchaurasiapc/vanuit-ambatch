@@ -145,6 +145,9 @@ export async function generateFull6PagePdf(quoteData) {
 
     // Wait for React DOM commit and all image elements to complete loading
     await new Promise(resolve => setTimeout(resolve, 350));
+    // Wait for all fonts to be fully loaded so html2canvas captures Cormorant Garamond and Montserrat
+    await document.fonts.ready;
+
     const imgs = Array.from(tempDiv.querySelectorAll('img'));
     await Promise.all(
       imgs.map(img => {
@@ -597,6 +600,7 @@ export async function downloadInvoicePdf(invoice) {
 
   // Wait 500ms for images, fonts and React layout render
   await new Promise(resolve => setTimeout(resolve, 500));
+  await document.fonts.ready;
 
   const targetEl = tempDiv.querySelector('#printable-factuur') || tempDiv.firstElementChild || tempDiv;
 

@@ -1,11 +1,90 @@
-# CLIENT REQUIREMENTS — VANUIT AMBACHT PORTAL
-## Status Analysis: What Exists vs What is Missing
+# CLIENT REQUIREMENTS & IMPLEMENTATION PLAN — VANUIT AMBACHT PORTAL
 
-**Last Updated:** 08 August 2026
-**Type:** Frontend UI Only — No Backend / No Database / No Real APIs
-**Source:** Client meeting (Tim & Bram) + Final Requirements Document 08 Aug 2026
+**Last Updated:** 29 September 2026 (Consolidated all recent client feedback)
+**Type:** Frontend UI Only — Mock Data / No Real APIs
 
 ---
+
+## 🚀 CURRENT IMPLEMENTATION PLAN (NEWEST FIRST)
+*Action plan based on the latest requirements (Sept 26 - Sept 29, 2026)*
+
+### Phase 1: Admin Planning Module (Highest Priority)
+- **STRICT RULE 1:** DO NOT change the left sidebar (Dark Green menu). Only modify the main content area.
+- **STRICT RULE 2:** ALL UI text MUST be in English. Do NOT use Dutch labels from the PDF. Translate them:
+      - Projectplanning -> Project Planning
+      - Takenagenda Bram & Tim -> Task Agenda Bram & Tim
+      - Locatiebezichtiging -> Site Visit
+      - Bouw buitenverblijf -> Canopy Build
+      - Aflevering buitenkeuken -> Kitchen Delivery
+      - Oplevering -> Handover
+      - Service -> Service
+- [ ] Replace existing 6-Week view tabs with just two tabs: `Project Planning` and `Task Agenda Bram & Tim`.
+- [ ] Build 7-day week view grid (Mon-Sun) with a top lane for `Canopy Build` (multi-day) and a vertical time grid (07:00-18:00) underneath.
+- [ ] Implement Type Chips (Legend & Filter) under the toolbar.
+- [ ] Add mock data for appointments using the exact 5 color themes:
+      - **Locatiebezichtiging:** Text `#46607C`, Fill `#EAF0F6`, Border `#C3D2E2`
+      - **Bouw buitenverblijf:** Text `#3E6468`, Fill `#E3EEEE`, Border `#B3CCCB` (Horizontal bar in top Bouw lane)
+      - **Aflevering buitenkeuken:** Text `#9A5530`, Fill `#F8E9DE`, Border `#E3C1A8`
+      - **Oplevering:** Text `#4F6A45`, Fill `#E8F0E2`, Border `#C3D5B8`
+      - **Service:** Text `#6E5580`, Fill `#F0EAF4`, Border `#D5C8E0`
+- [x] Implement Card Height Rules: Product text only visible if height >= 72px; Time & Partner only visible if height >= 100px.
+- [x] Implement Hover Pop-up Card (appears on hover with short details).
+- [x] Implement Right-Side Detail Panel (opens on click, height stretching fixed).
+- [x] Implement Conflict Warning UI (red dashed border and warning icon for double bookings).
+- [x] Build the second tab: "Task Agenda Bram & Tim" showing to-do lists grouped by day.
+
+### Phase 2: Partner Portal Documents
+- [x] Add "Order Overview" (Werkorder) UI to Partner Projects detail view (PDF preview/download).
+- [x] Add "Handover Report" (Opleverrapport) section to Partner Projects (Download blank PDF button & Upload signed PDF field).
+
+### Phase 3: Quotation & Invoice Polish (Based on 6-Point Client Feedback)
+*Note: This is a frontend prototype. Data saving is currently simulated via localStorage. True persistence will be handled during backend development.*
+
+- **Point 1: Editable Quote Fields**
+  - [x] UI: Make all text fields (Investment, etc.) editable before PDF generation.
+  - [ ] Backend: Saving and loading the edited quote data permanently will require DB integration.
+- **Point 2: PDF Layout Matching**
+  - [ ] UI: Generated Quote PDF must exactly match `claude_offerte-template-broncode.html` (structure, spacing, colors, logo, page breaks). *(Blocked: Need HTML file from client)*
+- **Point 3: Fonts (Cormorant Garamond & Montserrat)**
+  - [x] UI: Cormorant Garamond (headings) and Montserrat (body) applied across the entire Dashboard UI and in all generated PDFs. `document.fonts.ready` added to pdfGenerator.js to ensure fonts render correctly in html2canvas.
+- **PDF Color Fix (Client Feedback - Sept 30)**
+  - [x] UI: Replaced orange accent (#D97706) with correct gold/sand color (#C4A47C) throughout Offerte6PagePDF.jsx.
+  - [x] UI: Cover page subtitle text color split — Gold for labels/wood type/options, White (#FDFBF7) for dimension text.
+  - [x] UI: Cover page background VA monogram watermark corrected — now uses SVG-drawn white VA letters at low opacity, matching client reference PDF exactly.
+- **Point 4: Project Phase Persistence**
+  - [x] UI: Change project phase in UI and retain on refresh (currently using localStorage).
+  - [ ] Backend: Saving the changed project phase permanently requires DB integration.
+- **Point 5: Invoices (Fully Editable & Layout)**
+  - [ ] UI: Make all fields editable (customer, lines, qty, price, VAT, terms, notes).
+  - [ ] UI: Allow adding/removing invoice lines.
+  - [ ] UI: Generated Invoice PDF must exactly match `claude_factuur-template.html`. *(Blocked: Need HTML file from client)*
+  - [ ] Backend: Saving and loading invoice data permanently requires DB integration.
+- **Point 6: Garden Room Quotes (Product Switch)**
+  - [ ] UI: Add Product Type selection (Outdoor Kitchen vs Garden Room) when creating a quote.
+  - [ ] UI: Load specific fields and texts for Garden Room.
+  - [ ] UI: Generate Garden Room PDF using `claude_offerte-buitenverblijf-template-broncode.html` and `claude_veldenoverzicht-offerte-buitenverblijf.md`. *(Blocked: Need files from client)*
+  - [ ] Backend: Saving/loading specific product type quote data requires DB integration.
+
+---
+
+## 📝 RECENT REQUIREMENTS HISTORY
+
+### 1. Planning & Partner Portal (Added 29 Sept 2026)
+- **Source:** `Planning module – developer briefing.pdf` & `Werkorder-zzp-voorbeeld.pdf`
+- **Details:** Complete redesign of the Planning calendar with conflict detection, side panels, and task agendas. Addition of Work Orders and Handover reports to the Partner Portal.
+- **Specific Rules (From Screenshots):** 5 exact color hex themes for appointments, specific text visibility based on card height (72px/100px), multi-day 'Bouw' lane at the top, and strict preservation of the existing dark green sidebar.
+
+### 2. General Feedback 6 Points (Added 26 Sept 2026 - Merged from ClientRequirement26-09.md)
+1. **Editable quote fields:** Must always be able to edit every text field before generating the PDF.
+2. **PDF layout:** PDF must match the shared template (claude_offerte-template-broncode.html) exactly.
+3. **Fonts:** Use Cormorant Garamond (headings) and Montserrat (body).
+4. **Project phase:** Must be able to change it and have it stay saved after refresh.
+5. **Invoices:** All fields editable (customer details, free text lines, quantity, price, VAT, payment terms, notes). Must match `claude_factuur-template.html`.
+6. **Garden room quotes:** Choose product type when creating a quote; "garden room" loads correct fields and layout.
+
+---
+
+## LEGACY STATUS ANALYSIS (Prior to Sept 26)
 
 ## STATUS LEGEND
 

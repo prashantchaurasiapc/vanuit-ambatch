@@ -4,6 +4,7 @@ import Badge from '../../components/Badge';
 import Button from '../../components/Button';
 import { Calendar, Briefcase, Clock, Upload, FileText, CheckCircle, Eye, Edit3, X, Filter, MapPin, DollarSign, Download, Compass, ShieldCheck, FileCheck, Layers, Camera, Image as ImageIcon, Sparkles, Bell, MessageSquare, Send, Paperclip, Check } from 'lucide-react';
 import { downloadBlueprintPdf } from '../../utils/pdfGenerator';
+import { downloadWerkorderPdf, downloadOpleverrapportPdf } from '../../utils/partnerPdfGenerator';
 
 import { mockProjects } from '../../utils/mockData';
 import { safeSetItem, compressImage } from '../../utils/storageHelper';
@@ -24,6 +25,7 @@ export default function PartnerProjects() {
   const [uploadPhotoProject, setUploadPhotoProject] = useState(null);
   const [photoForm, setPhotoForm] = useState({ title: '', desc: '', img: projectImg });
   const [toastMsg, setToastMsg] = useState('');
+  const [uploadedFile, setUploadedFile] = useState(null);
   
   // Default active logged-in partner name
   const currentPartnerName = 'Sven Hoek';
@@ -529,7 +531,112 @@ export default function PartnerProjects() {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-2">
+              {/* Werkorder Section */}
+              <div className="bg-white rounded-xl border border-[#D6CFC2] overflow-hidden shadow-sm mt-4">
+                <div className="p-4 border-b border-[#D6CFC2] flex justify-between items-center bg-[#F7F4EE]">
+                  <div>
+                    <span className="font-mono text-[9px] text-[#736E64] uppercase tracking-wider">Werkorder WO-2026-084 · Project {selectedProject.id || 'OF-2026418'}</span>
+                    <h4 className="text-lg font-heading font-bold text-primary mt-1">{selectedProject.name}</h4>
+                  </div>
+                  <div className="px-3 py-1 border border-[#D6CFC2] rounded-full text-[10px] font-bold text-[#58534A] tracking-wider uppercase bg-white">
+                    Werkorder
+                  </div>
+                </div>
+                <div className="p-4 bg-white flex justify-between items-start">
+                  <div className="grid grid-cols-4 gap-4 w-full p-3 bg-[#F7F4EE] rounded-lg border border-[#E6E0D4] text-[#58534A]">
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Vakspecialist</p>
+                      <p className="font-bold text-[#2A2925] text-[11px] truncate">{selectedProject.partner || 'J. van den Berg'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Schouw</p>
+                      <p className="font-bold text-[#2A2925] text-[11px]">15 sept 2026</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Start Bouw</p>
+                      <p className="font-bold text-[#2A2925] text-[11px]">13 okt 2026</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Oplevering</p>
+                      <p className="font-bold text-[#2A2925] text-[11px]">31 okt 2026</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3 bg-[#F7F4EE] border-t border-[#D6CFC2] flex justify-end">
+                  <button 
+                    onClick={() => downloadWerkorderPdf(selectedProject)}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-[#2A3329] text-white rounded-lg text-xs font-bold transition-colors">
+                    <Download className="w-3.5 h-3.5" /> Download Werkorder PDF
+                  </button>
+                </div>
+              </div>
+
+              {/* Handover Section */}
+              <div className="bg-white rounded-xl border border-[#D6CFC2] overflow-hidden shadow-sm mt-4">
+                <div className="p-4 border-b border-[#D6CFC2] flex justify-between items-center bg-[#F7F4EE]">
+                  <div>
+                    <span className="font-mono text-[9px] text-[#736E64] uppercase tracking-wider">Opleverrapport OP-2026-042</span>
+                    <h4 className="text-lg font-heading font-bold text-primary mt-1">Opgeleverd. Veel plezier van je {selectedProject.name.toLowerCase().includes('keuken') ? 'buitenkeuken' : 'buitenverblijf'}, {selectedProject.customer.split(' ')[selectedProject.customer.split(' ').length - 1]}.</h4>
+                  </div>
+                  <div className="px-3 py-1 border border-[#D6CFC2] rounded-full text-[10px] font-bold text-[#58534A] tracking-wider uppercase bg-white">
+                    Oplevering
+                  </div>
+                </div>
+                <div className="p-4 bg-white space-y-4">
+                  <div className="grid grid-cols-4 gap-4 w-full p-3 bg-[#F7F4EE] rounded-lg border border-[#E6E0D4] text-[#58534A]">
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Project</p>
+                      <p className="font-bold text-[#2A2925] text-[11px] truncate">OF-2026418</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Opleverdatum</p>
+                      <p className="font-bold text-[#2A2925] text-[11px]">28 okt 2026</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Klant</p>
+                      <p className="font-bold text-[#2A2925] text-[11px] truncate">{selectedProject.customer || 'Sander de Vries'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Locatie</p>
+                      <p className="font-bold text-[#2A2925] text-[11px] truncate">{selectedProject.deliveryAddress.split(' ').pop() || 'Oisterwijk'}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <button 
+                      onClick={() => downloadOpleverrapportPdf(selectedProject)}
+                      className="flex items-center justify-center gap-1.5 px-4 py-2 border border-primary text-primary hover:bg-[#F7F4EE] rounded-lg text-xs font-bold transition-colors sm:w-1/2 shrink-0">
+                      <Download className="w-3.5 h-3.5" /> Download Blank Form
+                    </button>
+                    
+                    <div className={`flex-1 relative group cursor-pointer border ${uploadedFile ? 'border-green-500 bg-green-50/50' : 'border-dashed border-[#C4BEB3] hover:border-primary bg-[#F7F4EE]'} rounded-lg p-2 text-center transition-colors`}>
+                      <input 
+                        type="file" 
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            setUploadedFile(e.target.files[0].name);
+                          }
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                      <div className={`flex items-center justify-center gap-2 font-bold text-[11px] ${uploadedFile ? 'text-green-600' : 'text-primary'}`}>
+                        {uploadedFile ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            <span>{uploadedFile} Uploaded</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3 h-3" />
+                            <span>Upload Signed Handover Report</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4">
                 <Button onClick={() => setSelectedProject(null)}>Sluiten</Button>
               </div>
             </motion.div>

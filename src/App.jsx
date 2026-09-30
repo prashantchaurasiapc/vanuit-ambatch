@@ -42,6 +42,7 @@ import CustomerPhotos from './pages/customer/CustomerPhotos';
 import CustomerContact from './pages/customer/CustomerContact';
 import CustomerQuotes from './pages/customer/CustomerQuotes';
 import PublicOfferte from './pages/PublicOfferte';
+import PdfPreview from './pages/PdfPreview';
 
 // Protected Route
 function ProtectedRoute({ children, requiredRole }) {
@@ -73,6 +74,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to={`/${user.role}/dashboard`} /> : <Login />} />
+      <Route path="/pdf-preview" element={<PdfPreview />} />
       <Route path="/offerte/:token" element={<PublicOfferte />} />
       <Route path="/" element={user ? <Navigate to={`/${user.role}/dashboard`} replace /> : <Navigate to="/login" replace />} />
 
