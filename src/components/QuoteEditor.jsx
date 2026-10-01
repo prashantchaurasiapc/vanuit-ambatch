@@ -96,6 +96,27 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
       }
     }
   }, [quoteData]);
+
+  // Auto-heal missing or empty cover photos
+  useEffect(() => {
+    if (quote) {
+      const photos = quote.cover?.photos;
+      const isValid = Array.isArray(photos) && photos.length === 3 && photos.every(p => typeof p === 'string' && p.trim().length > 3);
+      if (!isValid) {
+        setQuote(prev => ({
+          ...prev,
+          cover: {
+            ...prev.cover,
+            photos: [
+              (photos?.[0] && String(photos[0]).trim().length > 3) ? photos[0] : '/cover_img1.png',
+              (photos?.[1] && String(photos[1]).trim().length > 3) ? photos[1] : '/cover_img2.png',
+              (photos?.[2] && String(photos[2]).trim().length > 3) ? photos[2] : '/cover_img3.png'
+            ]
+          }
+        }));
+      }
+    }
+  }, [quote?.id]);
   const [lastSavedTime, setLastSavedTime] = useState(new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }));
   const [toastMsg, setToastMsg] = useState('');
   const [showLibraryModal, setShowLibraryModal] = useState(false);
@@ -150,6 +171,11 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
   };
 
   const isApproved = quote?.status === 'Approved' || quote?.status === 'Geaccepteerd';
+  const productTypeLower = String(quote?.productType || '').toLowerCase();
+  const isGardenRoom = productTypeLower.includes('garden') ||
+    productTypeLower.includes('buitenverblijf') ||
+    productTypeLower.includes('veranda') ||
+    productTypeLower.includes('poolhouse');
   const totals = calculateTotals(quote?.investment?.lineItems || []);
 
   // State update helpers
@@ -331,21 +357,43 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
     const defaults = PRODUCT_TYPE_DEFAULTS[pType];
     if (!defaults) return;
 
-    setQuote(prev => ({
-      ...prev,
-      productType: pType,
-      cover: {
-        ...prev.cover,
-        titleLine1: defaults.titleLine1,
-        titleLine2: defaults.titleLine2
-      },
-      letterAndProcess: {
-        ...prev.letterAndProcess,
-        letterParagraphs: [...defaults.letterParagraphs],
-        checklist: [...defaults.checklist],
-        processSteps: [...defaults.processSteps]
+    setQuote(prev => {
+      const updated = {
+        ...prev,
+        productType: pType,
+        cover: {
+          ...prev.cover,
+          titleLine1: defaults.titleLine1,
+          titleLine2: defaults.titleLine2
+        },
+        letterAndProcess: {
+          ...prev.letterAndProcess,
+          letterParagraphs: [...defaults.letterParagraphs],
+          checklist: [...defaults.checklist],
+          processSteps: [...defaults.processSteps]
+        }
+      };
+
+      if (defaults.configuration) {
+        updated.configuration = {
+          ...prev.configuration,
+          ...defaults.configuration,
+          infobox: defaults.configuration.infobox ? { ...defaults.configuration.infobox } : prev.configuration?.infobox,
+          specifications: defaults.configuration.specifications ? defaults.configuration.specifications.map(s => ({ ...s, lines: s.lines.map(l => ({ ...l })) })) : prev.configuration?.specifications
+        };
       }
-    }));
+
+      if (defaults.lineItems && defaults.lineItems.length > 0) {
+        updated.investment = {
+          ...prev.investment,
+          lineItems: defaults.lineItems.map(item => ({ ...item }))
+        };
+      }
+
+      return updated;
+    });
+
+    showToast(pType === 'Garden room' ? '✓ Garden Room velden en items geladen!' : `✓ ${pType} template geladen!`);
   };
 
   // Specification Line Repeater Actions
@@ -487,6 +535,18 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
     const currentLabels = [...(inst.labels || ['Bij akkoord', 'Bij levering', 'Na montage'])];
     currentLabels[index] = label;
     updateInvestmentField('instalments', { ...inst, labels: currentLabels });
+  };
+
+  // Instalment subtexts helper
+  const handleUpdateInstalmentSubtext = (index, subtext) => {
+    if (isApproved) return;
+    const inst = quote.investment?.instalments || { count: 2, percentages: [50, 50], labels: ['Bij akkoord', 'Bij levering'] };
+    const defaultSubtexts = (inst.count === 3)
+      ? ['Na akkoord op de technische tekening.', 'Vlak vóór de startdatum op locatie.', 'Pas als alles naar wens is opgeleverd.']
+      : ['Na akkoord op de technische tekening.', 'Pas als alles naar wens is opgeleverd.'];
+    const currentSubtexts = [...(inst.subtexts || defaultSubtexts)];
+    currentSubtexts[index] = subtext;
+    updateInvestmentField('instalments', { ...inst, subtexts: currentSubtexts });
   };
 
   // Process Steps helpers in Step 5
@@ -990,7 +1050,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                   <button
                     type="button"
                     onClick={() => {
-                      updateCoverField('photos', ['/outdoor_project_card.png', '/dasbordes images.png', '/outdoor_project_card.png']);
+                      updateCoverField('photos', ['/cover_img1.png', '/cover_img2.png', '/cover_img3.png']);
                       updateCoverField('titleLine1', 'Uw buitenkeuken,');
                       updateCoverField('titleLine2', 'op maat gemaakt.');
                       updateCoverField('subtitleOverrideEnabled', false);
@@ -1006,12 +1066,17 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {[
-                    { slot: 0, label: 'Hero Photo (Left)', defaultImg: '/outdoor_project_card.png' },
-                    { slot: 1, label: 'Project Photo (Center)', defaultImg: '/dasbordes images.png' },
-                    { slot: 2, label: 'Detail Photo (Right)', defaultImg: '/outdoor_project_card.png' }
+                    { slot: 0, label: 'Hero Photo (Left)', defaultImg: '/cover_img1.png' },
+                    { slot: 1, label: 'Project Photo (Center)', defaultImg: '/cover_img2.png' },
+                    { slot: 2, label: 'Detail Photo (Right)', defaultImg: '/cover_img3.png' }
                   ].map(({ slot, label, defaultImg }) => {
-                    const photosArr = quote.cover?.photos || ['/outdoor_project_card.png', '/dasbordes images.png', '/outdoor_project_card.png'];
-                    const currentPhoto = photosArr[slot] || defaultImg;
+                    const photosArr = (Array.isArray(quote.cover?.photos) && quote.cover.photos.length === 3)
+                      ? quote.cover.photos
+                      : ['/cover_img1.png', '/cover_img2.png', '/cover_img3.png'];
+                    const photoVal = photosArr[slot];
+                    const currentPhoto = (photoVal && typeof photoVal === 'string' && photoVal.trim().length > 3)
+                      ? photoVal.trim()
+                      : defaultImg;
                     const warning = photoWarnings[slot];
 
                     return (
@@ -1027,7 +1092,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                         </div>
 
                         {/* Image Preview Box */}
-                        <div className="aspect-[4/3] w-full rounded-lg overflow-hidden border border-[#D6CFC2] bg-white relative group">
+                        <div className="aspect-[4/3] w-full rounded-lg overflow-hidden border border-[#D6CFC2] bg-[#EDE8DF] relative group flex items-center justify-center">
                           <img
                             src={currentPhoto}
                             alt={label}
@@ -1080,7 +1145,10 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                                     });
                                     showToast(`✓ Photo ${slot + 1} updated & optimized!`);
                                   }
-                                  const newPhotos = [...(quote.cover?.photos || ['/outdoor_project_card.png', '/dasbordes images.png', '/outdoor_project_card.png'])];
+                                  const baseArr = (Array.isArray(quote.cover?.photos) && quote.cover.photos.length === 3)
+                                    ? quote.cover.photos
+                                    : ['/cover_img1.png', '/cover_img2.png', '/cover_img3.png'];
+                                  const newPhotos = [...baseArr];
                                   newPhotos[slot] = compressedDataUrl;
                                   updateCoverField('photos', newPhotos);
                                 };
@@ -1100,7 +1168,10 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                           <button
                             type="button"
                             onClick={() => {
-                              const newPhotos = [...(quote.cover?.photos || ['/outdoor_project_card.png', '/dasbordes images.png', '/outdoor_project_card.png'])];
+                              const baseArr = (Array.isArray(quote.cover?.photos) && quote.cover.photos.length === 3)
+                                ? quote.cover.photos
+                                : ['/cover_img1.png', '/cover_img2.png', '/cover_img3.png'];
+                              const newPhotos = [...baseArr];
                               newPhotos[slot] = defaultImg;
                               updateCoverField('photos', newPhotos);
                               setPhotoWarnings(prev => {
@@ -1191,27 +1262,34 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                     </p>
                   </div>
 
-                  {/* Tile 3: Cutout */}
+                  {/* Tile 3: Cutout (Kitchen) OR Roof & Wall (Garden room) */}
                   <div className="p-4 bg-[#F8F7F4] rounded-2xl border border-[#E2DDD3] space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-dark/55 font-mono">{language === 'EN' ? 'CUTOUT' : 'UITSPARING'}</label>
-                      <span className="bg-[#F0FDF4] text-[#166534] text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border border-[#BBF7D0]">FOLLOWS OPTIONS</span>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-dark/55 font-mono">
+                        {isGardenRoom ? (language === 'EN' ? 'ROOF & WALLS' : 'DAK & WANDEN') : (language === 'EN' ? 'CUTOUT' : 'UITSPARING')}
+                      </label>
+                      <span className="bg-[#F0FDF4] text-[#166534] text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border border-[#BBF7D0]">
+                        {isGardenRoom ? 'GARDEN ROOM' : 'FOLLOWS OPTIONS'}
+                      </span>
                     </div>
                     <input
                       type="text"
-                      value={quote.configuration?.optionsTitle || 'Big Green Egg'}
+                      value={quote.configuration?.optionsTitle || (isGardenRoom ? 'Plat dak met EPDM' : 'Big Green Egg')}
                       onChange={(e) => updateConfigField('optionsTitle', e.target.value)}
                       className="w-full px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder={isGardenRoom ? 'e.g. Plat dak met EPDM' : 'e.g. Big Green Egg'}
                     />
                     <input
                       type="text"
-                      value={quote.configuration?.optionsSubtext !== undefined ? quote.configuration.optionsSubtext : (language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden')}
+                      value={quote.configuration?.optionsSubtext !== undefined ? quote.configuration.optionsSubtext : (isGardenRoom ? 'Glazen schuifwand 4-rail' : (language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden'))}
                       onChange={(e) => updateConfigField('optionsSubtext', e.target.value)}
-                      placeholder="e.g. Large, right of center"
+                      placeholder={isGardenRoom ? 'e.g. Glazen schuifwand 4-rail' : 'e.g. Large, right of center'}
                       className="w-full px-3 py-1.5 bg-[#EFECE8] border border-[#D6CFC2] rounded-lg text-xs font-medium text-dark/70"
                     />
                     <p className="text-[10px] text-dark/40 font-body italic">
-                      filled from the "Options & features" block below · freely editable afterwards
+                      {isGardenRoom 
+                        ? 'dakconstructie & wanden van het buitenverblijf · vult automatisch de ondertitel' 
+                        : 'filled from the "Options & features" block below · freely editable afterwards'}
                     </p>
                   </div>
 
@@ -1242,93 +1320,219 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                 </div>
               </div>
 
-              {/* CARD 2: OPTIONS & FEATURES */}
-              <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-3.5">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">OPTIONS & FEATURES</span>
-                    <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">MANUAL</span>
+              {/* CARD 2: OPTIONS & FEATURES (ADAPTIVE: OUTDOOR KITCHEN VS GARDEN ROOM) */}
+              {isGardenRoom ? (
+                <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4 font-body">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                        {language === 'EN' ? 'GARDEN ROOM SPECIFICS (ROOF, WALLS, FLOOR & FOUNDATION)' : 'BUITENVERBLIJF KENMERKEN (DAK, WANDEN, VLOER & FUNDERING)'}
+                      </span>
+                      <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">GARDEN ROOM</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">CONFIGURATIE</span>
                   </div>
-                  <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">ON/OFF PER QUOTE</span>
-                </div>
 
-                <div className="space-y-2.5 text-xs">
-                  {/* Option 1: BBQ Cutout (with brand dropdown & detail subtext) */}
-                  <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 flex flex-wrap items-center justify-between gap-2">
-                    <label className="flex items-center gap-2 font-bold text-dark cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={quote.configuration?.options?.bbqCutout?.enabled !== false}
-                        onChange={(e) => handleOptionToggle('bbqCutout', e.target.checked)}
-                        className="w-4 h-4 text-primary rounded border-[#D6CFC2]"
-                      />
-                      <span>BBQ Cutout</span>
-                    </label>
-                    <div className="flex flex-wrap items-center gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                    {/* Dak (Roof) */}
+                    <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">1. DAKCONSTRUCTIE (ROOF)</label>
+                        <span className="text-[9px] font-mono text-primary font-bold">EPDM / PANNEN</span>
+                      </div>
                       <select
-                        value={quote.configuration?.options?.bbqCutout?.type || 'Big Green Egg'}
+                        value={quote.configuration?.roofType || 'Plat dak met EPDM'}
                         onChange={(e) => {
                           const val = e.target.value;
-                          setQuote(prev => {
-                            const updatedDiagram = { ...(prev.configuration?.diagram || {}) };
-                            if (updatedDiagram.segments) {
-                              updatedDiagram.segments = updatedDiagram.segments.map(seg =>
-                                seg.type === 'CUTOUT' ? { ...seg, label: val } : seg
-                              );
-                            }
-                            return {
-                              ...prev,
-                              configuration: {
-                                ...prev.configuration,
-                                optionsTitle: val,
-                                diagram: updatedDiagram,
-                                options: {
-                                  ...prev.configuration?.options,
-                                  bbqCutout: { ...prev.configuration?.options?.bbqCutout, type: val }
-                                }
-                              }
-                            };
-                          });
+                          updateConfigField('roofType', val);
+                          updateConfigField('optionsTitle', val);
                         }}
-                        className="px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-xs"
+                        className="w-full px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-xs"
                       >
-                        <option value="Big Green Egg">Big Green Egg</option>
-                        <option value="Kamado Joe">Kamado Joe</option>
-                        <option value="Bastard">Bastard</option>
+                        <option value="Plat dak met EPDM">Plat dak met EPDM & aluminium daktrim</option>
+                        <option value="Zadeldak met dakpannen">Zadeldak met keramische pannen</option>
+                        <option value="Kapschuur model">Kapschuur model (asymmetrisch dak)</option>
+                        <option value="Lessenaarsdak met EPDM">Lessenaarsdak met EPDM</option>
+                        <option value="Glazen dakconstructie">Glazen overkapping / veranda dak</option>
                       </select>
                       <input
                         type="text"
-                        value={quote.configuration?.optionsSubtext !== undefined ? quote.configuration.optionsSubtext : (language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden')}
-                        onChange={(e) => updateConfigField('optionsSubtext', e.target.value)}
-                        className="px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold text-dark/80 w-48 max-w-full"
+                        value={quote.configuration?.roofSubtext !== undefined ? quote.configuration.roofSubtext : 'Inclusief aluminium daktrim en hemelwaterafvoer'}
+                        onChange={(e) => updateConfigField('roofSubtext', e.target.value)}
+                        placeholder="Dak details e.g. Daktrim & HWA"
+                        className="w-full px-2.5 py-1 bg-white border border-[#D6CFC2] rounded-md text-[11px]"
+                      />
+                    </div>
+
+                    {/* Wanden & Glas (Walls & Glass) */}
+                    <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">2. WANDEN & GLAS (WALLS)</label>
+                        <span className="text-[9px] font-mono text-primary font-bold">SCHUIFWANDEN</span>
+                      </div>
+                      <select
+                        value={quote.configuration?.wallType || 'Glazen schuifwanden (4-rail)'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          updateConfigField('wallType', val);
+                          updateConfigField('optionsSubtext', val);
+                        }}
+                        className="w-full px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-xs"
+                      >
+                        <option value="Glazen schuifwanden (4-rail)">Glazen schuifwanden (4-rail gehard glas)</option>
+                        <option value="Glazen schuifwanden (5-rail)">Glazen schuifwanden (5-rail gehard glas)</option>
+                        <option value="Zweeds rabat zwarte wanden">Zweeds rabat zwarte achter- en zijwanden</option>
+                        <option value="Gesloten houten wanden">Volledig gesloten houten wanden</option>
+                        <option value="Open constructie (geen wanden)">Open overkapping (geen wanden)</option>
+                      </select>
+                      <input
+                        type="text"
+                        value={quote.configuration?.wallSubtext !== undefined ? quote.configuration.wallSubtext : '10mm gehard veiligheidsglas met tochtborstels'}
+                        onChange={(e) => updateConfigField('wallSubtext', e.target.value)}
+                        placeholder="Wand details e.g. Tochtborstels & handgrepen"
+                        className="w-full px-2.5 py-1 bg-white border border-[#D6CFC2] rounded-md text-[11px]"
+                      />
+                    </div>
+
+                    {/* Vloer (Flooring) */}
+                    <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">3. VLOER (FLOORING)</label>
+                        <span className="text-[9px] font-mono text-primary font-bold">TERRAS</span>
+                      </div>
+                      <select
+                        value={quote.configuration?.floorType || 'Geen vloer (op terras)'}
+                        onChange={(e) => updateConfigField('floorType', e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-xs"
+                      >
+                        <option value="Geen vloer (op terras)">Geen vloer (plaatsing op bestaande verharding)</option>
+                        <option value="Douglas vlonderterras">Douglas vlonderterras (28mm geschaafd)</option>
+                        <option value="Hardhouten vlonder">Hardhouten terras (Bangkirai)</option>
+                        <option value="Keramische buitentegels">Keramische buitentegels</option>
+                      </select>
+                      <input
+                        type="text"
+                        value={quote.configuration?.floorSubtext !== undefined ? quote.configuration.floorSubtext : 'Onderbalken en rvs schroeven'}
+                        onChange={(e) => updateConfigField('floorSubtext', e.target.value)}
+                        placeholder="Vloer details"
+                        className="w-full px-2.5 py-1 bg-white border border-[#D6CFC2] rounded-md text-[11px]"
+                      />
+                    </div>
+
+                    {/* Fundering (Foundation) */}
+                    <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">4. FUNDERING (FOUNDATION)</label>
+                        <span className="text-[9px] font-mono text-primary font-bold">BETONPOEREN</span>
+                      </div>
+                      <select
+                        value={quote.configuration?.foundationType || 'Betonpoeren met stelplaat'}
+                        onChange={(e) => updateConfigField('foundationType', e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-xs"
+                      >
+                        <option value="Betonpoeren met stelplaat">Betonpoeren antraciet met verstelbare rvs stelplaat</option>
+                        <option value="Schroeffundering">Schroeffundatie (zonder graafwerk)</option>
+                        <option value="Gewapende betonvloer">Volledig gewapende betonplaat vorstrand</option>
+                        <option value="Bestaande fundering">Bestaande fundering / terras</option>
+                      </select>
+                      <input
+                        type="text"
+                        value={quote.configuration?.foundationSubtext !== undefined ? quote.configuration.foundationSubtext : 'Vorstvrij verankerd incl. snelbeton'}
+                        onChange={(e) => updateConfigField('foundationSubtext', e.target.value)}
+                        placeholder="Fundering details"
+                        className="w-full px-2.5 py-1 bg-white border border-[#D6CFC2] rounded-md text-[11px]"
                       />
                     </div>
                   </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-3.5">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">OPTIONS & FEATURES</span>
+                      <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">MANUAL</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">ON/OFF PER QUOTE</span>
+                  </div>
 
-                  {/* Additional Data-Driven Options */}
-                  {[
-                    { key: 'fridge', label: 'Fridge (built-in)', hint: '→ specification line + optional line item + diagram segment' },
-                    { key: 'sink', label: 'Sink with tap', hint: '→ specification line + optional line item + diagram segment' }
-                  ].map((optItem) => (
-                    <div key={optItem.key} className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 flex flex-wrap items-center justify-between gap-2">
+                  <div className="space-y-2.5 text-xs">
+                    {/* Option 1: BBQ Cutout (with brand dropdown & detail subtext) */}
+                    <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 flex flex-wrap items-center justify-between gap-2">
                       <label className="flex items-center gap-2 font-bold text-dark cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={quote.configuration?.options?.[optItem.key]?.enabled || false}
-                          onChange={(e) => handleOptionToggle(optItem.key, e.target.checked)}
+                          checked={quote.configuration?.options?.bbqCutout?.enabled !== false}
+                          onChange={(e) => handleOptionToggle('bbqCutout', e.target.checked)}
                           className="w-4 h-4 text-primary rounded border-[#D6CFC2]"
                         />
-                        <span>{optItem.label}</span>
+                        <span>BBQ Cutout</span>
                       </label>
-                      <span className="text-[11px] font-mono text-dark/50">{optItem.hint}</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          value={quote.configuration?.options?.bbqCutout?.type || 'Big Green Egg'}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setQuote(prev => {
+                              const updatedDiagram = { ...(prev.configuration?.diagram || {}) };
+                              if (updatedDiagram.segments) {
+                                updatedDiagram.segments = updatedDiagram.segments.map(seg =>
+                                  seg.type === 'CUTOUT' ? { ...seg, label: val } : seg
+                                );
+                              }
+                              return {
+                                ...prev,
+                                configuration: {
+                                  ...prev.configuration,
+                                  optionsTitle: val,
+                                  diagram: updatedDiagram,
+                                  options: {
+                                    ...prev.configuration?.options,
+                                    bbqCutout: { ...prev.configuration?.options?.bbqCutout, type: val }
+                                  }
+                                }
+                              };
+                            });
+                          }}
+                          className="px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-xs"
+                        >
+                          <option value="Big Green Egg">Big Green Egg</option>
+                          <option value="Kamado Joe">Kamado Joe</option>
+                          <option value="Bastard">Bastard</option>
+                        </select>
+                        <input
+                          type="text"
+                          value={quote.configuration?.optionsSubtext !== undefined ? quote.configuration.optionsSubtext : (language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden')}
+                          onChange={(e) => updateConfigField('optionsSubtext', e.target.value)}
+                          className="px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold text-dark/80 w-48 max-w-full"
+                        />
+                      </div>
                     </div>
-                  ))}
-                </div>
 
-                <p className="text-[11px] text-dark/60 font-body">
-                  Every enabled option automatically lands in: stat tile 3 · cover subtitle · a specification line (p3). Off = removed everywhere. An option is priced via a line item in step 4 (library).
-                </p>
-              </div>
+                    {/* Additional Data-Driven Options */}
+                    {[
+                      { key: 'fridge', label: 'Fridge (built-in)', hint: '→ specification line + optional line item + diagram segment' },
+                      { key: 'sink', label: 'Sink with tap', hint: '→ specification line + optional line item + diagram segment' }
+                    ].map((optItem) => (
+                      <div key={optItem.key} className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 flex flex-wrap items-center justify-between gap-2">
+                        <label className="flex items-center gap-2 font-bold text-dark cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={quote.configuration?.options?.[optItem.key]?.enabled || false}
+                            onChange={(e) => handleOptionToggle(optItem.key, e.target.checked)}
+                            className="w-4 h-4 text-primary rounded border-[#D6CFC2]"
+                          />
+                          <span>{optItem.label}</span>
+                        </label>
+                        <span className="text-[11px] font-mono text-dark/50">{optItem.hint}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-[11px] text-dark/60 font-body">
+                    Every enabled option automatically lands in: stat tile 3 · cover subtitle · a specification line (p3). Off = removed everywhere. An option is priced via a line item in step 4 (library).
+                  </p>
+                </div>
+              )}
 
               {/* CARD 3: SPECIFICATIONS */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
@@ -1519,10 +1723,12 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                 </div>
               </div>
 
-              {/* CARD 5: FRONT-VIEW LAYOUT (DIAGRAM BUILDER) */}
+              {/* CARD 5: FRONT-VIEW LAYOUT (DIAGRAM BUILDER VS GARDEN ROOM SCHEMATIC) */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
                 <div className="flex justify-between items-center border-b border-[#D6CFC2]/60 pb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">FRONT-VIEW LAYOUT</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                    {isGardenRoom ? (language === 'EN' ? 'GARDEN ROOM STRUCTURAL SCHEMATIC' : 'BUITENVERBLIJF MAATVOERING & OPZET') : (language === 'EN' ? 'FRONT-VIEW LAYOUT' : 'VOORAANZICHT INDELING')}
+                  </span>
                   <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-primary">
                     <input
                       type="checkbox"
@@ -1537,10 +1743,44 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                   </label>
                 </div>
 
-                <DiagramBuilder
-                  diagram={quote.configuration?.diagram}
-                  onChange={(updatedDiagram) => updateConfigField('diagram', updatedDiagram)}
-                />
+                {isGardenRoom ? (
+                  <div className="p-4 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2] space-y-3 font-body">
+                    <div className="flex justify-between items-center text-xs font-mono font-bold text-dark/70">
+                      <span>ARCHITECTONISCHE OPZET ({quote.configuration?.dimensions || '600 × 350'} CM)</span>
+                      <span className="text-primary font-bold">{quote.configuration?.roofType || 'Plat dak met EPDM'}</span>
+                    </div>
+
+                    <div className="w-full bg-[#2C3827] rounded-xl p-4 text-white flex flex-col justify-between border border-[#45543D] shadow-inner font-mono text-[11px] space-y-3">
+                      <div className="flex justify-between items-center text-[#D6CFC2] border-b border-[#45543D] pb-1.5">
+                        <span>◀── {quote.configuration?.dimensions ? quote.configuration.dimensions.split('×')[0]?.trim() : '600'} cm (Breedte) ──▶</span>
+                        <span className="bg-[#45543D] px-2.5 py-0.5 rounded text-white font-bold">{quote.configuration?.woodType || 'Douglas'}</span>
+                      </div>
+                      <div className="border border-dashed border-[#7E9672]/70 h-20 rounded-lg flex items-center justify-around px-3 text-[#E8E4DC]">
+                        <div className="border border-[#7E9672] px-2 py-1 bg-[#3A4A33] rounded text-center">
+                          <span className="block text-[9px] text-[#A8B4A2]">Staander</span>
+                          150×150 mm
+                        </div>
+                        <div className="text-center font-sans italic text-xs text-[#C4A47C] font-semibold px-4">
+                          {quote.configuration?.wallType || 'Glazen schuifwand (4-rail gehard glas)'}
+                        </div>
+                        <div className="border border-[#7E9672] px-2 py-1 bg-[#3A4A33] rounded text-center">
+                          <span className="block text-[9px] text-[#A8B4A2]">Staander</span>
+                          150×150 mm
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center text-[#D6CFC2] text-[10px] pt-1 border-t border-[#45543D]">
+                        <span>Diepte: {quote.configuration?.dimensions && quote.configuration.dimensions.includes('×') ? quote.configuration.dimensions.split('×')[1]?.trim() : '350'} cm</span>
+                        <span>Hoogte: 260 cm (Doorloop: 230 cm)</span>
+                        <span>Fundering: {quote.configuration?.foundationType || 'Betonpoeren'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <DiagramBuilder
+                    diagram={quote.configuration?.diagram}
+                    onChange={(updatedDiagram) => updateConfigField('diagram', updatedDiagram)}
+                  />
+                )}
               </div>
 
               {/* CARD 5: INFOBOX */}
@@ -1726,6 +1966,23 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                 </div>
               </div>
 
+              {/* CARD: STELPOST & ASTERISK DISCLAIMER */}
+              <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-3">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">ASTERISK / STELPOST DISCLAIMER NOTE</span>
+                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE IN PDF P4</span>
+                </div>
+                <textarea
+                  rows={2}
+                  value={quote.investment?.stelpostDisclaimer !== undefined ? quote.investment.stelpostDisclaimer : '* Stelpost: dit bedrag is een zorgvuldige inschatting. We rekenen af op basis van de werkelijke kosten, altijd in overleg vooraf.'}
+                  onChange={(e) => updateInvestmentField('stelpostDisclaimer', e.target.value)}
+                  disabled={isApproved}
+                  className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none focus:border-primary disabled:opacity-60"
+                  placeholder="* Stelpost toelichting..."
+                />
+                <p className="text-[10px] text-dark/50 font-body">Verschijnt direct onder de specificatietabel op pagina 4 van de offerte.</p>
+              </div>
+
               {/* CARD 2: FINISH / TREATMENT */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-3">
                 <div className="flex flex-wrap justify-between items-center gap-2">
@@ -1846,6 +2103,39 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                 </div>
               </div>
 
+              {/* CARD: GELDIGHEID & BTW FOOTNOTE */}
+              <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">GELDIGHEID & BTW FOOTNOTE</span>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block">Geldigheidstermijn tekst (in PDF)</label>
+                    <input
+                      type="text"
+                      value={quote.investment?.validityText !== undefined ? quote.investment.validityText : 'Deze offerte is geldig tot en met {date}'}
+                      onChange={(e) => updateInvestmentField('validityText', e.target.value)}
+                      disabled={isApproved}
+                      className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none focus:border-primary disabled:opacity-60 font-body"
+                      placeholder="Deze offerte is geldig tot en met {date}"
+                    />
+                    <p className="text-[10px] text-dark/50 font-body">Gebruik <code className="bg-[#EFECE6] px-1 rounded">{'{date}'}</code> om de dynamische datum in te vullen.</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block">Btw toelichting (in groen totaalblok)</label>
+                    <input
+                      type="text"
+                      value={quote.investment?.vatDisclaimer !== undefined ? quote.investment.vatDisclaimer : 'Alle bedragen inclusief btw'}
+                      onChange={(e) => updateInvestmentField('vatDisclaimer', e.target.value)}
+                      disabled={isApproved}
+                      className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none focus:border-primary disabled:opacity-60 font-body"
+                      placeholder="Alle bedragen inclusief btw"
+                    />
+                    <p className="text-[10px] text-dark/50 font-body">Verschijnt in het donkergroene totaalblok op pagina 4.</p>
+                  </div>
+                </div>
+              </div>
+
               {/* CARD 5: PAYMENT INSTALMENTS */}
               {(() => {
                 const count = quote.investment?.instalments?.count || 2;
@@ -1904,20 +2194,44 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                       {instCards.map((inst, idx) => {
                         const currentLabels = quote.investment?.instalments?.labels || (count === 3 ? ['Bij akkoord', 'Bij start bouw', 'Bij levering'] : ['Bij akkoord', 'Bij levering']);
                         const currentLabel = currentLabels[idx] !== undefined ? currentLabels[idx] : inst.label;
+
+                        const defaultSubtexts = count === 3
+                          ? ['Na akkoord op de technische tekening.', 'Vlak vóór de startdatum op locatie.', 'Pas als alles naar wens is opgeleverd.']
+                          : ['Na akkoord op de technische tekening.', 'Pas als alles naar wens is opgeleverd.'];
+                        const currentSubtexts = quote.investment?.instalments?.subtexts || defaultSubtexts;
+                        const currentSubtext = currentSubtexts[idx] !== undefined ? currentSubtexts[idx] : (defaultSubtexts[idx] || '');
+
                         return (
                           <div key={idx} className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-3 shadow-2xs">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-dark/70 font-mono block">
                               INSTALMENT {idx + 1}
                             </span>
                             {/* Editable label */}
-                            <input
-                              type="text"
-                              value={currentLabel}
-                              onChange={(e) => handleUpdateInstalmentLabel(idx, e.target.value)}
-                              disabled={isApproved}
-                              className="w-full px-2.5 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-bold text-dark focus:outline-none focus:border-primary disabled:opacity-60"
-                              placeholder={idx === 0 ? 'Bij akkoord' : idx === 1 && count === 3 ? 'Bij start bouw' : 'Bij levering'}
-                            />
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-dark/60 font-mono block">LABEL</label>
+                              <input
+                                type="text"
+                                value={currentLabel}
+                                onChange={(e) => handleUpdateInstalmentLabel(idx, e.target.value)}
+                                disabled={isApproved}
+                                className="w-full px-2.5 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-bold text-dark focus:outline-none focus:border-primary disabled:opacity-60"
+                                placeholder={idx === 0 ? 'Bij akkoord' : idx === 1 && count === 3 ? 'Bij start bouw' : 'Bij levering'}
+                              />
+                            </div>
+
+                            {/* Editable subtext */}
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-dark/60 font-mono block">TOELICHTING / SUBTEXT</label>
+                              <input
+                                type="text"
+                                value={currentSubtext}
+                                onChange={(e) => handleUpdateInstalmentSubtext(idx, e.target.value)}
+                                disabled={isApproved}
+                                className="w-full px-2.5 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs text-dark/80 focus:outline-none focus:border-primary disabled:opacity-60"
+                                placeholder={defaultSubtexts[idx] || 'Toelichting termijn...'}
+                              />
+                            </div>
+
                             <div className="flex items-center gap-2">
                               <input
                                 type="number"
@@ -2049,10 +2363,10 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
                           type="button"
                           onClick={() => {
                             const defaultUsps = [
-                              { id: 1, title: 'VAKSPECIALISTEN', desc: 'Met de hand gebouwd in onze eigen werkplaats met oog voor detail.' },
-                              { id: 2, title: 'ÉÉN AANSPREEKPUNT', desc: 'Direct contact met Tim & Bram vanaf ontwerp tot bezorging.' },
-                              { id: 3, title: 'GARANTIE & NAZORG', desc: 'Productgarantie en persoonlijke nazorg bij u aan huis.' },
-                              { id: 4, title: 'BEWUST ONLINE', desc: 'Geen dure showroom, maar de scherpste prijs voor topkwaliteit.' }
+                              { id: 1, title: 'Gecertificeerde vakmensen', desc: 'De bouw ligt altijd bij gecertificeerde vakspecialisten uit ons landelijke netwerk. Vakwerk, van fundering tot afwerking.' },
+                              { id: 2, title: 'Eén vast aanspreekpunt', desc: 'Je schakelt rechtstreeks met Tim of Bram, via WhatsApp, mail of telefoon. Korte lijnen, snelle antwoorden.' },
+                              { id: 3, title: 'Garantie én nazorg', desc: 'Garantie op de constructie en nazorg na oplevering. Ook als het verblijf er staat, blijven wij je aanspreekpunt.' },
+                              { id: 4, title: 'Eerlijke prijs, bewust online', desc: 'Geen showroom is een bewuste keuze. Zo betaal je voor vakwerk en materiaal, niet voor overhead.' }
                             ];
                             updateLetterField('uspCards', defaultUsps);
                             showToast('USP defaults restored!');
@@ -2065,10 +2379,10 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, leadsList
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {(quote.letterAndProcess?.uspCards || [
-                          { id: 1, title: 'VAKSPECIALISTEN', desc: 'Met de hand gebouwd in onze eigen werkplaats met oog voor detail.' },
-                          { id: 2, title: 'ÉÉN AANSPREEKPUNT', desc: 'Direct contact met Tim & Bram vanaf ontwerp tot bezorging.' },
-                          { id: 3, title: 'GARANTIE & NAZORG', desc: 'Productgarantie en persoonlijke nazorg bij u aan huis.' },
-                          { id: 4, title: 'BEWUST ONLINE', desc: 'Geen dure showroom, maar de scherpste prijs voor topkwaliteit.' }
+                          { id: 1, title: 'Gecertificeerde vakmensen', desc: 'De bouw ligt altijd bij gecertificeerde vakspecialisten uit ons landelijke netwerk. Vakwerk, van fundering tot afwerking.' },
+                          { id: 2, title: 'Eén vast aanspreekpunt', desc: 'Je schakelt rechtstreeks met Tim of Bram, via WhatsApp, mail of telefoon. Korte lijnen, snelle antwoorden.' },
+                          { id: 3, title: 'Garantie én nazorg', desc: 'Garantie op de constructie en nazorg na oplevering. Ook als het verblijf er staat, blijven wij je aanspreekpunt.' },
+                          { id: 4, title: 'Eerlijke prijs, bewust online', desc: 'Geen showroom is een bewuste keuze. Zo betaal je voor vakwerk en materiaal, niet voor overhead.' }
                         ]).map((usp, uIdx) => (
                           <div key={usp.id || uIdx} className="p-3 bg-white border border-[#D6CFC2] rounded-xl space-y-2">
                             <input

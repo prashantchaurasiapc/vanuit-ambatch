@@ -72,13 +72,36 @@ export default function Invoices() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
 
-  // Form State for Manual Invoice Creation
+  // Form & Editing State for Invoice Creation & Modification
+  const [editingInvoiceId, setEditingInvoiceId] = useState(null);
   const [form, setForm] = useState({
+    id: '',
     customer: '',
-    type: '50% Aanbetaling (Upfront)',
+    address: 'Dangeheuvel 3',
+    zipCity: '5101 WE Dongen',
+    phone: '+31 6 53562542',
+    type: '100% Volledige Factuur',
     amount: '',
-    status: 'Concept',
-    dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    status: 'Openstaand',
+    date: new Date().toISOString().split('T')[0],
+    dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    quoteRef: 'Offerte OF-2026325',
+    items: [
+      {
+        description: 'Buitenkeuken Thermo Fraké · 240 × 80 cm',
+        subtext: 'Houten bovenblad met keramische stenen en uitsparing voor Big Green Egg Large · drie kastjes met twee inlegplanken · zes zwenkwielen · afgewerkt met twee lagen olie (naturel). Conform offerte OF-2026325.',
+        quantity: 1,
+        price: '3495',
+        isIncluded: false
+      },
+      {
+        description: 'Bezorging Dongen',
+        subtext: 'Geleverd op locatie.',
+        quantity: 1,
+        price: '',
+        isIncluded: true
+      }
+    ]
   });
 
   // Load invoices from localStorage on mount
@@ -155,41 +178,222 @@ export default function Invoices() {
     showToast(`Factuur "${invId}" verwijderd.`);
   };
 
+  const handleAddLine = () => {
+    setForm(prev => ({
+      ...prev,
+      items: [
+        ...prev.items,
+        {
+          description: '',
+          subtext: '',
+          quantity: 1,
+          price: '',
+          isIncluded: false
+        }
+      ]
+    }));
+  };
+
+  const handleRemoveLine = (idx) => {
+    if (form.items.length <= 1) {
+      return showToast('Minimaal 1 factuurregel vereist.');
+    }
+    setForm(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== idx)
+    }));
+  };
+
+  const handleUpdateLine = (idx, field, value) => {
+    setForm(prev => {
+      const updated = [...prev.items];
+      updated[idx] = { ...updated[idx], [field]: value };
+      return { ...prev, items: updated };
+    });
+  };
+
+  const calcSubtotal = () => {
+    return (form.items || []).reduce((sum, item) => {
+      if (item.isIncluded) return sum;
+      const p = parseFloat(String(item.price).replace(/[^\d.-]/g, '')) || 0;
+      const q = parseFloat(item.quantity) || 1;
+      return sum + (p * q);
+    }, 0);
+  };
+
+  const handleOpenCreateModal = () => {
+    setEditingInvoiceId(null);
+    const nextSeq = Math.floor(100 + Math.random() * 900);
+    setForm({
+      id: `F-2026-${nextSeq}`,
+      customer: '',
+      address: 'Dangeheuvel 3',
+      zipCity: '5101 WE Dongen',
+      phone: '+31 6 53562542',
+      type: '100% Volledige Factuur',
+      status: 'Openstaand',
+      date: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      quoteRef: 'Offerte OF-2026325',
+      items: [
+        {
+          description: 'Buitenkeuken Thermo Fraké · 240 × 80 cm',
+          subtext: 'Houten bovenblad met keramische stenen en uitsparing voor Big Green Egg Large · drie kastjes met twee inlegplanken · zes zwenkwielen · afgewerkt met twee lagen olie (naturel). Conform offerte OF-2026325.',
+          quantity: 1,
+          price: '3495',
+          isIncluded: false
+        },
+        {
+          description: 'Bezorging Dongen',
+          subtext: 'Geleverd op locatie.',
+          quantity: 1,
+          price: '',
+          isIncluded: true
+        }
+      ]
+    });
+    setModalOpen(true);
+  };
+
+  const handleOpenEditModal = (inv) => {
+    setEditingInvoiceId(inv.id);
+    let existingItems = [];
+    if (Array.isArray(inv.items) && inv.items.length > 0) {
+      existingItems = inv.items.map(it => {
+        const isInc = typeof it.price === 'string' && (it.price.toLowerCase().includes('inbegrepen') || it.price.toLowerCase().includes('inclusief'));
+        return {
+          description: it.description || '',
+          subtext: it.subtext || '',
+          quantity: it.quantity || 1,
+          price: isInc ? '' : (typeof it.price === 'number' ? it.price : String(it.price || '').replace(/[^\d.-]/g, '')),
+          isIncluded: isInc
+        };
+      });
+    } else {
+      const amt = getNumericAmount(inv.amount, inv.numericAmount) || 3495;
+      existingItems = [
+        {
+          description: inv.project || (inv.type?.includes('Aanbetaling') ? `50% Aanbetaling - ${inv.customer}` : 'Buitenkeuken Thermo Fraké · 240 × 80 cm'),
+          subtext: 'Houten bovenblad met keramische stenen en uitsparing voor Big Green Egg Large · conform offerte.',
+          quantity: 1,
+          price: amt,
+          isIncluded: false
+        },
+        {
+          description: `Bezorging ${inv.customer ? inv.customer.split(' ')[0] : 'op locatie'}`,
+          subtext: 'Geleverd op locatie.',
+          quantity: 1,
+          price: '',
+          isIncluded: true
+        }
+      ];
+    }
+
+    setForm({
+      id: inv.id,
+      customer: inv.customer || '',
+      address: inv.address || 'Dangeheuvel 3',
+      zipCity: inv.zipCity || '5101 WE Dongen',
+      phone: inv.phone || '+31 6 53562542',
+      type: inv.type || '100% Volledige Factuur',
+      status: inv.status || 'Openstaand',
+      date: inv.date || inv.createdDate || new Date().toISOString().split('T')[0],
+      dueDate: inv.dueDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      quoteRef: inv.quoteRef || inv.quoteId || (inv.id ? `Offerte OF-${inv.id.replace(/[^\d]/g, '')}` : 'Offerte OF-2026325'),
+      items: existingItems
+    });
+    setModalOpen(true);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.customer || !form.amount) {
-      return showToast('Vul alle verplichte velden in.');
+    if (!form.customer || form.customer.trim() === '') {
+      return showToast('Vul de klantnaam in.');
     }
 
-    const numVal = parseFloat(form.amount) || 0;
-    const newInv = {
-      id: `INV-${Date.now().toString().slice(-4)}`,
-      customer: form.customer,
-      type: form.type,
-      amount: `€ ${numVal.toLocaleString()}`,
-      numericAmount: numVal,
-      status: form.status || 'Concept',
-      isSent: form.status === 'Openstaand' || form.status === 'Betaald',
-      dueDate: form.dueDate,
-      createdDate: new Date().toISOString().split('T')[0]
-    };
+    const totalInclAmount = calcSubtotal();
+    const formattedAmount = `€ ${totalInclAmount.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    const updatedInvoices = [newInv, ...invoices];
-    setInvoices(updatedInvoices);
-    localStorage.setItem('app_invoices', JSON.stringify(updatedInvoices));
+    const processedItems = form.items.map(it => {
+      const isInc = it.isIncluded || String(it.price).toLowerCase().includes('inbegrepen');
+      const numPrice = parseFloat(String(it.price).replace(/[^\d.-]/g, '')) || 0;
+      return {
+        description: it.description || 'Factuurregel',
+        subtext: it.subtext || '',
+        quantity: parseFloat(it.quantity) || 1,
+        price: isInc ? 'Inbegrepen' : numPrice
+      };
+    });
 
-    if (newInv.status === 'Openstaand' || newInv.status === 'Betaald' || newInv.isSent) {
-      convertLeadToCustomerOnInvoiceSent(newInv);
+    if (editingInvoiceId) {
+      const updatedInvoices = invoices.map(inv => {
+        if (inv.id === editingInvoiceId) {
+          const updated = {
+            ...inv,
+            id: form.id || inv.id,
+            customer: form.customer,
+            address: form.address,
+            zipCity: form.zipCity,
+            phone: form.phone,
+            type: form.type,
+            amount: formattedAmount,
+            numericAmount: totalInclAmount,
+            status: form.status,
+            dueDate: form.dueDate,
+            date: form.date,
+            createdDate: form.date,
+            quoteRef: form.quoteRef,
+            items: processedItems
+          };
+          if (pdfInvoice && pdfInvoice.id === editingInvoiceId) {
+            setPdfInvoice(updated);
+          }
+          return updated;
+        }
+        return inv;
+      });
+
+      setInvoices(updatedInvoices);
+      localStorage.setItem('app_invoices', JSON.stringify(updatedInvoices));
+      window.dispatchEvent(new Event('app_data_changed'));
+      showToast(language === 'EN' ? `Invoice "${editingInvoiceId}" updated!` : `Factuur "${editingInvoiceId}" succesvol bijgewerkt!`);
+      setModalOpen(false);
+    } else {
+      const newInv = {
+        id: form.id || `F-2026-${Math.floor(100 + Math.random() * 900)}`,
+        customer: form.customer,
+        address: form.address,
+        zipCity: form.zipCity,
+        phone: form.phone,
+        type: form.type,
+        amount: formattedAmount,
+        numericAmount: totalInclAmount,
+        status: form.status || 'Openstaand',
+        isSent: form.status === 'Openstaand' || form.status === 'Betaald',
+        dueDate: form.dueDate,
+        date: form.date,
+        createdDate: form.date,
+        quoteRef: form.quoteRef,
+        items: processedItems
+      };
+
+      const updatedInvoices = [newInv, ...invoices];
+      setInvoices(updatedInvoices);
+      localStorage.setItem('app_invoices', JSON.stringify(updatedInvoices));
+
+      if (newInv.status === 'Openstaand' || newInv.status === 'Betaald' || newInv.isSent) {
+        convertLeadToCustomerOnInvoiceSent(newInv.customer, newInv.id, newInv.amount);
+      }
+
+      window.dispatchEvent(new Event('app_data_changed'));
+
+      showToast(
+        newInv.isSent || newInv.status !== 'Concept'
+          ? (language === 'EN' ? `Invoice ${newInv.id} created!` : `Factuur ${newInv.id} aangemaakt!`)
+          : (language === 'EN' ? `Invoice ${newInv.id} saved as Draft!` : `Factuur ${newInv.id} opgeslagen als Concept!`)
+      );
+      setModalOpen(false);
     }
-
-    window.dispatchEvent(new Event('app_data_changed'));
-
-    showToast(
-      newInv.isSent || newInv.status !== 'Concept'
-        ? `Factuur ${newInv.id} aangemaakt! Lead "${newInv.customer}" automatisch geconverteerd naar Klant.`
-        : `Factuur ${newInv.id} opgeslagen als Concept!`
-    );
-    setModalOpen(false);
   };
 
   const getNumericAmount = (amtStr, numericFallback) => {
@@ -345,6 +549,15 @@ export default function Invoices() {
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => handleOpenEditModal(row)}
+              className="text-dark/70 hover:bg-[#D6CFC2]/40 text-[11px]"
+              title={language === 'EN' ? 'Edit Invoice' : 'Factuur Bewerken'}
+            >
+              <Edit2 className="w-3 h-3 mr-1" /> {language === 'EN' ? 'Edit' : 'Bewerken'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setPdfInvoice(row)}
               className="text-dark/70 hover:bg-[#D6CFC2]/40 text-[11px]"
             >
@@ -389,7 +602,7 @@ export default function Invoices() {
           <h2 className="text-2xl font-heading font-bold text-primary">{t('screens.invoices.title')}</h2>
           <p className="text-dark/60 text-sm">{t('screens.invoices.description')}</p>
         </div>
-        <Button icon={Plus} onClick={() => setModalOpen(true)}>{t('screens.invoices.newInvoice')}</Button>
+        <Button icon={Plus} onClick={handleOpenCreateModal}>{t('screens.invoices.newInvoice')}</Button>
       </div>
 
       {/* Summary Stat Cards */}
@@ -497,55 +710,339 @@ export default function Invoices() {
       </Card>
 
       {/* CREATE INVOICE MODAL */}
+      {/* CREATE & EDIT INVOICE MODAL WITH DYNAMIC LINE ITEMS (Client Feedback #5) */}
       <AnimatePresence>
         {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-lg bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4">
-              <div className="flex items-center justify-between border-b border-cream-dark/60 pb-3">
-                <h3 className="text-lg font-heading font-bold text-primary">Nieuwe Factuur Aanmaken</h3>
-                <button onClick={() => setModalOpen(false)} className="p-1 rounded-lg text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-dark/70 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-3xl max-h-[90vh] flex flex-col bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl shadow-2xl z-10 overflow-hidden">
+              
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] px-6 py-4 bg-[#E5DFD4]">
+                <div>
+                  <h3 className="text-lg font-heading font-bold text-primary">
+                    {editingInvoiceId 
+                      ? (language === 'EN' ? `Edit Invoice — ${form.id}` : `Factuur Bewerken — ${form.id}`)
+                      : (language === 'EN' ? 'Create New Invoice' : 'Nieuwe Factuur Aanmaken')
+                    }
+                  </h3>
+                  <p className="text-xs text-dark/60 font-body">
+                    {language === 'EN' ? 'Customize customer details, terms, and individual invoice line items.' : 'Pas klantgegevens, betaaltermijnen en factuurregels aan.'}
+                  </p>
+                </div>
+                <button onClick={() => setModalOpen(false)} className="p-1.5 rounded-lg text-dark/40 hover:text-dark hover:bg-black/5 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">Klantnaam</label>
-                  <input type="text" required value={form.customer} onChange={e => setForm(prev => ({ ...prev, customer: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs" placeholder="e.g. Jan de Vries" />
+              {/* Scrollable Form Body */}
+              <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-5 text-xs font-body">
+                
+                {/* 1. Customer Details (Factuur Aan) */}
+                <div className="bg-[#F8F7F4] p-4 rounded-xl border border-[#D6CFC2] space-y-3">
+                  <h4 className="text-[11px] font-bold text-primary uppercase tracking-wider font-mono">
+                    1. {language === 'EN' ? 'Customer Details (Invoiced To)' : 'Klantgegevens (Factuur Aan)'}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold text-dark/70 mb-1">
+                        {language === 'EN' ? 'Customer Name *' : 'Klantnaam *'}
+                      </label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={form.customer} 
+                        onChange={e => setForm(prev => ({ ...prev, customer: e.target.value }))} 
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark font-medium focus:ring-1 focus:ring-primary outline-none" 
+                        placeholder="bijv. Bjorn Valk" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-dark/70 mb-1">
+                        {language === 'EN' ? 'Phone Number' : 'Telefoonnummer'}
+                      </label>
+                      <input 
+                        type="text" 
+                        value={form.phone} 
+                        onChange={e => setForm(prev => ({ ...prev, phone: e.target.value }))} 
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark focus:ring-1 focus:ring-primary outline-none" 
+                        placeholder="+31 6 53562542" 
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold text-dark/70 mb-1">
+                        {language === 'EN' ? 'Street & House Number' : 'Straat & Huisnummer'}
+                      </label>
+                      <input 
+                        type="text" 
+                        value={form.address} 
+                        onChange={e => setForm(prev => ({ ...prev, address: e.target.value }))} 
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark focus:ring-1 focus:ring-primary outline-none" 
+                        placeholder="Dongeheuvel 3" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-dark/70 mb-1">
+                        {language === 'EN' ? 'Postal Code & City' : 'Postcode & Plaats'}
+                      </label>
+                      <input 
+                        type="text" 
+                        value={form.zipCity} 
+                        onChange={e => setForm(prev => ({ ...prev, zipCity: e.target.value }))} 
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark focus:ring-1 focus:ring-primary outline-none" 
+                        placeholder="5101 WE Dongen" 
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-semibold text-dark/60 mb-1 uppercase">Factuur Type</label>
-                    <select value={form.type} onChange={e => setForm(prev => ({ ...prev, type: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs">
-                      <option value="50% Aanbetaling (Upfront)">50% Aanbetaling</option>
-                      <option value="50% Eindfactuur (Completion)">50% Eindfactuur</option>
-                      <option value="100% Volledige Factuur">100% Volledige Factuur</option>
-                    </select>
+                {/* 2. Invoice Metadata */}
+                <div className="bg-[#F8F7F4] p-4 rounded-xl border border-[#D6CFC2] space-y-3">
+                  <h4 className="text-[11px] font-bold text-primary uppercase tracking-wider font-mono">
+                    2. {language === 'EN' ? 'Invoice Information & Dates' : 'Factuur Gegevens & Data'}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block font-semibold text-dark/70 mb-1">
+                        {language === 'EN' ? 'Invoice Number' : 'Factuurnummer'}
+                      </label>
+                      <input 
+                        type="text" 
+                        value={form.id} 
+                        onChange={e => setForm(prev => ({ ...prev, id: e.target.value }))} 
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-mono font-bold text-primary focus:ring-1 focus:ring-primary outline-none" 
+                        placeholder="F-2026-108" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-dark/70 mb-1">
+                        {language === 'EN' ? 'Invoice Date' : 'Factuurdatum'}
+                      </label>
+                      <input 
+                        type="date" 
+                        value={form.date} 
+                        onChange={e => setForm(prev => ({ ...prev, date: e.target.value }))} 
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark focus:ring-1 focus:ring-primary outline-none" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-dark/70 mb-1">
+                        {language === 'EN' ? 'Due Date (Vervaldatum)' : 'Vervaldatum'}
+                      </label>
+                      <input 
+                        type="date" 
+                        value={form.dueDate} 
+                        onChange={e => setForm(prev => ({ ...prev, dueDate: e.target.value }))} 
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark focus:ring-1 focus:ring-primary outline-none" 
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block font-semibold text-dark/60 mb-1 uppercase">Bedrag (€)</label>
-                    <input type="number" required value={form.amount} onChange={e => setForm(prev => ({ ...prev, amount: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary" placeholder="e.g. 6250" />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block font-semibold text-dark/70 mb-1">
+                        {language === 'EN' ? 'Quote Reference' : 'Offerte Referentie'}
+                      </label>
+                      <input 
+                        type="text" 
+                        value={form.quoteRef} 
+                        onChange={e => setForm(prev => ({ ...prev, quoteRef: e.target.value }))} 
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-mono text-dark focus:ring-1 focus:ring-primary outline-none" 
+                        placeholder="Offerte OF-2026325" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-dark/70 mb-1">
+                        {language === 'EN' ? 'Invoice Type' : 'Factuur Type'}
+                      </label>
+                      <select 
+                        value={form.type} 
+                        onChange={e => setForm(prev => ({ ...prev, type: e.target.value }))} 
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark font-medium focus:ring-1 focus:ring-primary outline-none"
+                      >
+                        <option value="100% Volledige Factuur">100% Volledige Factuur</option>
+                        <option value="50% Aanbetaling (Upfront)">50% Aanbetaling (Upfront)</option>
+                        <option value="50% Eindfactuur (Completion)">50% Eindfactuur (Completion)</option>
+                        <option value="Maatwerk Termijn">Maatwerk Termijn</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-dark/70 mb-1">
+                        {language === 'EN' ? 'Status' : 'Status'}
+                      </label>
+                      <select 
+                        value={form.status} 
+                        onChange={e => setForm(prev => ({ ...prev, status: e.target.value }))} 
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark font-bold focus:ring-1 focus:ring-primary outline-none"
+                      >
+                        <option value="Openstaand">Openstaand (Pending)</option>
+                        <option value="Betaald">Betaald (Paid)</option>
+                        <option value="Concept">Concept (Draft)</option>
+                        <option value="Vervallen">Vervallen (Overdue)</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-semibold text-dark/60 mb-1 uppercase">Status</label>
-                    <select value={form.status} onChange={e => setForm(prev => ({ ...prev, status: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs">
-                      <option value="Openstaand">Openstaand</option>
-                      <option value="Betaald">Betaald</option>
-                      <option value="Vervallen">Vervallen</option>
-                    </select>
+                {/* 3. Dynamic Line Items Builder */}
+                <div className="bg-[#F8F7F4] p-4 rounded-xl border border-[#D6CFC2] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-[11px] font-bold text-primary uppercase tracking-wider font-mono">
+                        3. {language === 'EN' ? 'Invoice Line Items (Omschrijving & Prijs)' : 'Factuurregels (Omschrijving & Prijs)'}
+                      </h4>
+                      <p className="text-[10.5px] text-dark/50">
+                        {language === 'EN' ? 'Add, edit or remove line items. These appear directly on the PDF.' : 'Voeg regels toe, bewerk of verwijder. Deze verschijnen direct op de factuur PDF.'}
+                      </p>
+                    </div>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      onClick={handleAddLine} 
+                      className="bg-primary text-cream text-xs py-1.5 px-3 flex items-center gap-1 shadow-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      {language === 'EN' ? 'Add Line' : 'Regel toevoegen'}
+                    </Button>
                   </div>
-                  <div>
-                    <label className="block font-semibold text-dark/60 mb-1 uppercase">Vervaldatum</label>
-                    <input type="date" value={form.dueDate} onChange={e => setForm(prev => ({ ...prev, dueDate: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs" />
+
+                  <div className="space-y-2.5">
+                    {form.items.map((item, idx) => (
+                      <div key={idx} className="p-3 bg-white rounded-lg border border-[#D6CFC2] space-y-2 relative group">
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="w-5 h-5 rounded-full bg-[#EDE8DF] text-primary flex items-center justify-center font-bold text-[10px] mt-1 shrink-0">
+                            {idx + 1}
+                          </span>
+                          
+                          <div className="flex-1 space-y-2">
+                            {/* Line Title */}
+                            <div>
+                              <label className="block text-[10px] font-bold text-dark/50 uppercase mb-0.5">
+                                {language === 'EN' ? 'Title / Main Description *' : 'Omschrijving / Titel *'}
+                              </label>
+                              <input 
+                                type="text" 
+                                required
+                                value={item.description} 
+                                onChange={e => handleUpdateLine(idx, 'description', e.target.value)} 
+                                className="w-full px-2.5 py-1.5 bg-[#FAF9F6] border border-[#D6CFC2] rounded-md text-xs font-bold text-dark focus:ring-1 focus:ring-primary outline-none" 
+                                placeholder="bijv. Buitenkeuken Thermo Fraké · 240 × 80 cm" 
+                              />
+                            </div>
+
+                            {/* Line Subtext / Details */}
+                            <div>
+                              <label className="block text-[10px] font-bold text-dark/50 uppercase mb-0.5">
+                                {language === 'EN' ? 'Specification Details / Subtext (Optional)' : 'Specificaties / Details (Optioneel)'}
+                              </label>
+                              <textarea 
+                                rows={2}
+                                value={item.subtext} 
+                                onChange={e => handleUpdateLine(idx, 'subtext', e.target.value)} 
+                                className="w-full px-2.5 py-1.5 bg-[#FAF9F6] border border-[#D6CFC2] rounded-md text-[11px] text-dark/80 focus:ring-1 focus:ring-primary outline-none" 
+                                placeholder="Houten bovenblad met keramische stenen en uitsparing voor Big Green Egg Large · zes zwenkwielen..." 
+                              />
+                            </div>
+
+                            {/* Quantity, Price, and Included Option */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center pt-1">
+                              <div>
+                                <label className="block text-[10px] font-bold text-dark/50 uppercase mb-0.5">
+                                  {language === 'EN' ? 'Quantity (Aantal)' : 'Aantal'}
+                                </label>
+                                <input 
+                                  type="number" 
+                                  min="1"
+                                  value={item.quantity} 
+                                  onChange={e => handleUpdateLine(idx, 'quantity', e.target.value)} 
+                                  className="w-full px-2.5 py-1.5 bg-[#FAF9F6] border border-[#D6CFC2] rounded-md text-xs font-mono font-bold text-dark focus:ring-1 focus:ring-primary outline-none" 
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[10px] font-bold text-dark/50 uppercase mb-0.5">
+                                  {language === 'EN' ? 'Price (€ Amount)' : 'Bedrag (€)'}
+                                </label>
+                                <input 
+                                  type="number" 
+                                  step="0.01"
+                                  disabled={item.isIncluded}
+                                  value={item.price} 
+                                  onChange={e => handleUpdateLine(idx, 'price', e.target.value)} 
+                                  className={`w-full px-2.5 py-1.5 border border-[#D6CFC2] rounded-md text-xs font-mono font-bold focus:ring-1 focus:ring-primary outline-none ${
+                                    item.isIncluded ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#FAF9F6] text-primary'
+                                  }`}
+                                  placeholder={item.isIncluded ? 'Inbegrepen' : 'bijv. 3495'} 
+                                />
+                              </div>
+
+                              <div className="flex items-center gap-2 pt-4">
+                                <label className="flex items-center gap-1.5 cursor-pointer text-xs font-medium text-dark/80 select-none">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={item.isIncluded} 
+                                    onChange={e => handleUpdateLine(idx, 'isIncluded', e.target.checked)} 
+                                    className="rounded border-[#D6CFC2] text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                                  />
+                                  <span>{language === 'EN' ? 'Included ("Inbegrepen")' : 'Inbegrepen (Gratis)'}</span>
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Delete Line Button */}
+                          <button 
+                            type="button" 
+                            onClick={() => handleRemoveLine(idx)}
+                            className="p-1.5 text-dark/30 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors mt-1"
+                            title={language === 'EN' ? 'Delete Line' : 'Regel Verwijderen'}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
+
+                  {/* Real-time Calculation Summary Card */}
+                  {(() => {
+                    const totalIncl = calcSubtotal();
+                    const totalExcl = Math.round((totalIncl / 1.21) * 100) / 100;
+                    const vat21 = Math.round((totalIncl - totalExcl) * 100) / 100;
+                    return (
+                      <div className="p-4 bg-[#33422C] text-[#FDFBF7] rounded-xl shadow-md space-y-2 font-mono">
+                        <div className="flex justify-between items-center text-xs text-cream/80">
+                          <span>{language === 'EN' ? 'Subtotal (excl. 21% VAT):' : 'Totaal excl. btw:'}</span>
+                          <span className="font-bold">€ {totalExcl.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs text-cream/80">
+                          <span>{language === 'EN' ? '21% VAT (BTW):' : 'Btw 21%:'}</span>
+                          <span className="font-bold">€ {vat21.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="h-px bg-white/20 my-1" />
+                        <div className="flex justify-between items-center text-sm font-sans font-bold text-cream">
+                          <span className="uppercase tracking-wider">{language === 'EN' ? 'Total (incl. VAT / Te betalen):' : 'Te betalen (Totaal incl. btw):'}</span>
+                          <span className="text-lg font-mono font-bold text-amber-300">
+                            € {totalIncl.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
-                <div className="flex justify-end gap-2 pt-3 border-t border-cream-dark/60">
-                  <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>{t('common.cancel')}</Button>
-                  <Button type="submit">Opslaan</Button>
+                {/* Form Action Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#D6CFC2]">
+                  <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
+                    {language === 'EN' ? 'Cancel' : 'Annuleren'}
+                  </Button>
+                  <Button type="submit" className="bg-primary text-cream shadow-sm">
+                    {editingInvoiceId 
+                      ? (language === 'EN' ? 'Save Changes' : 'Wijzigingen Opslaan')
+                      : (language === 'EN' ? 'Create Invoice' : 'Factuur Aanmaken')
+                    }
+                  </Button>
                 </div>
               </form>
             </motion.div>

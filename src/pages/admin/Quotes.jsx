@@ -954,9 +954,9 @@ export default function Quotes() {
                       className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-body text-[#4A4A43] mb-2"
                     >
                       <option value="Exclusieve Buitenkeuken">{language === 'EN' ? 'Bespoke Outdoor Kitchen' : 'Exclusieve Buitenkeuken'}</option>
-                      <option value="Exclusieve Kliko-ombouw">{language === 'EN' ? 'Premium Bin Storage' : 'Exclusieve Kliko-ombouw'}</option>
-                      <option value="Houten Pergola">{language === 'EN' ? 'Wooden Pergola' : 'Houten Pergola'}</option>
-                      <option value="Tuinterras">{language === 'EN' ? 'Garden Terrace' : 'Tuinterras'}</option>
+                      <option value="Buitenverblijf / Garden Room">{language === 'EN' ? 'Garden Room / Luxury Canopy' : 'Buitenverblijf / Garden Room'}</option>
+                      <option value="Luxe Veranda">{language === 'EN' ? 'Luxury Veranda' : 'Luxe Veranda'}</option>
+                      <option value="Poolhouse">{language === 'EN' ? 'Poolhouse' : 'Poolhouse'}</option>
                       <option value="Other">{language === 'EN' ? 'Other...' : 'Anders...'}</option>
                     </select>
                     {projectSelect === 'Other' && (

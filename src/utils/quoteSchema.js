@@ -1,6 +1,5 @@
 import { WOOD_LIBRARY, PRESET_PRODUCT_LIBRARY, PRODUCT_TYPE_DEFAULTS } from './quoteLibraries.js';
-const projectImg = '/outdoor_project_card.png';
-const heroImg = '/dasbordes images.png';
+const defaultCoverPhotos = ['/cover_img1.png', '/cover_img2.png', '/cover_img3.png'];
 
 export function createDefaultQuote(customerData = null, existingQuote = null) {
   const today = new Date().toISOString().split('T')[0];
@@ -82,16 +81,14 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
 
     productType: defaultProductType,
 
-    cover: existingQuote?.cover || {
-      titleLine1: productDefaults.titleLine1,
-      titleLine2: productDefaults.titleLine2,
-      subtitleOverrideEnabled: false,
-      customSubtitle: '',
-      photos: [
-        projectImg,
-        heroImg,
-        projectImg
-      ]
+    cover: {
+      titleLine1: existingQuote?.cover?.titleLine1 || productDefaults.titleLine1,
+      titleLine2: existingQuote?.cover?.titleLine2 || productDefaults.titleLine2,
+      subtitleOverrideEnabled: Boolean(existingQuote?.cover?.subtitleOverrideEnabled),
+      customSubtitle: existingQuote?.cover?.customSubtitle || '',
+      photos: (Array.isArray(existingQuote?.cover?.photos) && existingQuote.cover.photos.length === 3 && existingQuote.cover.photos.every(p => typeof p === 'string' && p.trim().length > 3))
+        ? existingQuote.cover.photos
+        : ['/cover_img1.png', '/cover_img2.png', '/cover_img3.png']
     },
 
     configuration: {
@@ -153,7 +150,7 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
         }
       ],
 
-      configPhoto: existingQuote?.configuration?.configPhoto || projectImg,
+      configPhoto: existingQuote?.configuration?.configPhoto || '/cover_img1.png',
 
       diagram: existingQuote?.configuration?.diagram || {
         show: true,
@@ -176,17 +173,20 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
 
     investment: {
       sectionTitle: existingQuote?.investment?.sectionTitle || '04 · INVESTERING',
-      title: existingQuote?.investment?.title || 'Heldere prijs, alles inbegrepen',
+      title: existingQuote?.investment?.title || 'Uw investering in één overzicht',
       lineItems: initialLineItems,
       finishTreatment: existingQuote?.investment?.finishTreatment !== undefined ? existingQuote.investment.finishTreatment : 'Olieafwerking in twee lagen (naturel)',
       checklistTitle: existingQuote?.investment?.checklistTitle || 'INBEGREPEN BIJ JOUW INVESTERING',
       checklist: existingQuote?.investment?.checklist || [
-        'Volledig maatwerk, gebouwd door een gecertificeerde vakspecialist',
-        'Digitale tekening vooraf ter goedkeuring',
-        'Olieafwerking in twee lagen (naturel)',
-        `Gratis bezorging in ${city}`,
-        'Garantie en nazorg na levering'
+        'Ontwerp en technische tekening vóór de bouw',
+        'Schouw op locatie vóór de start van de bouw',
+        'Bouw door een gecertificeerde vakspecialist',
+        'Transport, montage en opruimen van de bouwplaats',
+        'Garantie op de constructie én nazorg na oplevering'
       ],
+      stelpostDisclaimer: existingQuote?.investment?.stelpostDisclaimer || '* Stelpost: dit bedrag is een zorgvuldige inschatting. We rekenen af op basis van de werkelijke kosten, altijd in overleg vooraf.',
+      vatDisclaimer: existingQuote?.investment?.vatDisclaimer || 'Alle bedragen inclusief btw',
+      validityText: existingQuote?.investment?.validityText || 'Deze offerte is geldig tot en met {date}',
       validityNote: existingQuote?.investment?.validityNote || `Deze offerte is geldig tot en met ${validUntilDate}`,
       ...(existingQuote?.investment || {}),
       instalments: {
@@ -196,6 +196,11 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
           (existingQuote?.investment?.instalments?.count || 2) === 3
             ? ['Bij akkoord', 'Bij start bouw', 'Bij levering']
             : ['Bij akkoord', 'Bij levering']
+        ),
+        subtexts: existingQuote?.investment?.instalments?.subtexts || (
+          (existingQuote?.investment?.instalments?.count || 2) === 3
+            ? ['Na akkoord op de technische tekening.', 'Vlak vóór de startdatum op locatie.', 'Pas als alles naar wens is opgeleverd.']
+            : ['Na akkoord op de technische tekening.', 'Pas als alles naar wens is opgeleverd.']
         )
       }
     },
@@ -206,17 +211,17 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
       signoffName: existingQuote?.letterAndProcess?.signoffName || 'Tim & Bram',
       signoffRole: existingQuote?.letterAndProcess?.signoffRole || 'Oprichters Vanuit Ambacht',
       uspCards: existingQuote?.letterAndProcess?.uspCards || [
-        { id: 1, title: 'VAKSPECIALISTEN', desc: 'Met de hand gebouwd in onze eigen werkplaats met oog voor detail.' },
-        { id: 2, title: 'ÉÉN AANSPREEKPUNT', desc: 'Direct contact met Tim & Bram vanaf ontwerp tot bezorging.' },
-        { id: 3, title: 'GARANTIE & NAZORG', desc: 'Productgarantie en persoonlijke nazorg bij u aan huis.' },
-        { id: 4, title: 'BEWUST ONLINE', desc: 'Geen dure showroom, maar de scherpste prijs voor topkwaliteit.' }
+        { id: 1, title: 'Gecertificeerde vakmensen', desc: 'De bouw ligt altijd bij gecertificeerde vakspecialisten uit ons landelijke netwerk. Vakwerk, van fundering tot afwerking.' },
+        { id: 2, title: 'Eén vast aanspreekpunt', desc: 'Je schakelt rechtstreeks met Tim of Bram, via WhatsApp, mail of telefoon. Korte lijnen, snelle antwoorden.' },
+        { id: 3, title: 'Garantie én nazorg', desc: 'Garantie op de constructie en nazorg na oplevering. Ook als het verblijf er staat, blijven wij je aanspreekpunt.' },
+        { id: 4, title: 'Eerlijke prijs, bewust online', desc: 'Geen showroom is een bewuste keuze. Zo betaal je voor vakwerk en materiaal, niet voor overhead.' }
       ],
       processSteps: existingQuote?.letterAndProcess?.processSteps || [
         { step: '1', title: 'Akkoord op de offerte', desc: 'Bevestig eenvoudig per mail of WhatsApp, of onderteken de akkoordpagina. Vanaf dat moment nemen wij alles uit handen.', badge: '' },
-        { step: '2', title: 'Digitale tekening ter bevestiging', desc: 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.', badge: '' },
-        { step: '3', title: 'Productie door onze vakspecialist', desc: 'Jouw keuken wordt met de hand gemaakt door een gecertificeerde vakspecialist. Tussentijds houden we je op de hoogte.', badge: deliveryTime.toUpperCase() },
-        { step: '4', title: `Bezorging in ${city}`, desc: `We leveren de keuken op een moment dat jou uitkomt in ${city}. Dankzij de zes zwenkwielen staat hij direct op de juiste plek.`, badge: 'GRATIS' },
-        { step: '5', title: 'Garantie & nazorg', desc: 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.', badge: '' }
+        { step: '2', title: 'Ontwerp en technische tekening', desc: 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.', badge: '' },
+        { step: '3', title: 'Schouw op locatie', desc: 'Onze vakspecialist komt langs om de ondergrond, bereikbaarheid en aansluitingen te controleren. Daarna plannen we de bouwdatum in.', badge: '' },
+        { step: '4', title: 'De bouw', desc: 'Jouw buitenverblijf wordt op locatie gebouwd door een gecertificeerde vakspecialist. Tussentijds houden we je op de hoogte.', badge: '2 TOT 3 WEKEN' },
+        { step: '5', title: 'Oplevering, garantie & nazorg', desc: 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.', badge: '' }
       ],
       approvalTitle: existingQuote?.letterAndProcess?.approvalTitle || 'Zullen we hem gaan maken?',
       approvalSubheading: existingQuote?.letterAndProcess?.approvalSubheading || 'Akkoord geven kan in één minuut',

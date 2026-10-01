@@ -83,155 +83,205 @@ export default function FactuurPDFTemplate({ invoice }) {
   return (
     <div 
       id="printable-factuur" 
-      className="bg-white text-[#2B3028] font-body p-8 sm:p-10 max-w-4xl mx-auto rounded-none shadow-md border border-[#D6CFC2]/60 space-y-5 select-text print:shadow-none print:border-none print:p-8 print:m-0 print:max-w-none print:w-full print:bg-white"
+      className="bg-white text-[#2B3028] p-8 sm:p-10 max-w-[794px] mx-auto rounded-none space-y-4 select-text print:p-8 print:m-0 print:max-w-none print:w-full print:bg-white relative overflow-hidden"
+      style={{ fontFamily: "'Montserrat', sans-serif" }}
     >
+      {/* Ensure Google Fonts are explicitly available */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+        .factuur-heading {
+          font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif !important;
+          color: #3E4E36 !important;
+          font-weight: 600 !important;
+          letter-spacing: -0.01em;
+        }
+      `}</style>
+
+      {/* Background Watermark - VA Monogram SVG matching client Factuur */}
+      <svg
+        viewBox="0 0 320 420"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{
+          position: 'absolute',
+          bottom: '8%',
+          right: '3%',
+          width: '50%',
+          height: 'auto',
+          opacity: 0.04,
+          pointerEvents: 'none',
+          userSelect: 'none',
+          zIndex: 0
+        }}
+      >
+        <path d="M10 30 L90 370 L170 30" stroke="#3E4E36" strokeWidth="22" strokeLinecap="square" strokeLinejoin="miter" fill="none" />
+        <path d="M100 30 L180 370 L260 30" stroke="#3E4E36" strokeWidth="22" strokeLinecap="square" strokeLinejoin="miter" fill="none" />
+        <line x1="120" y1="220" x2="240" y2="220" stroke="#3E4E36" strokeWidth="18" strokeLinecap="square" />
+      </svg>
       
       {/* 1. HEADER LOGO & FACTUUR PILL BADGE */}
-      <div className="flex justify-between items-center pt-2">
+      <div className="flex justify-between items-center pt-1 relative z-10">
         <div className="flex items-center gap-3">
-          <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-10 w-auto object-contain" />
+          <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-9 w-auto object-contain" />
         </div>
-        <span className="px-4 py-1.5 rounded-full border border-[#8A7966] text-[#8A7966] text-[10px] font-mono font-bold uppercase tracking-[0.3em] bg-transparent">
+        <span className="px-4 py-1 rounded-full border border-[#8A7966] text-[#8A7966] text-[10px] font-semibold uppercase tracking-[0.25em] bg-transparent">
           FACTUUR
         </span>
       </div>
 
       {/* 2. SUBHEADER / GREETING */}
-      <div className="space-y-1 pt-2">
-        <p className="text-[9.5px] font-mono font-bold text-[#8A7966] uppercase tracking-[0.25em]">FACTUUR {invId}</p>
-        <h1 className="text-3xl sm:text-4xl font-serif text-[#3E4E36] font-normal leading-tight" style={{ fontFamily: "'Cormorant Garamond', 'Playfair Display', Georgia, serif" }}>
+      <div className="space-y-1 pt-1 relative z-10">
+        <p className="text-[10px] font-semibold text-[#8A7966] uppercase tracking-[0.2em]">FACTUUR {invId}</p>
+        <h1 
+          className="factuur-heading text-3xl sm:text-[34px] leading-tight" 
+        >
           Bedankt voor je vertrouwen, {firstName}.
         </h1>
       </div>
 
       {/* 3. 4-COLUMN SUMMARY METADATA CARD */}
-      <div className="grid grid-cols-4 gap-3 p-4 bg-[#F5F2EB] rounded-xl border border-[#E5E0D5]">
+      <div className="grid grid-cols-4 gap-3 p-4 bg-[#F5F2EB] rounded-xl border border-[#E5E0D5] relative z-10">
         <div>
-          <p className="text-[9px] font-mono font-bold uppercase text-[#8A7966] tracking-[0.2em]">FACTUURNUMMER</p>
-          <p className="font-bold text-[#2B3028] text-xs sm:text-sm mt-1 font-mono">{invId}</p>
+          <p className="text-[9px] font-semibold uppercase text-[#8A7966] tracking-[0.18em]">FACTUURNUMMER</p>
+          <p className="font-medium text-[#2B3028] text-xs sm:text-[13px] mt-1">{invId}</p>
         </div>
         <div>
-          <p className="text-[9px] font-mono font-bold uppercase text-[#8A7966] tracking-[0.2em]">FACTUURDATUM</p>
-          <p className="font-bold text-[#2B3028] text-xs sm:text-sm mt-1">{invoiceDate}</p>
+          <p className="text-[9px] font-semibold uppercase text-[#8A7966] tracking-[0.18em]">FACTUURDATUM</p>
+          <p className="font-medium text-[#2B3028] text-xs sm:text-[13px] mt-1">{invoiceDate}</p>
         </div>
         <div>
-          <p className="text-[9px] font-mono font-bold uppercase text-[#8A7966] tracking-[0.2em]">VERVALDATUM</p>
-          <p className="font-bold text-[#2B3028] text-xs sm:text-sm mt-1">{dueDate}</p>
+          <p className="text-[9px] font-semibold uppercase text-[#8A7966] tracking-[0.18em]">VERVALDATUM</p>
+          <p className="font-medium text-[#2B3028] text-xs sm:text-[13px] mt-1">{dueDate}</p>
         </div>
         <div>
-          <p className="text-[9px] font-mono font-bold uppercase text-[#8A7966] tracking-[0.2em]">REFERENTIE</p>
-          <p className="font-bold text-[#2B3028] text-xs sm:text-sm mt-1 font-mono">{quoteRef}</p>
+          <p className="text-[9px] font-semibold uppercase text-[#8A7966] tracking-[0.18em]">REFERENTIE</p>
+          <p className="font-medium text-[#2B3028] text-xs sm:text-[13px] mt-1">{quoteRef}</p>
         </div>
       </div>
 
       {/* 4. ADDRESSES 2-COLUMN SECTION */}
-      <div className="grid grid-cols-2 gap-8 text-[11.5px] pt-1">
+      <div className="grid grid-cols-2 gap-8 text-[11px] pt-1 relative z-10">
         <div className="space-y-1">
-          <p className="text-[9.5px] font-mono font-bold uppercase text-[#8A7966] tracking-[0.22em]">FACTUUR AAN</p>
-          <p className="font-bold text-[#2B3028] text-xs sm:text-sm pt-0.5">{customerName}</p>
-          <p className="text-[#33382F] font-medium">{addressLine1}</p>
-          <p className="text-[#33382F] font-medium">{addressLine2}</p>
-          <p className="text-[#8A7966] font-mono text-[10.5px] font-semibold pt-0.5">{phone}</p>
+          <p className="text-[9.5px] font-semibold uppercase text-[#8A7966] tracking-[0.18em]">FACTUUR AAN</p>
+          <p className="font-semibold text-[#2B3028] text-xs sm:text-[13px] pt-0.5">{customerName}</p>
+          <p className="text-[#4A5043]">{addressLine1}</p>
+          <p className="text-[#4A5043]">{addressLine2}</p>
+          <p className="text-[#8A7966] text-[10.5px] font-medium pt-0.5">{phone}</p>
         </div>
 
         <div className="space-y-1">
-          <p className="text-[9.5px] font-mono font-bold uppercase text-[#8A7966] tracking-[0.22em]">FACTUUR VAN</p>
-          <p className="font-bold text-[#2B3028] text-xs sm:text-sm pt-0.5">{compName}</p>
-          <p className="text-[#33382F] font-medium">{compAddress}</p>
-          <p className="text-[#8A7966] font-mono text-[10.5px] font-semibold pt-0.5">{compKvk} &nbsp;·&nbsp; {compVat}</p>
-          <p className="text-[#8A7966] font-mono text-[10.5px] font-semibold">{compEmail} &nbsp;·&nbsp; {compPhone}</p>
+          <p className="text-[9.5px] font-semibold uppercase text-[#8A7966] tracking-[0.18em]">FACTUUR VAN</p>
+          <p className="font-semibold text-[#2B3028] text-xs sm:text-[13px] pt-0.5">{compName}</p>
+          <p className="text-[#4A5043]">{compAddress}</p>
+          <p className="text-[#8A7966] text-[10.5px] font-medium pt-0.5">{compKvk} &nbsp;·&nbsp; {compVat}</p>
+          <p className="text-[#8A7966] text-[10.5px] font-medium">{compEmail} &nbsp;·&nbsp; {compPhone}</p>
         </div>
       </div>
 
       {/* 5. LINE ITEMS TABLE */}
-      <div className="pt-1">
+      <div className="pt-1 relative z-10">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b-2 border-t-2 border-[#33422C] text-[10px] uppercase text-[#4A5043] font-bold tracking-widest">
-              <th className="py-2.5 pr-4">OMSCHRIJVING</th>
-              <th className="py-2.5 px-3 text-center w-20">AANTAL</th>
-              <th className="py-2.5 pl-4 text-right w-36">BEDRAG</th>
+            <tr className="border-b-[1.5px] border-[#2C3928] text-[9.5px] uppercase text-[#8A7966] font-semibold tracking-[0.2em]">
+              <th className="pt-2 pb-2.5 pr-4 font-semibold">OMSCHRIJVING</th>
+              <th className="pt-2 pb-2.5 px-3 text-center w-20 font-semibold">AANTAL</th>
+              <th className="pt-2 pb-2.5 pl-4 text-right w-36 font-semibold">BEDRAG</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#E5E0D5]">
-            {items.map((item, idx) => (
-              <tr key={idx} className="align-top">
-                <td className="py-3 pr-4 space-y-1">
-                  <p className="font-bold text-[#2B3028] text-xs leading-snug">{item.description}</p>
-                  {item.subtext && <p className="text-[10.5px] text-[#4A5043] leading-normal">{item.subtext}</p>}
-                </td>
-                <td className="py-3 px-3 text-center font-mono font-bold text-xs text-[#2B3028]">{item.quantity || 1}</td>
-                <td className="py-3 pl-4 text-right font-mono font-bold text-[#2B3028] text-xs whitespace-nowrap">
-                  {typeof item.price === 'number' ? formatDutchCurrency(item.price) : item.price}
-                </td>
-              </tr>
-            ))}
+          <tbody className="divide-y divide-[#E8E3D8] border-b border-[#E8E3D8]">
+            {items.map((item, idx) => {
+              const isIncluded = (typeof item.price === 'string' && (item.price.toLowerCase().includes('inbegrepen') || item.price.toLowerCase().includes('inclusief') || item.price.toLowerCase().includes('incl'))) || item.price === 0;
+              let formattedPrice = item.price;
+              if (!isIncluded) {
+                if (typeof item.price === 'number') {
+                  formattedPrice = formatDutchCurrency(item.price);
+                } else if (typeof item.price === 'string' && !item.price.trim().startsWith('€')) {
+                  const num = parseFloat(item.price.replace(/[^\d.-]/g, ''));
+                  formattedPrice = isNaN(num) ? item.price : formatDutchCurrency(num);
+                }
+              }
+
+              return (
+                <tr key={idx} className="align-top">
+                  <td className="py-3.5 pr-4 space-y-1">
+                    <p className="font-bold text-[#22271F] text-[12.5px] leading-snug">{item.description}</p>
+                    {item.subtext && <p className="text-[10px] sm:text-[10.5px] text-[#6B7266] font-normal leading-[1.45]">{item.subtext}</p>}
+                  </td>
+                  <td className="py-3.5 px-3 text-center font-medium text-[12.5px] text-[#22271F]">{item.quantity || 1}</td>
+                  <td className={`py-3.5 pl-4 text-right whitespace-nowrap text-[12.5px] ${isIncluded ? 'text-[#2E3E28] font-semibold' : 'text-[#22271F] font-bold'}`}>
+                    {formattedPrice}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* 6. BOTTOM SPLIT SECTION — STRICT SIDE-BY-SIDE (grid-cols-2) */}
-      <div className="grid grid-cols-2 gap-5 pt-2 items-start">
+      {/* 6. BOTTOM SPLIT SECTION — 7/5 PROPORTIONAL SPLIT FOR COMPACT GREEN BOX */}
+      <div className="grid grid-cols-12 gap-5 pt-2 items-start relative z-10">
         
-        {/* LEFT BOX: BETAALINFORMATIE */}
-        <div className="bg-[#F5F2EB] p-4 rounded-xl border border-[#E5E0D5] space-y-2">
-          <p className="text-[10px] font-bold uppercase text-[#4A5043] tracking-widest">BETAALINFORMATIE</p>
-          <p className="text-[11px] text-[#33382F]">Maak het totaalbedrag binnen 14 dagen over op:</p>
-          <p className="font-mono font-bold text-[#2B3028] text-base tracking-wide">{compIban}</p>
-          <p className="text-[11px] text-[#33382F]">ten name van <strong className="text-[#2B3028] font-bold">{compName}</strong></p>
+        {/* LEFT BOX: BETAALINFORMATIE (col-span-7) */}
+        <div className="col-span-7 bg-[#F6F3EC] p-5 rounded-2xl border border-[#E6E0D4] space-y-2">
+          <p className="text-[9px] font-semibold uppercase text-[#8A7966] tracking-[0.2em]">BETAALINFORMATIE</p>
+          <p className="text-[11px] text-[#656C5F] font-normal">Maak het totaalbedrag binnen 14 dagen over op:</p>
+          <p className="font-bold text-[#475C40] text-[15px] tracking-wide pt-0.5">{compIban}</p>
+          <p className="text-[11px] text-[#656C5F] font-normal">ten name van <strong className="text-[#475C40] font-semibold">{compName}</strong></p>
           
-          <div className="inline-block bg-[#E8E3D8] text-[#33422C] px-3.5 py-1 rounded-md text-[11px] font-mono font-bold border border-[#D6CFC2] mt-1">
-            o.v.v. factuurnummer {invId}
+          <div className="inline-block bg-[#EAE5DB] text-[#555C4E] px-3.5 py-1.5 rounded-lg text-[10.5px] font-normal border border-[#DCD5C6] mt-1.5">
+            o.v.v. factuurnummer <span className="font-semibold text-[#475C40]">{invId}</span>
           </div>
         </div>
 
-        {/* RIGHT BOX: TOTALS CARD & REMINDER BAR */}
-        <div className="space-y-2.5">
-          <div className="bg-[#33422C] text-[#FDFBF7] p-4 rounded-xl shadow-md space-y-2.5 font-body">
-            <div className="flex justify-between items-center text-xs text-cream/90 font-mono">
+        {/* RIGHT BOX: TOTALS CARD & REMINDER BAR (col-span-5 — COMPACT GREEN BOX) */}
+        <div className="col-span-5 space-y-2.5">
+          <div className="bg-[#354530] text-[#FDFBF7] p-5 rounded-2xl shadow-sm space-y-2">
+            <div className="flex justify-between items-center text-[11px] text-[#C4CBBF] font-normal">
               <span>Totaal excl. btw</span>
-              <span className="font-bold">{formatDutchCurrency(totalExcl)}</span>
+              <span className="font-medium text-[#F2F5EF]">{formatDutchCurrency(totalExcl)}</span>
             </div>
-            <div className="flex justify-between items-center text-xs text-cream/90 font-mono">
+            <div className="flex justify-between items-center text-[11px] text-[#C4CBBF] font-normal">
               <span>Btw 21%</span>
-              <span className="font-bold">{formatDutchCurrency(vat21)}</span>
+              <span className="font-medium text-[#F2F5EF]">{formatDutchCurrency(vat21)}</span>
             </div>
 
-            <div className="h-px bg-white/25"></div>
+            <div className="border-t border-[#4E5E48] my-2"></div>
 
-            <div className="flex justify-between items-center gap-2">
-              <span className="font-bold text-xs uppercase tracking-wider">Te betalen</span>
-              <span className="font-heading font-bold text-xl sm:text-2xl text-cream whitespace-nowrap">
+            <div className="flex justify-between items-baseline gap-2 pt-0.5">
+              <span className="text-xs text-[#E0E7DC] font-medium">Te betalen</span>
+              <span 
+                className="text-2xl text-white whitespace-nowrap"
+                style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 600 }}
+              >
                 {formatDutchCurrency(totalIncl)}
               </span>
             </div>
-            <p className="text-[10px] text-cream/70 font-mono text-right">Betalingstermijn 14 dagen</p>
+            <p className="text-[9.5px] text-[#9EAA98] font-normal text-right">Betaaltermijn: 14 dagen</p>
           </div>
 
-          <div className="bg-[#F5F2EB] p-2.5 rounded-lg border border-[#E5E0D5] text-center text-[11px] font-bold text-[#33422C] flex items-center justify-center gap-2">
-            <Calendar className="w-4 h-4 text-emerald-800 flex-shrink-0" />
-            <span>Graag betalen vóór {dueDate}</span>
+          <div className="bg-[#EFECE5] py-2.5 px-3 rounded-xl border border-[#E2DDD4] text-center text-[11px] text-[#5A6253] font-normal flex items-center justify-center gap-2">
+            <Calendar className="w-3.5 h-3.5 text-[#8A7966] shrink-0" />
+            <span>Graag betalen vóór <strong className="font-semibold text-[#22271F]">{dueDate}</strong></span>
           </div>
         </div>
       </div>
 
       {/* 7. PERSONAL NOTE BOX */}
-      <div className="bg-[#F5F2EB] p-3.5 rounded-lg border-l-4 border-l-[#33422C] space-y-1">
-        <p className="font-heading italic text-xs font-semibold text-[#33422C]">
+      <div className="bg-[#F8F6F0] py-3.5 px-5 rounded-xl border-l-[3.5px] border-l-[#354530] space-y-1 relative z-10">
+        <p className="italic text-[13.5px] sm:text-[14px] font-normal text-[#384232] leading-snug" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
           {invoice?.productType?.toLowerCase()?.includes('garden') || invoice?.productType?.toLowerCase()?.includes('buitenverblijf') || invoice?.productType?.toLowerCase()?.includes('veranda')
             ? 'Veel plezier van je nieuwe buitenverblijf. Vragen of iets nodig? Je weet ons te vinden.'
             : 'Veel plezier van je buitenkeuken. Vragen of iets nodig? Je weet ons te vinden.'}
         </p>
-        <p className="text-[9.5px] font-bold uppercase tracking-wider text-[#4A5043] font-mono">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#8A7966] pt-0.5">
           TIM & BRAM · {compName.toUpperCase()}
         </p>
       </div>
 
       {/* 8. FOOTER */}
-      <div className="pt-3 border-t border-[#E5E0D5] flex justify-between items-center text-[10px] text-[#4A5043] font-mono font-semibold">
-        <span className="font-bold text-[#2B3028]">{compName.toUpperCase()}</span>
-        <span>{compAddress} · {compEmail} · {compWebsite}</span>
-        <span>1/1</span>
+      <div className="pt-3 border-t border-[#EAE5DA] flex justify-between items-center text-[9.5px] text-[#7A8073] font-normal relative z-10">
+        <span className="font-semibold text-[#22271F] tracking-[0.18em]">{compName.toUpperCase()}</span>
+        <span className="text-[#8A7966]">{compAddress} · {compEmail} · {compWebsite || compPhone}</span>
       </div>
     </div>
   );

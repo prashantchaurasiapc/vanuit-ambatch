@@ -598,16 +598,39 @@ export async function downloadInvoicePdf(invoice) {
   const root = createRoot(tempDiv);
   root.render(React.createElement(FactuurPDFTemplate, { invoice: inv }));
 
-  // Wait 500ms for images, fonts and React layout render
-  await new Promise(resolve => setTimeout(resolve, 500));
+  // Wait for React DOM commit, Google fonts and image elements to complete loading
+  await new Promise(resolve => setTimeout(resolve, 350));
+  try {
+    await Promise.all([
+      document.fonts.load('500 34px "Playfair Display"'),
+      document.fonts.load('italic 34px "Playfair Display"'),
+      document.fonts.load('500 34px "Cormorant Garamond"'),
+      document.fonts.load('600 34px "Cormorant Garamond"'),
+      document.fonts.load('bold 14px "Montserrat"'),
+      document.fonts.load('500 12px "Montserrat"')
+    ]);
+  } catch (e) {}
   await document.fonts.ready;
+
+  const imgs = Array.from(tempDiv.querySelectorAll('img'));
+  await Promise.all(
+    imgs.map(img => {
+      if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+      return new Promise(resolve => {
+        img.onload = resolve;
+        img.onerror = resolve;
+        setTimeout(resolve, 1500);
+      });
+    })
+  );
+  await new Promise(resolve => setTimeout(resolve, 250));
 
   const targetEl = tempDiv.querySelector('#printable-factuur') || tempDiv.firstElementChild || tempDiv;
 
   const canvas = await html2canvas(targetEl, {
     scale: 2,
     useCORS: true,
-    allowTaint: true,
+    allowTaint: false,
     backgroundColor: '#FFFFFF',
     logging: false
   });

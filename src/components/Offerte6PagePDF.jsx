@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wrench, MessageSquare, ShieldCheck, DollarSign } from 'lucide-react';
+import { Wrench, MessageSquare, ShieldCheck, DollarSign, Calendar, Pencil, Clock } from 'lucide-react';
 import projectImg from '../assets/outdoor_project_card.png';
 import heroImg from '/dasbordes images.png';
 import { calculateTotals, calculateInstalments } from '../utils/quoteSchema';
@@ -110,9 +110,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
     : `${woodType} · ${cleanDimensions} cm · ${coverOptionStr}`;
 
   const coverPhotos = [
-    cover.photos?.[0] || '/outdoor_project_card.png',
-    cover.photos?.[1] || '/dasbordes images.png',
-    cover.photos?.[2] || '/outdoor_project_card.png'
+    (cover.photos?.[0] && String(cover.photos[0]).trim().length > 3) ? cover.photos[0] : '/cover_img1.png',
+    (cover.photos?.[1] && String(cover.photos[1]).trim().length > 3) ? cover.photos[1] : '/cover_img2.png',
+    (cover.photos?.[2] && String(cover.photos[2]).trim().length > 3) ? cover.photos[2] : '/cover_img3.png'
   ];
 
   // Dynamic Line Items & Calculations
@@ -217,6 +217,17 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   // Format Helpers
   const formatEuro = (num) => `€ ${Math.round(num).toLocaleString('nl-NL')},00`;
   const formatDecEuro = (num) => `€ ${num.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatDutchDate = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const months = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    } catch (e) {
+      return dateStr;
+    }
+  };
 
   return (
     <div className="offerte-pdf-container space-y-8 print:space-y-0 text-dark font-body select-text">
@@ -226,66 +237,48 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       {(!activePage || activePage === 'all' || Number(activePage) === 1) && (
         <div className="offerte-pdf-page bg-[#33422C] text-[#FDFBF7] p-6 sm:p-8 space-y-4 relative rounded-xl shadow-2xl print:rounded-none print:shadow-none h-[1050px] flex flex-col justify-between overflow-hidden">
 
-          {/* Background Watermark - VA Monogram SVG (matches client PDF) */}
-          <svg
-            viewBox="0 0 320 420"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            style={{
-              position: 'absolute',
-              top: '50%',
-              right: '-8%',
-              transform: 'translateY(-50%)',
-              width: '65%',
-              height: 'auto',
-              opacity: 0.07,
-              pointerEvents: 'none',
-              userSelect: 'none'
-            }}
-          >
-            {/* V shape */}
-            <path d="M10 30 L90 370 L170 30" stroke="white" strokeWidth="22" strokeLinecap="square" strokeLinejoin="miter" fill="none" />
-            {/* A shape overlapping */}
-            <path d="M100 30 L180 370 L260 30" stroke="white" strokeWidth="22" strokeLinecap="square" strokeLinejoin="miter" fill="none" />
-            {/* A crossbar */}
-            <line x1="120" y1="220" x2="240" y2="220" stroke="white" strokeWidth="18" strokeLinecap="square" />
-          </svg>
+        {/* Background Watermark - Authentic VA Monogram matching client PDF */}
+        <img
+          src="/va_watermark.png"
+          alt=""
+          className="absolute right-[-2%] top-[22%] w-[58%] max-w-[460px] opacity-[0.065] pointer-events-none select-none"
+        />
 
-          <div className="space-y-6 relative z-10">
-            {/* Header Bar */}
-            <div className="relative flex justify-center items-center pt-2 pb-2">
-              <img src="/pdf_logo.png" alt="Vanuit Ambacht Logo" className="h-12 sm:h-14 object-contain mx-auto" />
-              <div className="absolute right-0 top-3">
-                <span className="text-xs font-mono font-bold border border-[#6B7B61] text-[#E5DFD5] bg-[#45543D]/40 px-4 py-1.5 rounded-full shadow-xs uppercase tracking-wider">
-                  {language === 'EN' ? 'PROPOSAL' : 'OFFERTE'}
-                </span>
-              </div>
+        <div className="space-y-6 relative z-10">
+          {/* Header Bar */}
+          <div className="relative flex justify-center items-center pt-2 pb-2">
+            <img src="/pdf_logo.png" alt="Vanuit Ambacht Logo" className="h-10 sm:h-12 w-auto object-contain mx-auto" />
+            <div className="absolute right-0 top-1/2 -translate-y-1/2">
+              <span className="text-xs font-bold border border-[#6B7B61] text-[#E5DFD5] bg-[#45543D]/40 px-4 py-1.5 rounded-full shadow-xs uppercase tracking-wider" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                {language === 'EN' ? 'PROPOSAL' : 'OFFERTE'}
+              </span>
             </div>
+          </div>
 
             {/* Subtitle & Main Title */}
             <div className="space-y-3 pt-12 sm:pt-16">
               <div className="space-y-1.5">
-                <div className="text-xs font-mono text-[#D6CFC2] tracking-wider uppercase block font-semibold">
-                  {language === 'EN' ? 'CUSTOM PROPOSAL' : 'VOORSTEL OP MAAT'} &nbsp;·&nbsp; <span className="text-[#C4A47C] font-bold">{quoteId}</span>
+                <div className="text-xs tracking-[0.14em] uppercase block font-semibold text-[#F7C873]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                  {language === 'EN' ? 'CUSTOM PROPOSAL' : 'VOORSTEL OP MAAT'} &nbsp;·&nbsp; {quoteId}
                 </div>
                 <div className="w-16 h-[2px] bg-[#8A7966]"></div>
               </div>
 
-              <h2 className={`text-4xl sm:text-5xl text-[#FDFBF7] leading-[1.12] pt-2 font-normal transition-all duration-300 ${highlightField === 'title' ? 'bg-amber-300/80 text-dark px-2 rounded ring-2 ring-amber-400' : ''}`} style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 400 }}>
+              <h2 className={`text-4xl sm:text-5xl text-[#FDFBF7] leading-[1.15] pt-2 font-normal transition-all duration-300 ${highlightField === 'title' ? 'bg-amber-300/80 text-dark px-2 rounded ring-2 ring-amber-400' : ''}`} style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 400 }}>
                 {titleLine1}<br />
                 <span className="italic" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 400 }}>{titleLine2}</span>
               </h2>
 
-              <p className={`text-xs sm:text-sm font-mono pt-3 transition-all duration-300 ${highlightField === 'wood' || highlightField === 'title' ? 'bg-amber-300/80 text-dark px-2 py-0.5 rounded ring-2 ring-amber-400 font-extrabold' : ''}`}>
+              <p className={`text-xs sm:text-sm pt-3 transition-all duration-300 ${highlightField === 'wood' || highlightField === 'title' ? 'bg-amber-300/80 text-dark px-2 py-0.5 rounded ring-2 ring-amber-400 font-extrabold' : ''}`} style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 {cover.subtitleOverrideEnabled && cover.customSubtitle ? (
-                  <span className="text-[#C4A47C] font-bold">{cover.customSubtitle}</span>
+                  <span className="text-[#F7C873] font-normal">{cover.customSubtitle}</span>
                 ) : (
                   <>
-                    <span className="text-[#C4A47C] font-bold">{woodType}</span>
-                    <span className="text-[#C4A47C] font-bold mx-1.5">·</span>
-                    <span className="text-[#FDFBF7] font-normal">{cleanDimensions} {language === 'EN' ? 'cm' : 'cm'}</span>
-                    <span className="text-[#C4A47C] font-bold mx-1.5">·</span>
-                    <span className="text-[#C4A47C] font-bold">{coverOptionStr}</span>
+                    <span className="text-[#F7C873] font-normal">{woodType}</span>
+                    <span className="text-[#F7C873] mx-2">·</span>
+                    <span className="text-[#F7C873] font-normal">{cleanDimensions} {language === 'EN' ? 'cm' : 'cm'}</span>
+                    <span className="text-[#F7C873] mx-2">·</span>
+                    <span className="text-[#F7C873] font-normal">{coverOptionStr}</span>
                   </>
                 )}
               </p>
@@ -293,23 +286,23 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           </div>
 
           {/* Customer & Quote Metadata */}
-          <div className="space-y-4 relative z-10">
-            <div className="pt-4 border-t border-[#4E5E45]/80 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
+          <div className="space-y-4 relative z-10" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+            <div className="pt-4 border-t border-[#4E5E45]/80 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'customer' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
-                <span className="text-[10px] text-[#A19888] uppercase block tracking-wider font-bold">{language === 'EN' ? 'PREPARED FOR' : 'OPGESTELD VOOR'}</span>
-                <span className="font-bold text-[#C4A47C] text-xs sm:text-sm block mt-0.5">{customerName}</span>
+                <span className="text-[10px] text-[#A7AC9B] uppercase block tracking-[0.16em] font-medium">{language === 'EN' ? 'PREPARED FOR' : 'OPGESTELD VOOR'}</span>
+                <span className="font-medium text-[#F7C873] text-xs sm:text-sm block mt-1 tracking-wide">{customerName}</span>
               </div>
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'date' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
-                <span className="text-[10px] text-[#A19888] uppercase block tracking-wider font-bold">{language === 'EN' ? 'PROPOSAL NUMBER' : 'OFFERTENUMMER'}</span>
-                <span className="font-bold text-[#C4A47C] text-xs sm:text-sm block mt-0.5">{quoteId}</span>
+                <span className="text-[10px] text-[#A7AC9B] uppercase block tracking-[0.16em] font-medium">{language === 'EN' ? 'PROPOSAL NUMBER' : 'OFFERTENUMMER'}</span>
+                <span className="font-medium text-[#F7C873] text-xs sm:text-sm block mt-1 tracking-wide">{quoteId}</span>
               </div>
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'date' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
-                <span className="text-[10px] text-[#A19888] uppercase block tracking-wider font-bold">{language === 'EN' ? 'DATE' : 'DATUM'}</span>
-                <span className="font-bold text-[#C4A47C] text-xs sm:text-sm block mt-0.5">{quoteDate}</span>
+                <span className="text-[10px] text-[#A7AC9B] uppercase block tracking-[0.16em] font-medium">{language === 'EN' ? 'DATE' : 'DATUM'}</span>
+                <span className="font-medium text-[#F7C873] text-xs sm:text-sm block mt-1 tracking-wide">{quoteDate}</span>
               </div>
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'date' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
-                <span className="text-[10px] text-[#A19888] uppercase block tracking-wider font-bold">{language === 'EN' ? 'VALID UNTIL' : 'GELDIG T/M'}</span>
-                <span className="font-bold text-[#C4A47C] text-xs sm:text-sm block mt-0.5">{validUntil}</span>
+                <span className="text-[10px] text-[#A7AC9B] uppercase block tracking-[0.16em] font-medium">{language === 'EN' ? 'VALID UNTIL' : 'GELDIG T/M'}</span>
+                <span className="font-medium text-[#F7C873] text-xs sm:text-sm block mt-1 tracking-wide">{validUntil}</span>
               </div>
             </div>
 
@@ -321,11 +314,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   className="relative h-full w-full rounded-xl overflow-hidden bg-[#2D3A27] shadow-xs"
                 >
                   <img
-                    src={pImg || (idx === 1 ? '/dasbordes images.png' : '/outdoor_project_card.png')}
+                    src={pImg || (idx === 0 ? '/cover_img1.png' : idx === 1 ? '/cover_img2.png' : '/cover_img3.png')}
                     alt={`Cover Photo ${idx + 1}`}
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src = idx === 1 ? '/dasbordes images.png' : '/outdoor_project_card.png';
+                      e.target.src = idx === 0 ? '/cover_img1.png' : idx === 1 ? '/cover_img2.png' : '/cover_img3.png';
                     }}
                     className="absolute inset-0 w-full h-full object-cover object-center"
                   />
@@ -334,9 +327,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             </div>
 
             {/* Footer Bar */}
-            <div className="flex justify-between items-center text-[10px] font-mono text-[#D6CFC2] pt-1 pb-1">
-              <span className="font-bold tracking-wider">VANUITAMBACHT.NL</span>
-              <span>AMBACHT &nbsp;·&nbsp; KWALITEIT &nbsp;·&nbsp; PERSOONLIJK</span>
+            <div className="flex justify-between items-center text-[10px] text-[#A7AC9B] tracking-[0.16em] pt-1 pb-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+              <span className="font-medium">VANUITAMBACHT.NL</span>
+              <span className="font-normal">AMBACHT &nbsp;·&nbsp; KWALITEIT &nbsp;·&nbsp; PERSOONLIJK</span>
             </div>
           </div>
         </div>
@@ -346,25 +339,25 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       {(!activePage || activePage === 'all' || Number(activePage) === 2) && (
         <div className="offerte-pdf-page bg-[#FDFBF7] text-dark p-6 sm:p-8 space-y-4 rounded-xl shadow-xl print:rounded-none print:shadow-none h-[1050px] flex flex-col justify-between border border-[#C4BEB3]">
           <div className="space-y-4">
-            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs font-mono">
+            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs">
               <div className="flex items-center gap-2">
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
-              <div className="text-[11px] font-mono font-semibold text-right leading-tight tracking-wider">
-                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C4A47C] font-bold">{quoteId}</span></div>
-                <div className="text-[#C4A47C] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
+              <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
+                <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
 
             {/* Section 01: Persoonlijk Woord */}
             <div className="space-y-3">
-              <span className="text-[10px] font-mono text-accent font-bold uppercase tracking-wider block">
-                01 · {language === 'EN' ? 'PERSONAL LETTER' : 'PERSOONLIJK WOORD'}
+              <span className="text-[10px] text-[#8A8275] font-semibold uppercase tracking-[0.16em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                01 &nbsp;·&nbsp; PERSOONLIJK WOORD
               </span>
               <div className="grid grid-cols-3 gap-5 items-start">
-                <div className="col-span-2 space-y-2.5 text-xs leading-relaxed text-dark/80">
-                  <h3 className="text-2xl sm:text-3xl font-serif text-primary" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
-                    {quote?.letterAndProcess?.salutation || (language === 'EN' ? `Dear ${firstName},` : `Beste ${firstName},`)}
+                <div className="col-span-2 space-y-3 text-[13px] leading-[1.65] text-[#4A4A43]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                  <h3 className="text-2xl sm:text-3xl font-normal text-[#33422C]" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
+                    Beste <span className="text-[#C2571B] capitalize font-medium">{firstName}</span>,
                   </h3>
                   {(quote?.letterAndProcess?.letterParagraphs || [
                     language === 'EN' ? 'Thank you very much for your inquiry and pleasant consultation. We are delighted to present this personalized proposal for your custom outdoor kitchen.' : 'Hartelijk dank voor je aanvraag en het prettige gesprek. Met veel plezier presenteren wij deze persoonlijke offerte voor jouw maatwerk buitenkeuken.',
@@ -374,11 +367,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   ]).map((para, idx) => (
                     <p key={idx}>{para}</p>
                   ))}
-                  <div className="pt-1">
-                    <p className="font-serif font-bold text-primary text-base italic" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+                  <div className="pt-2">
+                    <p className="text-base text-primary font-normal italic" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                       {quote?.letterAndProcess?.signoffName || 'Tim & Bram'}
                     </p>
-                    <p className="text-[10px] text-accent font-bold font-mono tracking-widest uppercase">
+                    <p className="text-[10px] text-[#8A8275] font-semibold tracking-[0.16em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                       {quote?.letterAndProcess?.signoffRole ? quote.letterAndProcess.signoffRole.toUpperCase() : (language === 'EN' ? 'FOUNDERS VANUIT AMBACHT' : 'OPRICHTERS VANUIT AMBACHT')}
                     </p>
                   </div>
@@ -388,7 +381,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <div className="col-span-1 bg-[#F4EFE6] rounded-2xl overflow-hidden border border-[#E2DDD3] shadow-xs text-left">
                   <img src="/extracted_pdf_img_17.jpg" alt="Tim & Bram" className="h-36 w-full object-cover" />
                   <div className="p-3">
-                    <p className="text-[10px] text-dark/75 leading-relaxed font-body">
+                    <p className="text-[11.5px] text-[#4A4A43] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                       {language === 'EN'
                         ? 'Tim & Bram, your dedicated point of contact from first sketch to aftercare.'
                         : 'Tim & Bram, jouw vaste aanspreekpunt van eerste schets tot nazorg.'}
@@ -400,38 +393,81 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
             {/* Section 02: Waarom Vanuit Ambacht */}
             <div className="pt-3 border-t border-[#C4BEB3] space-y-3">
-              <span className="text-[10px] font-mono text-accent font-bold uppercase tracking-wider block">
-                02 · {language === 'EN' ? 'WHY VANUIT AMBACHT' : 'WAAROM VANUIT AMBACHT'}
+              <span className="text-[10px] text-[#8A8275] font-semibold uppercase tracking-[0.16em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                02 &nbsp;·&nbsp; WAAROM VANUIT AMBACHT
               </span>
-              <h4 className="text-xl sm:text-2xl font-serif text-primary font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
-                {language === 'EN' ? 'What you can count on' : 'Waar je op kunt rekenen'}
+              <h4 className="text-2xl sm:text-3xl text-[#33422C] tracking-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
+                Waar je op kunt rekenen
               </h4>
 
-              <div className="grid grid-cols-2 gap-3">
-                {(quote?.letterAndProcess?.uspCards || [
-                  { title: language === 'EN' ? 'SPECIALIST CRAFTSMEN' : 'VAKSPECIALISTEN', desc: language === 'EN' ? 'Handcrafted by certified specialist craftsmen from our nationwide network. True craftsmanship, from foundation to finish.' : 'De bouw ligt altijd bij gecertificeerde vakspecialisten uit ons landelijke netwerk. Vakwerk, van fundering tot afwerking.' },
-                  { title: language === 'EN' ? 'SINGLE POINT OF CONTACT' : 'ÉÉN AANSPREEKPUNT', desc: language === 'EN' ? 'Direct communication with Tim or Bram via WhatsApp, email, or phone. Short lines, quick responses.' : 'Je schakelt rechtstreeks met Tim of Bram, via WhatsApp, mail of telefoon. Korte lijnen, snelle antwoorden.' },
-                  { title: language === 'EN' ? 'WARRANTY & AFTERCARE' : 'GARANTIE ÉN NAZORG', desc: language === 'EN' ? 'Warranty on structure and full aftercare upon delivery. Even after installation, we remain your point of contact.' : 'Garantie op de constructie en nazorg na oplevering. Ook als het verblijf er staat, blijven wij je aanspreekpunt.' },
-                  { title: language === 'EN' ? 'ONLINE EXCELLENCE' : 'BEWUST ONLINE', desc: language === 'EN' ? 'Operating without a physical showroom is a conscious choice. You pay for craftsmanship and premium timber, not overhead.' : 'Geen showroom is een bewuste keuze. Zo betaal je voor vakwerk en materiaal, niet voor overhead.' }
-                ]).map((card, idx) => (
-                  <div key={idx} className="p-4 bg-[#F6F4EE] rounded-2xl border border-[#E3DDD3] space-y-2">
-                    <div className="w-8 h-8 rounded-full bg-[#33422C] text-[#FDFBF7] flex items-center justify-center flex-shrink-0">
-                      <Wrench className="w-3.5 h-3.5 text-[#FDFBF7]" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <h5 className="font-bold text-[#33422C] text-xs uppercase font-mono">{card.title}</h5>
-                      <p className="text-[11px] text-dark/75 leading-relaxed">{card.desc}</p>
-                    </div>
+              {(() => {
+                const defaultCards = [
+                  {
+                    icon: Wrench,
+                    title: 'Gecertificeerde vakmensen',
+                    desc: 'De bouw ligt altijd bij gecertificeerde vakspecialisten uit ons landelijke netwerk. Vakwerk, van fundering tot afwerking.'
+                  },
+                  {
+                    icon: MessageSquare,
+                    title: 'Eén vast aanspreekpunt',
+                    desc: 'Je schakelt rechtstreeks met Tim of Bram, via WhatsApp, mail of telefoon. Korte lijnen, snelle antwoorden.'
+                  },
+                  {
+                    icon: ShieldCheck,
+                    title: 'Garantie én nazorg',
+                    desc: 'Garantie op de constructie en nazorg na oplevering. Ook als het verblijf er staat, blijven wij je aanspreekpunt.'
+                  },
+                  {
+                    icon: DollarSign,
+                    title: 'Eerlijke prijs, bewust online',
+                    desc: 'Geen showroom is een bewuste keuze. Zo betaal je voor vakwerk en materiaal, niet voor overhead.'
+                  }
+                ];
+
+                const icons = [Wrench, MessageSquare, ShieldCheck, DollarSign];
+                const rawCards = quote?.letterAndProcess?.uspCards;
+
+                const cardsToRender = defaultCards.map((def, idx) => {
+                  const raw = rawCards?.[idx];
+                  if (!raw) return def;
+                  const isOldUppercase = ['VAKSPECIALISTEN', 'ÉÉN AANSPREEKPUNT', 'GARANTIE & NAZORG', 'BEWUST ONLINE'].includes(raw.title);
+                  return {
+                    icon: icons[idx] || Wrench,
+                    title: isOldUppercase ? def.title : (raw.title || def.title),
+                    desc: isOldUppercase ? def.desc : (raw.desc || def.desc)
+                  };
+                });
+
+                return (
+                  <div className="grid grid-cols-2 gap-3">
+                    {cardsToRender.map((card, idx) => {
+                      const IconComp = card.icon;
+                      return (
+                        <div key={idx} className="p-4 bg-[#F6F4EE] rounded-2xl border border-[#E3DDD3] space-y-2">
+                          <div className="w-8 h-8 rounded-full bg-[#33422C] text-[#FDFBF7] flex items-center justify-center flex-shrink-0">
+                            <IconComp className="w-4 h-4 text-[#FDFBF7]" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <h5 className="font-semibold text-[#33422C] text-[13px] tracking-normal" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                              {card.title}
+                            </h5>
+                            <p className="text-[11.5px] text-[#4A4A43] leading-[1.6]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                              {card.desc}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] font-mono text-dark/60">
+          <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
-            <span>Offerte <strong className="text-[#C4A47C]">{quoteId}</strong></span>
+            <span>Offerte <strong className="text-[#C2571B]">{quoteId}</strong></span>
             <span className="font-bold">2 / 6</span>
           </div>
         </div>
@@ -441,13 +477,13 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       {(!activePage || activePage === 'all' || Number(activePage) === 3) && (
         <div className="offerte-pdf-page bg-[#FDFBF7] text-dark p-6 sm:p-8 space-y-4 rounded-xl shadow-xl print:rounded-none print:shadow-none h-[1050px] flex flex-col justify-between border border-[#C4BEB3]">
           <div className="space-y-4">
-            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs font-mono">
+            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs">
               <div className="flex items-center gap-2">
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
-              <div className="text-[11px] font-mono font-semibold text-right leading-tight tracking-wider">
-                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C4A47C] font-bold">{quoteId}</span></div>
-                <div className="text-[#C4A47C] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
+              <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
+                <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
 
@@ -463,36 +499,36 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             {/* 4 Green Stat Tiles */}
             <div className="grid grid-cols-4 gap-2.5">
               <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
-                <span className="text-[9px] uppercase font-mono tracking-widest text-[#C4A47C] block font-bold">
+                <span className="text-[9px] uppercase font-mono tracking-widest text-[#F7C873] block font-bold">
                   {language === 'EN' ? 'DIMENSIONS' : 'AFMETING'}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#C4A47C] leading-tight font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{cleanDimensions}</p>
+                <p className="text-lg sm:text-xl font-serif text-[#F7C873] leading-tight font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{cleanDimensions}</p>
                 <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">{config.dimensionsUnit || 'centimeter'}</span>
               </div>
 
               <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
-                <span className="text-[9px] uppercase font-mono tracking-widest text-[#C4A47C] block font-bold">
+                <span className="text-[9px] uppercase font-mono tracking-widest text-[#F7C873] block font-bold">
                   {language === 'EN' ? 'WOOD TYPE' : 'HOUTSOORT'}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#C4A47C] leading-tight font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{woodType}</p>
+                <p className="text-lg sm:text-xl font-serif text-[#F7C873] leading-tight font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{woodType}</p>
                 <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">{config.woodLifespan || woodLifespan}</span>
               </div>
 
               <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
-                <span className="text-[9px] uppercase font-mono tracking-widest text-[#C4A47C] block font-bold">
+                <span className="text-[9px] uppercase font-mono tracking-widest text-[#F7C873] block font-bold">
                   {tile3Title}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#C4A47C] leading-tight font-normal truncate" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{tile3Value}</p>
+                <p className="text-lg sm:text-xl font-serif text-[#F7C873] leading-tight font-normal truncate" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{tile3Value}</p>
                 <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
                   {config.optionsSubtext || tile3Subtext}
                 </span>
               </div>
 
               <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
-                <span className="text-[9px] uppercase font-mono tracking-widest text-[#C4A47C] block font-bold">
+                <span className="text-[9px] uppercase font-mono tracking-widest text-[#F7C873] block font-bold">
                   {language === 'EN' ? 'DELIVERY TIME' : 'LEVERTIJD'}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#C4A47C] leading-tight font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{deliveryTime}</p>
+                <p className="text-lg sm:text-xl font-serif text-[#F7C873] leading-tight font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{deliveryTime}</p>
                 <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
                   {config.deliverySubtext || (language === 'EN' ? 'upon drawing approval' : 'na akkoord op tekening')}
                 </span>
@@ -504,14 +540,17 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               <div className="space-y-3.5 text-xs font-body">
                 {specifications.map((sec, sIdx) => (
                   <div key={sec.id || sIdx}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-[#C4A47C] font-mono text-[10px] uppercase tracking-wider whitespace-nowrap">{sec.title}</span>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="font-bold text-[#C2571B] text-[11px] uppercase tracking-[0.14em] whitespace-nowrap" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                        {sec.title}
+                      </span>
                       <div className="flex-1 h-[1px] bg-[#E2DDD3]"></div>
                     </div>
-                    <ul className="space-y-1 text-dark/80 text-[11px]">
+                    <ul className="space-y-1.5 text-[#C2571B] font-medium text-[11.5px] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                       {(sec.lines || []).map((l, lIdx) => (
                         <li key={lIdx} className="flex items-start gap-2">
-                          <span className="text-[#33422C] font-bold">✓</span> {l.text}
+                          <span className="text-[#33422C] font-bold flex-shrink-0">✓</span>
+                          <span>{l.text}</span>
                         </li>
                       ))}
                     </ul>
@@ -523,6 +562,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               <div className="space-y-3">
                 <div className={`relative rounded-2xl overflow-hidden border border-[#D6CFC2] shadow-xs bg-[#F4EFE6] flex items-center justify-center p-1.5 transition-all ${diagram.show ? 'h-44 sm:h-48' : 'h-64 sm:h-72'
                   }`}>
+                  <div className="absolute top-2.5 left-2.5 bg-[#C2571B] text-white text-[9px] font-bold tracking-[0.14em] px-2.5 py-1 rounded-md uppercase font-sans z-10 shadow-xs">
+                    DYNAMISCH · FOTO / RENDER
+                  </div>
                   <img
                     src={config.configPhoto || projectImg}
                     alt="Configuration"
@@ -533,56 +575,41 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
                 {/* Floor-Plan Top-View Diagram for Garden Room / Veranda / Poolhouse */}
                 {isGardenRoom ? (
-                  <div className="p-3 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] text-center space-y-2 shadow-xs font-body">
-                    <span className="text-[9px] font-mono uppercase font-bold text-accent tracking-widest block">
-                      {language === 'EN' ? `ARCHITECTURAL FLOOR-PLAN TOP VIEW (${cleanDimensions} CM)` : `PLATTEGROND PLATTEGROND INDELING (${cleanDimensions} CM)`}
+                  <div className="p-3 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] space-y-2 shadow-xs font-body">
+                    <span className="text-[10px] uppercase font-bold text-[#8A8275] tracking-[0.14em] block text-center" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                      INDELING PLATTEGROND
                     </span>
 
-                    {/* Visual SVG Top-View Architectural Diagram */}
-                    <div className="relative h-28 bg-white border-2 border-[#33422C] rounded-xl p-2 flex flex-col justify-between shadow-inner">
-                      {/* Roof & Beam Outlines */}
-                      <div className="absolute inset-1 border border-dashed border-[#8A8275] rounded-lg pointer-events-none flex items-center justify-center">
-                        <span className="text-[9px] font-mono text-[#8A8275] uppercase tracking-widest opacity-40 font-bold">
-                          {categoryTitle.toUpperCase()} ONDERDAK
-                        </span>
+                    {/* Exact Client 2-Compartment Floorplan Card */}
+                    <div className="h-28 flex gap-2">
+                      {/* Left: Poolhouse / Closed Timber Section */}
+                      <div className="w-[42%] bg-[#33422C] text-[#FDFBF7] rounded-xl p-2.5 flex flex-col justify-center items-center text-center">
+                        <span className="text-xs font-medium" style={{ fontFamily: "'Montserrat', sans-serif" }}>poolhouse</span>
+                        <span className="text-[10.5px] text-[#D6CFC2] mt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>dicht · 3,00 m</span>
                       </div>
 
-                      {/* Top Wall (Closed Timber Wall) */}
-                      <div className="w-full h-2.5 bg-[#33422C] rounded-xs flex items-center justify-center">
-                        <span className="text-[7px] font-mono text-white font-bold uppercase tracking-wider">Achterwand (Hout)</span>
-                      </div>
-
-                      {/* Center Room & Glass Sliding Doors */}
-                      <div className="flex justify-between items-center px-1 my-auto z-10">
-                        {/* Left Corner Post */}
-                        <div className="w-4 h-4 bg-[#C4A47C] rounded-xs flex items-center justify-center text-[7px] font-mono text-white font-bold">P1</div>
-
-                        {/* Glass Door Line */}
-                        <div className="flex-1 mx-2 border-b-2 border-dashed border-[#0284C7] flex justify-center">
-                          <span className="text-[8px] font-mono font-bold text-[#0284C7] bg-white px-1">Glazen Schuifwand (4-Rail)</span>
-                        </div>
-
-                        {/* Right Corner Post */}
-                        <div className="w-4 h-4 bg-[#C4A47C] rounded-xs flex items-center justify-center text-[7px] font-mono text-white font-bold">P2</div>
-                      </div>
-
-                      {/* Bottom Front Opening */}
-                      <div className="w-full flex justify-between items-center text-[8px] font-mono text-[#33422C] pt-0.5 border-t border-[#D6CFC2]">
-                        <span className="font-bold">Hoekpaal L</span>
-                        <span className="font-bold text-[#C4A47C]">{cleanDimensions} cm</span>
-                        <span className="font-bold">Hoekpaal R</span>
+                      {/* Right: Lounge / Overkapt Section */}
+                      <div className="flex-1 bg-white border border-[#D6CFC2] text-[#C2571B] rounded-xl p-2.5 flex flex-col justify-center items-center text-center">
+                        <span className="text-xs font-semibold" style={{ fontFamily: "'Montserrat', sans-serif" }}>lounge</span>
+                        <span className="text-[10.5px] text-[#C2571B] font-medium mt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>overkapt · 5,00 m</span>
                       </div>
                     </div>
 
-                    <div className="text-[9px] font-mono text-dark/70 border-t border-[#D6CFC2]/60 pt-1 flex justify-between px-1">
-                      <span>Fundering: <strong className="text-primary">Betonpoeren (Stelpost)</strong></span>
-                      <span>Hout: <strong className="text-[#C4A47C]">{woodType}</strong></span>
+                    {/* Dimension Bar */}
+                    <div className="flex items-center justify-between text-[11px] font-mono text-[#C2571B] font-bold px-1 pt-0.5">
+                      <span>0</span>
+                      <div className="flex-1 mx-2.5 flex items-center">
+                        <div className="w-[1.5px] h-3 bg-[#C2571B]"></div>
+                        <div className="flex-1 h-[1.5px] bg-[#C2571B]"></div>
+                        <div className="w-[1.5px] h-3 bg-[#C2571B]"></div>
+                      </div>
+                      <span>8,00 m</span>
                     </div>
                   </div>
                 ) : diagram.show && (
                   <div className="p-3 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] text-center space-y-2 shadow-xs">
-                    <span className="text-[9px] font-mono uppercase font-bold text-accent tracking-widest block">
-                      {language === 'EN' ? `FRONT VIEW DIAGRAM (${diagram.totalWidth} CM)` : `VOORAANZEICHT TEKENING (${diagram.totalWidth} CM)`}
+                    <span className="text-[9px] uppercase font-bold text-[#8A8275] tracking-[0.14em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                      {language === 'EN' ? `FRONT VIEW DIAGRAM (${diagram.totalWidth} CM)` : `VOORAANZICHT TEKENING (${diagram.totalWidth} CM)`}
                     </span>
 
                     <div className="flex items-center justify-center gap-1 font-mono text-[9px]">
@@ -603,8 +630,8 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                     </div>
 
                     <div className="text-[9px] font-mono text-dark/60 border-t border-[#D6CFC2]/60 pt-1 flex justify-between px-2">
-                      <span>0 cm</span>
-                      <span className="font-bold text-primary">{diagram.totalWidth} cm</span>
+                      <span className="font-bold text-[#C2571B]">0 cm</span>
+                      <span className="font-bold text-[#C2571B]">{diagram.totalWidth} cm</span>
                     </div>
                   </div>
                 )}
@@ -612,8 +639,8 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 {/* Wood Infobox */}
                 {infobox.show && (
                   <div className="p-3.5 bg-[#35442E] text-[#FDFBF7] rounded-2xl space-y-1 shadow-sm border border-[#43543A]">
-                    <h4 className="text-sm font-serif text-[#C4A47C] font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{infobox.title}</h4>
-                    <p className="text-[11px] text-[#E5DFD5] leading-relaxed font-body">
+                    <h4 className="text-sm font-normal text-[#F7C873]" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>{infobox.title}</h4>
+                    <p className="text-[11px] text-[#E5DFD5] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                       {infobox.text}
                     </p>
                   </div>
@@ -623,9 +650,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           </div>
 
           {/* Footer */}
-          <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] font-mono text-dark/60">
+          <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
-            <span>Offerte <strong className="text-[#C4A47C]">{quoteId}</strong></span>
+            <span>Offerte <strong className="text-[#C2571B]">{quoteId}</strong></span>
             <span className="font-bold">3 / 6</span>
           </div>
         </div>
@@ -635,30 +662,30 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       {(!activePage || activePage === 'all' || Number(activePage) === 4) && (
         <div className="offerte-pdf-page bg-[#FDFBF7] text-dark p-6 sm:p-8 space-y-4 rounded-xl shadow-xl print:rounded-none print:shadow-none h-[1050px] flex flex-col justify-between border border-[#C4BEB3]">
           <div className="space-y-6">
-            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs font-mono">
+            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs">
               <div className="flex items-center gap-2">
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
-              <div className="text-[11px] font-mono font-semibold text-right leading-tight tracking-wider">
-                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C4A47C] font-bold">{quoteId}</span></div>
-                <div className="text-[#C4A47C] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
+              <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
+                <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
 
             <div className="space-y-1">
-              <span className="text-[10px] font-mono text-accent font-bold uppercase tracking-wider block">
-                {quote?.investment?.sectionTitle || '04 · INVESTERING'}
+              <span className="text-[10px] text-[#8A8275] font-semibold uppercase tracking-[0.16em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                04 &nbsp;·&nbsp; INVESTERING
               </span>
-              <h3 className="text-2xl sm:text-3xl font-serif text-primary font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
-                {quote?.investment?.title || 'Heldere prijs, alles inbegrepen'}
+              <h3 className="text-2xl sm:text-3xl text-[#33422C] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
+                {quote?.investment?.title && quote.investment.title !== 'Heldere prijs, alles inbegrepen' ? quote.investment.title : 'Uw investering in één overzicht'}
               </h3>
             </div>
 
             {/* Line Items Table */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-y border-[#33422C] text-[10px] font-mono uppercase tracking-widest text-[#33422C] font-bold">
+                  <tr className="border-y border-[#33422C] text-[10px] uppercase tracking-[0.14em] text-[#33422C] font-bold" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                     <th className="py-2.5 px-1">OMSCHRIJVING</th>
                     <th className="py-2.5 px-3 text-center">AANTAL</th>
                     <th className="py-2.5 px-1 text-right">BEDRAG</th>
@@ -667,67 +694,97 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <tbody className="divide-y divide-[#E2DDD3] text-xs">
                   {items.map((item, idx) => (
                     <tr key={idx}>
-                      <td className="py-3.5 px-1">
-                        <p className="font-bold text-[#C4A47C] text-xs sm:text-sm">{item.title || item.description}</p>
-                        {item.description && item.title && <p className="text-[11px] text-[#C4A47C]/90 mt-0.5 leading-relaxed">{item.description}</p>}
+                      <td className="py-3 px-1">
+                        <p className="font-bold text-[#C2571B] text-xs sm:text-sm" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                          {item.title || item.description}
+                        </p>
+                        {item.description && item.title && (
+                          <p className="text-[11px] text-[#C2571B] mt-0.5 leading-relaxed font-normal" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                            {item.description}
+                          </p>
+                        )}
                       </td>
-                      <td className="py-3.5 px-3 text-center font-mono font-bold text-dark/80">{item.quantity || 1}</td>
-                      <td className="py-3.5 px-1 text-right font-mono font-bold text-[#C4A47C] text-sm whitespace-nowrap">
+                      <td className="py-3 px-3 text-center font-mono font-bold text-[#33422C]">{item.quantity || 1}</td>
+                      <td className="py-3 px-1 text-right font-mono font-bold text-[#C2571B] text-sm whitespace-nowrap">
                         {item.isIncluded || Number(item.priceInclVat || item.unitPrice || 0) === 0
-                          ? <span className="font-bold text-[#C4A47C]">Inbegrepen</span>
+                          ? <span className="font-bold text-[#C2571B]">Inbegrepen</span>
                           : formatEuro(Number(item.priceInclVat || item.unitPrice || 0) * Number(item.quantity || 1))}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+
+              <div className="border-b border-[#E2DDD3] pb-2 mb-3">
+                <p className="text-[10px] text-[#C2571B]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                  {quote?.investment?.stelpostDisclaimer || '* Stelpost: dit bedrag is een zorgvuldige inschatting. We rekenen af op basis van de werkelijke kosten, altijd in overleg vooraf.'}
+                </p>
+              </div>
             </div>
 
             {/* Included Checklist + Totals Card */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
               <div className="p-5 sm:p-6 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] space-y-3.5 shadow-xs">
-                <p className="font-mono text-[10px] uppercase font-bold text-accent tracking-widest">
+                <p className="text-[10px] uppercase font-bold text-[#8A8275] tracking-[0.14em]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {quote?.investment?.checklistTitle || 'INBEGREPEN BIJ JOUW INVESTERING'}
                 </p>
-                <ul className="space-y-2 text-xs text-dark/80 font-body">
-                  {(quote?.investment?.checklist || [
-                    'Volledig maatwerk, met de hand gemaakt',
-                    'Digitale tekening ter bevestiging vóór productie',
-                    finishTreatment,
-                    isFreeDelivery ? `Gratis bezorging in ${city}` : `Bezorging in ${city}`,
-                    'Garantie op het product én nazorg na levering'
-                  ]).map((cLine, cIdx) => (
-                    <li key={cIdx} className="flex items-center gap-2.5">
-                      <span className="text-[#33422C] font-bold">✓</span> {typeof cLine === 'string' ? cLine.replace('{city}', city).replace('{finish}', finishTreatment) : (cLine?.text || '')}
+                <ul className="space-y-2 text-xs text-[#4A4A43] font-body" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                  {(
+                    quote?.investment?.checklist && quote.investment.checklist.length > 0 && !quote.investment.checklist[0].includes('Volledig maatwerk, gebouwd door')
+                      ? quote.investment.checklist
+                      : [
+                          'Ontwerp en technische tekening vóór de bouw',
+                          'Schouw op locatie vóór de start van de bouw',
+                          'Bouw door een gecertificeerde vakspecialist',
+                          'Transport, montage en opruimen van de bouwplaats',
+                          'Garantie op de constructie én nazorg na oplevering'
+                        ]
+                  ).map((cLine, cIdx) => (
+                    <li key={cIdx} className="flex items-start gap-2.5">
+                      <span className="text-[#33422C] font-bold flex-shrink-0 mt-0.5">✓</span>
+                      <span className="leading-relaxed">{typeof cLine === 'string' ? cLine.replace('{city}', city).replace('{finish}', finishTreatment) : (cLine?.text || '')}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
               <div className="space-y-3">
-                <div className="p-6 bg-[#35442E] text-[#FDFBF7] rounded-2xl space-y-4 shadow-sm border border-[#43543A]">
-                  <div className="space-y-2 text-xs font-mono">
+                <div className="p-6 bg-[#35442E] text-[#FDFBF7] rounded-2xl space-y-3 shadow-sm border border-[#43543A]">
+                  <div className="space-y-2 text-xs" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                     <div className="flex justify-between text-[#E5DFD5]">
                       <span>Totaal excl. btw</span>
-                      <span className="text-[#C4A47C] font-bold">{formatDecEuro(totalExcl)}</span>
+                      <span className="text-[#F7C873] font-medium">{formatDecEuro(totalExcl)}</span>
                     </div>
                     <div className="flex justify-between text-[#E5DFD5]">
                       <span>Btw 21%</span>
-                      <span className="text-[#C4A47C] font-bold">{formatDecEuro(vatAmount)}</span>
+                      <span className="text-[#F7C873] font-medium">{formatDecEuro(vatAmount)}</span>
                     </div>
                     <div className="flex justify-between items-baseline pt-3 border-t border-[#4E5E45]">
-                      <span className="text-sm font-bold text-[#FDFBF7]">Totaal incl. btw</span>
-                      <span className="text-2xl sm:text-3xl text-[#C4A47C] font-serif font-bold">{formatEuro(totalIncl)}</span>
+                      <span className="text-sm font-semibold text-[#FDFBF7]">Totaal incl. btw</span>
+                      <span className="text-2xl sm:text-3xl text-[#F7C873] font-serif font-bold" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{formatEuro(totalIncl)}</span>
                     </div>
+                    <p className="text-[10px] text-[#D6CFC2] italic text-right block pt-0.5">
+                      {quote?.investment?.vatDisclaimer || 'Alle bedragen inclusief btw'}
+                    </p>
                   </div>
                 </div>
 
-                <div className="p-3 bg-[#EAE5DC] text-primary text-[11px] font-body rounded-xl font-medium flex items-center justify-center gap-2 border border-[#E2DDD3]">
+                <div className="p-3.5 bg-[#EDE8DF] text-[#4A4A43] text-xs rounded-xl flex items-center gap-2.5 border border-[#E2DDD3]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                  <Calendar className="w-4 h-4 text-[#8A8275] flex-shrink-0" />
                   <span>
-                    {quote?.investment?.validityNote
-                      ? quote.investment.validityNote.replace('{validUntil}', validUntil)
-                      : <>Deze offerte is geldig tot en met <strong className="text-[#C4A47C]">{validUntil}</strong></>
-                    }
+                    {quote?.investment?.validityText ? (
+                      quote.investment.validityText.includes('{date}') ? (
+                        <>
+                          {quote.investment.validityText.split('{date}')[0]}
+                          <strong className="text-[#C2571B] font-bold">{formatDutchDate(validUntil)}</strong>
+                          {quote.investment.validityText.split('{date}')[1] || ''}
+                        </>
+                      ) : (
+                        quote.investment.validityText
+                      )
+                    ) : (
+                      <>Deze offerte is geldig tot en met <strong className="text-[#C2571B] font-bold">{formatDutchDate(validUntil)}</strong></>
+                    )}
                   </span>
                 </div>
               </div>
@@ -735,29 +792,43 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
             {/* Payment Instalments */}
             <div className="pt-2 space-y-2.5">
-              <p className="font-mono text-[10px] uppercase font-bold text-accent tracking-widest">
+              <p className="text-[10px] uppercase font-bold text-[#8A8275] tracking-[0.14em]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 BETALING IN {instalmentCards.length === 3 ? 'DRIE' : 'TWEE'} TERMIJNEN
               </p>
-              <div className={`grid grid-cols-1 ${instalmentCards.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3 font-body`}>
-                {instalmentCards.map((inst, idx) => (
-                  <div key={idx} className="p-4 bg-white rounded-2xl border border-[#E3DDD3] space-y-1 shadow-2xs">
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-3xl sm:text-4xl font-serif text-[#C4A47C]" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{inst.percentage}%</span>
-                      <div className="text-right">
-                        <p className="font-bold text-[#C4A47C] text-xs">{inst.label}</p>
-                        <p className="text-xs font-bold font-mono text-[#C4A47C]">{formatEuro(inst.amount)}</p>
+              <div className={`grid grid-cols-1 ${instalmentCards.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
+                {instalmentCards.map((inst, idx) => {
+                  const customSubtext = (quote?.investment?.instalments?.subtexts && quote.investment.instalments.subtexts[idx]) || null;
+                  const defaultSubtext = customSubtext || (instalmentCards.length === 3
+                    ? (idx === 0 ? 'Na akkoord op de technische tekening.' : idx === 1 ? 'Vlak vóór de startdatum op locatie.' : 'Pas als alles naar wens is opgeleverd.')
+                    : (idx === 0 ? 'Na akkoord op de technische tekening.' : 'Pas als alles naar wens is opgeleverd.'));
+
+                  return (
+                    <div key={idx} className="p-4 bg-white rounded-2xl border border-[#E3DDD3] flex items-center justify-between shadow-2xs">
+                      <span className="text-3xl sm:text-4xl text-[#C2571B] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                        {inst.percentage}%
+                      </span>
+                      <div className="text-right space-y-0.5">
+                        <p className="font-bold text-[#C2571B] text-xs" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                          {inst.label}
+                        </p>
+                        <p className="text-xs font-bold text-[#C2571B]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                          {formatEuro(inst.amount)}
+                        </p>
+                        <p className="text-[10px] text-[#C2571B] font-medium leading-tight pt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                          {defaultSubtext}
+                        </p>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] font-mono text-dark/60">
+          <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
-            <span>Offerte <strong className="text-[#C4A47C]">{quoteId}</strong></span>
+            <span>Offerte <strong className="text-[#C2571B]">{quoteId}</strong></span>
             <span className="font-bold">4 / 6</span>
           </div>
         </div>
@@ -767,13 +838,13 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       {(!activePage || activePage === 'all' || Number(activePage) === 5) && (
         <div className="offerte-pdf-page bg-[#FDFBF7] text-dark p-6 sm:p-8 space-y-4 rounded-xl shadow-xl print:rounded-none print:shadow-none h-[1050px] flex flex-col justify-between border border-[#C4BEB3]">
           <div className="space-y-6">
-            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs font-mono">
+            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs">
               <div className="flex items-center gap-2">
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
-              <div className="text-[11px] font-mono font-semibold text-right leading-tight tracking-wider">
-                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C4A47C] font-bold">{quoteId}</span></div>
-                <div className="text-[#C4A47C] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
+              <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
+                <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
 
@@ -809,7 +880,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <span className="text-[10px] font-mono uppercase font-bold text-accent tracking-widest block">VOOR AKKOORD · OPDRACHTGEVER</span>
                 <div className="pt-2 space-y-4 font-body">
                   <div className="relative pb-1 border-b-2 border-[#33422C]">
-                    <span className="font-serif italic text-[#C4A47C] text-xl font-medium block h-7" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{customerName}</span>
+                    <span className="font-serif italic text-[#C2571B] text-xl font-medium block h-7" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{customerName}</span>
                     <span className="text-[10px] font-mono text-dark/60 block mt-1">Naam</span>
                   </div>
                   <div className="pb-1 border-b-2 border-[#33422C]">
@@ -827,7 +898,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <span className="text-[10px] font-mono uppercase font-bold text-accent tracking-widest block">NAMENS VANUIT AMBACHT</span>
                 <div className="pt-2 space-y-4 font-body">
                   <div className="relative pb-1 border-b-2 border-[#33422C]">
-                    <span className="font-serif italic text-[#33422C] text-xl font-medium block h-7" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+                    <span className="font-serif italic text-[#33422C] text-xl font-medium block h-7" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                       {quote?.letterAndProcess?.signoffName || 'Tim & Bram'}
                     </span>
                     <span className="text-[10px] font-mono text-dark/60 block mt-1">Naam · {quote?.letterAndProcess?.signoffRole || 'Vanuit Ambacht'}</span>
@@ -843,6 +914,32 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 </div>
               </div>
             </div>
+
+            {/* If approved, show official approval audit badge on Page 5 */}
+            {(() => {
+              const isApproved =
+                quote?.status === 'Akkoord' ||
+                quote?.status === 'Accepted' ||
+                quote?.status === 'Approved' ||
+                quote?.status === 'Geaccepteerd' ||
+                Boolean(quote?.signerName || quote?.approvedAt);
+
+              const signerName = quote?.signerName || customerName;
+              const approvedAtDate = quote?.approvedAt || (quote?.date ? `${quote.date} (Digitaal)` : '04-08-2026 17:10');
+
+              if (!isApproved) return null;
+              return (
+                <div className="p-3 bg-[#3E4E36]/10 border border-[#3E4E36] rounded-xl flex items-center justify-between text-xs font-mono text-[#3E4E36] shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-[#3E4E36]" />
+                    <span>Officiëel Digitaal Geaccepteerd · <strong className="text-dark">{signerName}</strong> ({approvedAtDate})</span>
+                  </div>
+                  <span className="text-[10px] font-bold bg-[#3E4E36] text-[#FDFBF7] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    Rechtsgeldig
+                  </span>
+                </div>
+              );
+            })()}
 
             <div className="pt-4 border-t-2 border-[#33422C] grid grid-cols-3 gap-4 text-[10px] font-mono text-dark/80">
               <div>
@@ -866,9 +963,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           </div>
 
           {/* Footer */}
-          <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] font-mono text-dark/60">
+          <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
-            <span>Offerte <strong className="text-[#C4A47C]">{quoteId}</strong></span>
+            <span>Offerte <strong className="text-[#C2571B]">{quoteId}</strong></span>
             <span className="font-bold">5 / 6</span>
           </div>
         </div>
@@ -877,136 +974,137 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       {/* PAGE 6 OF 6: VAN AKKOORD TOT ACHTERTUIN */}
       {(!activePage || activePage === 'all' || Number(activePage) === 6) && (
         <div className="offerte-pdf-page bg-[#FDFBF7] text-dark p-6 sm:p-8 space-y-4 rounded-xl shadow-xl print:rounded-none print:shadow-none h-[1050px] flex flex-col justify-between border border-[#C4BEB3]">
-          <div className="space-y-6">
-            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs font-mono">
+          <div className="space-y-5">
+            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs">
               <div className="flex items-center gap-2">
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
-              <div className="text-[11px] font-mono font-semibold text-right leading-tight tracking-wider">
-                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C4A47C] font-bold">{quoteId}</span></div>
-                <div className="text-[#C4A47C] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
+              <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
+                <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
 
             <div className="space-y-1">
-              <span className="text-[10px] font-mono text-accent font-bold uppercase tracking-wider block">06 · VAN AKKOORD TOT ACHTERTUIN</span>
-              <h3 className="text-2xl sm:text-3xl font-serif text-primary font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+              <span className="text-[10px] sm:text-[11px] font-semibold text-[#8A8275] tracking-[0.16em] uppercase block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                06 · VAN AKKOORD TOT ACHTERTUIN
+              </span>
+              <h3 className="text-2xl sm:text-3xl font-serif text-[#33422C] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                 {quote?.letterAndProcess?.processTitle || 'Zo werkt het in vijf stappen'}
               </h3>
             </div>
 
             {/* 5 Vertical Process Steps */}
             <div className="relative pt-2 pl-2">
-              <div className="absolute left-[23px] top-6 bottom-8 w-[2px] bg-[#C4BEB3]"></div>
-              <div className="space-y-6 relative z-10">
-                {(quote?.letterAndProcess?.processSteps || [
-                  { step: '1', title: 'Akkoord op de offerte', desc: 'Bevestig eenvoudig per mail of WhatsApp, of onderteken de akkoordpagina. Vanaf dat moment nemen wij alles uit handen.' },
-                  { step: '2', title: 'Digitale tekening ter bevestiging', desc: 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.' },
-                  { step: '3', title: 'Productie door onze vakspecialist', badge: deliveryTime.toUpperCase(), desc: 'Jouw keuken wordt met de hand gemaakt door een gecertificeerde vakspecialist. Tussentijds houden we je op de hoogte.' },
-                  { step: '4', title: `Bezorging in ${city}`, badge: isFreeDelivery ? 'GRATIS' : null, desc: `We leveren de keuken op een moment dat jou uitkomt in ${city}. Dankzij de zes zwenkwielen staat hij direct op de juiste plek.` },
-                  { step: '5', title: 'Garantie & nazorg', desc: 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.' }
-                ]).map((s, sIdx) => {
-                  const stepNum = s.step || s.stepNumber || sIdx + 1;
-                  const stepBadge = s.badge !== undefined && s.badge !== '' ? s.badge : (sIdx === 2 ? deliveryTime.toUpperCase() : sIdx === 3 && isFreeDelivery ? 'GRATIS' : null);
-                  return (
-                    <div key={stepNum} className="flex items-start gap-4">
-                      <div className="w-9 h-9 rounded-full bg-[#33422C] text-[#FDFBF7] font-bold text-sm flex items-center justify-center flex-shrink-0 shadow-xs border-2 border-[#FDFBF7]">
-                        {stepNum}
-                      </div>
-                      <div className="space-y-0.5 pt-1">
-                        <div className="flex items-center gap-3">
-                          <p className="font-bold text-[#33422C] text-sm sm:text-base font-body">{s.title}</p>
-                          {stepBadge && (
-                            <span className="bg-[#EAE5DC] text-[#C4A47C] text-[9px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-[#E2DDD3]">
-                              {stepBadge}
-                            </span>
-                          )}
+              <div className="absolute left-[25px] top-4 bottom-6 w-[2px] bg-[#D8D2C7]"></div>
+              <div className="space-y-4 relative z-10">
+                {(() => {
+                  const defaultClientSteps = [
+                    { step: '1', title: 'Akkoord op de offerte', desc: 'Bevestig eenvoudig per mail of WhatsApp, of onderteken de akkoordpagina. Vanaf dat moment nemen wij alles uit handen.', badge: null },
+                    { step: '2', title: 'Ontwerp en technische tekening', desc: 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.', badge: null },
+                    { step: '3', title: 'Schouw op locatie', desc: 'Onze vakspecialist komt langs om de ondergrond, bereikbaarheid en aansluitingen te controleren. Daarna plannen we de bouwdatum in.', badge: null },
+                    { step: '4', title: 'De bouw', badge: '2 TOT 3 WEKEN', desc: 'Jouw buitenverblijf wordt op locatie gebouwd door een gecertificeerde vakspecialist. Tussentijds houden we je op de hoogte.' },
+                    { step: '5', title: 'Oplevering, garantie & nazorg', desc: 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.', badge: null }
+                  ];
+
+                  const rawSteps = quote?.letterAndProcess?.processSteps || defaultClientSteps;
+                  return rawSteps.map((s, sIdx) => {
+                    let stepNum = s.step || s.stepNumber || String(sIdx + 1);
+                    let title = s.title || defaultClientSteps[sIdx]?.title;
+                    let desc = s.desc || defaultClientSteps[sIdx]?.desc;
+                    let badge = s.badge;
+
+                    // Ensure alignment with authentic client PDF if previous dummy steps were stored
+                    if (sIdx === 1 && (title === 'Digitale tekening ter bevestiging' || !title)) {
+                      title = 'Ontwerp en technische tekening';
+                      desc = 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.';
+                    } else if (sIdx === 2 && (title === 'Productie door onze vakspecialist' || !title)) {
+                      title = 'Schouw op locatie';
+                      desc = 'Onze vakspecialist komt langs om de ondergrond, bereikbaarheid en aansluitingen te controleren. Daarna plannen we de bouwdatum in.';
+                      badge = null;
+                    } else if (sIdx === 3 && (title?.toLowerCase().includes('bezorging') || title === 'De bouw' || !title)) {
+                      title = 'De bouw';
+                      desc = 'Jouw buitenverblijf wordt op locatie gebouwd door een gecertificeerde vakspecialist. Tussentijds houden we je op de hoogte.';
+                      badge = badge || '2 TOT 3 WEKEN';
+                    } else if (sIdx === 4 && (title === 'Garantie & nazorg' || !title)) {
+                      title = 'Oplevering, garantie & nazorg';
+                      desc = 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.';
+                    }
+
+                    return (
+                      <div key={stepNum} className="flex items-start gap-4">
+                        <div
+                          className="w-9 h-9 rounded-full bg-[#33422C] text-[#FDFBF7] font-semibold text-sm flex items-center justify-center flex-shrink-0 shadow-xs border-2 border-[#FDFBF7]"
+                          style={{ fontFamily: "'Montserrat', sans-serif" }}
+                        >
+                          {stepNum}
                         </div>
-                        <p className="text-xs text-dark/75 leading-relaxed font-body max-w-2xl">{s.desc}</p>
+                        <div className="space-y-1 pt-0.5">
+                          <div className="flex items-center gap-2.5">
+                            <span className="font-bold text-[#33422C] text-sm sm:text-[15px]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                              {title}
+                            </span>
+                            {badge && (
+                              <span
+                                className="bg-[#F5EBE1] text-[#C2571B] text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider"
+                                style={{ fontFamily: "'Montserrat', sans-serif" }}
+                              >
+                                {badge}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-[#5A554E] leading-relaxed max-w-2xl" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                            {desc}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
               </div>
             </div>
 
-            <div className="p-5 sm:p-6 bg-[#F4EFE6] border border-[#E2DDD3] rounded-2xl flex items-stretch gap-4 shadow-xs">
-              <div className="w-1 bg-[#33422C] rounded-full flex-shrink-0"></div>
-              <div className="space-y-1.5">
-                <p className="text-base sm:text-xl font-serif italic text-[#33422C] leading-snug whitespace-pre-line" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+            {/* Quote Callout Box */}
+            <div className="p-6 bg-[#F8F5EE] border border-[#EAE5DC] rounded-xl flex items-stretch gap-4 shadow-2xs">
+              <div className="w-[3px] bg-[#33422C] rounded-full flex-shrink-0"></div>
+              <div className="space-y-2">
+                <p className="text-base sm:text-lg font-serif italic text-[#33422C] leading-snug whitespace-pre-line" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                   {quote?.letterAndProcess?.closingQuote || '“Geen massa. Geen standaardoplossing.\nGewoon goed gemaakt. Voor jou.”'}
                 </p>
-                <p className="text-[10px] font-mono text-accent font-bold tracking-widest uppercase">
+                <p className="text-[11px] font-semibold text-[#8A8275] tracking-[0.16em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {quote?.letterAndProcess?.closingAuthor || `TIM & BRAM · ${compName.toUpperCase()}`}
                 </p>
               </div>
             </div>
 
-            {/* Digital Approval Stamp Box */}
-            {(() => {
-              const isApproved =
-                quote?.status === 'Akkoord' ||
-                quote?.status === 'Accepted' ||
-                quote?.status === 'Approved' ||
-                quote?.status === 'Geaccepteerd' ||
-                Boolean(quote?.signerName || quote?.approvedAt);
-
-              const signerName = quote?.signerName || customerName;
-              const approvedAtDate = quote?.approvedAt || (quote?.date ? `${quote.date} (Digitaal)` : '04-08-2026 17:10');
-              const signerIp = quote?.signerIp || '192.168.1.1 (Verified Audit Log)';
-
-              if (isApproved) {
-                return (
-                  <div className="p-4 bg-[#3E4E36]/10 border-2 border-[#3E4E36] rounded-2xl space-y-2 font-body text-[#3E4E36] shadow-xs">
-                    <div className="flex items-center justify-between border-b border-[#3E4E36]/30 pb-2">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="w-5 h-5 text-[#3E4E36]" />
-                        <span className="font-heading font-bold text-sm tracking-wide uppercase">
-                          Officiëel Digitaal Geaccepteerd & Ondertekend
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-mono font-bold bg-[#3E4E36] text-[#FDFBF7] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                        Rechtsgeldig
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 text-xs pt-1">
-                      <div>
-                        <p className="text-[10px] font-mono text-dark/60 uppercase font-semibold">Ondertekend door:</p>
-                        <p className="font-bold text-dark text-sm">{signerName}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-mono text-dark/60 uppercase font-semibold">Datum & Tijdstip:</p>
-                        <p className="font-bold text-dark font-mono text-xs">{approvedAtDate}</p>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-[#3E4E36]/20 pt-2 flex justify-between items-center text-[10px] font-mono text-dark/70">
-                      <span>Legal IP Audit: <strong className="text-dark">{signerIp}</strong></span>
-                      <span>Status: <strong className="text-[#3E4E36]">DOCUMENT-OF-{quoteId}-VERIFIED-VALID</strong></span>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <div className="p-4 bg-[#EDE8DF]/60 border border-dashed border-[#C4BEB3] rounded-2xl flex items-center justify-between text-xs text-dark/60 font-body">
-                  <div>
-                    <p className="font-bold text-dark">Digitale Handtekening & Akkoord</p>
-                    <p className="text-[11px] text-dark/60">Nog niet digitaal ondertekend. Accepteer de offerte online voor officiële audit stempel.</p>
-                  </div>
-                  <div className="w-36 h-10 border-b border-dark/40 flex items-end justify-center text-[10px] text-dark/40 font-mono italic pb-0.5">
-                    Handtekening Klant
-                  </div>
+            {/* Bottom 2 Service Guarantee Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-4 bg-white/70 border border-[#EAE5DC] rounded-xl space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 text-[#33422C] font-bold text-xs sm:text-[13px]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                  <Pencil className="w-3.5 h-3.5 text-[#33422C] flex-shrink-0" />
+                  <span>Wijzigingen vóór de bouw</span>
                 </div>
-              );
-            })()}
+                <p className="text-[11px] text-[#5A554E] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                  Wil je nog iets aanpassen? Tot het akkoord op de tekening verwerken we wijzigingen kosteloos in een bijgewerkte offerte.
+                </p>
+              </div>
+
+              <div className="p-4 bg-white/70 border border-[#EAE5DC] rounded-xl space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 text-[#33422C] font-bold text-xs sm:text-[13px]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                  <Clock className="w-3.5 h-3.5 text-[#33422C] flex-shrink-0" />
+                  <span>Meerwerk en minderwerk</span>
+                </div>
+                <p className="text-[11px] text-[#5A554E] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                  Aanpassingen na akkoord stemmen we altijd eerst met je af, inclusief een heldere prijsopgave. Geen verrassingen achteraf.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Footer */}
-          <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] font-mono text-dark/60">
+          <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">{compName.toUpperCase()}</span>
-            <span>Offerte <strong className="text-[#C4A47C]">{quoteId}</strong></span>
+            <span>Offerte <strong className="text-[#C2571B]">{quoteId}</strong></span>
             <span className="font-bold">6 / 6</span>
           </div>
         </div>

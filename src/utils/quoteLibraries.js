@@ -123,6 +123,79 @@ export const PRODUCT_TYPE_DEFAULTS = {
       { stepNumber: 3, title: 'Craftsman Production', badgeText: '{deliveryTime}', isGratisBadge: false },
       { stepNumber: 4, title: 'Delivery & Installation in {city}', badgeText: 'FREE', isGratisBadge: true },
       { stepNumber: 5, title: 'Warranty & Service', badgeText: '', isGratisBadge: false }
+    ],
+    configuration: {
+      dimensions: '240 × 80',
+      dimensionsUnit: 'centimeter',
+      woodType: 'Thermo Fraké',
+      woodLifespan: '20 tot 25 jaar',
+      optionsTitle: 'Big Green Egg Large',
+      optionsSubtext: 'Large, rechts van het midden',
+      deliveryTime: '3 tot 5 weken',
+      deliverySubtext: 'na akkoord op tekening',
+      options: {
+        bbqCutout: { enabled: true, type: 'Big Green Egg' },
+        fridge: { enabled: false },
+        sink: { enabled: false }
+      },
+      infobox: {
+        show: true,
+        title: 'Over Thermo Fraké',
+        text: 'Thermisch behandeld Fraké: vormstabiel, duurzaam en met een warme, diepe kleur. Gaat 20 tot 25 jaar mee en veroudert prachtig grijs.'
+      },
+      specifications: [
+        {
+          id: 'sec-1',
+          title: 'BOVENBLAD',
+          lines: [
+            { id: 'l1', text: 'Keramische stenen in het werkblad – hittebestendig en onderhoudsarm' },
+            { id: 'l2', text: 'Uitsparing op maat voor Big Green Egg Large' }
+          ]
+        },
+        {
+          id: 'sec-2',
+          title: 'INDELING & OPBERGRUIMTE',
+          lines: [
+            { id: 'l3', text: 'Twee ruime opbergvakken met deurtjes en soft-close scharnieren' },
+            { id: 'l4', text: 'Open schap voor houtopslag' }
+          ]
+        },
+        {
+          id: 'sec-3',
+          title: 'AFWERKING & MOBILITEIT',
+          lines: [
+            { id: 'l5', text: 'Olieafwerking in twee lagen (naturel)' },
+            { id: 'l6', text: 'Verborgen heavy-duty zwenkwielen voor eenvoudige verplaatsing' }
+          ]
+        },
+        {
+          id: 'sec-4',
+          title: 'BEZORGING',
+          lines: [
+            { id: 'l7', text: 'Gratis bezorgd op een moment dat jou uitkomt' }
+          ]
+        }
+      ]
+    },
+    lineItems: [
+      {
+        id: 'ok-1',
+        title: 'Buitenkeuken Thermo Fraké · 240 × 80 cm',
+        description: 'Houten bovenblad met keramische stenen en uitsparing voor Big Green Egg Large, afgewerkt met twee lagen olie (naturel)',
+        priceInclVat: 3495,
+        vatRate: 21,
+        isIncluded: false,
+        quantity: 1
+      },
+      {
+        id: 'ok-2',
+        title: 'Bezorging en Plaatsing op locatie',
+        description: 'Geleverd en vakkundig opgesteld op uw terras',
+        priceInclVat: 0,
+        vatRate: 21,
+        isIncluded: true,
+        quantity: 1
+      }
     ]
   },
   'Garden room': {
@@ -137,7 +210,7 @@ export const PRODUCT_TYPE_DEFAULTS = {
     checklist: [
       'Fully custom timber construction',
       'Architectural blueprint beforehand',
-      '{finish}',
+      'Hoogwaardige EPDM dakbedekking',
       'Free delivery & assembly in {city}',
       '10-year warranty on timber structure'
     ],
@@ -147,6 +220,88 @@ export const PRODUCT_TYPE_DEFAULTS = {
       { stepNumber: 3, title: 'Prefab Production in Workshop', badgeText: '{deliveryTime}', isGratisBadge: false },
       { stepNumber: 4, title: 'Assembly in {city}', badgeText: 'FREE', isGratisBadge: true },
       { stepNumber: 5, title: 'Completion & Warranty', badgeText: '', isGratisBadge: false }
+    ],
+    configuration: {
+      dimensions: '600 × 350',
+      dimensionsUnit: 'centimeter (LxB)',
+      woodType: 'Douglas geschaafd',
+      woodLifespan: '15 tot 20 jaar',
+      optionsTitle: 'Glazen schuifwand & EPDM',
+      optionsSubtext: '4-rail gehard veiligheidsglas',
+      deliveryTime: '6 tot 8 weken',
+      deliverySubtext: 'na akkoord op bouwtekening',
+      roofType: 'Plat dak met EPDM',
+      roofSubtext: 'Inclusief aluminium daktrim & afvoer',
+      wallType: 'Glazen schuifwanden (4-rail)',
+      floorType: 'Geen vloer (op terras)',
+      foundationType: 'Betonpoeren met stelplaat',
+      infobox: {
+        show: true,
+        title: 'Over Douglas Hout',
+        text: 'Douglas hout is een van de hardste en meest duurzame Europese naaldhoutsoorten. Onbehandeld heeft het een levensduur van 10 tot 15 jaar, behandeld tot meer dan 20 jaar.'
+      },
+      specifications: [
+        {
+          id: 'sec-1',
+          title: 'DAKCONSTRUCTIE',
+          lines: [
+            { id: 'l1', text: 'Plat dak voorzien van hoogwaardige EPDM dakbedekking en aluminium daktrim' },
+            { id: 'l2', text: 'Zware Douglas balklaag (75 × 200 mm) en vellingdelen dakbeschot' }
+          ]
+        },
+        {
+          id: 'sec-2',
+          title: 'CONSTRUCTIE & WANDEN',
+          lines: [
+            { id: 'l3', text: 'Robuuste staanders van 150 × 150 mm geschaafd Douglas' },
+            { id: 'l4', text: 'Zweeds rabat zwarte achter- en zijwanden voor optimale privacy' }
+          ]
+        },
+        {
+          id: 'sec-3',
+          title: 'GLASWANDEN & AFWERKING',
+          lines: [
+            { id: 'l5', text: 'Luxe 4-rail glazen schuifwandsysteem van 10 mm gehard veiligheidsglas' },
+            { id: 'l6', text: 'Betonpoeren met stelplaat voor solide vorstvrije fundering' }
+          ]
+        },
+        {
+          id: 'sec-4',
+          title: 'LEVERING & MONTAGE',
+          lines: [
+            { id: 'l7', text: 'Prefab voorbereiding in werkplaats en vakkundige montage op locatie' }
+          ]
+        }
+      ]
+    },
+    lineItems: [
+      {
+        id: 'gr-1',
+        title: 'Maatwerk Buitenverblijf / Garden Room 600 × 350 cm',
+        description: 'Robuuste Douglas staanders (150x150mm), EPDM dakbedekking met daktrim en zwarte rabatwanden',
+        priceInclVat: 8950,
+        vatRate: 21,
+        isIncluded: false,
+        quantity: 1
+      },
+      {
+        id: 'gr-2',
+        title: 'Glazen Schuifwandsysteem (4-rail)',
+        description: '10mm gehard veiligheidsglas incl. tochtborstels en aluminium geleideprofielen',
+        priceInclVat: 1950,
+        vatRate: 21,
+        isIncluded: false,
+        quantity: 1
+      },
+      {
+        id: 'gr-3',
+        title: 'Levering en Vakkundige Montage op locatie',
+        description: 'Inclusief stelpoeren, professionele plaatsing en waterpas oplevering',
+        priceInclVat: 0,
+        vatRate: 21,
+        isIncluded: true,
+        quantity: 1
+      }
     ]
   },
   'Veranda': {
