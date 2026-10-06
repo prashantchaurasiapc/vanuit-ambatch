@@ -69,7 +69,7 @@ export default function AdminDashboard() {
 
   const refreshDashboard = async () => {
     try {
-      const [leadsRes, quotesRes, tasksRes, finRes, funRes, todayRes, warnRes, actRes] = await Promise.allSettled([
+      const [leadsRes, quotesRes, tasksRes, finRes, funRes, todayRes, warnRes, actRes, custRes] = await Promise.allSettled([
         api.get('/leads'),
         api.get('/quotes'),
         api.get('/tasks'),
@@ -77,20 +77,31 @@ export default function AdminDashboard() {
         api.get('/dashboard/funnel'),
         api.get('/dashboard/today'),
         api.get('/dashboard/warnings'),
-        api.get('/dashboard/activity?limit=5')
+        api.get('/dashboard/activity?limit=5'),
+        api.get('/customers')
       ]);
 
-      if (leadsRes.status === 'fulfilled' && leadsRes.value?.data) {
-        const fetchedLeads = Array.isArray(leadsRes.value.data) ? leadsRes.value.data : [];
-        setLeadsList(fetchedLeads);
-        setTotalLeads(fetchedLeads.length);
-      } else {
-        setLeadsList([]);
-        setTotalLeads(0);
-      }
+      const rawLeads = leadsRes.status === 'fulfilled' && leadsRes.value?.data
+        ? (Array.isArray(leadsRes.value.data) ? leadsRes.value.data : (leadsRes.value.data.items || []))
+        : [];
+      
+      const rawCustomers = custRes.status === 'fulfilled' && custRes.value?.data
+        ? (Array.isArray(custRes.value.data) ? custRes.value.data : (custRes.value.data.items || custRes.value.data.customers || []))
+        : [];
+
+      const combinedList = [
+        ...rawLeads.map(l => ({ name: l.name, type: 'Lead' })),
+        ...rawCustomers.map(c => ({
+          name: c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.companyName || 'Customer',
+          type: 'Customer'
+        }))
+      ].filter(item => item.name && item.name.trim() !== '');
+
+      setLeadsList(combinedList);
+      setTotalLeads(rawLeads.length);
 
       if (quotesRes.status === 'fulfilled' && quotesRes.value?.data) {
-        const fetchedQuotes = Array.isArray(quotesRes.value.data) ? quotesRes.value.data : [];
+        const fetchedQuotes = Array.isArray(quotesRes.value.data) ? quotesRes.value.data : (quotesRes.value.data.items || []);
         setLatestQuotes(fetchedQuotes);
         setActiveQuotes(fetchedQuotes.length);
       } else {
@@ -99,7 +110,7 @@ export default function AdminDashboard() {
       }
 
       if (tasksRes.status === 'fulfilled' && tasksRes.value?.data) {
-        const fetchedTasks = Array.isArray(tasksRes.value.data) ? tasksRes.value.data : [];
+        const fetchedTasks = Array.isArray(tasksRes.value.data) ? tasksRes.value.data : (tasksRes.value.data.items || []);
         if (fetchedTasks.length > 0) {
           setDashboardTasks(fetchedTasks.map(t => ({
             id: t.id,
@@ -184,21 +195,31 @@ export default function AdminDashboard() {
   const handleLeadSubmit = async (e) => {
     e.preventDefault();
     
+    let backendStatus = 'new';
+    if (leadForm.status === 'Contacted' || leadForm.status === 'Qualified') {
+      backendStatus = 'in_conversation';
+    } else {
+      backendStatus = 'new';
+    }
+
     const newLead = {
-      name: leadForm.name,
+      name: leadForm.name.trim(),
       company: leadForm.company || '-',
-      phone: leadForm.phone || '-',
-      email: leadForm.email,
-      productType: 'buitenkeuken',
-      size: '3x4m',
+      phone: leadForm.phone || null,
+      email: leadForm.email ? leadForm.email.trim() : null,
+      productType: 'outdoor_kitchen',
+      dimensionsInquiry: '3x4m',
       source: 'Direct',
-      status: leadForm.status === 'New' ? 'Nieuw' : (leadForm.status || 'Nieuw'),
-      assignedTo: 'Admin',
+      status: backendStatus,
       workflowStep: 1
     };
     
     try {
-      await api.post('/leads', newLead);
+      const res = await api.post('/leads', newLead);
+      if (res && res.success === false) {
+        showToast(res.error?.message || "Validation failed when creating lead");
+        return;
+      }
     } catch (e) {}
     window.dispatchEvent(new Event('app_data_changed'));
     
@@ -209,10 +230,9 @@ export default function AdminDashboard() {
   };
 
   const handleOpenQuoteModal = () => {
-    const defaultCust = leadsList[0]?.name || 'Other';
-    setQuoteForm({ customer: defaultCust === 'Other' ? '' : defaultCust, project: 'Bespoke Outdoor Kitchen', amount: '', status: 'Draft' });
-    setCustomerSelect(defaultCust);
-    setProjectSelect('Bespoke Outdoor Kitchen');
+    setQuoteForm({ customer: '', project: '', amount: '', status: 'Draft' });
+    setCustomerSelect('');
+    setProjectSelect('');
     setQuoteModalOpen(true);
   };
 
@@ -222,8 +242,8 @@ export default function AdminDashboard() {
     const finalCustomer = customerSelect === 'Other' ? quoteForm.customer : customerSelect;
     const finalProject = projectSelect === 'Other' ? quoteForm.project : projectSelect;
 
-    if (!finalCustomer.trim() || !finalProject.trim()) {
-      showToast("Please provide valid Customer and Project details.");
+    if (!customerSelect || !projectSelect || !finalCustomer.trim() || !finalProject.trim()) {
+      showToast(language === 'NL' ? "Selecteer een geldige klant en projecttype." : "Please select a valid customer and project type.");
       return;
     }
 
@@ -819,9 +839,14 @@ export default function AdminDashboard() {
                     }}
                     className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43] mb-2"
                   >
-                    {leadsList.map((lead, idx) => (
-                      <option key={idx} value={lead.name}>{lead.name} (Lead)</option>
-                    ))}
+                    <option value="" disabled>
+                      {language === 'NL' ? '-- Selecteer een Klant --' : '-- Select a Customer --'}
+                    </option>
+                    {leadsList.map((item, idx) => {
+                      const name = typeof item === 'string' ? item : item.name;
+                      const tag = typeof item === 'object' && item.type ? ` (${item.type})` : '';
+                      return <option key={idx} value={name}>{name}{tag}</option>;
+                    })}
                     <option value="Other">{language === 'NL' ? 'Nieuw / Aangepaste Klant...' : 'New / Custom Customer...'}</option>
                   </select>
                   
@@ -854,6 +879,9 @@ export default function AdminDashboard() {
                     }}
                     className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43] mb-2"
                   >
+                    <option value="" disabled>
+                      {language === 'NL' ? '-- Selecteer een Projecttype --' : '-- Select Project Type --'}
+                    </option>
                     <option value="Bespoke Outdoor Kitchen">Bespoke Outdoor Kitchen</option>
                     <option value="Bespoke Hiko Surround">Bespoke Bin Enclosure / Surround</option>
                     <option value="Wood Pergola">Wooden Canopy / Pergola</option>
