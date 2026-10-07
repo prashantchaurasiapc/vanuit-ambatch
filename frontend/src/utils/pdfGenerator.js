@@ -117,10 +117,18 @@ export async function generateFull6PagePdf(quoteData) {
   const quote = quoteData?.quote || quoteData || {};
   const quoteId = quote.id || quote.quoteId || 'OF-2026331';
 
+  // Determine active language: quote.language -> localStorage -> default 'EN'
+  let activeLang = quote.language;
+  if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
+    activeLang = window.localStorage.getItem('app_language');
+  }
+  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
+
   const custObj = typeof quote.customer === 'object' ? quote.customer : null;
-  const customerName = custObj?.name || quote.customer || quote.customerName || 'Jan de Vries';
+  const customerName = custObj?.name || quote.customer || quote.customerName || (activeLang === 'EN' ? 'Client' : 'Klant');
   const cleanCustomerName = String(customerName).replace(/[\\/:*?"<>|]/g, '').trim();
-  const fileName = `Quote-${quoteId} ${cleanCustomerName}.pdf`;
+  const filePrefix = quote.isDraft ? (activeLang === 'EN' ? 'Draft-Quote' : 'Concept-Offerte') : 'Quote';
+  const fileName = `${filePrefix}-${quoteId} ${cleanCustomerName}.pdf`;
 
   // Create temporary container for 6 pages (placed off viewport but with valid positive geometry)
   const tempDiv = document.createElement('div');
@@ -138,9 +146,13 @@ export async function generateFull6PagePdf(quoteData) {
   try {
     root = createRoot(tempDiv);
 
-    // Render all 6 pages inside Offerte6PagePDF (activePage="all")
+    // Render all 6 pages inside Offerte6PagePDF with explicit language & draft flags
     root.render(
-      React.createElement(Offerte6PagePDF, { quote: quote, activePage: 'all' })
+      React.createElement(Offerte6PagePDF, {
+        quote: { ...quote, isDraft: Boolean(quote.isDraft) },
+        activePage: 'all',
+        language: activeLang
+      })
     );
 
     // Wait for React DOM commit and all image elements to complete loading
@@ -209,24 +221,37 @@ export async function generateFull6PagePdf(quoteData) {
  */
 export function downloadQuotePdf(quote) {
   const quoteObj = quote?.quote || quote || {};
+  let activeLang = quoteObj.language;
+  if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
+    activeLang = window.localStorage.getItem('app_language');
+  }
+  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
+
   const quoteId = quoteObj.id || quoteObj.quoteId || 'OF-2026331';
   const custObj = typeof quoteObj.customer === 'object' ? quoteObj.customer : null;
-  const customerName = custObj?.name || quoteObj.customer || quoteObj.customerName || 'Jan de Vries';
+  const customerName = custObj?.name || quoteObj.customer || quoteObj.customerName || (activeLang === 'EN' ? 'Client' : 'Klant');
   const cleanCustomerName = String(customerName).replace(/[\\/:*?"<>|]/g, '').trim();
-  const fileName = `Quote-${quoteId} ${cleanCustomerName}.pdf`;
+  const filePrefix = quoteObj.isDraft ? (activeLang === 'EN' ? 'Draft-Quote' : 'Concept-Offerte') : 'Quote';
+  const fileName = `${filePrefix}-${quoteId} ${cleanCustomerName}.pdf`;
 
-  generateFull6PagePdf(quoteObj).catch(() => downloadQuotePdfFallback(quoteObj));
+  generateFull6PagePdf({ ...quoteObj, language: activeLang }).catch(() => downloadQuotePdfFallback({ ...quoteObj, language: activeLang }));
   return fileName;
 }
 
 export function downloadQuotePdfFallback(quote) {
+  let activeLang = quote?.language;
+  if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
+    activeLang = window.localStorage.getItem('app_language');
+  }
+  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
+
   const id        = quote?.id || 'OF-2026-001';
   const customer  = typeof quote?.customer === 'object'
-    ? (quote.customer.name || 'Klant')
-    : (quote?.customer || 'Klant');
-  const project   = quote?.project || 'Buitenkeuken Maatwerk';
+    ? (quote.customer.name || (activeLang === 'EN' ? 'Client' : 'Klant'))
+    : (quote?.customer || (activeLang === 'EN' ? 'Client' : 'Klant'));
+  const project   = quote?.project || (activeLang === 'EN' ? 'Custom Outdoor Kitchen' : 'Buitenkeuken Maatwerk');
   const amount    = quote?.amount || '€ 0';
-  const status    = quote?.status || 'Concept';
+  const status    = quote?.status || (activeLang === 'EN' ? 'Draft' : 'Concept');
   const date      = quote?.date || new Date().toISOString().split('T')[0];
   const validTill = quote?.validUntil || '—';
   const items     = Array.isArray(quote?.items) && quote.items.length > 0
@@ -234,23 +259,24 @@ export function downloadQuotePdfFallback(quote) {
     : (Array.isArray(quote?.investment?.lineItems) ? quote.investment.lineItems : []);
 
   const cleanCustomer = String(customer).replace(/[\\/:*?"<>|]/g, '').trim();
-  const fileName = `Quote-${id} ${cleanCustomer}.pdf`;
+  const filePrefix = quote?.isDraft ? (activeLang === 'EN' ? 'Draft-Quote' : 'Concept-Offerte') : 'Quote';
+  const fileName = `${filePrefix}-${id} ${cleanCustomer}.pdf`;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
-  let y = drawHeader(doc, 'OFFICIËLE MAATOFFERTE', `Vanuit Ambacht • ${id} • ${date}`, id);
+  let y = drawHeader(doc, activeLang === 'EN' ? 'OFFICIAL BESPOKE PROPOSAL' : 'OFFICIËLE MAATOFFERTE', `Vanuit Ambacht • ${id} • ${date}`, id);
 
   // Customer + project block
-  y = sectionTitle(doc, 'Klant & Project', y);
-  y = infoRow(doc, 'Klantnaam',  customer, y);
-  y = infoRow(doc, 'Project',    project,  y);
-  y = infoRow(doc, 'Datum',      date,     y);
-  y = infoRow(doc, 'Geldig tot', validTill,y);
-  y = infoRow(doc, 'Status',     status,   y);
+  y = sectionTitle(doc, activeLang === 'EN' ? 'Client & Project' : 'Klant & Project', y);
+  y = infoRow(doc, activeLang === 'EN' ? 'Client Name' : 'Klantnaam',  customer, y);
+  y = infoRow(doc, activeLang === 'EN' ? 'Project' : 'Project',    project,  y);
+  y = infoRow(doc, activeLang === 'EN' ? 'Date' : 'Datum',      date,     y);
+  y = infoRow(doc, activeLang === 'EN' ? 'Valid until' : 'Geldig tot', validTill,y);
+  y = infoRow(doc, activeLang === 'EN' ? 'Status' : 'Status',     status,   y);
   y += 4;
 
   // Line items table
   if (items.length > 0) {
-    y = sectionTitle(doc, 'Offerte Artikelen', y);
+    y = sectionTitle(doc, activeLang === 'EN' ? 'Proposal Items' : 'Offerte Artikelen', y);
 
     // Table header
     doc.setFillColor(...BRAND.primary);
@@ -258,10 +284,10 @@ export function downloadQuotePdfFallback(quote) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(237, 232, 223);
-    doc.text('OMSCHRIJVING',     17,  y + 4.5);
-    doc.text('AANTAL',          130,  y + 4.5);
-    doc.text('PRIJS',           155,  y + 4.5);
-    doc.text('TOTAAL',          182,  y + 4.5, { align: 'right' });
+    doc.text(activeLang === 'EN' ? 'DESCRIPTION' : 'OMSCHRIJVING',     17,  y + 4.5);
+    doc.text(activeLang === 'EN' ? 'QUANTITY' : 'AANTAL',          130,  y + 4.5);
+    doc.text(activeLang === 'EN' ? 'PRICE' : 'PRIJS',           155,  y + 4.5);
+    doc.text(activeLang === 'EN' ? 'TOTAL' : 'TOTAAL',          182,  y + 4.5, { align: 'right' });
     y += 9;
 
     let subtotal = 0;
@@ -314,18 +340,18 @@ export function downloadQuotePdfFallback(quote) {
       y += bold ? 8 : 6;
     };
 
-    totLine('Subtotaal (excl. BTW):',    `€ ${subtotal.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`);
+    totLine(activeLang === 'EN' ? 'Subtotal (excl. VAT):' : 'Subtotaal (excl. BTW):',    `€ ${subtotal.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`);
     if (discount > 0) {
-      totLine(`Korting (${discount}%):`, `- € ${discountAmt.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`);
+      totLine(activeLang === 'EN' ? `Discount (${discount}%):` : `Korting (${discount}%):`, `- € ${discountAmt.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`);
     }
-    totLine('BTW (21%):',               `€ ${vat.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`);
+    totLine(activeLang === 'EN' ? 'VAT (21%):' : 'BTW (21%):',               `€ ${vat.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`);
 
     doc.setFillColor(...BRAND.primary);
     doc.rect(totalsX - 4, y - 5, 60 + 4, 9, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10.5);
     doc.setTextColor(237, 232, 223);
-    doc.text('Totaal Incl. BTW:', totalsX, y + 0.5);
+    doc.text(activeLang === 'EN' ? 'Total Incl. VAT:' : 'Totaal Incl. BTW:', totalsX, y + 0.5);
     doc.text(`€ ${total.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`, amtX, y + 0.5, { align: 'right' });
     y += 14;
   }
@@ -339,8 +365,8 @@ export function downloadQuotePdfFallback(quote) {
   doc.setTextColor(...(isAccepted ? [22, 101, 52] : [146, 64, 14]));
   doc.text(
     isAccepted
-      ? '✓  OFFICIEEL GEACCEPTEERDE OFFERTE DOOR VANUIT AMBACHT'
-      : '⚠  CONCEPT OFFERTE — NOG NIET VERZONDEN NAAR KLANT',
+      ? (activeLang === 'EN' ? '✓  OFFICIALLY ACCEPTED PROPOSAL BY VANUIT AMBACHT' : '✓  OFFICIEEL GEACCEPTEERDE OFFERTE DOOR VANUIT AMBACHT')
+      : (activeLang === 'EN' ? '⚠  DRAFT PROPOSAL — NOT YET SENT TO CLIENT' : '⚠  CONCEPT OFFERTE — NOG NIET VERZONDEN NAAR KLANT'),
     105, y + 6.5, { align: 'center' }
   );
 
@@ -356,31 +382,37 @@ export function downloadQuotePdfFallback(quote) {
  */
 export async function downloadDirectPdfFile(quoteData = {}) {
   const quoteObj = quoteData?.quote || quoteData || {};
-  const quoteId = quoteObj.id || quoteObj.quoteId || 'OF-2026331';
-  const custObj = typeof quoteObj.customer === 'object' ? quoteObj.customer : null;
-  const customerName = custObj?.name || quoteObj.customer || quoteObj.customerName || 'Klant';
-  const cleanCustomerName = String(customerName).replace(/[\\/:*?"<>|]/g, '').trim();
-  const fileName = `Quote-${quoteId} ${cleanCustomerName}.pdf`;
+  let activeLang = quoteObj.language;
+  if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
+    activeLang = window.localStorage.getItem('app_language');
+  }
+  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
 
   try {
-    return await generateFull6PagePdf(quoteObj);
+    return await generateFull6PagePdf({ ...quoteObj, language: activeLang });
   } catch (err) {
     console.warn('[downloadDirectPdfFile] 6-page render failed, falling back to direct vector engine:', err);
-    return downloadDirectPdfFileFallback(quoteObj);
+    return downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
   }
 }
 
 export function downloadDirectPdfFileFallback(quoteData = {}) {
   // Extract properties supporting both raw params or full quote object
   const quote = quoteData.quote || quoteData;
+  let activeLang = quote?.language;
+  if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
+    activeLang = window.localStorage.getItem('app_language');
+  }
+  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
+
   const quoteId = quote.id || quote.quoteId || 'OF-2026331';
   
   const custObj = typeof quote.customer === 'object' ? quote.customer : null;
-  const customerName = custObj?.name || quote.customer || quote.customerName || 'Klant';
+  const customerName = custObj?.name || quote.customer || quote.customerName || (activeLang === 'EN' ? 'Client' : 'Klant');
   const customerEmail = custObj?.email || quote.customerEmail || quote.email || 'klant@vanuitambacht.nl';
   const customerPhone = custObj?.phone || quote.customerPhone || quote.phone || '+31 6 12345678';
 
-  const category = quote.category || quote.productType || quote.project || 'Buitenkeukens';
+  const category = quote.category || quote.productType || quote.project || (activeLang === 'EN' ? 'Outdoor Kitchens' : 'Buitenkeukens');
   const woodType = quote.woodType || quote.configuration?.woodType || 'Thermo Fraké';
   const dimensions = quote.dimensions || quote.configuration?.dimensions || '240 × 80 cm';
 
@@ -389,7 +421,8 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
     .replace(/[\\/:*?"<>|]/g, '')
     .trim();
 
-  const fileName = `Quote-${quoteId} ${cleanCustomerName}.pdf`;
+  const filePrefix = quote?.isDraft ? (activeLang === 'EN' ? 'Draft-Quote' : 'Concept-Offerte') : 'Quote';
+  const fileName = `${filePrefix}-${quoteId} ${cleanCustomerName}.pdf`;
 
   // Itemized breakdown & totals
   const totalFallbackAmt = typeof quote.amount === 'number'
@@ -435,7 +468,7 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...accentColor);
-  doc.text('OFFICIËLE COMMERCIËLE MAATOFFERTE', 20, 31);
+  doc.text(activeLang === 'EN' ? 'OFFICIAL COMMERCIAL BESPOKE PROPOSAL' : 'OFFICIËLE COMMERCIËLE MAATOFFERTE', 20, 31);
 
   doc.setDrawColor(...primaryColor);
   doc.setLineWidth(0.8);
@@ -448,38 +481,38 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(100, 100, 100);
-  doc.text('OFFERTENUMMER', 25, 49);
-  doc.text('DATUM', 70, 49);
-  doc.text('GELDIG T/M', 110, 49);
-  doc.text('STATUS', 150, 49);
+  doc.text(activeLang === 'EN' ? 'PROPOSAL NUMBER' : 'OFFERTENUMMER', 25, 49);
+  doc.text(activeLang === 'EN' ? 'DATE' : 'DATUM', 70, 49);
+  doc.text(activeLang === 'EN' ? 'VALID UNTIL' : 'GELDIG T/M', 110, 49);
+  doc.text(activeLang === 'EN' ? 'STATUS' : 'STATUS', 150, 49);
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...primaryColor);
   doc.text(quoteId, 25, 57);
-  doc.text(quote.date || new Date().toLocaleDateString('nl-NL'), 70, 57);
-  doc.text(quote.validUntil || 'In overleg', 110, 57);
+  doc.text(quote.date || (activeLang === 'EN' ? new Date().toLocaleDateString('en-US') : new Date().toLocaleDateString('nl-NL')), 70, 57);
+  doc.text(quote.validUntil || (activeLang === 'EN' ? 'In consultation' : 'In overleg'), 110, 57);
 
   doc.setTextColor(...accentColor);
-  doc.text(quote.status || 'Concept', 150, 57);
+  doc.text(quote.status || (activeLang === 'EN' ? 'Draft' : 'Concept'), 150, 57);
 
   // 3. CUSTOMER & PROJECT SPECIFICATION CARDS
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...primaryColor);
-  doc.text('KLANTGEGEVENS', 20, 75);
-  doc.text('SPECIFICATIES', 105, 75);
+  doc.text(activeLang === 'EN' ? 'CLIENT DETAILS' : 'KLANTGEGEVENS', 20, 75);
+  doc.text(activeLang === 'EN' ? 'SPECIFICATIONS' : 'SPECIFICATIES', 105, 75);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(...darkColor);
-  doc.text(`Naam: ${customerName}`, 20, 83);
+  doc.text(`${activeLang === 'EN' ? 'Name' : 'Naam'}: ${customerName}`, 20, 83);
   doc.text(`E-mail: ${customerEmail}`, 20, 89);
-  doc.text(`Telefoon: ${customerPhone}`, 20, 95);
+  doc.text(`${activeLang === 'EN' ? 'Phone' : 'Telefoon'}: ${customerPhone}`, 20, 95);
 
   doc.text(`Project: ${category}`, 105, 83);
-  doc.text(`Houtsoort: ${woodType}`, 105, 89);
-  doc.text(`Afmeting: ${dimensions}`, 105, 95);
+  doc.text(`${activeLang === 'EN' ? 'Wood Type' : 'Houtsoort'}: ${woodType}`, 105, 89);
+  doc.text(`${activeLang === 'EN' ? 'Dimensions' : 'Afmeting'}: ${dimensions}`, 105, 95);
 
   // 4. FINANCIAL ITEMS TABLE
   doc.setFillColor(...primaryColor);
@@ -488,13 +521,13 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text('OMSCHRIJVING', 25, 112);
-  doc.text('AANTAL', 125, 112);
-  doc.text('BEDRAG', 160, 112);
+  doc.text(activeLang === 'EN' ? 'DESCRIPTION' : 'OMSCHRIJVING', 25, 112);
+  doc.text(activeLang === 'EN' ? 'QUANTITY' : 'AANTAL', 125, 112);
+  doc.text(activeLang === 'EN' ? 'AMOUNT' : 'BEDRAG', 160, 112);
 
   let y = 122;
   items.forEach((item, idx) => {
-    const desc = item.description || item.title || `Maatwerk item ${idx + 1}`;
+    const desc = item.description || item.title || `${activeLang === 'EN' ? 'Custom item' : 'Maatwerk item'} ${idx + 1}`;
     const qty = item.quantity || 1;
     const price = Number(item.unitPrice || item.priceInclVat || totalIncl);
 
@@ -507,7 +540,7 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
     doc.text(String(qty), 130, y);
 
     const priceText = item.isIncluded || price === 0
-      ? 'Inbegrepen'
+      ? (activeLang === 'EN' ? 'Included' : 'Inbegrepen')
       : `EUR ${price.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`;
     doc.text(priceText, 160, y);
 
@@ -524,16 +557,16 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkColor);
-  doc.text('Totaal excl. btw:', 110, y + 9);
+  doc.text(activeLang === 'EN' ? 'Total excl. VAT:' : 'Totaal excl. btw:', 110, y + 9);
   doc.text(`EUR ${totalExcl.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`, 155, y + 9);
 
-  doc.text('Btw (21%):', 110, y + 17);
+  doc.text(activeLang === 'EN' ? 'VAT (21%):' : 'Btw (21%):', 110, y + 17);
   doc.text(`EUR ${vatAmount.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`, 155, y + 17);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(...primaryColor);
-  doc.text('Totaal incl. btw:', 110, y + 28);
+  doc.text(activeLang === 'EN' ? 'Total incl. VAT:' : 'Totaal incl. btw:', 110, y + 28);
   doc.setTextColor(...accentColor);
   doc.text(`EUR ${totalIncl.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`, 150, y + 28);
 
@@ -542,7 +575,7 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(...primaryColor);
-  doc.text('BETALINGSVOORWAARDEN (50% / 50%)', 20, y);
+  doc.text(activeLang === 'EN' ? 'PAYMENT TERMS (50% / 50%)' : 'BETALINGSVOORWAARDEN (50% / 50%)', 20, y);
 
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(214, 207, 194);
@@ -552,8 +585,8 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...accentColor);
-  doc.text('50% Aanbetaling bij akkoord', 25, y + 12);
-  doc.text('50% Eindfactuur bij oplevering', 115, y + 12);
+  doc.text(activeLang === 'EN' ? '50% Deposit upon acceptance' : '50% Aanbetaling bij akkoord', 25, y + 12);
+  doc.text(activeLang === 'EN' ? '50% Final upon handover' : '50% Eindfactuur bij oplevering', 115, y + 12);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkColor);
@@ -564,7 +597,7 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
   doc.setFontSize(8);
   doc.setTextColor(140, 140, 140);
   doc.text(`Vanuit Ambacht • Koningshof 33, 3451 LM Vleuten • KVK 93097429 • BTW NL866264863B01`, 20, 280);
-  doc.text(`Bestand: ${fileName}`, 20, 285);
+  doc.text(`${activeLang === 'EN' ? 'File' : 'Bestand'}: ${fileName}`, 20, 285);
 
   // DIRECT AUTOMATIC FILE DOWNLOAD TO USER'S DOWNLOADS FOLDER
   doc.save(fileName);

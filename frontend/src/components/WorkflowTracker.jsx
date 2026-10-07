@@ -826,7 +826,8 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     const activeQuote = getLeadQuote();
     const quoteToDownload = {
       ...activeQuote,
-      isDraft
+      isDraft,
+      language
     };
     showToast(language === 'EN' ? '⏳ Generating proposal PDF...' : '⏳ Offerte PDF wordt gegenereerd...');
     try {
@@ -3044,9 +3045,11 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           className="px-4 py-2.5 bg-[#EDE8DF] hover:bg-[#D6CFC2]/50 text-dark font-bold text-xs rounded-xl border border-[#D6CFC2] cursor-pointer flex items-center gap-1.5 active:scale-95 transition-all"
                         >
                           <FileText className="w-3.5 h-3.5 text-primary" />
-                          <span>Download Draft PDF</span>
+                          <span>{language === 'EN' ? 'Download Draft PDF' : 'Download Concept PDF'}</span>
                         </button>
-                        <span className="text-[9px] text-dark/50 italic">Internal draft only — not sent</span>
+                        <span className="text-[9px] text-dark/50 italic">
+                          {language === 'EN' ? 'Internal draft only — not sent' : 'Alleen intern concept — niet verzonden'}
+                        </span>
                       </div>
 
                       <div className="flex flex-col items-end gap-0.5">
@@ -3201,8 +3204,13 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                     {/* Action 2: Real PDF Download */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 bg-[#EDE8DF]/60 border border-[#D6CFC2] rounded-xl">
                       <div>
-                        <span className="text-xs font-bold text-primary block">2. Real PDF File Download</span>
-                        <span className="text-[10px] text-dark/60">Downloads file matching exact preview: <strong>{quoteFileName}</strong></span>
+                        <span className="text-xs font-bold text-primary block">
+                          {language === 'EN' ? '2. Real PDF File Download' : '2. Echte PDF-bestand downloaden'}
+                        </span>
+                        <span className="text-[10px] text-dark/60">
+                          {language === 'EN' ? 'Downloads file matching exact preview: ' : 'Downloadt bestand exact gelijk aan voorbeeld: '}
+                          <strong>{quoteFileName}</strong>
+                        </span>
                       </div>
                       <button
                         type="button"
@@ -3210,7 +3218,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         className="px-4 py-2 bg-white hover:bg-slate-50 text-primary border border-[#D6CFC2] font-bold text-xs rounded-xl shadow-2xs cursor-pointer flex items-center gap-2 whitespace-nowrap"
                       >
                         <Download className="w-4 h-4 text-primary" />
-                        <span>Download PDF ({quoteFileName})</span>
+                        <span>{language === 'EN' ? `Download PDF (${quoteFileName})` : `Download PDF (${quoteFileName})`}</span>
                       </button>
                     </div>
                   </div>
@@ -5028,21 +5036,25 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                     </div>
                     <div className="flex items-center justify-between pt-1 border-t border-[#D6CFC2]/60">
                       <div className="flex items-center gap-2">
-                        <span className="w-20 text-dark/50 font-bold uppercase tracking-wider text-[10px]">Bijlage:</span>
+                        <span className="w-20 text-dark/50 font-bold uppercase tracking-wider text-[10px]">
+                          {language === 'EN' ? 'Attachment:' : 'Bijlage:'}
+                        </span>
                         <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-[#D6CFC2] shadow-2xs">
                           <FileText className="w-3.5 h-3.5 text-primary" />
                           <span className="font-bold text-primary">{quoteFileName}</span>
-                          <span className="text-[10px] text-dark/50">(6-pagina PDF)</span>
+                          <span className="text-[10px] text-dark/50">
+                            ({language === 'EN' ? '6-page PDF' : '6-pagina PDF'})
+                          </span>
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleRealPdfDownload(false)}
                         className="px-2.5 py-1 bg-[#EDE8DF] hover:bg-[#E2DCCE] text-dark font-bold text-[10px] rounded-lg border border-[#D6CFC2] flex items-center gap-1 cursor-pointer transition-colors"
-                        title="Download / Preview attached PDF"
+                        title={language === 'EN' ? 'Download / Preview attached PDF' : 'Voorbeeld PDF downloaden'}
                       >
                         <Download className="w-3 h-3 text-primary" />
-                        <span>Voorbeeld PDF</span>
+                        <span>{language === 'EN' ? 'Preview PDF' : 'Voorbeeld PDF'}</span>
                       </button>
                     </div>
                   </div>

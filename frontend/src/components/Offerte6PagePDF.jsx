@@ -6,7 +6,7 @@ import { calculateTotals, calculateInstalments } from '../utils/quoteSchema';
 import { useLanguage } from '../context/LanguageContext';
 import api from '../api/apiClient';
 
-export default function Offerte6PagePDF({ quote, activePage = null, highlightField = null, companyDetails = null }) {
+export default function Offerte6PagePDF({ quote, activePage = null, highlightField = null, companyDetails = null, language: propLanguage = null }) {
   // Extract Company Details dynamically from backend Settings API or prop
   const [loadedCompanyInfo, setLoadedCompanyInfo] = useState(companyDetails || null);
 
@@ -38,31 +38,33 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   const compIban = companyInfo.iban || 'NL27 ABNA 0132 2698 56';
   const compWebsite = companyInfo.website || 'vanuitambacht.nl';
 
-  let language = 'NL';
-  try {
-    const langCtx = useLanguage();
-    if (langCtx && langCtx.language) language = langCtx.language;
-  } catch (e) {
-    language = 'NL';
+  // Language resolution: prop -> quote.language -> useLanguage() context -> localStorage -> 'EN' default
+  let currentLang = propLanguage || quote?.language;
+  if (!currentLang) {
+    try {
+      const langCtx = useLanguage();
+      if (langCtx && langCtx.language) currentLang = langCtx.language;
+    } catch (e) {
+      // outside LanguageProvider context
+    }
   }
+  if (!currentLang) {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        currentLang = window.localStorage.getItem('app_language');
+      }
+    } catch (e) {}
+  }
+  const language = (currentLang === 'NL' || currentLang === 'nl') ? 'NL' : 'EN';
+
   // Extract dynamic customer & header properties
   const custObj = typeof quote?.customer === 'object' ? quote.customer : null;
-  const customerName = custObj?.name || quote?.customer || quote?.customerName || 'Bjorn Valk';
+  const customerName = custObj?.name || quote?.customer || quote?.customerName || (language === 'EN' ? 'Bjorn Valk' : 'Bjorn Valk');
   const firstName = custObj?.firstName || (customerName ? customerName.trim().split(' ')[0] : 'Bjorn');
   const city = custObj?.city || quote?.deliveryLocation || quote?.city || 'Dongen';
   const quoteId = quote?.id || 'OF-2026331';
   const quoteDate = quote?.date || new Date().toISOString().split('T')[0];
   const validUntil = quote?.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-  // Cover properties
-  const cover = quote?.cover || {};
-  const titleLine1 = cover.titleLine1 || 'Uw buitenkeuken,';
-  const titleLine2 = cover.titleLine2 || 'op maat gemaakt.';
-
-  const config = quote?.configuration || {};
-  const woodType = config.woodType || quote?.woodType || 'Thermo Fraké';
-  const dimensions = config.dimensions || quote?.dimensions || '240 × 80';
-  const cleanDimensions = String(dimensions).replace(/\s*cm$/i, '').trim();
 
   // Category Family Detection (Outdoor Kitchen vs Garden Room / Veranda / Poolhouse)
   const productTypeLower = String(quote?.productType || quote?.category || quote?.projectCategory || quote?.project || '').toLowerCase();
@@ -71,6 +73,34 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
     productTypeLower.includes('buitenverblijf') ||
     productTypeLower.includes('veranda') ||
     productTypeLower.includes('poolhouse');
+
+  // Cover properties
+  const cover = quote?.cover || {};
+  const defaultTitle1 = isGardenRoom
+    ? (language === 'EN' ? 'Your bespoke garden room,' : 'Uw exclusief buitenverblijf,')
+    : (language === 'EN' ? 'Your outdoor kitchen,' : 'Uw buitenkeuken,');
+  const defaultTitle2 = language === 'EN' ? 'custom crafted.' : 'op maat gemaakt.';
+
+  const rawTitle1 = cover.titleLine1 || defaultTitle1;
+  const rawTitle2 = cover.titleLine2 || defaultTitle2;
+
+  const titleLine1 = language === 'EN' && (rawTitle1 === 'Uw buitenkeuken,' || rawTitle1 === 'Uw exclusief buitenverblijf,')
+    ? (isGardenRoom ? 'Your bespoke garden room,' : 'Your outdoor kitchen,')
+    : (language === 'NL' && (rawTitle1 === 'Your outdoor kitchen,' || rawTitle1 === 'Your bespoke garden room,')
+        ? (isGardenRoom ? 'Uw exclusief buitenverblijf,' : 'Uw buitenkeuken,')
+        : rawTitle1);
+
+  const titleLine2 = language === 'EN' && rawTitle2 === 'op maat gemaakt.'
+    ? 'custom crafted.'
+    : (language === 'NL' && rawTitle2 === 'custom crafted.'
+        ? 'op maat gemaakt.'
+        : rawTitle2);
+
+  const config = quote?.configuration || {};
+  const woodType = config.woodType || quote?.woodType || 'Thermo Fraké';
+  const dimensions = config.dimensions || quote?.dimensions || '240 × 80';
+  const cleanDimensions = String(dimensions).replace(/\s*cm$/i, '').trim();
+
 
   const categoryTitle = productTypeLower.includes('poolhouse')
     ? (language === 'EN' ? 'exclusive poolhouse' : 'exclusieve poolhouse')
@@ -340,10 +370,16 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               ))}
             </div>
 
+            {quote?.isDraft && (
+              <div className="bg-amber-600/90 text-white text-center py-1.5 px-3 text-[10px] font-mono font-bold tracking-widest uppercase rounded-lg shadow-xs">
+                {language === 'EN' ? '⚠ INTERNAL DRAFT PROPOSAL — NOT YET SENT TO CLIENT' : '⚠ CONCEPT OFFERTE — NOG NIET VERZONDEN NAAR KLANT'}
+              </div>
+            )}
+
             {/* Footer Bar */}
             <div className="flex justify-between items-center text-[10px] text-[#A7AC9B] tracking-[0.16em] pt-1 pb-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>
               <span className="font-medium">VANUITAMBACHT.NL</span>
-              <span className="font-normal">AMBACHT &nbsp;·&nbsp; KWALITEIT &nbsp;·&nbsp; PERSOONLIJK</span>
+              <span className="font-normal">{language === 'EN' ? 'CRAFTSMANSHIP · QUALITY · PERSONAL' : 'AMBACHT · KWALITEIT · PERSOONLIJK'}</span>
             </div>
           </div>
         </div>
@@ -358,7 +394,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
               <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
+                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
                 <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
@@ -366,19 +402,30 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             {/* Section 01: Persoonlijk Woord */}
             <div className="space-y-3">
               <span className="text-[10px] text-[#8A8275] font-semibold uppercase tracking-[0.16em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                01 &nbsp;·&nbsp; PERSOONLIJK WOORD
+                01 &nbsp;·&nbsp; {language === 'EN' ? 'PERSONAL NOTE' : 'PERSOONLIJK WOORD'}
               </span>
               <div className="grid grid-cols-3 gap-5 items-start">
                 <div className="col-span-2 space-y-3 text-[13px] leading-[1.65] text-[#4A4A43]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   <h3 className="text-2xl sm:text-3xl font-normal text-[#33422C]" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
-                    Beste <span className="text-[#C2571B] capitalize font-medium">{firstName}</span>,
+                    {language === 'EN' ? 'Dear' : 'Beste'} <span className="text-[#C2571B] capitalize font-medium">{firstName}</span>,
                   </h3>
-                  {(quote?.letterAndProcess?.letterParagraphs || [
-                    language === 'EN' ? 'Thank you very much for your inquiry and pleasant consultation. We are delighted to present this personalized proposal for your custom outdoor kitchen.' : 'Hartelijk dank voor je aanvraag en het prettige gesprek. Met veel plezier presenteren wij deze persoonlijke offerte voor jouw maatwerk buitenkeuken.',
-                    language === 'EN' ? 'At Vanuit Ambacht, we believe in sustainable materials, artisan craftsmanship, and meticulous attention to detail. We handcraft all our outdoor kitchens in our workshop.' : 'Bij Vanuit Ambacht geloven we in duurzame materialen, ambachtelijke afwerking en oog voor detail. Wij maken al onze buitenkeukens met de hand in onze werkplaats.',
-                    language === 'EN' ? 'In this document, you will find a comprehensive overview of your chosen configuration, including specifications, front-view diagram, and transparent investment.' : 'In dit document vind je het volledige overzicht van jouw gekozen configuratie, inclusief specificaties, vooraanzicht tekening en transparante investering.',
-                    language === 'EN' ? 'Should you have any questions or wish to make adjustments, we are delighted to assist you!' : 'Heb je vragen of wens je nog aanpassingen? Wij denken graag met je mee!'
-                  ]).map((para, idx) => (
+                  {(quote?.letterAndProcess?.letterParagraphs && quote.letterAndProcess.letterParagraphs.length > 0 && !quote.letterAndProcess.letterParagraphs[0].includes('Hartelijk dank voor je aanvraag')
+                    ? quote.letterAndProcess.letterParagraphs
+                    : [
+                        language === 'EN'
+                          ? 'Thank you very much for your inquiry and pleasant consultation. We are delighted to present this personalized proposal for your custom outdoor project.'
+                          : 'Hartelijk dank voor je aanvraag en het prettige gesprek. Met veel plezier presenteren wij deze persoonlijke offerte voor jouw maatwerk buitenkeuken.',
+                        language === 'EN'
+                          ? 'At Vanuit Ambacht, we believe in sustainable materials, artisan craftsmanship, and meticulous attention to detail. We handcraft all our builds in our workshop.'
+                          : 'Bij Vanuit Ambacht geloven we in duurzame materialen, ambachtelijke afwerking en oog voor detail. Wij maken al onze buitenkeukens met de hand in onze werkplaats.',
+                        language === 'EN'
+                          ? 'In this document, you will find a comprehensive overview of your chosen configuration, including specifications, technical drawings, and transparent investment breakdown.'
+                          : 'In dit document vind je het volledige overzicht van jouw gekozen configuratie, inclusief specificaties, vooraanzicht tekening en transparante investering.',
+                        language === 'EN'
+                          ? 'Should you have any questions or wish to make adjustments, we are delighted to assist you!'
+                          : 'Heb je vragen of wens je nog aanpassingen? Wij denken graag met je mee!'
+                      ]
+                  ).map((para, idx) => (
                     <p key={idx}>{para}</p>
                   ))}
                   <div className="pt-2">
@@ -408,33 +455,41 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             {/* Section 02: Waarom Vanuit Ambacht */}
             <div className="pt-3 border-t border-[#C4BEB3] space-y-3">
               <span className="text-[10px] text-[#8A8275] font-semibold uppercase tracking-[0.16em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                02 &nbsp;·&nbsp; WAAROM VANUIT AMBACHT
+                02 &nbsp;·&nbsp; {language === 'EN' ? 'WHY VANUIT AMBACHT' : 'WAAROM VANUIT AMBACHT'}
               </span>
               <h4 className="text-2xl sm:text-3xl text-[#33422C] tracking-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
-                Waar je op kunt rekenen
+                {language === 'EN' ? 'What you can count on' : 'Waar je op kunt rekenen'}
               </h4>
 
               {(() => {
                 const defaultCards = [
                   {
                     icon: Wrench,
-                    title: 'Gecertificeerde vakmensen',
-                    desc: 'De bouw ligt altijd bij gecertificeerde vakspecialisten uit ons landelijke netwerk. Vakwerk, van fundering tot afwerking.'
+                    title: language === 'EN' ? 'Certified craft specialists' : 'Gecertificeerde vakmensen',
+                    desc: language === 'EN'
+                      ? 'Construction is handled exclusively by certified craft specialists from our nationwide network. True craftsmanship from foundation to finish.'
+                      : 'De bouw ligt altijd bij gecertificeerde vakspecialisten uit ons landelijke netwerk. Vakwerk, van fundering tot afwerking.'
                   },
                   {
                     icon: MessageSquare,
-                    title: 'Eén vast aanspreekpunt',
-                    desc: 'Je schakelt rechtstreeks met Tim of Bram, via WhatsApp, mail of telefoon. Korte lijnen, snelle antwoorden.'
+                    title: language === 'EN' ? 'One dedicated contact' : 'Eén vast aanspreekpunt',
+                    desc: language === 'EN'
+                      ? 'You communicate directly with Tim or Bram via WhatsApp, email or phone. Direct lines, swift answers.'
+                      : 'Je schakelt rechtstreeks met Tim of Bram, via WhatsApp, mail of telefoon. Korte lijnen, snelle antwoorden.'
                   },
                   {
                     icon: ShieldCheck,
-                    title: 'Garantie én nazorg',
-                    desc: 'Garantie op de constructie en nazorg na oplevering. Ook als het verblijf er staat, blijven wij je aanspreekpunt.'
+                    title: language === 'EN' ? 'Warranty & aftercare' : 'Garantie én nazorg',
+                    desc: language === 'EN'
+                      ? 'Construction warranty and comprehensive aftercare after completion. Even after installation is complete, we remain your point of contact.'
+                      : 'Garantie op de constructie en nazorg na oplevering. Ook als het verblijf er staat, blijven wij je aanspreekpunt.'
                   },
                   {
                     icon: DollarSign,
-                    title: 'Eerlijke prijs, bewust online',
-                    desc: 'Geen showroom is een bewuste keuze. Zo betaal je voor vakwerk en materiaal, niet voor overhead.'
+                    title: language === 'EN' ? 'Fair pricing, consciously online' : 'Eerlijke prijs, bewust online',
+                    desc: language === 'EN'
+                      ? 'No expensive showroom is a conscious choice. You pay for craftsmanship and premium materials, not corporate overhead.'
+                      : 'Geen showroom is een bewuste keuze. Zo betaal je voor vakwerk en materiaal, niet voor overhead.'
                   }
                 ];
 
@@ -444,11 +499,12 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 const cardsToRender = defaultCards.map((def, idx) => {
                   const raw = rawCards?.[idx];
                   if (!raw) return def;
-                  const isOldUppercase = ['VAKSPECIALISTEN', 'ÉÉN AANSPREEKPUNT', 'GARANTIE & NAZORG', 'BEWUST ONLINE'].includes(raw.title);
+                  const isStandardDutch = ['Gecertificeerde vakmensen', 'Eén vast aanspreekpunt', 'Garantie én nazorg', 'Eerlijke prijs, bewust online', 'VAKSPECIALISTEN', 'ÉÉN AANSPREEKPUNT', 'GARANTIE & NAZORG', 'BEWUST ONLINE'].includes(raw.title);
+                  if (language === 'EN' && isStandardDutch) return def;
                   return {
                     icon: icons[idx] || Wrench,
-                    title: isOldUppercase ? def.title : (raw.title || def.title),
-                    desc: isOldUppercase ? def.desc : (raw.desc || def.desc)
+                    title: raw.title || def.title,
+                    desc: raw.desc || def.desc
                   };
                 });
 
@@ -481,7 +537,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           {/* Footer */}
           <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
-            <span>Offerte <strong className="text-[#C2571B]">{quoteId}</strong></span>
+            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#C2571B]">{quoteId}</strong></span>
             <span className="font-bold">2 / 6</span>
           </div>
         </div>
@@ -496,7 +552,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
               <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
+                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
                 <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
@@ -506,7 +562,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 {language === 'EN' ? '03 · YOUR CONFIGURATION' : '03 · UW CONFIGURATIE'}
               </span>
               <h3 className="text-2xl sm:text-3xl font-serif text-primary font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
-                {language === 'EN' ? 'Your outdoor kitchen at a glance' : 'Jouw buitenkeuken in één oogopslag'}
+                {isGardenRoom
+                  ? (language === 'EN' ? 'Your garden room at a glance' : 'Jouw buitenverblijf in één oogopslag')
+                  : (language === 'EN' ? 'Your outdoor kitchen at a glance' : 'Jouw buitenkeuken in één oogopslag')}
               </h3>
             </div>
 
@@ -517,7 +575,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   {language === 'EN' ? 'DIMENSIONS' : 'AFMETING'}
                 </span>
                 <p className="text-lg sm:text-xl font-serif text-[#F7C873] leading-tight font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{cleanDimensions}</p>
-                <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">{config.dimensionsUnit || 'centimeter'}</span>
+                <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">{config.dimensionsUnit || (language === 'EN' ? 'centimeters' : 'centimeter')}</span>
               </div>
 
               <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
@@ -552,24 +610,34 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             <div className="grid grid-cols-2 gap-5 items-start">
               {/* Dynamic Specifications */}
               <div className="space-y-3.5 text-xs font-body">
-                {specifications.map((sec, sIdx) => (
-                  <div key={sec.id || sIdx}>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="font-bold text-[#C2571B] text-[11px] uppercase tracking-[0.14em] whitespace-nowrap" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                        {sec.title}
-                      </span>
-                      <div className="flex-1 h-[1px] bg-[#E2DDD3]"></div>
+                {specifications.map((sec, sIdx) => {
+                  const displaySecTitle = language === 'EN'
+                    ? (sec.title === 'BOVENBLAD' ? 'WORKTOP'
+                      : sec.title === 'INDELING & OPBERGRUIMTE' ? 'LAYOUT & STORAGE'
+                      : sec.title === 'AFWERKING & MOBILITEIT' ? 'FINISH & MOBILITY'
+                      : sec.title === 'BEZORGING' ? 'DELIVERY'
+                      : sec.title)
+                    : sec.title;
+
+                  return (
+                    <div key={sec.id || sIdx}>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="font-bold text-[#C2571B] text-[11px] uppercase tracking-[0.14em] whitespace-nowrap" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                          {displaySecTitle}
+                        </span>
+                        <div className="flex-1 h-[1px] bg-[#E2DDD3]"></div>
+                      </div>
+                      <ul className="space-y-1.5 text-[#C2571B] font-medium text-[11.5px] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                        {(sec.lines || []).map((l, lIdx) => (
+                          <li key={lIdx} className="flex items-start gap-2">
+                            <span className="text-[#33422C] font-bold flex-shrink-0">✓</span>
+                            <span>{l.text}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <ul className="space-y-1.5 text-[#C2571B] font-medium text-[11.5px] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                      {(sec.lines || []).map((l, lIdx) => (
-                        <li key={lIdx} className="flex items-start gap-2">
-                          <span className="text-[#33422C] font-bold flex-shrink-0">✓</span>
-                          <span>{l.text}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Photo & Diagram */}
@@ -577,7 +645,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <div className={`relative rounded-2xl overflow-hidden border border-[#D6CFC2] shadow-xs bg-[#F4EFE6] flex items-center justify-center p-1.5 transition-all ${diagram.show ? 'h-44 sm:h-48' : 'h-64 sm:h-72'
                   }`}>
                   <div className="absolute top-2.5 left-2.5 bg-[#C2571B] text-white text-[9px] font-bold tracking-[0.14em] px-2.5 py-1 rounded-md uppercase font-sans z-10 shadow-xs">
-                    DYNAMISCH · FOTO / RENDER
+                    {language === 'EN' ? 'DYNAMIC · PHOTO / RENDER' : 'DYNAMISCH · FOTO / RENDER'}
                   </div>
                   <img
                     src={config.configPhoto || projectImg}
@@ -591,7 +659,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 {isGardenRoom ? (
                   <div className="p-3 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] space-y-2 shadow-xs font-body">
                     <span className="text-[10px] uppercase font-bold text-[#8A8275] tracking-[0.14em] block text-center" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                      INDELING PLATTEGROND
+                      {language === 'EN' ? 'FLOOR PLAN LAYOUT' : 'INDELING PLATTEGROND'}
                     </span>
 
                     {/* Exact Client 2-Compartment Floorplan Card */}
@@ -599,13 +667,13 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                       {/* Left: Poolhouse / Closed Timber Section */}
                       <div className="w-[42%] bg-[#33422C] text-[#FDFBF7] rounded-xl p-2.5 flex flex-col justify-center items-center text-center">
                         <span className="text-xs font-medium" style={{ fontFamily: "'Montserrat', sans-serif" }}>poolhouse</span>
-                        <span className="text-[10.5px] text-[#D6CFC2] mt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>dicht · 3,00 m</span>
+                        <span className="text-[10.5px] text-[#D6CFC2] mt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'enclosed · 3.00 m' : 'dicht · 3,00 m'}</span>
                       </div>
 
                       {/* Right: Lounge / Overkapt Section */}
                       <div className="flex-1 bg-white border border-[#D6CFC2] text-[#C2571B] rounded-xl p-2.5 flex flex-col justify-center items-center text-center">
                         <span className="text-xs font-semibold" style={{ fontFamily: "'Montserrat', sans-serif" }}>lounge</span>
-                        <span className="text-[10.5px] text-[#C2571B] font-medium mt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>overkapt · 5,00 m</span>
+                        <span className="text-[10.5px] text-[#C2571B] font-medium mt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'canopy · 5.00 m' : 'overkapt · 5,00 m'}</span>
                       </div>
                     </div>
 
@@ -629,6 +697,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                     <div className="flex items-center justify-center gap-1 font-mono text-[9px]">
                       {diagram.segments.map((seg, sIdx) => {
                         const isDark = seg.type === 'CUTOUT' || seg.type === 'FRIDGE' || seg.type === 'SINK';
+                        const segLabel = seg.label === 'kastje' && language === 'EN' ? 'cabinet' : (seg.label || (language === 'EN' ? 'cabinet' : 'kastje'));
                         return (
                           <div
                             key={sIdx}
@@ -636,7 +705,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                             className={`py-2 px-1 rounded-xl font-bold shadow-xs border ${isDark ? 'bg-[#33422C] text-[#FDFBF7] border-[#33422C]' : 'bg-white text-dark border-[#D6CFC2]'
                               }`}
                           >
-                            <span className="truncate block max-w-full">{seg.label || 'kastje'}</span>
+                            <span className="truncate block max-w-full">{segLabel}</span>
                             <span className="text-[8px] opacity-70 block">{seg.width} cm</span>
                           </div>
                         );
@@ -666,7 +735,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           {/* Footer */}
           <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
-            <span>Offerte <strong className="text-[#C2571B]">{quoteId}</strong></span>
+            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#C2571B]">{quoteId}</strong></span>
             <span className="font-bold">3 / 6</span>
           </div>
         </div>
@@ -681,17 +750,17 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
               <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
+                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
                 <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
 
             <div className="space-y-1">
               <span className="text-[10px] text-[#8A8275] font-semibold uppercase tracking-[0.16em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                04 &nbsp;·&nbsp; INVESTERING
+                04 &nbsp;·&nbsp; {language === 'EN' ? 'INVESTMENT' : 'INVESTERING'}
               </span>
               <h3 className="text-2xl sm:text-3xl text-[#33422C] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
-                {quote?.investment?.title && quote.investment.title !== 'Heldere prijs, alles inbegrepen' ? quote.investment.title : 'Uw investering in één overzicht'}
+                {language === 'EN' ? 'Your investment overview' : (quote?.investment?.title && quote.investment.title !== 'Heldere prijs, alles inbegrepen' ? quote.investment.title : 'Uw investering in één overzicht')}
               </h3>
             </div>
 
@@ -700,9 +769,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-y border-[#33422C] text-[10px] uppercase tracking-[0.14em] text-[#33422C] font-bold" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                    <th className="py-2.5 px-1">OMSCHRIJVING</th>
-                    <th className="py-2.5 px-3 text-center">AANTAL</th>
-                    <th className="py-2.5 px-1 text-right">BEDRAG</th>
+                    <th className="py-2.5 px-1">{language === 'EN' ? 'DESCRIPTION' : 'OMSCHRIJVING'}</th>
+                    <th className="py-2.5 px-3 text-center">{language === 'EN' ? 'QUANTITY' : 'AANTAL'}</th>
+                    <th className="py-2.5 px-1 text-right">{language === 'EN' ? 'AMOUNT' : 'BEDRAG'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E2DDD3] text-xs">
@@ -721,7 +790,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                       <td className="py-3 px-3 text-center font-mono font-bold text-[#33422C]">{item.quantity || 1}</td>
                       <td className="py-3 px-1 text-right font-mono font-bold text-[#C2571B] text-sm whitespace-nowrap">
                         {item.isIncluded || Number(item.priceInclVat || item.unitPrice || 0) === 0
-                          ? <span className="font-bold text-[#C2571B]">Inbegrepen</span>
+                          ? <span className="font-bold text-[#C2571B]">{language === 'EN' ? 'Included' : 'Inbegrepen'}</span>
                           : formatEuro(Number(item.priceInclVat || item.unitPrice || 0) * Number(item.quantity || 1))}
                       </td>
                     </tr>
@@ -731,7 +800,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
               <div className="border-b border-[#E2DDD3] pb-2 mb-3">
                 <p className="text-[10px] text-[#C2571B]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                  {quote?.investment?.stelpostDisclaimer || '* Stelpost: dit bedrag is een zorgvuldige inschatting. We rekenen af op basis van de werkelijke kosten, altijd in overleg vooraf.'}
+                  {language === 'EN'
+                    ? '* Provisional sum: this amount is an estimate. Final settlement is based on actual costs, always coordinated beforehand.'
+                    : (quote?.investment?.stelpostDisclaimer || '* Stelpost: dit bedrag is een zorgvuldige inschatting. We rekenen af op basis van de werkelijke kosten, altijd in overleg vooraf.')}
                 </p>
               </div>
             </div>
@@ -740,19 +811,25 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
               <div className="p-5 sm:p-6 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] space-y-3.5 shadow-xs">
                 <p className="text-[10px] uppercase font-bold text-[#8A8275] tracking-[0.14em]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                  {quote?.investment?.checklistTitle || 'INBEGREPEN BIJ JOUW INVESTERING'}
+                  {language === 'EN' ? 'INCLUDED WITH YOUR INVESTMENT' : (quote?.investment?.checklistTitle || 'INBEGREPEN BIJ JOUW INVESTERING')}
                 </p>
                 <ul className="space-y-2 text-xs text-[#4A4A43] font-body" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {(
-                    quote?.investment?.checklist && quote.investment.checklist.length > 0 && !quote.investment.checklist[0].includes('Volledig maatwerk, gebouwd door')
+                    quote?.investment?.checklist && quote.investment.checklist.length > 0 && !quote.investment.checklist[0].includes('Volledig maatwerk, gebouwd door') && !quote.investment.checklist[0].includes('Ontwerp en technische tekening')
                       ? quote.investment.checklist
-                      : [
+                      : (language === 'EN' ? [
+                          'Architectural design and technical drawings prior to build',
+                          'On-site survey prior to construction start',
+                          'Construction by a certified craft specialist',
+                          'Transport, assembly, and job site cleanup',
+                          'Structural warranty and aftercare following completion'
+                        ] : [
                           'Ontwerp en technische tekening vóór de bouw',
                           'Schouw op locatie vóór de start van de bouw',
                           'Bouw door een gecertificeerde vakspecialist',
                           'Transport, montage en opruimen van de bouwplaats',
                           'Garantie op de constructie én nazorg na oplevering'
-                        ]
+                        ])
                   ).map((cLine, cIdx) => (
                     <li key={cIdx} className="flex items-start gap-2.5">
                       <span className="text-[#33422C] font-bold flex-shrink-0 mt-0.5">✓</span>
@@ -766,19 +843,19 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <div className="p-6 bg-[#35442E] text-[#FDFBF7] rounded-2xl space-y-3 shadow-sm border border-[#43543A]">
                   <div className="space-y-2 text-xs" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                     <div className="flex justify-between text-[#E5DFD5]">
-                      <span>Totaal excl. btw</span>
+                      <span>{language === 'EN' ? 'Total excl. VAT' : 'Totaal excl. btw'}</span>
                       <span className="text-[#F7C873] font-medium">{formatDecEuro(totalExcl)}</span>
                     </div>
                     <div className="flex justify-between text-[#E5DFD5]">
-                      <span>Btw 21%</span>
+                      <span>{language === 'EN' ? 'VAT 21%' : 'Btw 21%'}</span>
                       <span className="text-[#F7C873] font-medium">{formatDecEuro(vatAmount)}</span>
                     </div>
                     <div className="flex justify-between items-baseline pt-3 border-t border-[#4E5E45]">
-                      <span className="text-sm font-semibold text-[#FDFBF7]">Totaal incl. btw</span>
+                      <span className="text-sm font-semibold text-[#FDFBF7]">{language === 'EN' ? 'Total incl. VAT' : 'Totaal incl. btw'}</span>
                       <span className="text-2xl sm:text-3xl text-[#F7C873] font-serif font-bold" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{formatEuro(totalIncl)}</span>
                     </div>
                     <p className="text-[10px] text-[#D6CFC2] italic text-right block pt-0.5">
-                      {quote?.investment?.vatDisclaimer || 'Alle bedragen inclusief btw'}
+                      {quote?.investment?.vatDisclaimer || (language === 'EN' ? 'All amounts include VAT' : 'Alle bedragen inclusief btw')}
                     </p>
                   </div>
                 </div>
@@ -797,7 +874,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                         quote.investment.validityText
                       )
                     ) : (
-                      <>Deze offerte is geldig tot en met <strong className="text-[#C2571B] font-bold">{formatDutchDate(validUntil)}</strong></>
+                      <>{language === 'EN' ? 'This proposal is valid until ' : 'Deze offerte is geldig tot en met '}<strong className="text-[#C2571B] font-bold">{formatDutchDate(validUntil)}</strong></>
                     )}
                   </span>
                 </div>
@@ -807,14 +884,24 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             {/* Payment Instalments */}
             <div className="pt-2 space-y-2.5">
               <p className="text-[10px] uppercase font-bold text-[#8A8275] tracking-[0.14em]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                BETALING IN {instalmentCards.length === 3 ? 'DRIE' : 'TWEE'} TERMIJNEN
+                {language === 'EN'
+                  ? `PAYMENT IN ${instalmentCards.length === 3 ? 'THREE' : 'TWO'} INSTALMENTS`
+                  : `BETALING IN ${instalmentCards.length === 3 ? 'DRIE' : 'TWEE'} TERMIJNEN`}
               </p>
               <div className={`grid grid-cols-1 ${instalmentCards.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
                 {instalmentCards.map((inst, idx) => {
                   const customSubtext = (quote?.investment?.instalments?.subtexts && quote.investment.instalments.subtexts[idx]) || null;
-                  const defaultSubtext = customSubtext || (instalmentCards.length === 3
-                    ? (idx === 0 ? 'Na akkoord op de technische tekening.' : idx === 1 ? 'Vlak vóór de startdatum op locatie.' : 'Pas als alles naar wens is opgeleverd.')
-                    : (idx === 0 ? 'Na akkoord op de technische tekening.' : 'Pas als alles naar wens is opgeleverd.'));
+                  const defaultSubtext = customSubtext || (language === 'EN'
+                    ? (instalmentCards.length === 3
+                        ? (idx === 0 ? 'Upon technical drawing approval.' : idx === 1 ? 'Just before starting on-site work.' : 'Only once delivered to your complete satisfaction.')
+                        : (idx === 0 ? 'Upon technical drawing approval.' : 'Only once delivered to your complete satisfaction.'))
+                    : (instalmentCards.length === 3
+                        ? (idx === 0 ? 'Na akkoord op de technische tekening.' : idx === 1 ? 'Vlak vóór de startdatum op locatie.' : 'Pas als alles naar wens is opgeleverd.')
+                        : (idx === 0 ? 'Na akkoord op de technische tekening.' : 'Pas als alles naar wens is opgeleverd.')));
+
+                  const instLabel = language === 'EN'
+                    ? (inst.label === 'Bij akkoord' ? 'Upon acceptance' : inst.label === 'Bij start bouw' ? 'Prior to build start' : inst.label === 'Bij levering' ? 'Upon delivery' : inst.label)
+                    : inst.label;
 
                   return (
                     <div key={idx} className="p-4 bg-white rounded-2xl border border-[#E3DDD3] flex items-center justify-between shadow-2xs">
@@ -823,7 +910,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                       </span>
                       <div className="text-right space-y-0.5">
                         <p className="font-bold text-[#C2571B] text-xs" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                          {inst.label}
+                          {instLabel}
                         </p>
                         <p className="text-xs font-bold text-[#C2571B]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                           {formatEuro(inst.amount)}
@@ -842,7 +929,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           {/* Footer */}
           <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
-            <span>Offerte <strong className="text-[#C2571B]">{quoteId}</strong></span>
+            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#C2571B]">{quoteId}</strong></span>
             <span className="font-bold">4 / 6</span>
           </div>
         </div>
@@ -857,25 +944,29 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
               <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
+                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
                 <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
 
             <div className="space-y-1">
-              <span className="text-[10px] font-mono text-accent font-bold uppercase tracking-wider block">05 · AKKOORD</span>
+              <span className="text-[10px] font-mono text-accent font-bold uppercase tracking-wider block">
+                05 &nbsp;·&nbsp; {language === 'EN' ? 'APPROVAL' : 'AKKOORD'}
+              </span>
               <h3 className="text-2xl font-serif font-bold text-primary" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
-                {quote?.letterAndProcess?.approvalTitle || 'Zullen we hem gaan maken?'}
+                {language === 'EN' ? 'Shall we craft this for you?' : (quote?.letterAndProcess?.approvalTitle || 'Zullen we hem gaan maken?')}
               </h3>
             </div>
 
             <div className="p-6 sm:p-7 bg-[#35442E] text-[#FDFBF7] rounded-2xl space-y-4 shadow-sm border border-[#43543A] relative overflow-hidden">
               <div className="relative z-10 space-y-1.5">
                 <h4 className="text-xl font-serif text-[#FDFBF7] font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
-                  {quote?.letterAndProcess?.approvalSubheading || 'Akkoord geven kan in één minuut'}
+                  {language === 'EN' ? 'Approving takes just one minute' : (quote?.letterAndProcess?.approvalSubheading || 'Akkoord geven kan in één minuut')}
                 </h4>
                 <p className="text-xs text-[#E5DFD5] leading-relaxed max-w-xl">
-                  {quote?.letterAndProcess?.approvalText || 'Stuur een korte bevestiging per WhatsApp of mail, of onderteken hieronder. Daarna ontvang je het definitieve ontwerp met technische tekening ter bevestiging en gaan we voor je aan de slag.'}
+                  {language === 'EN'
+                    ? 'Send a quick confirmation via WhatsApp or email, or sign below. You will then receive the final design with technical drawings for confirmation, and we will get right to work.'
+                    : (quote?.letterAndProcess?.approvalText || 'Stuur een korte bevestiging per WhatsApp of mail, of onderteken hieronder. Daarna ontvang je het definitieve ontwerp met technische tekening ter bevestiging en gaan we voor je aan de slag.')}
                 </p>
               </div>
 
@@ -891,39 +982,43 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
               <div className="p-6 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] space-y-4 shadow-xs">
-                <span className="text-[10px] font-mono uppercase font-bold text-accent tracking-widest block">VOOR AKKOORD · OPDRACHTGEVER</span>
+                <span className="text-[10px] font-mono uppercase font-bold text-accent tracking-widest block">
+                  {language === 'EN' ? 'APPROVED BY · CLIENT' : 'VOOR AKKOORD · OPDRACHTGEVER'}
+                </span>
                 <div className="pt-2 space-y-4 font-body">
                   <div className="relative pb-1 border-b-2 border-[#33422C]">
                     <span className="font-serif italic text-[#C2571B] text-xl font-medium block h-7" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{customerName}</span>
-                    <span className="text-[10px] font-mono text-dark/60 block mt-1">Naam</span>
+                    <span className="text-[10px] font-mono text-dark/60 block mt-1">{language === 'EN' ? 'Name' : 'Naam'}</span>
                   </div>
                   <div className="pb-1 border-b-2 border-[#33422C]">
                     <span className="block h-6"></span>
-                    <span className="text-[10px] font-mono text-dark/60 block mt-1">Datum</span>
+                    <span className="text-[10px] font-mono text-dark/60 block mt-1">{language === 'EN' ? 'Date' : 'Datum'}</span>
                   </div>
                   <div className="pb-1 border-b-2 border-[#33422C]">
                     <span className="block h-6"></span>
-                    <span className="text-[10px] font-mono text-dark/60 block mt-1">Handtekening</span>
+                    <span className="text-[10px] font-mono text-dark/60 block mt-1">{language === 'EN' ? 'Signature' : 'Handtekening'}</span>
                   </div>
                 </div>
               </div>
 
               <div className="p-6 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] space-y-4 shadow-xs">
-                <span className="text-[10px] font-mono uppercase font-bold text-accent tracking-widest block">NAMENS VANUIT AMBACHT</span>
+                <span className="text-[10px] font-mono uppercase font-bold text-accent tracking-widest block">
+                  {language === 'EN' ? 'ON BEHALF OF VANUIT AMBACHT' : 'NAMENS VANUIT AMBACHT'}
+                </span>
                 <div className="pt-2 space-y-4 font-body">
                   <div className="relative pb-1 border-b-2 border-[#33422C]">
                     <span className="font-serif italic text-[#33422C] text-xl font-medium block h-7" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                       {quote?.letterAndProcess?.signoffName || 'Tim & Bram'}
                     </span>
-                    <span className="text-[10px] font-mono text-dark/60 block mt-1">Naam · {quote?.letterAndProcess?.signoffRole || 'Vanuit Ambacht'}</span>
+                    <span className="text-[10px] font-mono text-dark/60 block mt-1">{language === 'EN' ? 'Name' : 'Naam'} · {quote?.letterAndProcess?.signoffRole || (language === 'EN' ? 'Vanuit Ambacht' : 'Vanuit Ambacht')}</span>
                   </div>
                   <div className="pb-1 border-b-2 border-[#33422C]">
                     <span className="block h-6"></span>
-                    <span className="text-[10px] font-mono text-dark/60 block mt-1">Datum</span>
+                    <span className="text-[10px] font-mono text-dark/60 block mt-1">{language === 'EN' ? 'Date' : 'Datum'}</span>
                   </div>
                   <div className="pb-1 border-b-2 border-[#33422C]">
                     <span className="block h-6"></span>
-                    <span className="text-[10px] font-mono text-dark/60 block mt-1">Handtekening</span>
+                    <span className="text-[10px] font-mono text-dark/60 block mt-1">{language === 'EN' ? 'Signature' : 'Handtekening'}</span>
                   </div>
                 </div>
               </div>
@@ -939,17 +1034,17 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 Boolean(quote?.signerName || quote?.approvedAt);
 
               const signerName = quote?.signerName || customerName;
-              const approvedAtDate = quote?.approvedAt || (quote?.date ? `${quote.date} (Digitaal)` : '04-08-2026 17:10');
+              const approvedAtDate = quote?.approvedAt || (quote?.date ? `${quote.date} (${language === 'EN' ? 'Digital' : 'Digitaal'})` : '04-08-2026 17:10');
 
               if (!isApproved) return null;
               return (
                 <div className="p-3 bg-[#3E4E36]/10 border border-[#3E4E36] rounded-xl flex items-center justify-between text-xs font-mono text-[#3E4E36] shadow-xs">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-[#3E4E36]" />
-                    <span>Officiëel Digitaal Geaccepteerd · <strong className="text-dark">{signerName}</strong> ({approvedAtDate})</span>
+                    <span>{language === 'EN' ? 'Officially Digitally Accepted' : 'Officiëel Digitaal Geaccepteerd'} · <strong className="text-dark">{signerName}</strong> ({approvedAtDate})</span>
                   </div>
                   <span className="text-[10px] font-bold bg-[#3E4E36] text-[#FDFBF7] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                    Rechtsgeldig
+                    {language === 'EN' ? 'Legally Binding' : 'Rechtsgeldig'}
                   </span>
                 </div>
               );
@@ -957,21 +1052,21 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
             <div className="pt-4 border-t-2 border-[#33422C] grid grid-cols-3 gap-4 text-[10px] font-mono text-dark/80">
               <div>
-                <span className="font-bold uppercase text-[#33422C] block mb-1 tracking-wider">ADRES</span>
-                {quote?.company?.name || 'Vanuit Ambacht'}<br />
-                {quote?.company?.address || 'Industrieweg 14, Dongen'}
+                <span className="font-bold uppercase text-[#33422C] block mb-1 tracking-wider">{language === 'EN' ? 'ADDRESS' : 'ADRES'}</span>
+                {quote?.company?.name || compName}<br />
+                {quote?.company?.address || compAddress}
               </div>
               <div>
-                <span className="font-bold uppercase text-[#33422C] block mb-1 tracking-wider">CONTACT</span>
-                {quote?.company?.phone || '06 82 00 80 25'}<br />
-                {quote?.company?.email || 'info@vanuitambacht.nl'}<br />
-                vanuitambacht.nl
+                <span className="font-bold uppercase text-[#33422C] block mb-1 tracking-wider">{language === 'EN' ? 'CONTACT' : 'CONTACT'}</span>
+                {quote?.company?.phone || compPhone}<br />
+                {quote?.company?.email || compEmail}<br />
+                {quote?.company?.website || compWebsite}
               </div>
               <div>
-                <span className="font-bold uppercase text-[#33422C] block mb-1 tracking-wider">GEGEVENS</span>
-                {quote?.company?.kvk || 'KVK 93067429'}<br />
-                {quote?.company?.vat || 'BTW NL866264863B01'}<br />
-                {quote?.company?.iban || 'IBAN NL27 ABNA 0132 2698 56'}
+                <span className="font-bold uppercase text-[#33422C] block mb-1 tracking-wider">{language === 'EN' ? 'COMPANY DETAILS' : 'GEGEVENS'}</span>
+                {quote?.company?.kvk || compKvk}<br />
+                {quote?.company?.vat || compVat}<br />
+                {quote?.company?.iban || compIban}
               </div>
             </div>
           </div>
@@ -979,7 +1074,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           {/* Footer */}
           <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
-            <span>Offerte <strong className="text-[#C2571B]">{quoteId}</strong></span>
+            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#C2571B]">{quoteId}</strong></span>
             <span className="font-bold">5 / 6</span>
           </div>
         </div>
@@ -994,17 +1089,17 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
               <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                <div className="text-[#8A8275]">OFFERTE <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
+                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
                 <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
 
             <div className="space-y-1">
               <span className="text-[10px] sm:text-[11px] font-semibold text-[#8A8275] tracking-[0.16em] uppercase block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                06 · VAN AKKOORD TOT ACHTERTUIN
+                06 &nbsp;·&nbsp; {language === 'EN' ? 'FROM APPROVAL TO BACKYARD' : 'VAN AKKOORD TOT ACHTERTUIN'}
               </span>
               <h3 className="text-2xl sm:text-3xl font-serif text-[#33422C] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-                {quote?.letterAndProcess?.processTitle || 'Zo werkt het in vijf stappen'}
+                {language === 'EN' ? 'How it works in five simple steps' : (quote?.letterAndProcess?.processTitle || 'Zo werkt het in vijf stappen')}
               </h3>
             </div>
 
@@ -1013,7 +1108,13 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               <div className="absolute left-[25px] top-4 bottom-6 w-[2px] bg-[#D8D2C7]"></div>
               <div className="space-y-4 relative z-10">
                 {(() => {
-                  const defaultClientSteps = [
+                  const defaultClientSteps = language === 'EN' ? [
+                    { step: '1', title: 'Proposal approval', desc: 'Confirm easily via email or WhatsApp, or sign the approval page. From that moment on, we take care of everything.', badge: null },
+                    { step: '2', title: 'Design & technical drawing', desc: 'You will receive the final design and technical drawings for sign-off. That way you know exactly what will be built before construction starts.', badge: null },
+                    { step: '3', title: 'On-site survey', desc: 'Our craft specialist visits your location to check subsoil, accessibility, and utility hookups. Next, we schedule the construction date.', badge: null },
+                    { step: '4', title: 'Construction & installation', badge: '2 TO 3 WEEKS', desc: 'Your bespoke outdoor living space is built on-site by a certified craft specialist. We keep you closely updated throughout.' },
+                    { step: '5', title: 'Handover, warranty & aftercare', desc: 'We only consider it completed once everything is to your exact liking. Even after handover, we remain your point of contact with warranty on construction.', badge: null }
+                  ] : [
                     { step: '1', title: 'Akkoord op de offerte', desc: 'Bevestig eenvoudig per mail of WhatsApp, of onderteken de akkoordpagina. Vanaf dat moment nemen wij alles uit handen.', badge: null },
                     { step: '2', title: 'Ontwerp en technische tekening', desc: 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.', badge: null },
                     { step: '3', title: 'Schouw op locatie', desc: 'Onze vakspecialist komt langs om de ondergrond, bereikbaarheid en aansluitingen te controleren. Daarna plannen we de bouwdatum in.', badge: null },
@@ -1028,21 +1129,26 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                     let desc = s.desc || defaultClientSteps[sIdx]?.desc;
                     let badge = s.badge;
 
-                    // Ensure alignment with authentic client PDF if previous dummy steps were stored
-                    if (sIdx === 1 && (title === 'Digitale tekening ter bevestiging' || !title)) {
-                      title = 'Ontwerp en technische tekening';
-                      desc = 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.';
-                    } else if (sIdx === 2 && (title === 'Productie door onze vakspecialist' || !title)) {
-                      title = 'Schouw op locatie';
-                      desc = 'Onze vakspecialist komt langs om de ondergrond, bereikbaarheid en aansluitingen te controleren. Daarna plannen we de bouwdatum in.';
-                      badge = null;
-                    } else if (sIdx === 3 && (title?.toLowerCase().includes('bezorging') || title === 'De bouw' || !title)) {
-                      title = 'De bouw';
-                      desc = 'Jouw buitenverblijf wordt op locatie gebouwd door een gecertificeerde vakspecialist. Tussentijds houden we je op de hoogte.';
-                      badge = badge || '2 TOT 3 WEKEN';
-                    } else if (sIdx === 4 && (title === 'Garantie & nazorg' || !title)) {
-                      title = 'Oplevering, garantie & nazorg';
-                      desc = 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.';
+                    if (language === 'EN') {
+                      title = defaultClientSteps[sIdx]?.title || title;
+                      desc = defaultClientSteps[sIdx]?.desc || desc;
+                      if (badge === '2 TOT 3 WEKEN') badge = '2 TO 3 WEEKS';
+                    } else {
+                      if (sIdx === 1 && (title === 'Digitale tekening ter bevestiging' || !title)) {
+                        title = 'Ontwerp en technische tekening';
+                        desc = 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.';
+                      } else if (sIdx === 2 && (title === 'Productie door onze vakspecialist' || !title)) {
+                        title = 'Schouw op locatie';
+                        desc = 'Onze vakspecialist komt langs om de ondergrond, bereikbaarheid en aansluitingen te controleren. Daarna plannen we de bouwdatum in.';
+                        badge = null;
+                      } else if (sIdx === 3 && (title?.toLowerCase().includes('bezorging') || title === 'De bouw' || !title)) {
+                        title = 'De bouw';
+                        desc = 'Jouw buitenverblijf wordt op locatie gebouwd door een gecertificeerde vakspecialist. Tussentijds houden we je op de hoogte.';
+                        badge = badge || '2 TOT 3 WEKEN';
+                      } else if (sIdx === 4 && (title === 'Garantie & nazorg' || !title)) {
+                        title = 'Oplevering, garantie & nazorg';
+                        desc = 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.';
+                      }
                     }
 
                     return (
@@ -1083,7 +1189,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               <div className="w-[3px] bg-[#33422C] rounded-full flex-shrink-0"></div>
               <div className="space-y-2">
                 <p className="text-base sm:text-lg font-serif italic text-[#33422C] leading-snug whitespace-pre-line" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-                  {quote?.letterAndProcess?.closingQuote || '“Geen massa. Geen standaardoplossing.\nGewoon goed gemaakt. Voor jou.”'}
+                  {language === 'EN'
+                    ? '“No mass production. No standard solutions.\nSimply crafted with excellence. For you.”'
+                    : (quote?.letterAndProcess?.closingQuote || '“Geen massa. Geen standaardoplossing.\nGewoon goed gemaakt. Voor jou.”')}
                 </p>
                 <p className="text-[11px] font-semibold text-[#8A8275] tracking-[0.16em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {quote?.letterAndProcess?.closingAuthor || `TIM & BRAM · ${compName.toUpperCase()}`}
@@ -1096,20 +1204,24 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               <div className="p-4 bg-white/70 border border-[#EAE5DC] rounded-xl space-y-1.5 shadow-2xs">
                 <div className="flex items-center gap-2 text-[#33422C] font-bold text-xs sm:text-[13px]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   <Pencil className="w-3.5 h-3.5 text-[#33422C] flex-shrink-0" />
-                  <span>Wijzigingen vóór de bouw</span>
+                  <span>{language === 'EN' ? 'Changes prior to construction' : 'Wijzigingen vóór de bouw'}</span>
                 </div>
                 <p className="text-[11px] text-[#5A554E] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                  Wil je nog iets aanpassen? Tot het akkoord op de tekening verwerken we wijzigingen kosteloos in een bijgewerkte offerte.
+                  {language === 'EN'
+                    ? 'Want to make adjustments? Up until technical drawing sign-off, changes are incorporated free of charge into an updated proposal.'
+                    : 'Wil je nog iets aanpassen? Tot het akkoord op de tekening verwerken we wijzigingen kosteloos in een bijgewerkte offerte.'}
                 </p>
               </div>
 
               <div className="p-4 bg-white/70 border border-[#EAE5DC] rounded-xl space-y-1.5 shadow-2xs">
                 <div className="flex items-center gap-2 text-[#33422C] font-bold text-xs sm:text-[13px]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   <Clock className="w-3.5 h-3.5 text-[#33422C] flex-shrink-0" />
-                  <span>Meerwerk en minderwerk</span>
+                  <span>{language === 'EN' ? 'Additional and deducted work' : 'Meerwerk en minderwerk'}</span>
                 </div>
                 <p className="text-[11px] text-[#5A554E] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                  Aanpassingen na akkoord stemmen we altijd eerst met je af, inclusief een heldere prijsopgave. Geen verrassingen achteraf.
+                  {language === 'EN'
+                    ? 'Any adjustments after approval are always agreed with you first, including crystal clear pricing. Zero surprises afterwards.'
+                    : 'Aanpassingen na akkoord stemmen we altijd eerst met je af, inclusief een heldere prijsopgave. Geen verrassingen achteraf.'}
                 </p>
               </div>
             </div>
@@ -1118,7 +1230,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           {/* Footer */}
           <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">{compName.toUpperCase()}</span>
-            <span>Offerte <strong className="text-[#C2571B]">{quoteId}</strong></span>
+            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#C2571B]">{quoteId}</strong></span>
             <span className="font-bold">6 / 6</span>
           </div>
         </div>
