@@ -267,12 +267,12 @@ export const WerkorderTemplate = ({ project }) => {
 export const OpleverrapportTemplate = ({ project }) => {
   const name = project?.name || 'Buitenverblijf Douglas';
   const id = project?.id || 'OF-2026418';
-  const customer = project?.customer || 'Sander de Vries';
-  const address = project?.deliveryAddress || 'Oisterwijk';
-  const partner = project?.partner || 'J. van den Berg';
+  const customer = project?.customer || project?.customerName || 'Sander de Vries';
+  const address = project?.deliveryAddress || project?.city || 'Oisterwijk';
+  const partner = project?.partner || project?.partnerName || 'J. van den Berg';
   
-  const shortName = customer.split(' ').pop();
-  const objType = name.toLowerCase().includes('keuken') ? 'buitenkeuken' : 'buitenverblijf';
+  const shortName = (customer || 'Sander de Vries').split(' ').pop();
+  const objType = (name || '').toLowerCase().includes('keuken') ? 'buitenkeuken' : 'buitenverblijf';
 
   return (
     <div className="w-[794px] h-[1123px] bg-white p-14 relative font-body text-[#2A2925] box-border">
@@ -303,7 +303,7 @@ export const OpleverrapportTemplate = ({ project }) => {
         </div>
         <div>
           <div className="text-[9.5px] font-medium tracking-[0.2em] text-[#5C5042] uppercase mb-2">LOCATIE</div>
-          <div className="font-bold text-[12.5px]">{address.split(',').pop().trim().split(' ').pop()}</div>
+          <div className="font-bold text-[12.5px]">{String(address || 'Oisterwijk').split(',').pop().trim().split(' ').pop()}</div>
         </div>
       </div>
 

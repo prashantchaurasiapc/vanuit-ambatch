@@ -62,7 +62,7 @@ export function downloadWerkorderPdf(project) {
 export function downloadOpleverrapportPdf(project) {
   const name = project?.name || 'Buitenverblijf Douglas';
   const id = project?.id || 'OF-2026418';
-  const customer = project?.customer || 'Sander de Vries';
-  const shortName = customer.split(' ').pop();
+  const customer = project?.customer || project?.customerName || 'Sander de Vries';
+  const shortName = (customer || 'Sander de Vries').split(' ').pop();
   generateReactPdf(OpleverrapportTemplate, { project }, `Opleverrapport-${id}-${shortName}.pdf`);
 }

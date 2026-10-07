@@ -19,6 +19,31 @@ const checklistParamSchema = z.object({
 
 export const customerProjectRoutes: FastifyPluginAsync = async (fastify) => {
   /**
+   * GET /api/customer/projects
+   * Customer views list of own projects (sanitized DTO)
+   */
+  fastify.get(
+    '/',
+    { preHandler: [fastify.authenticate, fastify.authorize(['customer', 'admin'])] },
+    async (request, reply) => {
+      const result = await projectService.listProjects(
+        { page: 1, limit: 10, sort: 'createdAt:desc' },
+        request.user
+      );
+      return reply.send({
+        success: true,
+        data: result.data,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
+        },
+      });
+    }
+  );
+
+  /**
    * GET /api/customer/projects/:id
    * Customer views own project portal (sanitized)
    */
@@ -66,11 +91,58 @@ export const customerProjectRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       try {
-        const project = await projectService.confirmDeliverySlot(paramCheck.data.id, request.user);
+        const body = (request.body || {}) as any;
+        const project = await projectService.confirmDeliverySlot(
+          paramCheck.data.id,
+          request.user,
+          body.proposedDate,
+          body.proposedTimeSlot
+        );
         return reply.send({
           success: true,
           data: project,
           message: 'Bezorgmoment succesvol bevestigd!',
+        });
+      } catch (err: any) {
+        if (err instanceof ProjectError) {
+          return reply.status(err.statusCode).send({
+            success: false,
+            error: { code: err.code, message: err.message },
+          });
+        }
+        throw err;
+      }
+    }
+  );
+
+  /**
+   * POST /api/customer/projects/:id/schouw/confirm
+   * Customer 1-click confirmation of site survey (schouw)
+   */
+  fastify.post(
+    '/:id/schouw/confirm',
+    { preHandler: [fastify.authenticate, fastify.authorize(['customer', 'admin'])] },
+    async (request, reply) => {
+      const paramCheck = projectIdParamSchema.safeParse(request.params);
+      if (!paramCheck.success) {
+        return reply.status(400).send({
+          success: false,
+          error: { code: 'INVALID_ID', message: 'Invalid project UUID' },
+        });
+      }
+
+      try {
+        const body = (request.body || {}) as any;
+        const project = await projectService.confirmSchouw(
+          paramCheck.data.id,
+          request.user,
+          body.surveyDate,
+          body.timeSlot
+        );
+        return reply.send({
+          success: true,
+          data: project,
+          message: 'Schouwmoment succesvol bevestigd!',
         });
       } catch (err: any) {
         if (err instanceof ProjectError) {

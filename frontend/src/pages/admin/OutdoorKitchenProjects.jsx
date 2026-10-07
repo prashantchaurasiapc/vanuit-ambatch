@@ -23,22 +23,13 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
   const [activeTab, setActiveTab] = useState('Customer Actions');
   const [toastMsg, setToastMsg] = useState('');
 
-  // Editable fields with English text (Status & Texts / Messages)
-  const [watErNuGebeurt, setWatErNuGebeurt] = useState(
-    'The Thermo Fraké frame is assembled and the cabinets are installed. This week, the countertop will be finished and the cutout for your Big Green Egg will be sawed.'
-  );
-
-  const [watErHiernaKomt, setWatErHiernaKomt] = useState(
-    'Final inspection by Tim & Bram (around September 10). After that, we will call you to schedule a delivery window.'
-  );
-
-  const [leverweek, setLeverweek] = useState('Week 38 - Sept 14 to Sept 18');
-  const [leverStatus, setLeverStatus] = useState('On schedule');
-  const [interneNotities, setInterneNotities] = useState(
-    'Customer was uncertain about sink position — moved 15 cm to the left (see messages Aug 17). Wood batch is clean and uniform.'
-  );
-
-  const [lastUpdated, setLastUpdated] = useState('today 09:05 by Bram');
+  // Editable fields — loaded from live project via API
+  const [watErNuGebeurt, setWatErNuGebeurt] = useState('');
+  const [watErHiernaKomt, setWatErHiernaKomt] = useState('');
+  const [leverweek, setLeverweek] = useState('');
+  const [leverStatus, setLeverStatus] = useState('');
+  const [interneNotities, setInterneNotities] = useState('');
+  const [lastUpdated, setLastUpdated] = useState('');
 
   // Load live project from backend on mount
   useEffect(() => {
@@ -67,25 +58,14 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
     });
   }, []);
 
-  // Customer Actions State
-  const defaultActions = [
-    {
-      id: 1,
-      status: 'Open',
-      title: 'Approve delivery proposal',
-      subtitle: 'Tue Sep 15 13:00–16:00 · created Aug 16 · reminder scheduled Aug 20',
-      actionType: 'proposal'
-    },
-    {
-      id: 2,
-      status: 'Completed',
-      title: 'Completion checklist "How you can help us"',
-      subtitle: '2 of 4 items checked off by customer · passageway ✓ · subfloor ✓',
-      actionType: 'checklist'
-    }
-  ];
+  // Customer Actions — loaded from live project API
+  const [customerActions, setCustomerActions] = useState([]);
+  const [viewActionModal, setViewActionModal] = useState(false);
+  const [selectedAction, setSelectedAction] = useState(null);
+  const [viewActionLoading, setViewActionLoading] = useState(false);
 
-  const [customerActions, setCustomerActions] = useState(defaultActions);
+  const isActionOpen = (a) => a ? (a.completed === false || a.status === 'Open') : false;
+  const isActionCompleted = (a) => a ? (a.completed === true || a.status === 'Completed') : false;
 
   const saveActions = (newActions) => {
     setCustomerActions(newActions);
@@ -96,120 +76,25 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
   const [followUpCall, setFollowUpCall] = useState(true);
   const [followUpBanner, setFollowUpBanner] = useState(false);
 
-  // Delivery Tab State (Exact match to Client Delivery Screenshot)
-  const [deliveryProposalDay, setDeliveryProposalDay] = useState('Tuesday, September 15');
-  const [deliveryProposalTime, setDeliveryProposalTime] = useState('13:00 - 16:00');
-  const [deliveryProposalStatus, setDeliveryProposalStatus] = useState('Awaiting customer agreement');
-  const [timelineStepNote, setTimelineStepNote] = useState(
-    'Frame and cabinets assembled; this week countertop...'
-  );
+  // Delivery Tab State
+  const [deliveryProposalDay, setDeliveryProposalDay] = useState('');
+  const [deliveryProposalTime, setDeliveryProposalTime] = useState('');
+  const [deliveryProposalStatus, setDeliveryProposalStatus] = useState('');
+  const [timelineStepNote, setTimelineStepNote] = useState('');
   const [editNoteModal, setEditNoteModal] = useState(false);
   const [tempTimelineNote, setTempTimelineNote] = useState('');
 
-  // Media & Documents Tab State (Exact match to Client Media & Documents Screenshot)
-  const [photosList, setPhotosList] = useState([
-    {
-      id: 1,
-      title: 'Frame assembled',
-      date: 'Aug 17',
-      published: true,
-      source: 'partner (Hoek Bouw)',
-      note: ''
-    },
-    {
-      id: 2,
-      title: 'Fitting countertop',
-      date: 'today',
-      published: false,
-      source: 'draft',
-      note: ''
-    }
-  ]);
+  // Media & Documents Tab State
+  const [photosList, setPhotosList] = useState([]);
   const [draftPhotoNote, setDraftPhotoNote] = useState('');
-
-  const [documentsList, setDocumentsList] = useState([
-    {
-      id: 1,
-      type: 'DRAWING',
-      title: 'Working drawing version 2',
-      subtitle: 'Visible to customer (for review) and partner (dimensions)',
-      customerVisible: true,
-      partnerVisible: true
-    },
-    {
-      id: 2,
-      type: 'INVOICE',
-      title: 'Invoice 1st installment',
-      subtitle: 'Automatically visible to customer · never for partner',
-      isLive: true
-    },
-    {
-      id: 3,
-      type: 'WORK ORDER',
-      title: 'Work order partner (specification + partner amount)',
-      subtitle: 'Partner only — technically cannot appear on customer side',
-      partnerOnly: true
-    }
-  ]);
-
+  const [documentsList, setDocumentsList] = useState([]);
   const [uploadDocModal, setUploadDocModal] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState('');
   const [newDocType, setNewDocType] = useState('DRAWING');
 
-  // Default messages structure
-  const defaultCustMsgs = [
-    {
-      id: 1,
-      sender: 'Sander de Vries',
-      initials: 'SV',
-      role: 'customer',
-      text: 'Great look. Question: can the sink be moved a bit more to the left?',
-      time: 'today 09:40',
-      isRead: true
-    },
-    {
-      id: 2,
-      sender: 'Tim (Admin)',
-      initials: 'T',
-      role: 'admin',
-      text: "Still possible, the slab has not been cut out yet. I'll have it shifted 15 cm to the left and send you a photo of the marking this afternoon. Cost: zero.",
-      time: 'Tim · 09:48 · ✓ read',
-      isRead: true
-    }
-  ];
-
-  const defaultPartMsgs = [
-    {
-      id: 1,
-      sender: 'Sven Hoek',
-      initials: 'SH',
-      role: 'partner',
-      text: 'Slab is ready for cutting. Any changes before I begin?',
-      time: 'today 09:52',
-      isRead: true
-    },
-    {
-      id: 2,
-      sender: 'Tim (Admin)',
-      initials: 'T',
-      role: 'admin',
-      text: 'Yes — sink 15 cm to the left compared to drawing v2 (customer request). Work order updated. Will you send a photo of the marking before cutting?',
-      time: 'Tim · 09:55 · ✓ read',
-      isRead: true
-    },
-    {
-      id: 3,
-      sender: 'Sven Hoek',
-      initials: 'SH',
-      role: 'partner',
-      text: 'Great, on it. 📷 follows around 14:00.',
-      time: 'today 09:57',
-      isRead: true
-    }
-  ];
-
-  const [customerMessagesList, setCustomerMessagesList] = useState(defaultCustMsgs);
-  const [partnerMessagesList, setPartnerMessagesList] = useState(defaultPartMsgs);
+  // Chat messages — start empty, populated when user sends real messages
+  const [customerMessagesList, setCustomerMessagesList] = useState([]);
+  const [partnerMessagesList, setPartnerMessagesList] = useState([]);
 
   const saveMessagesStore = (cust, part) => {
     setCustomerMessagesList(cust);
@@ -223,21 +108,15 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
   const [inputPartnerMsg, setInputPartnerMsg] = useState('');
   const [quickReplyOpen, setQuickReplyOpen] = useState(false);
 
-  // Partner Tab State (Exact match to Client Partner Screenshot)
-  const [partnerSelected, setPartnerSelected] = useState('Sven Hoek · Hoek Bouw');
-  const [partnerAmount, setPartnerAmount] = useState('€ 2,150.00');
-  const [partnerAssignmentStatus, setPartnerAssignmentStatus] = useState('In production');
-  const [partnerWorkDescription, setPartnerWorkDescription] = useState(
-    'Outdoor kitchen Thermo Fraké 240×80. Top with ceramic slabs, cutout BGE Large right of the center (see drawing v2). Faucet & sink — sink 15 cm to left compared to v1. Oil: natural, 2 coats. Delivery Tue Sep 15 13:00–16:00, address...'
-  );
+  // Partner Tab State — loaded from live project API
+  const [partnerSelected, setPartnerSelected] = useState('');
+  const [partnerAmount, setPartnerAmount] = useState('');
+  const [partnerAssignmentStatus, setPartnerAssignmentStatus] = useState('');
+  const [partnerWorkDescription, setPartnerWorkDescription] = useState('');
 
-  // Modals & Chat Drawer State
+  // Chat Drawer State
   const [chatOpen, setChatOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState([
-    { id: 1, sender: 'Sander de Vries', role: 'klant', text: 'Hi Tim, has the cutout for the Big Green Egg been sawed out yet?', time: '09:30' },
-    { id: 2, sender: 'Tim (Admin)', role: 'admin', text: 'Yes, absolutely Sander! The countertop was cleanly cut and polished yesterday.', time: '09:45' },
-    { id: 3, sender: 'Sander de Vries', role: 'klant', text: 'Awesome, thank you! When exactly do you expect delivery?', time: '10:05' }
-  ]);
+  const [chatMessages, setChatMessages] = useState([]);
   const [inputChatMsg, setInputChatMsg] = useState('');
   const [customerPortalModal, setCustomerPortalModal] = useState(false);
   const [actionModal, setActionModal] = useState(false);
@@ -246,7 +125,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
   const [newProjectModal, setNewProjectModal] = useState(false);
   const [newProjectClient, setNewProjectClient] = useState('');
   const [newProjectType, setNewProjectType] = useState('Outdoor Kitchen');
-  const [newProjectBudget, setNewProjectBudget] = useState('€ 3,920.00');
+  const [newProjectBudget, setNewProjectBudget] = useState('');
   const [phaseModal, setPhaseModal] = useState(false);
   const [selectedNewPhase, setSelectedNewPhase] = useState('In the workshop');
 
@@ -284,14 +163,8 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
     }
   };
 
-  // Logbook entries matching Project history
-  const [logbook, setLogbook] = useState([
-    { id: 1, date: 'Today 10:05', text: 'Message to customer answered (sink 15 cm to left) — Tim' },
-    { id: 2, date: 'Today 09:05', text: 'Status text updated — Bram' },
-    { id: 3, date: 'Aug 17', text: '2 photos published (source: partner) — Bram' },
-    { id: 4, date: 'Aug 16', text: 'Delivery proposal Tue Sep 15 sent — Tim' },
-    { id: 5, date: 'Aug 14', text: 'Phase → In the workshop · customer notified — system' }
-  ]);
+  // Logbook — starts empty, entries added as real actions happen
+  const [logbook, setLogbook] = useState([]);
 
   const showToast = (msg) => {
     setToastMsg(msg);
@@ -431,20 +304,96 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
     showToast(`✓ WhatsApp reminder sent to customer for: "${actionTitle}"`);
   };
 
-  const handleCancelAction = async (actionId) => {
+  const handleViewAction = async (action) => {
+    setSelectedAction(action);
+    setViewActionModal(true);
     if (projectId) {
-      const action = customerActions.find(a => a.id === actionId || a.id === String(actionId));
-      if (action?.dbId) {
-        await api.patch(`/projects/${projectId}/customer-actions/${action.dbId}`, { completed: false });
+      try {
+        setViewActionLoading(true);
+        const res = await api.get(`/projects/${projectId}`);
+        if (res.success && res.data) {
+          setProjectData(res.data);
+          if (Array.isArray(res.data.customerActions)) {
+            setCustomerActions(res.data.customerActions);
+            const fresh = res.data.customerActions.find(a => a.id === action.id);
+            if (fresh) setSelectedAction(fresh);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync project actions:', err);
+      } finally {
+        setViewActionLoading(false);
       }
     }
-    setCustomerActions(customerActions.filter(a => a.id !== actionId));
+  };
+
+  const handleToggleActionComplete = async (action) => {
+    if (!action) return;
+    const targetCompleted = !isActionCompleted(action);
+    if (projectId) {
+      const res = await api.patch(`/projects/${projectId}/customer-actions/${action.id}`, {
+        completed: targetCompleted
+      });
+      if (res.success) {
+        if (Array.isArray(res.data?.customerActions)) {
+          setCustomerActions(res.data.customerActions);
+          const fresh = res.data.customerActions.find(a => a.id === action.id);
+          if (fresh) setSelectedAction(fresh);
+        } else {
+          setCustomerActions(prev => prev.map(a => a.id === action.id ? { ...a, completed: targetCompleted, status: targetCompleted ? 'Completed' : 'Open' } : a));
+          setSelectedAction(prev => prev ? { ...prev, completed: targetCompleted, status: targetCompleted ? 'Completed' : 'Open' } : null);
+        }
+        showToast(targetCompleted ? '✓ Action marked as completed!' : '✓ Action re-opened as pending!');
+        return;
+      } else {
+        showToast(`⚠ ${res.error?.message || 'Failed to update action'}`);
+        return;
+      }
+    }
+    // Optimistic fallback
+    setCustomerActions(prev => prev.map(a => a.id === action.id ? { ...a, completed: targetCompleted, status: targetCompleted ? 'Completed' : 'Open' } : a));
+    setSelectedAction(prev => prev ? { ...prev, completed: targetCompleted, status: targetCompleted ? 'Completed' : 'Open' } : null);
+    showToast(targetCompleted ? '✓ Action marked as completed!' : '✓ Action re-opened as pending!');
+  };
+
+  const handleCancelAction = async (actionId) => {
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (projectId) {
+      const res = await api.delete(`/projects/${projectId}/customer-actions/${actionId}`);
+      if (res.success) {
+        if (Array.isArray(res.data?.customerActions)) {
+          setCustomerActions(res.data.customerActions);
+        } else {
+          setCustomerActions(prev => prev.filter(a => a.id !== actionId));
+        }
+        if (selectedAction?.id === actionId) {
+          setViewActionModal(false);
+          setSelectedAction(null);
+        }
+        const newLog = {
+          id: Date.now(),
+          date: `Today ${timeNow}`,
+          text: `Customer action removed — Admin`
+        };
+        setLogbook(prev => [newLog, ...prev]);
+        showToast('✓ Customer action removed from database');
+        return;
+      } else {
+        showToast(`⚠ ${res.error?.message || 'Failed to remove action'}`);
+      }
+    }
+    setCustomerActions(prev => prev.filter(a => a.id !== actionId));
+    if (selectedAction?.id === actionId) {
+      setViewActionModal(false);
+      setSelectedAction(null);
+    }
     showToast('Customer action cancelled');
   };
 
   const handleAddAction = async (e) => {
     e.preventDefault();
     if (!newActionTitle.trim()) return;
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     if (projectId) {
       const res = await api.post(`/projects/${projectId}/customer-actions`, {
         title: newActionTitle.trim(),
@@ -452,18 +401,29 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
         actionType: 'checklist'
       });
       if (res.success) {
-        const newAct = {
-          id: res.data?.id || Date.now(),
-          status: 'Open',
-          title: newActionTitle.trim(),
-          subtitle: newActionSub.trim() || 'Created today · pending customer review',
-          actionType: 'custom'
+        if (Array.isArray(res.data?.customerActions)) {
+          setCustomerActions(res.data.customerActions);
+        } else {
+          const newAct = {
+            id: `act-${Date.now()}`,
+            completed: false,
+            status: 'Open',
+            title: newActionTitle.trim(),
+            subtitle: newActionSub.trim() || 'Created today · pending customer review',
+            actionType: 'checklist'
+          };
+          setCustomerActions(prev => [...prev, newAct]);
+        }
+        const newLog = {
+          id: Date.now(),
+          date: `Today ${timeNow}`,
+          text: `Customer action created: "${newActionTitle.trim()}" — Admin`
         };
-        setCustomerActions([...customerActions, newAct]);
+        setLogbook(prev => [newLog, ...prev]);
         setNewActionTitle('');
         setNewActionSub('');
         setActionModal(false);
-        showToast('New customer action created & sent!');
+        showToast('✓ New customer action created & saved to database!');
         return;
       } else {
         showToast(`⚠ ${res.error?.message || 'Failed to create action'}`);
@@ -472,13 +432,14 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
     }
     // Fallback local if no project loaded yet
     const newAct = {
-      id: Date.now(),
+      id: `act-${Date.now()}`,
+      completed: false,
       status: 'Open',
       title: newActionTitle.trim(),
       subtitle: newActionSub.trim() || 'Created today · pending customer review',
-      actionType: 'custom'
+      actionType: 'checklist'
     };
-    setCustomerActions([...customerActions, newAct]);
+    setCustomerActions(prev => [...prev, newAct]);
     setNewActionTitle('');
     setNewActionSub('');
     setActionModal(false);
@@ -654,7 +615,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
           </div>
 
           {(() => {
-            const openActs = customerActions.filter(a => a.status === 'Open');
+            const openActs = customerActions.filter(isActionOpen);
             if (openActs.length > 0) {
               return (
                 <div className="px-2.5 py-1 bg-[#FDF2E3] border border-[#F6DCB8] text-[#9E5507] rounded-lg text-[11px] font-bold inline-block">
@@ -1089,22 +1050,22 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
               {/* ACTION LIST CARDS */}
               <div className="space-y-3">
                 {customerActions.map((action) => {
-                  const isOpen = action.status === 'Open';
+                  const isOpen = isActionOpen(action);
                   return (
                     <div 
                       key={action.id} 
-                      className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs"
+                      className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs hover:border-[#B5AC9E] transition-all"
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
                         <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold font-mono whitespace-nowrap mt-0.5 ${
                           isOpen 
                             ? 'bg-[#FDF2E3] text-[#9E5507] border border-[#F6DCB8]' 
-                            : 'bg-[#F4F1EA] text-[#555046] border border-[#D6CFC2]'
+                            : 'bg-[#E3EFE3] text-[#1E561E] border border-[#C5E1C5]'
                         }`}>
                           {isOpen ? '● Open' : '✓ Completed'}
                         </span>
                         
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <h4 className="font-bold text-sm text-[#1C1C1A]">
                             {action.title}
                           </h4>
@@ -1115,7 +1076,14 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
                       </div>
 
                       {/* Action buttons */}
-                      <div className="flex items-center gap-2 self-start sm:self-center">
+                      <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                        <button
+                          onClick={() => handleViewAction(action)}
+                          className="px-3.5 py-1.5 bg-white hover:bg-[#FAF8F5] text-[#1C1C1A] border border-[#D6CFC2] rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1.5"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-[#615C52]" />
+                          <span>View</span>
+                        </button>
                         {isOpen ? (
                           <>
                             <button
@@ -1126,19 +1094,12 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
                             </button>
                             <button
                               onClick={() => handleCancelAction(action.id)}
-                              className="px-2.5 py-1.5 text-[#615C52] hover:text-[#1C1C1A] text-xs font-bold transition-all cursor-pointer"
+                              className="px-2.5 py-1.5 text-[#615C52] hover:text-[#B91C1C] text-xs font-bold transition-all cursor-pointer"
                             >
                               Cancel
                             </button>
                           </>
-                        ) : (
-                          <button
-                            onClick={() => showToast('Viewing completion checklist details...')}
-                            className="px-3.5 py-1.5 bg-white hover:bg-[#FAF8F5] text-[#1C1C1A] border border-[#D6CFC2] rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
-                          >
-                            View
-                          </button>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   );
@@ -1836,24 +1797,24 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
 
                 {/* Input composer for Customer */}
                 <div className="space-y-2 pt-2 border-t border-[#E6E1D7]">
-                  <form onSubmit={handleSendCustomerMessage} className="flex items-center gap-1.5">
+                  <form onSubmit={handleSendCustomerMessage} className="flex items-center gap-1.5 overflow-hidden">
                     <input
                       type="text"
                       placeholder="Message to the customer..."
                       value={inputCustomerMsg}
                       onChange={(e) => setInputCustomerMsg(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#283523]/20"
+                      className="flex-1 min-w-0 px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#283523]/20"
                     />
                     <button
                       type="button"
                       onClick={() => showToast('Attachment options opened')}
-                      className="p-2 bg-white hover:bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-[#4F4B44] cursor-pointer"
+                      className="flex-shrink-0 p-2 bg-white hover:bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-[#4F4B44] cursor-pointer"
                     >
                       <Paperclip className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="submit"
-                      className="px-3.5 py-2 bg-[#283523] hover:bg-[#1E291B] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+                      className="flex-shrink-0 px-3.5 py-2 bg-[#283523] hover:bg-[#1E291B] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
                     >
                       Send
                     </button>
@@ -1913,24 +1874,24 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
 
                 {/* Input composer for Partner */}
                 <div className="space-y-2 pt-2 border-t border-[#E6E1D7]">
-                  <form onSubmit={handleSendPartnerMessage} className="flex items-center gap-1.5">
+                  <form onSubmit={handleSendPartnerMessage} className="flex items-center gap-1.5 overflow-hidden">
                     <input
                       type="text"
                       placeholder="Message to the partner..."
                       value={inputPartnerMsg}
                       onChange={(e) => setInputPartnerMsg(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#9A7B44]/20"
+                      className="flex-1 min-w-0 px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#9A7B44]/20"
                     />
                     <button
                       type="button"
                       onClick={() => showToast('Partner attachment options opened')}
-                      className="p-2 bg-white hover:bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-[#4F4B44] cursor-pointer"
+                      className="flex-shrink-0 p-2 bg-white hover:bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-[#4F4B44] cursor-pointer"
                     >
                       <Paperclip className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="submit"
-                      className="px-3.5 py-2 bg-[#9A7B44] hover:bg-[#856835] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+                      className="flex-shrink-0 px-3.5 py-2 bg-[#9A7B44] hover:bg-[#856835] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
                     >
                       Send
                     </button>
@@ -2477,30 +2438,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
               </div>
 
               <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!newActionTitle.trim()) return;
-                  const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                  const newAct = {
-                    id: Date.now(),
-                    status: 'Open',
-                    title: newActionTitle.trim(),
-                    subtitle: newActionSub.trim() || 'Created today · reminder scheduled Day 3',
-                    actionType: 'custom'
-                  };
-                  setCustomerActions([newAct, ...customerActions]);
-                  setNewActionTitle('');
-                  setNewActionSub('');
-                  setActionModal(false);
-                  
-                  const newLog = {
-                    id: Date.now(),
-                    date: `Today ${timeNow}`,
-                    text: `Customer action created: "${newAct.title}" — Admin`
-                  };
-                  setLogbook([newLog, ...logbook]);
-                  showToast(`✓ New customer action created & sent to Customer Portal!`);
-                }} 
+                onSubmit={handleAddAction}
                 className="space-y-4 text-xs"
               >
                 <div>
@@ -2553,6 +2491,171 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* VIEW CUSTOMER ACTION DETAILS MODAL */}
+      <AnimatePresence>
+        {viewActionModal && selectedAction && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 border border-[#D6CFC2]"
+            >
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#FAF8F5] border border-[#D6CFC2] flex items-center justify-center text-[#283523]">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-[#1C1C1A]">
+                      Customer Action Details
+                    </h3>
+                    <p className="text-[11px] text-[#615C52]">
+                      Action ID: <span className="font-mono font-medium">{selectedAction.id}</span>
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => { setViewActionModal(false); setSelectedAction(null); }} 
+                  className="text-[#615C52] hover:text-[#1C1C1A] p-1.5 rounded-lg hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {viewActionLoading && (
+                <div className="text-center py-1 text-xs text-[#615C52] animate-pulse">
+                  Syncing live state with server...
+                </div>
+              )}
+
+              {/* Status Header Badge */}
+              <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E6E1D7]">
+                <div className="flex items-center gap-2">
+                  <span className={`px-2.5 py-1 rounded-md text-xs font-bold font-mono ${
+                    isActionCompleted(selectedAction)
+                      ? 'bg-[#E3EFE3] text-[#1E561E] border border-[#C5E1C5]'
+                      : 'bg-[#FDF2E3] text-[#9E5507] border border-[#F6DCB8]'
+                  }`}>
+                    {isActionCompleted(selectedAction) ? '✓ Completed' : '● Open / Pending'}
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-white border border-[#D6CFC2] text-[#555046] capitalize">
+                    {selectedAction.actionType || 'checklist'}
+                  </span>
+                </div>
+                <span className="text-[11px] text-[#615C52]">
+                  {isActionCompleted(selectedAction) && selectedAction.completedAt
+                    ? `Done ${new Date(selectedAction.completedAt).toLocaleDateString('nl-NL')}`
+                    : 'Awaiting customer completion'}
+                </span>
+              </div>
+
+              {/* Title & Instructions */}
+              <div className="space-y-2">
+                <label className="text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider block">
+                  Action Title & Subtitle
+                </label>
+                <div className="p-3.5 bg-white border border-[#D6CFC2] rounded-xl space-y-1.5">
+                  <h4 className="font-bold text-sm text-[#1C1C1A]">
+                    {selectedAction.title}
+                  </h4>
+                  <p className="text-xs text-[#4F4B44] leading-relaxed">
+                    {selectedAction.subtitle || 'No detailed instructions provided.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Context Details Grid */}
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-3 bg-[#FAF8F5] border border-[#E6E1D7] rounded-xl">
+                  <div className="text-[10px] font-mono font-bold text-[#555046] uppercase">Project Link</div>
+                  <div className="font-semibold text-[#1C1C1A] mt-0.5 truncate">
+                    {projectData?.projectNumber || 'PRJ-2026-0001'} · {projectData?.name || 'Outdoor Kitchen'}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-[#FAF8F5] border border-[#E6E1D7] rounded-xl">
+                  <div className="text-[10px] font-mono font-bold text-[#555046] uppercase">Customer</div>
+                  <div className="font-semibold text-[#1C1C1A] mt-0.5 truncate">
+                    {projectData?.customerName || 'Customer'}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-[#FAF8F5] border border-[#E6E1D7] rounded-xl">
+                  <div className="text-[10px] font-mono font-bold text-[#555046] uppercase">Channel Sync</div>
+                  <div className="font-semibold text-[#1C1C1A] mt-0.5">
+                    Customer Portal + WhatsApp
+                  </div>
+                </div>
+
+                <div className="p-3 bg-[#FAF8F5] border border-[#E6E1D7] rounded-xl">
+                  <div className="text-[10px] font-mono font-bold text-[#555046] uppercase">Follow-up Rule</div>
+                  <div className="font-semibold text-[#1C1C1A] mt-0.5">
+                    Auto-reminder on Day 3
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-[#D6CFC2]">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleActionComplete(selectedAction)}
+                    className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs ${
+                      isActionCompleted(selectedAction)
+                        ? 'bg-[#FDF2E3] hover:bg-[#F6DCB8] text-[#9E5507] border border-[#F6DCB8]'
+                        : 'bg-[#283523] hover:bg-[#1E291B] text-white'
+                    }`}
+                  >
+                    {isActionCompleted(selectedAction) ? (
+                      <>
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Re-open Action</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Mark as Completed</span>
+                      </>
+                    )}
+                  </button>
+
+                  {isActionOpen(selectedAction) && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemindAction(selectedAction.title)}
+                      className="px-3 py-2 bg-white hover:bg-[#FAF8F5] text-[#1C1C1A] border border-[#D6CFC2] rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                    >
+                      <Send className="w-3.5 h-3.5 text-[#283523]" />
+                      <span>Remind</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleCancelAction(selectedAction.id)}
+                    className="px-3 py-2 bg-white hover:bg-[#FDF2F2] text-[#B91C1C] border border-[#FCA5A5] rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setViewActionModal(false); setSelectedAction(null); }}
+                    className="px-4 py-2 bg-[#FAF8F5] hover:bg-[#EAE5DC] text-[#4F4B44] border border-[#D6CFC2] rounded-xl text-xs font-bold cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}

@@ -17,7 +17,7 @@ import { detectProjectType } from '../../utils/projectType';
 import api from '../../api/apiClient';
 
 export default function ProjectGlobalInbox({ onSelectProject }) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
   const directFileInputRef = useRef(null);
   const [projects, setProjects] = useState([]);
@@ -335,35 +335,37 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-heading font-bold text-primary">
-            {language === 'NL' ? 'Projecten & Installatie Beheer' : 'Projects & Installation Management'}
+            {t('projects.title')}
           </h2>
           <p className="text-xs text-dark/70 mt-1 font-body">
-            {language === 'NL'
-              ? 'Beheer actieve installaties, koppel vakmannen en bekijk bouwtekeningen.'
-              : 'Manage active installations, partner assignments, and technical blueprints.'}
+            {t('projects.subtitle')}
           </p>
         </div>
 
         <Button icon={Plus} onClick={handleOpenAddModal} className="w-full sm:w-auto">
-          {language === 'NL' ? 'Nieuw Project' : 'New Project'}
+          {t('projects.addNewProject')}
         </Button>
       </div>
 
       {/* Main Content Area Container matching screenshot */}
       <div className="bg-[#EAE4D9] border border-[#D6CFC2] rounded-3xl p-4 sm:p-5 space-y-2 sm:space-y-3 shadow-sm">
 
-        {/* Top Tabs (Client Requested) */}
+        {/* Top Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar border-b border-[#D6CFC2]/60">
-          {['All', 'Outdoor Kitchens', 'Outdoor Living Spaces'].map(tab => (
+          {[
+            { id: 'All', label: t('projects.allProjects') },
+            { id: 'Outdoor Kitchens', label: t('projects.outdoorKitchens') },
+            { id: 'Outdoor Living Spaces', label: t('projects.gardenRooms') }
+          ].map(tab => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === tab
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === tab.id
                   ? 'bg-[#283523] text-white shadow-md'
                   : 'bg-white text-dark/70 border border-[#D6CFC2] hover:bg-[#FAF8F5]'
                 }`}
             >
-              {tab}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -374,7 +376,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-dark/40" />
             <input
               type="text"
-              placeholder={language === 'NL' ? 'Zoek op project, klant of order ID...' : 'Search by project, customer or order ID...'}
+              placeholder={t('projects.searchPlaceholder')}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#D6CFC2] rounded-xl text-xs font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43] shadow-xs"
@@ -388,7 +390,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
               size="sm"
               className="text-xs border-[#D6CFC2] bg-white shadow-2xs"
             >
-              {language === 'NL' ? 'Filters' : 'Filters'}
+              {t('common.filters')}
             </Button>
             {(searchQuery || statusFilter !== 'All') && (
               <Button
@@ -398,7 +400,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                 size="sm"
                 className="text-xs text-dark/65"
               >
-                Reset
+                {t('common.reset')}
               </Button>
             )}
           </div>
@@ -414,60 +416,61 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
               className="overflow-hidden border-t border-[#D6CFC2]/60 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs"
             >
               <div>
-                <label className="block text-[11px] font-bold text-dark/60 mb-1.5 uppercase tracking-wider">Status Filter</label>
+                <label className="block text-[11px] font-bold text-dark/60 mb-1.5 uppercase tracking-wider">{t('leads.statusFilter')}</label>
                 <div className="flex flex-wrap gap-2">
-                  {['All', 'In Progress', 'Completed'].map((st) => (
+                  {[
+                    { id: 'All', label: t('common.all') },
+                    { id: 'In Progress', label: t('projects.inProgress') },
+                    { id: 'Completed', label: t('common.completed') }
+                  ].map((st) => (
                     <button
-                      key={st}
-                      onClick={() => setStatusFilter(st)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${statusFilter === st
+                      key={st.id}
+                      onClick={() => setStatusFilter(st.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${statusFilter === st.id
                           ? 'bg-primary text-cream border-primary shadow-xs'
                           : 'bg-white text-dark/70 border-[#D6CFC2] hover:bg-[#EDE8DF]/60'
                         }`}
                     >
-                      {st}
+                      {st.label}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-dark/60 mb-1.5 uppercase tracking-wider">Sort By</label>
+                <label className="block text-[11px] font-bold text-dark/60 mb-1.5 uppercase tracking-wider">{t('invoices.sortBy')}</label>
                 <select
                   value={sortBy}
                   onChange={e => setSortBy(e.target.value)}
                   className="w-full max-w-xs px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold focus:outline-none shadow-xs"
                 >
-                  <option value="deadline">Deadline (Earliest)</option>
-                  <option value="name">Project Name (A-Z)</option>
-                  <option value="progress-desc">Progress (Highest)</option>
-                  <option value="progress-asc">Progress (Lowest)</option>
+                  <option value="deadline">Deadline</option>
+                  <option value="name">{t('common.name')}</option>
+                  <option value="progress-desc">{t('common.progress')}</option>
                 </select>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* ============================================================ */}
-        {/* ROW-CARD TABLE (Exact Screenshot Match with Explicit Widths) */}
-        {/* ============================================================ */}
+        {/* ROW-CARD TABLE */}
         <div className="w-full overflow-x-auto pb-2 pt-0.5">
           <table className="w-full text-left text-xs border-separate border-spacing-y-2 min-w-[1000px]">
             <thead>
               <tr className="text-[11px] font-heading font-bold text-dark/50 uppercase tracking-wider">
-                <th className="py-1.5 px-3 w-[100px] min-w-[100px]">PROJECT</th>
-                <th className="py-1.5 px-3 w-[180px] min-w-[180px]">CUSTOMER</th>
-                <th className="py-1.5 px-3 w-[170px] min-w-[170px]">TYPE</th>
-                <th className="py-1.5 px-3 w-[120px] min-w-[120px]">PHASE</th>
-                <th className="py-1.5 px-3 w-[140px] min-w-[140px]">NEXT MILESTONE</th>
-                <th className="py-1.5 px-3 w-[180px] min-w-[180px]">PARTNER</th>
+                <th className="py-1.5 px-3 w-[100px] min-w-[100px]">{t('projects.project')}</th>
+                <th className="py-1.5 px-3 w-[180px] min-w-[180px]">{t('projects.client')}</th>
+                <th className="py-1.5 px-3 w-[170px] min-w-[170px]">{t('projects.type')}</th>
+                <th className="py-1.5 px-3 w-[120px] min-w-[120px]">{t('projects.phase')}</th>
+                <th className="py-1.5 px-3 w-[140px] min-w-[140px]">{t('projects.nextMilestone')}</th>
+                <th className="py-1.5 px-3 w-[180px] min-w-[180px]">{t('projects.partner')}</th>
               </tr>
             </thead>
             <tbody>
               {filteredProjects.length === 0 ? (
                 <tr>
                   <td colSpan="9" className="py-8 text-center text-xs font-body text-dark/40 bg-white rounded-2xl border border-[#D6CFC2]/60 shadow-xs">
-                    No projects found matching the criteria.
+                    {t('common.noResults')}
                   </td>
                 </tr>
               ) : (
@@ -507,10 +510,10 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                       <td className="py-3 px-3 border-y border-[#E2DDD3] whitespace-nowrap">
                         <div className="flex flex-col">
                           <span className="font-bold text-dark text-[11px]">
-                            {pType === 'garden_room' ? 'Outdoor Living Space' : pType === 'outdoor_kitchen' ? 'Outdoor Kitchen' : 'Field Mapping'}
+                            {pType === 'garden_room' ? t('leads.gardenRoom') : pType === 'outdoor_kitchen' ? t('leads.outdoorKitchen') : 'Field Mapping'}
                           </span>
                           <span className="text-dark/60 font-mono text-[10px] leading-tight">
-                            € {numericVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            € {numericVal.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
                           </span>
                         </div>
                       </td>
@@ -519,24 +522,20 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                       <td className="py-3 px-3 border-y border-[#E2DDD3] whitespace-nowrap">
                         <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold ${row.status === 'Completed' ? 'bg-[#D1E7DD] text-[#0F5132]' : isConfirmed ? 'bg-emerald-100 text-emerald-900' : 'bg-[#FFF3CD] text-[#664D03]'
                           }`}>
-                          {row.buildStatus || (isConfirmed ? 'In production' : 'To confirm')}
+                          {row.status === 'Completed' ? t('common.completed') : isConfirmed ? t('projects.toConfirm') : t('projects.toConfirm')}
                         </span>
                       </td>
 
-                      {/* 5. Next Milestone (Deadline) */}
-                      <td className="py-3 px-3 border-y border-[#E2DDD3] font-mono text-dark text-[11px] whitespace-nowrap font-bold">
+                      {/* 5. Next Milestone */}
+                      <td className="py-3 px-3 border-y border-[#E2DDD3] text-dark/70 text-[11px] font-mono">
                         {row.deadline || '2026-09-15'}
                       </td>
 
-                      {/* 6. Partner (Read Only) */}
-                      <td className="py-3 px-3 rounded-r-xl border-y border-r border-[#E2DDD3] whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      {/* 6. Partner */}
+                      <td className="py-3 px-3 rounded-r-xl border-y border-r border-[#E2DDD3] text-[11px]">
                         <div className="flex flex-col">
-                          <span className="font-bold text-dark text-[11px]">{row.partner || 'Unassigned'}</span>
-                          {isConfirmed ? (
-                            <span className="text-[9px] text-emerald-700 font-bold tracking-wide leading-tight">✓ In production</span>
-                          ) : (
-                            <span className="text-[9px] text-dark/40 font-bold tracking-wide leading-tight">Pending</span>
-                          )}
+                          <span className="font-bold text-dark">{row.partner && row.partner !== 'Unassigned' ? row.partner : t('projects.unassigned')}</span>
+                          <span className="text-[9px] text-dark/50">{t('projects.inProgress')}</span>
                         </div>
                       </td>
                     </tr>

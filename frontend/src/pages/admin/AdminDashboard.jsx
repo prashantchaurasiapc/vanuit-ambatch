@@ -165,7 +165,8 @@ export default function AdminDashboard() {
     company: '',
     phone: '',
     email: '',
-    status: 'New'
+    status: 'New',
+    notes: ''
   });
 
   // Quote Form state
@@ -194,7 +195,8 @@ export default function AdminDashboard() {
       source: 'Direct',
       status: leadForm.status === 'New' ? 'Nieuw' : (leadForm.status || 'Nieuw'),
       assignedTo: 'Admin',
-      workflowStep: 1
+      workflowStep: 1,
+      notes: leadForm.notes?.trim() || null
     };
     
     try {
@@ -203,7 +205,7 @@ export default function AdminDashboard() {
     window.dispatchEvent(new Event('app_data_changed'));
     
     showToast(language === 'NL' ? `Lead voor "${leadForm.name}" succesvol aangemaakt!` : `Lead for "${leadForm.name}" created successfully!`);
-    setLeadForm({ name: '', company: '', phone: '', email: '', status: 'New' });
+    setLeadForm({ name: '', company: '', phone: '', email: '', status: 'New', notes: '' });
     setLeadModalOpen(false);
     refreshDashboard();
   };
@@ -389,7 +391,7 @@ export default function AdminDashboard() {
 
         {/* 7 KPI Cards Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-          {/* Card 1: Total Leads */}
+          {/* Card 1: Total Leads — LIVE from /leads API */}
           <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-primary">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Totaal Leads' : 'Total Leads'}</span>
@@ -397,13 +399,11 @@ export default function AdminDashboard() {
                 <TrendingUp className="w-3.5 h-3.5" />
               </div>
             </div>
-            <p className="text-xl font-heading font-extrabold text-dark">{dateRange === '7days' ? '28' : dateRange === '3months' ? '340' : '122'}</p>
-            <p className="text-[10px] font-body text-emerald-700 font-semibold flex items-center gap-0.5">
-              <ArrowUpRight className="w-2.5 h-2.5" /> {language === 'NL' ? '+14% vs vorig' : '+14% vs previous'}
-            </p>
+            <p className="text-xl font-heading font-extrabold text-dark">{totalLeads}</p>
+            <p className="text-[10px] font-body text-dark/40 truncate">{language === 'NL' ? 'totaal geregistreerd' : 'total registered'}</p>
           </div>
 
-          {/* Card 2: Cost Per Lead */}
+          {/* Card 2: Cost Per Lead — not tracked yet, show dash */}
           <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-amber-600">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Kosten / Lead' : 'Cost / Lead'}</span>
@@ -411,11 +411,11 @@ export default function AdminDashboard() {
                 <DollarSign className="w-3.5 h-3.5" />
               </div>
             </div>
-            <p className="text-xl font-heading font-extrabold text-dark">€ 14,60</p>
-            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'gem. per lead' : 'avg per lead'}</p>
+            <p className="text-xl font-heading font-extrabold text-dark">—</p>
+            <p className="text-[10px] font-body text-dark/40 truncate">{language === 'NL' ? 'nog niet bijgehouden' : 'not tracked yet'}</p>
           </div>
 
-          {/* Card 3: Quotations Sent */}
+          {/* Card 3: Quotations Sent — LIVE from /quotes API */}
           <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-blue-600">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Offertes' : 'Quotes Sent'}</span>
@@ -423,11 +423,11 @@ export default function AdminDashboard() {
                 <FileText className="w-3.5 h-3.5" />
               </div>
             </div>
-            <p className="text-xl font-heading font-extrabold text-dark">{dateRange === '7days' ? '6' : '22'}</p>
+            <p className="text-xl font-heading font-extrabold text-dark">{activeQuotes}</p>
             <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'uitgebracht' : 'issued'}</p>
           </div>
 
-          {/* Card 4: Quotation % */}
+          {/* Card 4: Quotation % — computed from real leads + quotes */}
           <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-indigo-600">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Offerte %' : 'Quote %'}</span>
@@ -435,11 +435,13 @@ export default function AdminDashboard() {
                 <Percent className="w-3.5 h-3.5" />
               </div>
             </div>
-            <p className="text-xl font-heading font-extrabold text-dark">18%</p>
+            <p className="text-xl font-heading font-extrabold text-dark">
+              {totalLeads > 0 ? `${Math.round((activeQuotes / totalLeads) * 100)}%` : '—'}
+            </p>
             <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'van totaal leads' : 'of total leads'}</p>
           </div>
 
-          {/* Card 5: Confirmed Orders (Won) */}
+          {/* Card 5: Orders Won — computed from quotes with accepted status */}
           <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-emerald-600">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Opdrachten' : 'Orders Won'}</span>
@@ -447,11 +449,13 @@ export default function AdminDashboard() {
                 <CheckCircle2 className="w-3.5 h-3.5" />
               </div>
             </div>
-            <p className="text-xl font-heading font-extrabold text-dark">7</p>
+            <p className="text-xl font-heading font-extrabold text-dark">
+              {latestQuotes.filter(q => q.status === 'accepted' || q.status === 'goedgekeurd').length}
+            </p>
             <p className="text-[10px] font-body text-emerald-700 font-semibold truncate">{language === 'NL' ? 'geaccepteerd' : 'accepted'}</p>
           </div>
 
-          {/* Card 6: Conversion Rate % */}
+          {/* Card 6: Conversion Rate % — computed from real data */}
           <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-purple-600">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Conversie' : 'Conversion'}</span>
@@ -459,11 +463,16 @@ export default function AdminDashboard() {
                 <Award className="w-3.5 h-3.5" />
               </div>
             </div>
-            <p className="text-xl font-heading font-extrabold text-dark">29%</p>
+            <p className="text-xl font-heading font-extrabold text-dark">
+              {(() => {
+                const won = latestQuotes.filter(q => q.status === 'accepted' || q.status === 'goedgekeurd').length;
+                return totalLeads > 0 ? `${Math.round((won / totalLeads) * 100)}%` : '—';
+              })()}
+            </p>
             <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'lead → order' : 'lead → order'}</p>
           </div>
 
-          {/* Card 7: Active Meta Ads */}
+          {/* Card 7: Meta Ads — not connected yet, show dash */}
           <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-pink-600 col-span-2 sm:col-span-1">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">Meta Ads</span>
@@ -471,8 +480,8 @@ export default function AdminDashboard() {
                 <Sparkles className="w-3.5 h-3.5" />
               </div>
             </div>
-            <p className="text-xl font-heading font-extrabold text-dark">4 <span className="text-xs font-body font-normal text-emerald-600">{language === 'NL' ? 'Actief' : 'Active'}</span></p>
-            <p className="text-[10px] font-body text-dark/50 truncate">Meta Suite Sync</p>
+            <p className="text-xl font-heading font-extrabold text-dark">—</p>
+            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'niet gekoppeld' : 'not connected'}</p>
           </div>
         </div>
       </div>
@@ -765,6 +774,16 @@ export default function AdminDashboard() {
                     <option value="Contacted">{t('statuses.Contacted')}</option>
                     <option value="Qualified">{t('statuses.Qualified')}</option>
                   </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-dark/60 mb-1 font-body uppercase tracking-wider">{language === 'EN' ? 'Initial Notes / Requirements' : 'Intake Notities / Wensen'}</label>
+                  <textarea
+                    rows={2}
+                    value={leadForm.notes}
+                    onChange={e => setLeadForm(prev => ({ ...prev, notes: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
+                    placeholder={language === 'EN' ? 'e.g. Dimensions, wishes, wood type...' : 'b.v. Afmetingen, wensen, houtsoort...'}
+                  />
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2 border-t border-cream-dark/60">

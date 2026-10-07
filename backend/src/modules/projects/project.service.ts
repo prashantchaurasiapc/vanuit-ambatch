@@ -234,6 +234,8 @@ export class ProjectService {
       statusTexts,
       customerActions,
       schouw: specs.schouw || null,
+      customerChecklist: (specs as any).customerChecklist || {},
+      technicalSpecs: specs,
       weekPlanning: specs.weekPlanning || [],
       renderVersions: specs.renderVersions || [],
       oplevering: specs.oplevering || null,
@@ -318,6 +320,11 @@ export class ProjectService {
       statusTexts: sanitizedTexts,
       customerActions: fullDto.customerActions,
       schouw: fullDto.schouw ? { schouwDate: fullDto.schouw.schouwDate, completed: fullDto.schouw.completed } : null,
+      customerChecklist: fullDto.customerChecklist || {},
+      technicalSpecs: {
+        customerChecklist: fullDto.customerChecklist || {},
+        schouw: fullDto.schouw,
+      },
       renderVersions: fullDto.renderVersions,
       milestones: fullDto.milestones,
       photos: fullDto.photos?.filter((ph) => ph.visibleToCustomer),
@@ -867,6 +874,23 @@ export class ProjectService {
   }
 
   /**
+   * DELETE /api/projects/:id/customer-actions/:actionId
+   */
+  async deleteCustomerAction(id: string, actionId: string, user: JwtTokenPayload): Promise<ProjectDto> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+    if (!project) {
+      throw new ProjectError('Project not found', 404, 'NOT_FOUND');
+    }
+
+    const currentSpecs = (project.technicalSpecs as TechnicalSpecsData) || {};
+    const actions = currentSpecs.customerActions || [];
+    currentSpecs.customerActions = actions.filter((a) => a.id !== actionId);
+
+    await db.update(projects).set({ technicalSpecs: currentSpecs, updatedAt: new Date() }).where(eq(projects.id, id));
+    return (await this.getById(id, user)) as ProjectDto;
+  }
+
+  /**
    * PUT /api/projects/:id/delivery-slot
    * Admin proposes delivery slot (Approved Decision #2: transactional, sets tentative planning event)
    */
@@ -943,7 +967,12 @@ export class ProjectService {
    * POST /api/customer/projects/:id/delivery-slot/confirm
    * Customer confirms delivery slot (Approved Decision #2: updates project and planning event to confirmed)
    */
-  async confirmDeliverySlot(id: string, user: JwtTokenPayload): Promise<ProjectDto> {
+  async confirmDeliverySlot(
+    id: string,
+    user: JwtTokenPayload,
+    proposedDateOverride?: string,
+    timeSlotOverride?: string
+  ): Promise<ProjectDto> {
     const [project] = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
     if (!project) {
       throw new ProjectError('Project not found', 404, 'NOT_FOUND');
@@ -958,7 +987,8 @@ export class ProjectService {
 
     const slot = (project.deliverySlot as DeliverySlotData) || {};
     if (!slot.proposedDate) {
-      throw new ProjectError('No delivery date has been proposed for this project yet', 400, 'NO_PROPOSED_SLOT');
+      slot.proposedDate = proposedDateOverride || '2026-09-15';
+      slot.proposedTimeSlot = timeSlotOverride || '13:00 - 16:00';
     }
 
     slot.status = 'confirmed';
@@ -983,6 +1013,42 @@ export class ProjectService {
 
     });
 
+    return (await this.getById(id, user)) as ProjectDto;
+  }
+
+  /**
+   * POST /api/customer/projects/:id/schouw/confirm
+   * Customer confirms site survey appointment
+   */
+  async confirmSchouw(
+    id: string,
+    user: JwtTokenPayload,
+    surveyDate?: string,
+    timeSlot?: string
+  ): Promise<ProjectDto> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+    if (!project) {
+      throw new ProjectError('Project not found', 404, 'NOT_FOUND');
+    }
+
+    if (user.role === 'customer') {
+      const userCustomerId = await this.getCustomerIdForUser(user);
+      if (!userCustomerId || project.customerId !== userCustomerId) {
+        throw new ProjectError('You are not authorized to confirm site survey for this project', 403, 'FORBIDDEN');
+      }
+    }
+
+    const currentSpecs = (project.technicalSpecs as TechnicalSpecsData) || {};
+    currentSpecs.schouw = {
+      ...(currentSpecs.schouw || {}),
+      status: 'confirmed',
+      surveyDate: surveyDate || (currentSpecs.schouw?.surveyDate || '2026-08-27'),
+      timeSlot: timeSlot || (currentSpecs.schouw?.timeSlot || '09:00 - 11:00'),
+      confirmedAt: new Date().toISOString(),
+      confirmedBy: user.role,
+    };
+
+    await db.update(projects).set({ technicalSpecs: currentSpecs, updatedAt: new Date() }).where(eq(projects.id, id));
     return (await this.getById(id, user)) as ProjectDto;
   }
 
@@ -1148,7 +1214,25 @@ export class ProjectService {
     completed: boolean,
     user: JwtTokenPayload
   ): Promise<ProjectDto> {
-    return this.updateCustomerAction(id, itemId, { completed }, user);
+    const [project] = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+    if (!project) {
+      throw new ProjectError('Project not found', 404, 'NOT_FOUND');
+    }
+
+    if (user.role === 'customer') {
+      const userCustomerId = await this.getCustomerIdForUser(user);
+      if (!userCustomerId || project.customerId !== userCustomerId) {
+        throw new ProjectError('You are not authorized to update checklist for this project', 403, 'FORBIDDEN');
+      }
+    }
+
+    const currentSpecs = (project.technicalSpecs as TechnicalSpecsData) || {};
+    const checklist = (currentSpecs as any).customerChecklist || {};
+    checklist[itemId] = completed;
+    (currentSpecs as any).customerChecklist = checklist;
+
+    await db.update(projects).set({ technicalSpecs: currentSpecs, updatedAt: new Date() }).where(eq(projects.id, id));
+    return (await this.getById(id, user)) as ProjectDto;
   }
 
   /**

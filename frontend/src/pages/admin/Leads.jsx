@@ -113,13 +113,33 @@ export default function Leads() {
   const [lastContactFilter, setLastContactFilter] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
 
-  // Dynamic Categories state (UI preferences)
+  // Dynamic Categories state from Platform Settings
   const [dynamicCategoriesList, setDynamicCategoriesList] = useState([
-    { id: 'cat-1', name: 'Outdoor Kitchens' },
-    { id: 'cat-2', name: 'Bin Storage' },
-    { id: 'cat-3', name: 'Cutting Boards' },
-    { id: 'cat-4', name: 'Canopies & Garden Rooms' }
+    { id: 'cat-1', name: 'Buitenkeukens', icon: '🔥' },
+    { id: 'cat-2', name: 'Kliko-ombouw', icon: '🗑️' },
+    { id: 'cat-3', name: 'Snijplanken', icon: '🪵' },
+    { id: 'cat-4', name: 'Overkappingen', icon: '☂️' }
   ]);
+
+  // Load dynamic categories configured in Platform Settings
+  const loadSettings = useCallback(async () => {
+    try {
+      const res = await api.get('/settings/company');
+      if (res.success && res.data) {
+        if (Array.isArray(res.data.categoriesConfig) && res.data.categoriesConfig.length > 0) {
+          setDynamicCategoriesList(res.data.categoriesConfig);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load settings categories in Leads:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSettings();
+    window.addEventListener('app_data_changed', loadSettings);
+    return () => window.removeEventListener('app_data_changed', loadSettings);
+  }, [loadSettings]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
@@ -1247,7 +1267,7 @@ export default function Leads() {
                     >
                       <span className="truncate">
                         {form.productType === 'buitenkeuken' ? (language === 'EN' ? 'Outdoor Kitchen' : 'Buitenkeuken') :
-                         form.productType === 'buitenverblijf' ? (language === 'EN' ? 'Garden / Outdoor Building' : 'Buitenverblijf / Tuinkamer') :
+                         form.productType === 'buitenverblijf' ? (language === 'EN' ? 'Garden Room' : 'Buitenverblijf / Tuinkamer') :
                          form.productType === 'overkapping' ? (language === 'EN' ? 'Canopy / Pergola' : 'Overkapping / Pergola') :
                          form.productType === 'poolhouse' ? 'Poolhouse' :
                          (form.productType || (language === 'EN' ? 'Outdoor Kitchen' : 'Buitenkeuken'))}
@@ -1260,7 +1280,7 @@ export default function Leads() {
                         <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-[#EDE8DF]">
                           {[
                             { val: 'buitenkeuken', label: language === 'EN' ? 'Outdoor Kitchen' : 'Buitenkeuken' },
-                            { val: 'buitenverblijf', label: language === 'EN' ? 'Garden / Outdoor Building' : 'Buitenverblijf / Tuinkamer' },
+                            { val: 'buitenverblijf', label: language === 'EN' ? 'Garden Room' : 'Buitenverblijf / Tuinkamer' },
                             { val: 'overkapping', label: language === 'EN' ? 'Canopy / Pergola' : 'Overkapping / Pergola' },
                             { val: 'poolhouse', label: 'Poolhouse' },
                             ...dynamicCategoriesList

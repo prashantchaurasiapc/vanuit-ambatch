@@ -312,33 +312,33 @@ export default function ProfitLoss() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-heading font-bold text-primary flex items-center gap-2">
-            {language === 'EN' ? 'Profit & Loss Analysis' : 'Winst & Verlies (Profit & Loss)'}
-            <span className="text-[10px] bg-primary/15 text-primary border border-primary/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Live Calculated</span>
+            {t('profitLoss.title')}
+            <span className="text-[10px] bg-primary/15 text-primary border border-primary/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider font-mono">
+              {t('profitLoss.liveCalculated')}
+            </span>
           </h2>
           <p className="text-dark/60 text-sm">
-            {language === 'EN' 
-              ? 'Real-time financial overview and profit margin breakdown per project.' 
-              : 'Financieel overzicht en automatische winstmarge berekening per project.'}
+            {t('profitLoss.subtitle')}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <Button icon={Plus} onClick={handleOpenCreateModal} className="py-2 px-3 text-xs font-bold">
-            {language === 'EN' ? '+ Add P&L Record' : '+ Winst & Verlies Toevoegen'}
+            {t('profitLoss.addEntry')}
           </Button>
         </div>
       </div>
 
-      {/* Overview Stat Cards — Ultra-Attractive Dynamic Cards */}
+      {/* Overview Stat Cards — Dynamic Native Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl shadow-sm flex items-center justify-between border-l-4 border-l-primary">
           <div className="space-y-1 min-w-0">
             <p className="text-[11px] font-bold text-dark/50 uppercase tracking-wider truncate">
-              {language === 'EN' ? 'Total Revenue' : 'Totale Omzet (Revenue)'}
+              {t('profitLoss.totalRevenue')}
             </p>
-            <p className="text-xl sm:text-2xl font-heading font-bold text-primary truncate">€ {totalRevenue.toLocaleString()}</p>
+            <p className="text-xl sm:text-2xl font-heading font-bold text-primary truncate">€ {totalRevenue.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</p>
             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
-              <ArrowUpRight className="w-3 h-3" /> {projectPLs.length} {language === 'EN' ? 'Active Projects' : 'Actieve Projecten'}
+              <ArrowUpRight className="w-3 h-3" /> {projectPLs.length} {t('projects.allProjects')}
             </span>
           </div>
           <div className="p-3 bg-primary/10 rounded-xl text-primary flex-shrink-0">
@@ -349,11 +349,11 @@ export default function ProfitLoss() {
         <div className="p-4 bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl shadow-sm flex items-center justify-between border-l-4 border-l-rose-600">
           <div className="space-y-1 min-w-0">
             <p className="text-[11px] font-bold text-dark/50 uppercase tracking-wider truncate">
-              {language === 'EN' ? 'Total Project Costs' : 'Totale Kosten (Costs)'}
+              {t('profitLoss.totalCosts')}
             </p>
-            <p className="text-xl sm:text-2xl font-heading font-bold text-rose-700 truncate">€ {totalCosts.toLocaleString()}</p>
+            <p className="text-xl sm:text-2xl font-heading font-bold text-rose-700 truncate">€ {totalCosts.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</p>
             <span className="inline-flex items-center text-[10px] font-semibold text-rose-700 bg-rose-100/80 px-2 py-0.5 rounded-full">
-              Partner + Materials
+              {t('profitLoss.partnerAndMaterials')}
             </span>
           </div>
           <div className="p-3 bg-rose-600/10 rounded-xl text-rose-600 flex-shrink-0">
@@ -364,11 +364,11 @@ export default function ProfitLoss() {
         <div className="p-4 bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl shadow-sm flex items-center justify-between border-l-4 border-l-emerald-600">
           <div className="space-y-1 min-w-0">
             <p className="text-[11px] font-bold text-dark/50 uppercase tracking-wider truncate">
-              {language === 'EN' ? 'Total Gross Profit' : 'Brutowinst (Gross Profit)'}
+              {t('profitLoss.grossProfit')}
             </p>
-            <p className="text-xl sm:text-2xl font-heading font-bold text-emerald-800 truncate">€ {totalGrossProfit.toLocaleString()}</p>
+            <p className="text-xl sm:text-2xl font-heading font-bold text-emerald-800 truncate">€ {totalGrossProfit.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</p>
             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full">
-              <CheckCircle2 className="w-3 h-3" /> Net: €{netProfitAfterOverhead.toLocaleString()}
+              <CheckCircle2 className="w-3 h-3" /> {t('profitLoss.netMargin')}: €{netProfitAfterOverhead.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </span>
           </div>
           <div className="p-3 bg-emerald-600/10 rounded-xl text-emerald-700 flex-shrink-0">
@@ -379,14 +379,18 @@ export default function ProfitLoss() {
         <div className="p-4 bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl shadow-sm flex items-center justify-between border-l-4 border-l-amber-600">
           <div className="space-y-1 min-w-0">
             <p className="text-[11px] font-bold text-dark/50 uppercase tracking-wider truncate">
-              {language === 'EN' ? 'Average Margin %' : 'Gemiddelde Marge'}
+              {t('profitLoss.averageMargin')}
             </p>
-            <p className="text-xl sm:text-2xl font-heading font-bold text-amber-800 truncate">{averageMargin.toFixed(1)}%</p>
-            <span className="inline-flex items-center text-[10px] font-semibold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-full">
-              Target: {plConfig.targetMargin || 30}% (Settings)
+            <p className={`text-xl sm:text-2xl font-heading font-bold truncate ${
+              averageMargin >= plConfig.targetMargin ? 'text-emerald-800' : 'text-amber-700'
+            }`}>
+              {averageMargin.toFixed(1)}%
+            </p>
+            <span className="inline-flex items-center text-[10px] font-semibold text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded-full">
+              {t('profitLoss.targetMargin')}
             </span>
           </div>
-          <div className="p-3 bg-amber-600/10 rounded-xl text-amber-800 flex-shrink-0">
+          <div className="p-3 bg-amber-600/10 rounded-xl text-amber-700 flex-shrink-0">
             <Percent className="w-6 h-6" />
           </div>
         </div>

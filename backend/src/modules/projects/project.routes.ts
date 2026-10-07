@@ -55,7 +55,7 @@ export const projectRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.get(
     '/',
-    { preHandler: [fastify.authenticate, fastify.authorize(['admin', 'partner'])] },
+    { preHandler: [fastify.authenticate, fastify.authorize(['admin', 'partner', 'customer'])] },
     async (request, reply) => {
       const queryResult = projectListQuerySchema.safeParse(request.query);
       if (!queryResult.success) {
@@ -335,6 +335,40 @@ export const projectRoutes: FastifyPluginAsync = async (fastify) => {
           paramCheck.data.id,
           paramCheck.data.actionId,
           bodyCheck.data,
+          request.user
+        );
+        return reply.send({ success: true, data: updated });
+      } catch (err: any) {
+        if (err instanceof ProjectError) {
+          return reply.status(err.statusCode).send({
+            success: false,
+            error: { code: err.code, message: err.message },
+          });
+        }
+        throw err;
+      }
+    }
+  );
+
+  /**
+   * DELETE /api/projects/:id/customer-actions/:actionId
+   */
+  fastify.delete(
+    '/:id/customer-actions/:actionId',
+    { preHandler: [fastify.authenticate, fastify.authorize(['admin'])] },
+    async (request, reply) => {
+      const paramCheck = actionIdParamSchema.safeParse(request.params);
+      if (!paramCheck.success) {
+        return reply.status(400).send({
+          success: false,
+          error: { code: 'INVALID_PARAMS', message: 'Invalid project or action ID' },
+        });
+      }
+
+      try {
+        const updated = await projectService.deleteCustomerAction(
+          paramCheck.data.id,
+          paramCheck.data.actionId,
           request.user
         );
         return reply.send({ success: true, data: updated });

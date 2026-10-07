@@ -12,12 +12,12 @@ export const MAX_DOCUMENT_SIZE_BYTES = 15 * 1024 * 1024; // 15 MB
 export const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
 const ALLOWED_DOC_EXTENSIONS = new Set([
-  'pdf', 'png', 'jpg', 'jpeg', 'webp', 'svg',
+  'pdf', 'png', 'jpg', 'jpeg', 'jfif', 'avif', 'webp', 'svg',
   'xlsx', 'xls', 'csv', 'docx', 'doc', 'zip', 'rar', 'txt', 'json'
 ]);
 
 const ALLOWED_PHOTO_EXTENSIONS = new Set([
-  'jpg', 'jpeg', 'png', 'webp', 'svg'
+  'jpg', 'jpeg', 'jfif', 'avif', 'png', 'webp', 'svg'
 ]);
 
 const FORBIDDEN_EXTENSIONS = new Set([

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, RefreshCw, Info, Clock, ChevronDown, PanelRight, Calendar, User, MapPin, Phone, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api/apiClient';
+import { useLanguage } from '../../context/LanguageContext';
 
 const typeColors = {
   'Site Visit': { text: '#46607C', fill: '#EAF0F6', border: '#C3D2E2', short: 'SITE VISIT' },
@@ -34,6 +35,7 @@ function mapFrontendToBackend(type) {
 }
 
 export default function Planning() {
+  const { language, t } = useLanguage();
   const [activeTab, setActiveTab] = useState('Project Planning');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [activeFilter, setActiveFilter] = useState('All');
@@ -268,13 +270,13 @@ export default function Planning() {
   // Grid layout parameters
   const hours = Array.from({ length: 12 }, (_, i) => i + 7); // 07:00 to 18:00
   const daysData = [
-    { name: 'MON', num: '28', month: 'sep' },
-    { name: 'TUE', num: '29', month: 'sep' },
-    { name: 'WED', num: '30', month: 'sep' },
-    { name: 'THU', num: '1', month: 'oct' },
-    { name: 'FRI', num: '2', month: 'oct' },
-    { name: 'SAT', num: '3', month: 'oct' },
-    { name: 'SUN', num: '4', month: 'oct' },
+    { name: t('planning.mo'), num: '28', month: 'sep' },
+    { name: t('planning.tu'), num: '29', month: 'sep' },
+    { name: t('planning.we'), num: '30', month: 'sep' },
+    { name: t('planning.th'), num: '1', month: 'oct' },
+    { name: t('planning.fr'), num: '2', month: 'oct' },
+    { name: t('planning.sa'), num: '3', month: 'oct' },
+    { name: t('planning.su'), num: '4', month: 'oct' },
   ];
 
   return (
@@ -284,38 +286,40 @@ export default function Planning() {
         {/* Title, Tabs & New Planning Button */}
         <div className="flex justify-between items-end border-b border-[#E6E0D4] pb-0">
           <div className="flex flex-col justify-end">
-            <h1 className="text-[52px] leading-[1.1] font-heading font-normal text-[#2A2925] tracking-tight">Planning</h1>
+            <h1 className="text-[52px] leading-[1.1] font-heading font-normal text-[#2A2925] tracking-tight">
+              {t('common.planning')}
+            </h1>
             <div className="flex items-center gap-6 mt-1">
               <button
                 onClick={() => setActiveTab('Project Planning')}
-                className={`pb-2.5 text-[14px] font-bold border-b-[3px] transition-colors ${
+                className={`pb-2.5 text-[14px] font-bold border-b-[3px] transition-colors cursor-pointer ${
                   activeTab === 'Project Planning'
                     ? 'border-[#3E4A3D] text-[#2A2925]'
                     : 'border-transparent text-[#736E64] hover:text-[#2A2925]'
                 }`}
               >
-                Project Planning
+                {t('planning.projectPlanning')}
               </button>
               <button
                 onClick={() => setActiveTab('Task Agenda')}
-                className={`pb-2.5 text-[14px] font-bold border-b-[3px] transition-colors flex items-center gap-2 ${
+                className={`pb-2.5 text-[14px] font-bold border-b-[3px] transition-colors flex items-center gap-2 cursor-pointer ${
                   activeTab === 'Task Agenda'
                     ? 'border-[#3E4A3D] text-[#2A2925]'
                     : 'border-transparent text-[#736E64] hover:text-[#2A2925]'
                 }`}
               >
-                Task Agenda Bram & Tim{' '}
-                <span className="bg-[#E6E0D4] text-[#58534A] text-[10px] px-2 py-0.5 rounded-full ml-1">
-                  {tasks.filter((t) => t.status !== 'completed').length} open
+                {t('planning.taskAgenda')}{' '}
+                <span className="bg-[#E6E0D4] text-[#58534A] text-[10px] px-2 py-0.5 rounded-full ml-1 font-mono font-bold">
+                  {tasks.filter((tItem) => tItem.status !== 'completed').length} open
                 </span>
               </button>
             </div>
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-[#3E4A3D] text-white px-5 py-2.5 rounded-xl text-[14px] font-bold hover:bg-[#2A3329] active:scale-95 transition-all flex items-center gap-1.5 mb-2 shadow-sm"
+            className="bg-[#3E4A3D] text-white px-5 py-2.5 rounded-xl text-[14px] font-bold hover:bg-[#2A3329] active:scale-95 transition-all flex items-center gap-1.5 mb-2 shadow-sm cursor-pointer"
           >
-            <span className="text-xl leading-none font-normal">+</span> {activeTab === 'Project Planning' ? 'New planning' : 'New task'}
+            <span className="text-xl leading-none font-normal">+</span> {activeTab === 'Project Planning' ? t('planning.newPlanning') : t('planning.newTask')}
           </button>
         </div>
 
@@ -326,19 +330,19 @@ export default function Planning() {
             <div className="flex justify-between items-center mb-4 mt-2 pt-1">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <button className="px-3 py-1.5 bg-transparent border border-[#E6E0D4] rounded-xl hover:bg-white text-[#2A2925] transition-colors">
+                  <button className="px-3 py-1.5 bg-transparent border border-[#E6E0D4] rounded-xl hover:bg-white text-[#2A2925] transition-colors cursor-pointer">
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <button className="px-4 py-1.5 bg-transparent border border-[#E6E0D4] rounded-xl text-[13px] font-bold hover:bg-white text-[#2A2925] transition-colors">
-                    Today
+                  <button className="px-4 py-1.5 bg-transparent border border-[#E6E0D4] rounded-xl text-[13px] font-bold hover:bg-white text-[#2A2925] transition-colors cursor-pointer">
+                    {t('planning.today')}
                   </button>
-                  <button className="px-3 py-1.5 bg-transparent border border-[#E6E0D4] rounded-xl hover:bg-white text-[#2A2925] transition-colors">
+                  <button className="px-3 py-1.5 bg-transparent border border-[#E6E0D4] rounded-xl hover:bg-white text-[#2A2925] transition-colors cursor-pointer">
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="text-[22px] font-heading font-medium text-[#2A2925] flex items-center gap-3 whitespace-nowrap">
                   Sep 28 – Oct 4
-                  <span className="text-[10px] font-body bg-transparent border border-[#E6E0D4] text-[#736E64] px-1.5 py-0.5 rounded uppercase font-bold">
+                  <span className="text-[10px] font-body bg-transparent border border-[#E6E0D4] text-[#736E64] px-1.5 py-0.5 rounded uppercase font-bold font-mono">
                     WEEK 40
                   </span>
                 </div>
@@ -350,7 +354,7 @@ export default function Planning() {
                     onChange={(e) => setPartnerFilter(e.target.value)}
                     className="appearance-none text-[13px] bg-transparent border border-[#E6E0D4] rounded-xl pl-4 pr-8 py-2 font-bold text-[#2A2925] outline-none cursor-pointer hover:bg-white transition-colors"
                   >
-                    <option value="All">Partner All</option>
+                    <option value="All">{t('planning.partnerAll')}</option>
                     {partners.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.companyName || p.contactName}
@@ -365,18 +369,18 @@ export default function Planning() {
                     onChange={(e) => setStatusFilter(e.target.value)}
                     className="appearance-none text-[13px] bg-transparent border border-[#E6E0D4] rounded-xl pl-4 pr-8 py-2 font-bold text-[#2A2925] outline-none cursor-pointer hover:bg-white transition-colors"
                   >
-                    <option value="All">Status All</option>
-                    <option value="scheduled">Scheduled</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="completed">Completed</option>
+                    <option value="All">{t('planning.statusAll')}</option>
+                    <option value="scheduled">{t('planning.scheduled')}</option>
+                    <option value="confirmed">{t('planning.confirmed')}</option>
+                    <option value="completed">{t('planning.completed')}</option>
                   </select>
                   <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-[#736E64] pointer-events-none" />
                 </div>
                 <div className="flex bg-[#EBE7DF] border border-[#E6E0D4] rounded-xl p-1 text-[13px] font-bold">
-                  <button onClick={() => setActiveView('Day')} className={`px-4 py-1 rounded-lg transition-colors ${activeView === 'Day' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>Day</button>
-                  <button onClick={() => setActiveView('Week')} className={`px-4 py-1 rounded-lg transition-colors ${activeView === 'Week' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>Week</button>
-                  <button onClick={() => setActiveView('Month')} className={`px-4 py-1 rounded-lg transition-colors ${activeView === 'Month' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>Month</button>
-                  <button onClick={() => setActiveView('Timeline')} className={`px-4 py-1 rounded-lg transition-colors ${activeView === 'Timeline' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>Timeline</button>
+                  <button onClick={() => setActiveView('Day')} className={`px-4 py-1 rounded-lg transition-colors cursor-pointer ${activeView === 'Day' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>{t('planning.day')}</button>
+                  <button onClick={() => setActiveView('Week')} className={`px-4 py-1 rounded-lg transition-colors cursor-pointer ${activeView === 'Week' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>{t('planning.week')}</button>
+                  <button onClick={() => setActiveView('Month')} className={`px-4 py-1 rounded-lg transition-colors cursor-pointer ${activeView === 'Month' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>{t('planning.month')}</button>
+                  <button onClick={() => setActiveView('Timeline')} className={`px-4 py-1 rounded-lg transition-colors cursor-pointer ${activeView === 'Timeline' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>{t('planning.timeline')}</button>
                 </div>
               </div>
             </div>
@@ -386,53 +390,53 @@ export default function Planning() {
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setActiveFilter(activeFilter === 'Kitchen Delivery' ? 'All' : 'Kitchen Delivery')}
-                  className={`flex items-center gap-2 border rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors whitespace-nowrap ${
+                  className={`flex items-center gap-2 border rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
                     activeFilter === 'Kitchen Delivery' ? 'bg-white border-[#2A2925] shadow-sm' : 'bg-transparent border-[#E6E0D4] hover:bg-white'
                   }`}
                 >
                   <span className="w-2.5 h-2.5 rounded-[3px]" style={{ backgroundColor: '#9A5530' }}></span>
-                  Kitchen delivery <span className="text-[#736E64] font-normal ml-0.5">{countKitchen}</span>
+                  {t('planning.kitchenDelivery')} <span className="text-[#736E64] font-normal ml-0.5">{countKitchen}</span>
                 </button>
                 <button
                   onClick={() => setActiveFilter(activeFilter === 'Canopy Build' ? 'All' : 'Canopy Build')}
-                  className={`flex items-center gap-2 border rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors whitespace-nowrap ${
+                  className={`flex items-center gap-2 border rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
                     activeFilter === 'Canopy Build' ? 'bg-white border-[#2A2925] shadow-sm' : 'bg-transparent border-[#E6E0D4] hover:bg-white'
                   }`}
                 >
                   <span className="w-2.5 h-2.5 rounded-[3px]" style={{ backgroundColor: '#3E6468' }}></span>
-                  Canopy build <span className="text-[#736E64] font-normal ml-0.5">{countCanopy}</span>
+                  {t('planning.canopyBuild')} <span className="text-[#736E64] font-normal ml-0.5">{countCanopy}</span>
                 </button>
                 <button
                   onClick={() => setActiveFilter(activeFilter === 'Site Visit' ? 'All' : 'Site Visit')}
-                  className={`flex items-center gap-2 border rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors whitespace-nowrap ${
+                  className={`flex items-center gap-2 border rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
                     activeFilter === 'Site Visit' ? 'bg-white border-[#2A2925] shadow-sm' : 'bg-transparent border-[#E6E0D4] hover:bg-white'
                   }`}
                 >
                   <span className="w-2.5 h-2.5 rounded-[3px]" style={{ backgroundColor: '#46607C' }}></span>
-                  Site visit <span className="text-[#736E64] font-normal ml-0.5">{countSiteVisit}</span>
+                  {t('planning.siteVisit')} <span className="text-[#736E64] font-normal ml-0.5">{countSiteVisit}</span>
                 </button>
                 <button
                   onClick={() => setActiveFilter(activeFilter === 'Handover' ? 'All' : 'Handover')}
-                  className={`flex items-center gap-2 border rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors whitespace-nowrap ${
+                  className={`flex items-center gap-2 border rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
                     activeFilter === 'Handover' ? 'bg-white border-[#2A2925] shadow-sm' : 'bg-transparent border-[#E6E0D4] hover:bg-white'
                   }`}
                 >
                   <span className="w-2.5 h-2.5 rounded-[3px]" style={{ backgroundColor: '#4F6A45' }}></span>
-                  Handover <span className="text-[#736E64] font-normal ml-0.5">{countHandover}</span>
+                  {t('planning.handover')} <span className="text-[#736E64] font-normal ml-0.5">{countHandover}</span>
                 </button>
                 <button
                   onClick={() => setActiveFilter(activeFilter === 'Service' ? 'All' : 'Service')}
-                  className={`flex items-center gap-2 border rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors whitespace-nowrap ${
+                  className={`flex items-center gap-2 border rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors whitespace-nowrap cursor-pointer ${
                     activeFilter === 'Service' ? 'bg-white border-[#2A2925] shadow-sm' : 'bg-transparent border-[#E6E0D4] hover:bg-white'
                   }`}
                 >
                   <span className="w-2.5 h-2.5 rounded-[3px]" style={{ backgroundColor: '#6E5580' }}></span>
-                  Service <span className="text-[#736E64] font-normal ml-0.5">{countService}</span>
+                  {t('planning.service')} <span className="text-[#736E64] font-normal ml-0.5">{countService}</span>
                 </button>
               </div>
               <div className="flex gap-2 pl-4 shrink-0">
                 <button className="flex items-center gap-1.5 bg-[#F6F4EB] border border-[#DFD8C4] text-[#7A6B48] rounded-full px-3 py-1.5 text-[11px] font-bold whitespace-nowrap">
-                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-[#4B7355]" /> {formattedEvents.length} active events
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-[#4B7355]" /> {formattedEvents.length} {t('planning.activeEvents')}
                 </button>
               </div>
             </div>
@@ -470,7 +474,7 @@ export default function Planning() {
 
                   <div className="flex-1 relative p-1.5 min-h-[50px] flex items-center">
                     {ongoingBuilds.length === 0 ? (
-                      <span className="text-[11px] text-[#8C877D] italic pl-3">Geen meerdaagse bouw deze week ingepland</span>
+                      <span className="text-[11px] text-[#8C877D] italic pl-3">{language === 'NL' ? 'Geen meerdaagse bouw deze week ingepland' : 'No multi-day builds scheduled this week'}</span>
                     ) : (
                       ongoingBuilds.map((b) => (
                         <div
@@ -567,18 +571,18 @@ export default function Planning() {
                 {/* Card Footer Legend */}
                 <div className="border-t border-[#E6E0D4] bg-[#FFFEFB] py-2.5 px-4 flex justify-between items-center text-[10.5px] text-[#736E64] shrink-0">
                   <div className="flex items-center gap-5">
-                    <span className="font-normal text-[#58534A]">Status:</span>
+                    <span className="font-normal text-[#58534A]">{t('common.status')}:</span>
                     <div className="flex items-center gap-1.5 text-[#4B7355] font-bold">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Confirmed</span>
+                      <span>{t('planning.confirmed')}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[#6E5580] font-bold">
                       <Clock className="w-3.5 h-3.5" />
-                      <span>Scheduled</span>
+                      <span>{t('planning.scheduled')}</span>
                     </div>
                   </div>
                   <div>
-                    Klik op een afspraak voor gedetailleerde project- en partnerinformatie
+                    {t('planning.clickAppointmentInfo')}
                   </div>
                 </div>
               </div>
@@ -587,14 +591,14 @@ export default function Planning() {
               {!selectedAppointment ? (
                 <div className="shrink-0 self-stretch flex flex-col w-10">
                   <div className="w-full flex-1 rounded-full border border-[#E6E0D4] bg-[#FFFEFB] shadow-sm flex flex-col items-center py-4 overflow-hidden">
-                    <button className="w-8 h-8 shrink-0 rounded-full border border-[#E6E0D4] bg-[#F7F4EE] flex items-center justify-center hover:bg-white transition-colors">
+                    <button className="w-8 h-8 shrink-0 rounded-full border border-[#E6E0D4] bg-[#F7F4EE] flex items-center justify-center hover:bg-white transition-colors cursor-pointer">
                       <PanelRight className="w-4 h-4 text-[#736E64]" />
                     </button>
                     <span
-                      className="text-[#736E64] text-[11.5px] whitespace-nowrap tracking-wide mt-6"
+                      className="text-[#736E64] text-[11.5px] whitespace-nowrap tracking-wide mt-6 select-none"
                       style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
                     >
-                      Project details · selecteer een afspraak
+                      {t('planning.projectDetailsSelect')}
                     </span>
                   </div>
                 </div>
@@ -655,11 +659,11 @@ export default function Planning() {
                           <span className="font-mono font-medium text-[#2A2925]">{selectedAppointment.eventNumber}</span>
                         </div>
                         <div className="flex items-start justify-between">
-                          <span className="w-28 text-[#736E64] shrink-0">Datum</span>
+                          <span className="w-28 text-[#736E64] shrink-0">{language === 'NL' ? 'Datum' : 'Date'}</span>
                           <span className="font-medium text-[#2A2925]">{selectedAppointment.date}</span>
                         </div>
                         <div className="flex items-start justify-between">
-                          <span className="w-28 text-[#736E64] shrink-0">Tijd</span>
+                          <span className="w-28 text-[#736E64] shrink-0">{language === 'NL' ? 'Tijd' : 'Time'}</span>
                           <span className="font-mono font-medium text-[#2A2925]">
                             {selectedAppointment.startTime}–{selectedAppointment.endTime}
                           </span>
@@ -679,10 +683,10 @@ export default function Planning() {
                       {/* Project Progress */}
                       {selectedAppointment.progress && (() => {
                         const steps = [
-                          { key: 'site_survey', label: 'Inmeten & Survey' },
-                          { key: 'design', label: 'Offerte & Ontwerp' },
-                          { key: 'build', label: 'Montage & Bouw' },
-                          { key: 'handover', label: 'Oplevering' },
+                          { key: 'site_survey', label: language === 'NL' ? 'Inmeten & Survey' : 'Site Survey' },
+                          { key: 'design', label: language === 'NL' ? 'Offerte & Ontwerp' : 'Quote & Design' },
+                          { key: 'build', label: language === 'NL' ? 'Montage & Bouw' : 'Assembly & Build' },
+                          { key: 'handover', label: language === 'NL' ? 'Oplevering' : 'Handover' },
                         ];
                         const progress = selectedAppointment.progress;
                         return (
@@ -725,13 +729,13 @@ export default function Planning() {
                       {/* Contact & Address */}
                       <div className="border-t border-[#E6E0D4] pt-3.5 space-y-2 text-[12.5px]">
                         <div className="flex items-start justify-between">
-                          <span className="w-24 text-[#736E64] shrink-0">Klant</span>
+                          <span className="w-24 text-[#736E64] shrink-0">{language === 'NL' ? 'Klant' : 'Customer'}</span>
                           <span className="font-medium text-[#2A2925] text-right">
                             {selectedAppointment.contact} · {selectedAppointment.phone}
                           </span>
                         </div>
                         <div className="flex items-start justify-between">
-                          <span className="w-24 text-[#736E64] shrink-0">Adres</span>
+                          <span className="w-24 text-[#736E64] shrink-0">{language === 'NL' ? 'Adres' : 'Address'}</span>
                           <span className="font-medium text-[#2A2925] text-right">
                             {selectedAppointment.address}
                           </span>
@@ -745,7 +749,7 @@ export default function Planning() {
                         onClick={() => setSelectedAppointment(null)}
                         className="flex-1 py-2 border border-[#D6CFC2] rounded-xl text-[13px] font-bold bg-white hover:bg-[#F7F4EE] text-[#2A2925] transition-colors"
                       >
-                        Sluiten
+                        {language === 'NL' ? 'Sluiten' : 'Close'}
                       </button>
                     </div>
                   </motion.div>
@@ -759,7 +763,7 @@ export default function Planning() {
             <div className="flex justify-between items-center mb-5 mt-2 pt-1">
               <div className="flex items-center gap-4">
                 <div className="text-[22px] font-heading font-medium text-[#2A2925] flex items-center gap-3 whitespace-nowrap">
-                  Overzicht Taken
+                  {language === 'NL' ? 'Overzicht Taken' : 'Task Overview'}
                   <span className="text-[10px] font-body bg-transparent border border-[#E6E0D4] text-[#736E64] px-1.5 py-0.5 rounded uppercase font-bold">
                     {tasks.length} TOTAL
                   </span>
@@ -775,7 +779,7 @@ export default function Planning() {
                     <div className="w-8 h-8 rounded-full bg-[#3E4A3D] text-white flex items-center justify-center text-[11px] font-bold tracking-wider">
                       OP
                     </div>
-                    <span className="font-heading text-[20px] font-medium text-[#2A2925]">Openstaande Taken</span>
+                    <span className="font-heading text-[20px] font-medium text-[#2A2925]">{language === 'NL' ? 'Openstaande Taken' : 'Open Tasks'}</span>
                   </div>
                   <span className="text-[13px] text-[#736E64] font-medium">
                     {tasks.filter((t) => t.status !== 'completed').length} open
@@ -783,7 +787,7 @@ export default function Planning() {
                 </div>
                 <div className="p-5 overflow-y-auto space-y-4">
                   {tasks.filter((t) => t.status !== 'completed').length === 0 ? (
-                    <p className="text-sm text-[#736E64] italic">Geen openstaande taken.</p>
+                    <p className="text-sm text-[#736E64] italic">{language === 'NL' ? 'Geen openstaande taken.' : 'No open tasks.'}</p>
                   ) : (
                     tasks
                       .filter((t) => t.status !== 'completed')
@@ -803,7 +807,7 @@ export default function Planning() {
                               <p className="text-[13.5px] font-medium text-[#2A2925]">{task.title}</p>
                               <div className="flex items-center gap-2 mt-1 text-[11px] text-[#736E64]">
                                 <span className="font-mono font-bold">{task.taskNumber}</span>
-                                {task.dueDate && <span>· Vervaldatum: {task.dueDate}</span>}
+                                {task.dueDate && <span>· {language === 'NL' ? 'Vervaldatum' : 'Due date'}: {task.dueDate}</span>}
                               </div>
                             </div>
                           </div>
@@ -829,15 +833,15 @@ export default function Planning() {
                     <div className="w-8 h-8 rounded-full bg-[#8A7961] text-white flex items-center justify-center text-[11px] font-bold tracking-wider">
                       OK
                     </div>
-                    <span className="font-heading text-[20px] font-medium text-[#2A2925]">Afgerond</span>
+                    <span className="font-heading text-[20px] font-medium text-[#2A2925]">{language === 'NL' ? 'Afgerond' : 'Completed'}</span>
                   </div>
                   <span className="text-[13px] text-[#736E64] font-medium">
-                    {tasks.filter((t) => t.status === 'completed').length} afgerond
+                    {tasks.filter((t) => t.status === 'completed').length} {language === 'NL' ? 'afgerond' : 'done'}
                   </span>
                 </div>
                 <div className="p-5 overflow-y-auto space-y-4">
                   {tasks.filter((t) => t.status === 'completed').length === 0 ? (
-                    <p className="text-sm text-[#736E64] italic">Nog geen taken afgerond.</p>
+                    <p className="text-sm text-[#736E64] italic">{language === 'NL' ? 'Nog geen taken afgerond.' : 'No completed tasks yet.'}</p>
                   ) : (
                     tasks
                       .filter((t) => t.status === 'completed')
@@ -882,7 +886,7 @@ export default function Planning() {
               className="bg-[#F7F4EE] rounded-2xl border border-[#E6E0D4] shadow-xl w-[520px] overflow-hidden"
             >
               <div className="p-5 border-b border-[#E6E0D4] flex justify-between items-center bg-[#FFFEFB]">
-                <h2 className="text-xl font-heading font-bold text-[#2A2925]">Nieuwe Afspraak Inplannen</h2>
+                <h2 className="text-xl font-heading font-bold text-[#2A2925]">{language === 'NL' ? 'Nieuwe Afspraak Inplannen' : 'Schedule New Appointment'}</h2>
                 <button
                   onClick={() => setIsModalOpen(false)}
                   className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F7F4EE] border border-transparent hover:border-[#E6E0D4] transition-colors"
@@ -892,18 +896,18 @@ export default function Planning() {
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#58534A] mb-1">Titel / Omschrijving</label>
+                  <label className="block text-xs font-bold text-[#58534A] mb-1">{language === 'NL' ? 'Titel / Omschrijving' : 'Title / Description'}</label>
                   <input
                     type="text"
                     value={newApptData.title}
                     onChange={(e) => setNewApptData({ ...newApptData, title: e.target.value })}
-                    placeholder="bijv. Keuken Levering Den Haag"
+                    placeholder={language === 'NL' ? 'bijv. Keuken Levering Den Haag' : 'e.g. Kitchen Delivery Den Haag'}
                     className="w-full bg-white border border-[#E6E0D4] rounded-lg px-3 py-2 text-sm text-[#2A2925] outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#58534A] mb-1">Koppel Project (optioneel)</label>
+                  <label className="block text-xs font-bold text-[#58534A] mb-1">{language === 'NL' ? 'Koppel Project (optioneel)' : 'Link Project (optional)'}</label>
                   <select
                     value={newApptData.projectId}
                     onChange={(e) => setNewApptData({ ...newApptData, projectId: e.target.value })}
@@ -919,7 +923,7 @@ export default function Planning() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#58534A] mb-1">Uitvoerende Partner</label>
+                  <label className="block text-xs font-bold text-[#58534A] mb-1">{language === 'NL' ? 'Uitvoerende Partner' : 'Executing Partner'}</label>
                   <select
                     value={newApptData.partnerId}
                     onChange={(e) => setNewApptData({ ...newApptData, partnerId: e.target.value })}
@@ -936,7 +940,7 @@ export default function Planning() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-[#58534A] mb-1">Type Afspraak</label>
+                    <label className="block text-xs font-bold text-[#58534A] mb-1">{language === 'NL' ? 'Type Afspraak' : 'Appointment Type'}</label>
                     <select
                       value={newApptData.type}
                       onChange={(e) => setNewApptData({ ...newApptData, type: e.target.value })}
@@ -950,12 +954,12 @@ export default function Planning() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#58534A] mb-1">Locatie</label>
+                    <label className="block text-xs font-bold text-[#58534A] mb-1">{language === 'NL' ? 'Locatie' : 'Location'}</label>
                     <input
                       type="text"
                       value={newApptData.location}
                       onChange={(e) => setNewApptData({ ...newApptData, location: e.target.value })}
-                      placeholder="bijv. Den Haag of Utrecht"
+                      placeholder={language === 'NL' ? 'bijv. Den Haag of Utrecht' : 'e.g. Den Haag or Utrecht'}
                       className="w-full bg-white border border-[#E6E0D4] rounded-lg px-3 py-2 text-sm text-[#2A2925] outline-none"
                     />
                   </div>
@@ -963,7 +967,7 @@ export default function Planning() {
 
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-[#58534A] mb-1">Datum</label>
+                    <label className="block text-xs font-bold text-[#58534A] mb-1">{language === 'NL' ? 'Datum' : 'Date'}</label>
                     <input
                       type="date"
                       value={newApptData.date}
@@ -972,7 +976,7 @@ export default function Planning() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#58534A] mb-1">Starttijd</label>
+                    <label className="block text-xs font-bold text-[#58534A] mb-1">{language === 'NL' ? 'Starttijd' : 'Start Time'}</label>
                     <input
                       type="time"
                       value={newApptData.startTime}
@@ -981,7 +985,7 @@ export default function Planning() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#58534A] mb-1">Eindtijd</label>
+                    <label className="block text-xs font-bold text-[#58534A] mb-1">{language === 'NL' ? 'Eindtijd' : 'End Time'}</label>
                     <input
                       type="time"
                       value={newApptData.endTime}
@@ -1005,7 +1009,7 @@ export default function Planning() {
                   disabled={saving}
                   className="px-5 py-2 bg-[#3E4A3D] text-white rounded-lg text-sm font-bold hover:bg-[#2A3329] transition-colors disabled:opacity-50"
                 >
-                  {saving ? 'Opslaan...' : 'Opslaan'}
+                  {saving ? (language === 'NL' ? 'Opslaan...' : 'Saving...') : (language === 'NL' ? 'Opslaan' : 'Save')}
                 </button>
               </div>
             </motion.div>

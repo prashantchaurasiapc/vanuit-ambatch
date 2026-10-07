@@ -32,6 +32,7 @@ async function request(method, path, body = null, isFormData = false) {
 
   // Handle 401 globally — session expired or not logged in
   if (response.status === 401) {
+    sessionStorage.removeItem('auth_user');
     // Avoid redirect loop on the login page itself
     if (!window.location.pathname.includes('/login')) {
       window.location.href = '/login';

@@ -13,11 +13,20 @@ export default function CustomerContact() {
   useEffect(() => {
     const loadProject = async () => {
       try {
-        const res = await api.get('/projects');
-        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          setActiveProject(res.data[0]);
+        const res = await api.get('/customer/projects');
+        const list = res?.data || [];
+        if (Array.isArray(list) && list.length > 0) {
+          setActiveProject(list[0]);
+          return;
         }
       } catch (e) {}
+
+      try {
+        const res2 = await api.get('/projects');
+        if (res2?.data && Array.isArray(res2.data) && res2.data.length > 0) {
+          setActiveProject(res2.data[0]);
+        }
+      } catch (err) {}
     };
 
     loadProject();
@@ -46,12 +55,12 @@ export default function CustomerContact() {
   const projectForChild = activeProject 
     ? { 
         ...activeProject, 
-        id: activeProject.id || (isGardenRoom ? '2026-021' : '2026-014'),
+        id: activeProject.id, 
         type: activeType, 
         projectType: activeType 
       }
     : { 
-        id: isGardenRoom ? '2026-021' : '2026-014', 
+        id: null, 
         type: activeType, 
         projectType: activeType 
       };

@@ -52,23 +52,50 @@ export default function GardenRoomContactView({ project = null }) {
   ];
 
   const [messages, setMessages] = useState(defaultGardenMsgs);
+  const [activeConvId, setActiveConvId] = useState(null);
 
   // Load messages from backend conversations API
   useEffect(() => {
     const pid = project?.id;
-    if (!pid) return;
-    api.get(`/conversations/${pid}?channel=customer`).then(res => {
-      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-        setMessages(res.data.map(m => ({
-          id: m.id,
-          sender: m.senderRole === 'customer' ? 'SV' : 'T\u0026B',
-          senderName: m.senderName || (m.senderRole === 'customer' ? 'Sander' : 'Bram'),
-          time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today',
-          text: m.message || m.text,
-          type: m.senderRole === 'customer' ? 'outgoing' : 'incoming'
-        })));
+    if (!pid || pid === '2026-014' || pid === '2026-021') return;
+
+    const loadChat = async () => {
+      try {
+        const res = await api.get(`/conversations/project/${pid}`);
+        const customerChan = res?.data?.customerChannel;
+        const convId = customerChan?.id || (res?.data?.id ? res.data.id : null);
+        if (convId) {
+          setActiveConvId(convId);
+          const msgRes = await api.get(`/conversations/${convId}/messages`);
+          if (msgRes.success && Array.isArray(msgRes.data) && msgRes.data.length > 0) {
+            setMessages(msgRes.data.map(m => ({
+              id: m.id,
+              sender: m.senderRole === 'customer' ? 'SV' : 'T\u0026B',
+              senderName: m.senderName || (m.senderRole === 'customer' ? 'Bjorn' : 'Bram'),
+              time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today',
+              text: m.content || m.message || m.text,
+              type: m.senderRole === 'customer' ? 'outgoing' : 'incoming'
+            })));
+          }
+        }
+      } catch (err) {
+        try {
+          const directRes = await api.get(`/conversations/${pid}/messages`);
+          if (directRes.success && Array.isArray(directRes.data) && directRes.data.length > 0) {
+            setMessages(directRes.data.map(m => ({
+              id: m.id,
+              sender: m.senderRole === 'customer' ? 'SV' : 'T\u0026B',
+              senderName: m.senderName || (m.senderRole === 'customer' ? 'Bjorn' : 'Bram'),
+              time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today',
+              text: m.content || m.message || m.text,
+              type: m.senderRole === 'customer' ? 'outgoing' : 'incoming'
+            })));
+          }
+        } catch (e2) {}
       }
-    });
+    };
+
+    loadChat();
   }, [project?.id]);
 
   const [inputMsg, setInputMsg] = useState('');
@@ -80,13 +107,14 @@ export default function GardenRoomContactView({ project = null }) {
     e.preventDefault();
     if (!inputMsg.trim()) return;
 
+    const messageText = inputMsg.trim();
     const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const optimisticMsg = {
       id: Date.now(),
       sender: 'SV',
-      senderName: 'Sander',
-      time: `today ${timeNow}`,
-      text: inputMsg.trim(),
+      senderName: 'Bjorn',
+      time: `Today ${timeNow}`,
+      text: messageText,
       type: 'outgoing'
     };
 
@@ -95,12 +123,15 @@ export default function GardenRoomContactView({ project = null }) {
     setInputMsg('');
 
     // Post to conversations API
-    const pid = project?.id;
-    if (pid) {
-      await api.post(`/conversations/${pid}/messages`, {
-        channel: 'customer',
-        message: optimisticMsg.text
-      });
+    try {
+      const targetId = activeConvId || (project?.id && project.id !== '2026-014' && project.id !== '2026-021' ? project.id : null);
+      if (targetId) {
+        await api.post(`/conversations/${targetId}/messages`, {
+          content: messageText
+        });
+      }
+    } catch (err) {
+      console.warn('Could not post message:', err);
     }
 
     setFeedbackToast('Message sent to Tim & Bram!');

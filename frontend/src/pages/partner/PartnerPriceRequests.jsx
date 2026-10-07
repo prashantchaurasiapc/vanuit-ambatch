@@ -69,6 +69,24 @@ export default function PartnerPriceRequests() {
       }
     ]);
 
+  // Load dynamic breakdown schema from Platform Settings
+  const loadBreakdownConfig = useCallback(async () => {
+    try {
+      const res = await api.get('/settings/company');
+      if (res.success && res.data?.partnerBreakdownConfig && Array.isArray(res.data.partnerBreakdownConfig) && res.data.partnerBreakdownConfig.length > 0) {
+        setPartnerBreakdownSchema(res.data.partnerBreakdownConfig);
+      }
+    } catch (err) {
+      console.warn('Could not load partnerBreakdownConfig in PartnerPriceRequests:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadBreakdownConfig();
+    window.addEventListener('app_data_changed', loadBreakdownConfig);
+    return () => window.removeEventListener('app_data_changed', loadBreakdownConfig);
+  }, [loadBreakdownConfig]);
+
   const showToast = (msg) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 3500);

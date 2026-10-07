@@ -28,6 +28,7 @@ export default function Settings() {
   const [messageTemplates, setMessageTemplates] = useState({
     template1: "Dear {client_name}, thank you for reaching out to Vanuit Ambacht regarding your {product_category} inquiry. We would love to discuss your requirements in detail. When would it suit you to talk? Kind regards, Tim & Bram - Vanuit Ambacht",
     template2: "Dear {client_name}, we wanted to follow up regarding your {product_category} inquiry. Please let us know if you have any questions or when you would be available for a brief phone call. Kind regards, Tim & Bram - Vanuit Ambacht",
+    template3: "Dear {client_name}, following up regarding your {product_category} project with Vanuit Ambacht. We are happy to help you finalize the specifications whenever you are ready. Best regards, Tim & Bram - Vanuit Ambacht",
   });
   const [addTemplateModalOpen, setAddTemplateModalOpen] = useState(false);
   const [templateForm, setTemplateForm] = useState({ title: '', text: '' });
@@ -35,15 +36,34 @@ export default function Settings() {
   const handleAddTemplateSubmit = async (e) => {
     e.preventDefault();
     if (!templateForm.text.trim()) return showToast('Vul een berichtsjabloon in.');
-    const key = `template_${Date.now()}`;
-    const updated = { ...messageTemplates, [key]: templateForm.text.trim() };
+    const key = `custom_${Date.now()}`;
+    const newTitle = templateForm.title?.trim() || `Template ${Object.keys(messageTemplates).length + 1}`;
+    const updated = { 
+      ...messageTemplates, 
+      [key]: {
+        title: newTitle,
+        text: templateForm.text.trim()
+      }
+    };
     setMessageTemplates(updated);
     try {
       await api.patch('/settings/config/templates', updated);
     } catch (err) {}
+    window.dispatchEvent(new Event('app_data_changed'));
     showToast(language === 'EN' ? 'New message template added!' : 'Nieuw berichtsjabloon toegevoegd!');
     setTemplateForm({ title: '', text: '' });
     setAddTemplateModalOpen(false);
+  };
+
+  const handleDeleteTemplate = async (key) => {
+    const updated = { ...messageTemplates };
+    delete updated[key];
+    setMessageTemplates(updated);
+    try {
+      await api.patch('/settings/config/templates', updated);
+    } catch (err) {}
+    window.dispatchEvent(new Event('app_data_changed'));
+    showToast(language === 'EN' ? 'Template removed.' : 'Sjabloon verwijderd.');
   };
 
   // -------------------------------------------------------------
@@ -99,6 +119,57 @@ export default function Settings() {
   // 3. FIELD-SET CONFIGURATION STATE (PRD 4.12)
   // -------------------------------------------------------------
   const [selectedProductType, setSelectedProductType] = useState('buitenkeuken'); // 'buitenkeuken' | 'buitenverblijf' | 'overkapping' | 'poolhouse'
+
+  const getProductTypeLabel = (ptId) => {
+    const map = {
+      buitenkeuken: language === 'EN' ? 'Outdoor Kitchen' : 'Buitenkeuken',
+      buitenverblijf: language === 'EN' ? 'Outdoor Building' : 'Buitenverblijf',
+      overkapping: language === 'EN' ? 'Canopy' : 'Overkapping',
+      poolhouse: language === 'EN' ? 'Poolhouse' : 'Poolhouse',
+    };
+    return map[ptId] || (ptId ? ptId.charAt(0).toUpperCase() + ptId.slice(1) : '');
+  };
+
+  const translateFieldLabel = (label) => {
+    if (!label || language !== 'EN') return label;
+    const map = {
+      'Werkblad Type & Afwerking': 'Worktop Type & Finish',
+      'Werkblad Afwerking': 'Worktop Finish',
+      'Houtsoort Onderstel': 'Base Wood Type',
+      'Inbouw Kamado Cutout': 'Built-in Kamado Cutout',
+      'Inbouw RVS Spoelbak & Kraan': 'Built-in Sink & Tap',
+      'Isolatie Type (Dak & Wand)': 'Insulation Type (Roof & Wall)',
+      'Glaswand Optie': 'Glass Wall Option',
+      'Houtsoort Frame': 'Frame Wood Type',
+      'Elektra & Verlichting Pakket': 'Electrics & Lighting Package',
+      'Lamellendak Besturing': 'Louvered Roof Control',
+      'Sneeuwbelasting Klasse': 'Snow Load Class',
+      'Geïntegreerde Regenafvoer': 'Integrated Drainage',
+      'Techniekruimte Zwembad': 'Pool Technical Room',
+      'Sauna Module Integratie': 'Sauna Module Integration',
+      'Buitendouche Aansluiting': 'Outdoor Shower Connection',
+    };
+    return map[label] || label;
+  };
+
+  const translateOptionLabel = (opt) => {
+    if (!opt || language !== 'EN') return opt;
+    const map = {
+      'PIR 80mm': 'PIR 80mm',
+      'Steenwol 100mm': 'Rockwool 100mm',
+      'Geen isolatie': 'No Insulation',
+      'Glazen schuifwanden (5-rail)': 'Sliding Glass Walls (5-rail)',
+      'Vaste glazen wanden': 'Fixed Glass Walls',
+      'Geen glas': 'No Glass',
+      'Massief Teakhout': 'Solid Teak Wood',
+      'Massief Teak Hout': 'Solid Teak Wood',
+      'Douglas Hout': 'Douglas Fir Wood',
+      'Eikenhout': 'Oak Wood',
+      'Beton Cire': 'Polished Concrete',
+      'Graniet': 'Granite',
+    };
+    return map[opt] || opt;
+  };
   
   const [fieldSets, setFieldSets] = useState({
       buitenkeuken: [
@@ -237,6 +308,7 @@ export default function Settings() {
     try {
       await api.patch('/settings/config/integrations', updated);
     } catch (e) {}
+    window.dispatchEvent(new Event('app_data_changed'));
     showToast(language === 'EN' ? 'Integration settings updated!' : 'Koppelingen bijgewerkt!');
   };
 
@@ -391,7 +463,12 @@ export default function Settings() {
 
           if (d.brandingColors) setColors(d.brandingColors);
           if (d.messageTemplates) setMessageTemplates(d.messageTemplates);
-          if (d.fieldsetsConfig) setFieldSets(d.fieldsetsConfig);
+          if (d.fieldsetsConfig && typeof d.fieldsetsConfig === 'object') {
+            setFieldSets(prev => ({
+              ...prev,
+              ...d.fieldsetsConfig
+            }));
+          }
           if (d.categoriesConfig) setDynamicCategories(d.categoriesConfig);
           if (d.partnerBreakdownConfig) setPartnerBreakdownConfig(d.partnerBreakdownConfig);
           if (d.plConfig) setPlConfig(d.plConfig);
@@ -448,6 +525,7 @@ export default function Settings() {
   const saveBrandSettings = async () => {
     try {
       await api.patch('/settings/config/branding', colors);
+      window.dispatchEvent(new Event('app_data_changed'));
       showToast('Merkinstellingen opgeslagen!');
     } catch (e) {
       showToast('Opslaan mislukt.');
@@ -457,6 +535,7 @@ export default function Settings() {
   const saveMessageTemplates = async () => {
     try {
       await api.patch('/settings/config/templates', messageTemplates);
+      window.dispatchEvent(new Event('app_data_changed'));
       showToast(language === 'EN' ? 'Message templates saved successfully!' : 'Berichtsjablonen succesvol opgeslagen!');
     } catch (e) {
       showToast('Opslaan mislukt.');
@@ -514,6 +593,7 @@ export default function Settings() {
     try {
       await api.patch(`/settings/users/${userId}/status`, { isActive: nextActive });
       setUsersList(prev => prev.map(u => u.id === userId ? { ...u, status: nextActive ? 'Actief' : 'Inactief' } : u));
+      window.dispatchEvent(new Event('app_data_changed'));
       showToast(`Gebruiker ${user.name} status gewijzigd naar ${nextActive ? 'Actief' : 'Inactief'}.`);
     } catch (e) {
       showToast('Wijzigen status mislukt.');
@@ -524,6 +604,7 @@ export default function Settings() {
     try {
       await api.patch(`/settings/users/${userId}/role`, { role: newRole });
       setUsersList(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+      window.dispatchEvent(new Event('app_data_changed'));
       showToast(`Rol gewijzigd naar ${newRole.toUpperCase()}`);
     } catch (e) {
       showToast('Wijzigen rol mislukt.');
@@ -555,7 +636,11 @@ export default function Settings() {
     try {
       await api.patch('/settings/config/fieldsets', updatedSets);
     } catch (e) {}
-    showToast(`Nieuw veld "${newFieldForm.label}" toegevoegd aan ${selectedProductType.toUpperCase()}!`);
+    window.dispatchEvent(new Event('app_data_changed'));
+    showToast(language === 'EN'
+      ? `New field "${newFieldForm.label}" added to ${getProductTypeLabel(selectedProductType)}!`
+      : `Nieuw veld "${newFieldForm.label}" toegevoegd aan ${getProductTypeLabel(selectedProductType)}!`);
+    setNewFieldForm({ label: '', type: 'select', optionsStr: '', required: true });
     setAddFieldModalOpen(false);
   };
 
@@ -568,6 +653,7 @@ export default function Settings() {
     try {
       await api.patch('/settings/config/fieldsets', updatedSets);
     } catch (e) {}
+    window.dispatchEvent(new Event('app_data_changed'));
     showToast(`Formulierveld verwijderd.`);
   };
 
@@ -1080,20 +1166,20 @@ export default function Settings() {
           </div>
 
           {/* Configured Fields Table */}
-          <Card title={language === 'EN' ? `Configured Fields for "${selectedProductType.toUpperCase()}"` : `Geconfigureerde Velden voor "${selectedProductType.toUpperCase()}"`} icon={Sliders} p="p-4">
+          <Card title={language === 'EN' ? `Configured Fields for "${getProductTypeLabel(selectedProductType).toUpperCase()}"` : `Geconfigureerde Velden voor "${getProductTypeLabel(selectedProductType).toUpperCase()}"`} icon={Sliders} p="p-4">
             <div className="space-y-2.5">
               {(fieldSets[selectedProductType] || []).map((field) => (
                 <div key={field.id} className="p-3.5 bg-white border border-[#D6CFC2] rounded-xl flex justify-between items-center text-xs">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-dark">{field.label}</h4>
+                      <h4 className="font-bold text-dark">{translateFieldLabel(field.label)}</h4>
                       {field.required && <Badge variant="danger" className="text-[8px]">{language === 'EN' ? 'Required' : 'Verplicht'}</Badge>}
                     </div>
                     <p className="text-[10px] text-dark/50 mt-0.5">Type: <span className="font-mono font-bold text-primary">{field.type}</span></p>
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {field.options && field.options.map((opt, i) => (
                         <span key={i} className="text-[9px] font-bold bg-[#EDE8DF] text-primary px-2 py-0.5 rounded">
-                          {opt}
+                          {translateOptionLabel(opt)}
                         </span>
                       ))}
                     </div>
@@ -1152,6 +1238,7 @@ export default function Settings() {
                       try {
                         await api.patch('/settings/config/quote-template', updated);
                       } catch (err) {}
+                      window.dispatchEvent(new Event('app_data_changed'));
                       showToast('Houtsoorten opgeslagen!');
                     }}
                     className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold"
@@ -1170,6 +1257,7 @@ export default function Settings() {
                       try {
                         await api.patch('/settings/config/quote-template', updated);
                       } catch (err) {}
+                      window.dispatchEvent(new Event('app_data_changed'));
                       showToast('BBQ inbouw opties opgeslagen!');
                     }}
                     className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold"
@@ -1188,6 +1276,7 @@ export default function Settings() {
                       try {
                         await api.patch('/settings/config/quote-template', updated);
                       } catch (err) {}
+                      window.dispatchEvent(new Event('app_data_changed'));
                       showToast('Standaard levertijd opgeslagen!');
                     }}
                     className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold"
@@ -1205,6 +1294,7 @@ export default function Settings() {
                       try {
                         await api.patch('/settings/config/quote-template', updated);
                       } catch (err) {}
+                      window.dispatchEvent(new Event('app_data_changed'));
                       showToast(`Betalingsschema gewijzigd naar ${e.target.value}!`);
                     }}
                     className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
@@ -1261,56 +1351,56 @@ export default function Settings() {
                 </div>
               </div>
 
-              {/* TEMPLATE 1 */}
-              <div className="space-y-2 bg-[#F8F7F4] p-4 rounded-xl border border-[#D6CFC2]">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-dark text-sm flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">1</span>
-                    {language === 'EN' ? 'Template 1: Initial Inquiry Response' : 'Sjabloon 1: Eerste Aanvraag Reactie'}
-                  </label>
-                  <Badge variant="info">Auto-Load</Badge>
-                </div>
-                <textarea
-                  rows={3}
-                  value={messageTemplates.template1}
-                  onChange={e => setMessageTemplates(prev => ({ ...prev, template1: e.target.value }))}
-                  className="w-full p-3 bg-white border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+              {/* DYNAMIC TEMPLATES LIST */}
+              {Object.entries(messageTemplates).map(([key, item], idx) => {
+                const isObj = typeof item === 'object' && item !== null;
+                const text = isObj ? item.text : item;
+                const title = isObj && item.title
+                  ? item.title
+                  : key === 'template1' ? (language === 'EN' ? 'Template 1: Initial Inquiry Response' : 'Sjabloon 1: Eerste Aanvraag Reactie')
+                  : key === 'template2' ? (language === 'EN' ? 'Template 2: 1st Follow-up Message' : 'Sjabloon 2: 1e Vervolgbericht')
+                  : key === 'template3' ? (language === 'EN' ? 'Template 3: 2nd Follow-up Message' : 'Sjabloon 3: 2e Vervolgbericht')
+                  : (language === 'EN' ? `Template ${idx + 1}: ${key}` : `Sjabloon ${idx + 1}: ${key}`);
+                const badgeLabel = key === 'template1' ? 'Auto-Load' : key === 'template2' ? 'Follow-up' : key === 'template3' ? 'Final Call' : 'Custom';
+                const badgeVariant = key === 'template1' ? 'info' : key === 'template2' ? 'warning' : key === 'template3' ? 'primary' : 'success';
+                const isDefault = key === 'template1' || key === 'template2' || key === 'template3';
 
-              {/* TEMPLATE 2 */}
-              <div className="space-y-2 bg-[#F8F7F4] p-4 rounded-xl border border-[#D6CFC2]">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-dark text-sm flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">2</span>
-                    {language === 'EN' ? 'Template 2: 1st Follow-up Message' : 'Sjabloon 2: 1e Vervolgbericht'}
-                  </label>
-                  <Badge variant="warning">Follow-up</Badge>
-                </div>
-                <textarea
-                  rows={3}
-                  value={messageTemplates.template2}
-                  onChange={e => setMessageTemplates(prev => ({ ...prev, template2: e.target.value }))}
-                  className="w-full p-3 bg-white border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              {/* TEMPLATE 3 */}
-              <div className="space-y-2 bg-[#F8F7F4] p-4 rounded-xl border border-[#D6CFC2]">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-dark text-sm flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">3</span>
-                    {language === 'EN' ? 'Template 3: 2nd Follow-up Message' : 'Sjabloon 3: 2e Vervolgbericht'}
-                  </label>
-                  <Badge variant="primary">Final Call</Badge>
-                </div>
-                <textarea
-                  rows={3}
-                  value={messageTemplates.template3}
-                  onChange={e => setMessageTemplates(prev => ({ ...prev, template3: e.target.value }))}
-                  className="w-full p-3 bg-white border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+                return (
+                  <div key={key} className="space-y-2 bg-[#F8F7F4] p-4 rounded-xl border border-[#D6CFC2]">
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold text-dark text-sm flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">{idx + 1}</span>
+                        {title}
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={badgeVariant}>{badgeLabel}</Badge>
+                        {!isDefault && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTemplate(key)}
+                            className="text-red-500 hover:text-red-700 p-1 cursor-pointer transition-colors"
+                            title={language === 'EN' ? 'Delete template' : 'Sjabloon verwijderen'}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <textarea
+                      rows={3}
+                      value={text || ''}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setMessageTemplates(prev => ({
+                          ...prev,
+                          [key]: isObj ? { ...item, text: val } : val
+                        }));
+                      }}
+                      className="w-full p-3 bg-white border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                );
+              })}
 
               {/* SAVE BUTTON */}
               <div className="flex justify-end pt-2 border-t border-[#D6CFC2]">
@@ -1453,18 +1543,60 @@ export default function Settings() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddFieldModalOpen(false)} />
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
               <div className="flex items-center justify-between border-b border-cream-dark/60 pb-3">
-                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? `Add Custom Field (${selectedProductType.toUpperCase()})` : `Aangepast Veld Toevoegen (${selectedProductType.toUpperCase()})`}</h3>
+                <h3 className="text-lg font-heading font-bold text-primary">
+                  {language === 'EN' 
+                    ? `Add Custom Field (${getProductTypeLabel(selectedProductType)})` 
+                    : `Aangepast Veld Toevoegen (${getProductTypeLabel(selectedProductType)})`}
+                </h3>
                 <button onClick={() => setAddFieldModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
               </div>
 
               <form onSubmit={handleAddFieldSubmit} className="space-y-3 font-body">
                 <div>
                   <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Field Name / Label' : 'Veld Naam / Label'}</label>
-                  <input type="text" required value={newFieldForm.label} onChange={e => setNewFieldForm(prev => ({ ...prev, label: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="e.g. Sauna Module Integratie" />
+                  <input
+                    type="text"
+                    required
+                    value={newFieldForm.label}
+                    onChange={e => setNewFieldForm(prev => ({ ...prev, label: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg"
+                    placeholder={
+                      selectedProductType === 'buitenverblijf'
+                        ? (language === 'EN' ? 'e.g. Insulation Type (Roof & Wall)' : 'b.v. Isolatie Type (Dak & Wand)')
+                        : (selectedProductType === 'overkapping'
+                            ? (language === 'EN' ? 'e.g. Louvered Roof Control' : 'b.v. Lamellendak Besturing')
+                            : (language === 'EN' ? 'e.g. Countertop Finish' : 'b.v. Werkblad Afwerking'))
+                    }
+                  />
                 </div>
                 <div>
                   <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Options (comma separated)' : 'Opties (komma gescheiden)'}</label>
-                  <input type="text" value={newFieldForm.optionsStr} onChange={e => setNewFieldForm(prev => ({ ...prev, optionsStr: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="Infrarood, Fins sauna, Geen" />
+                  <input
+                    type="text"
+                    value={newFieldForm.optionsStr}
+                    onChange={e => setNewFieldForm(prev => ({ ...prev, optionsStr: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg"
+                    placeholder={
+                      selectedProductType === 'buitenverblijf'
+                        ? (language === 'EN' ? 'PIR 80mm, Rockwool 100mm, No Insulation' : 'PIR 80mm, Steenwol 100mm, Geen isolatie')
+                        : (selectedProductType === 'overkapping'
+                            ? (language === 'EN' ? 'Somfy Motor, Manual Crank, Fixed Roof' : 'Somfy motor, Handmatig zwengel, Vast dak')
+                            : (language === 'EN' ? 'Polished Concrete, Black Granite, Teak Wood' : 'Gepolijst Beton, Zwart Graniet, Teak Hout'))
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="fieldRequiredCheck"
+                    checked={newFieldForm.required}
+                    onChange={e => setNewFieldForm(prev => ({ ...prev, required: e.target.checked }))}
+                    className="rounded border-[#D6CFC2] text-primary"
+                  />
+                  <label htmlFor="fieldRequiredCheck" className="text-xs font-semibold text-dark/80 cursor-pointer">
+                    {language === 'EN' ? 'Mandatory Field (Required)' : 'Verplicht veld'}
+                  </label>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-3 border-t border-cream-dark/60">
@@ -1657,6 +1789,16 @@ export default function Settings() {
               </div>
 
               <form onSubmit={handleAddTemplateSubmit} className="space-y-3 font-body">
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Template Title / Name' : 'Sjabloon Titel / Naam'}</label>
+                  <input
+                    type="text"
+                    value={templateForm.title || ''}
+                    onChange={e => setTemplateForm(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs"
+                    placeholder={language === 'EN' ? 'e.g. Site Visit Follow-up' : 'b.v. Afspraak Bevestiging'}
+                  />
+                </div>
                 <div>
                   <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Template Text' : 'Sjabloon Tekst'}</label>
                   <textarea

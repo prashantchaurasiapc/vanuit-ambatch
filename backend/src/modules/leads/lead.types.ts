@@ -20,6 +20,8 @@ export interface LeadListItem {
   assignedToUserId: string;
   assignedToName?: string;
   lostReason: string | null;
+  notes?: string | null;
+  intakeNotes?: string | null;
   createdAt: string;
   updatedAt: string;
   voiceNotesCount?: number;

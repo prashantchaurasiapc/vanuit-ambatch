@@ -87,7 +87,7 @@ export class QuotePdfService {
   /**
    * Generate 6-Page PDF Buffer
    */
-  generatePdf(quote: QuoteDto, version?: QuoteVersionDto | null): Buffer {
+  generatePdf(quote: QuoteDto, version?: QuoteVersionDto | null, companySettings?: any): Buffer {
     const v = version || quote.activeVersion;
     const quoteNum = quote.quoteNumber;
     const custName = quote.customerName || 'Gewaardeerde Klant';
@@ -101,6 +101,18 @@ export class QuotePdfService {
     const vatAmt = v ? Number(v.vatAmount).toFixed(2) : '0.00';
     const woodType = v?.woodType || 'Thermo Frake';
     const dimensions = v?.dimensionsText || '240 x 80 cm';
+
+    // Dynamic company settings values with robust fallbacks
+    const compName = companySettings?.companyName || 'Vanuit Ambacht B.V.';
+    const compAddress = companySettings?.address
+      ? `${companySettings.address}, ${companySettings.postalCode ? companySettings.postalCode + ' ' : ''}${companySettings.city || 'Amsterdam'}`
+      : 'Koningshof 33, 3451 LM Vleuten';
+    const compEmail = companySettings?.email || 'info@vanuitambacht.nl';
+    const compPhone = companySettings?.phone || '06 82 00 80 25';
+    const compWebsite = companySettings?.website || 'www.vanuitambacht.nl';
+    const compKvk = companySettings?.kvkNumber || '93097429';
+    const compBtw = companySettings?.btwNumber || 'NL866264863B01';
+    const compIban = companySettings?.iban || 'NL27 ABNA 0132 2698 56';
 
     // Calculate dynamic instalments from version configuration
     const instConfig = v?.instalmentsConfig;
@@ -423,17 +435,17 @@ export class QuotePdfService {
       (${this.escapePdfText(auditBadgeText)}) Tj
       0 -40 Td
       /F2 10 Tf
-      (BEDRIJFSGEGEVENS VANUIT AMBACHT) Tj
+      (BEDRIJFSGEGEVENS ${this.escapePdfText(compName.toUpperCase())}) Tj
       0 -16 Td
       /F1 9 Tf
-      (Adres: Koningshof 33, 3451 LM Vleuten  |  Werkplaats: Industrieweg 14, Dongen) Tj
+      (Adres: ${this.escapePdfText(compAddress)}) Tj
       0 -14 Td
-      (Contact: 06 82 00 80 25  |  info@vanuitambacht.nl  |  www.vanuitambacht.nl) Tj
+      (Contact: ${this.escapePdfText(compPhone)}  |  ${this.escapePdfText(compEmail)}  |  ${this.escapePdfText(compWebsite)}) Tj
       0 -14 Td
-      (Gegevens: KVK: 93097429  |  BTW: NL866264863B01  |  IBAN: NL27 ABNA 0132 2698 56) Tj
+      (Gegevens: KVK: ${this.escapePdfText(compKvk)}  |  BTW: ${this.escapePdfText(compBtw)}  |  IBAN: ${this.escapePdfText(compIban)}) Tj
       0 -70 Td
       /F3 9 Tf
-      (Pagina 5 van 6  |  Vanuit Ambacht B.V.  |  www.vanuitambacht.nl) Tj
+      (Pagina 5 van 6  |  ${this.escapePdfText(compName)}  |  ${this.escapePdfText(compWebsite)}) Tj
       ET
     `);
 

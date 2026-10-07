@@ -238,7 +238,11 @@ export class ConversationService {
     role: string,
     profileId?: string
   ): Promise<ProjectChannelsDto> {
-    // 1. Fetch project with customer & partner info
+    const isProjUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId);
+    const projCondition = isProjUuid
+      ? or(eq(projects.id, projectId), eq(projects.projectNumber, projectId))
+      : eq(projects.projectNumber, projectId);
+
     const [projectRow] = await db
       .select({
         project: projects,
@@ -248,7 +252,7 @@ export class ConversationService {
       .from(projects)
       .leftJoin(customers, eq(projects.customerId, customers.id))
       .leftJoin(partners, eq(projects.partnerId, partners.id))
-      .where(eq(projects.id, projectId))
+      .where(projCondition)
       .limit(1);
 
     if (!projectRow) {
@@ -470,13 +474,32 @@ export class ConversationService {
   ): Promise<ConversationDto> {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-    const [conv] = await db
+    let [conv] = await db
       .select()
       .from(conversations)
       .where(isUuid ? eq(conversations.id, id) : eq(conversations.conversationNumber, id))
       .limit(1);
 
     if (!conv) {
+      // Check if `id` is a project UUID or projectNumber
+      const projectConditions = isUuid
+        ? or(eq(projects.id, id), eq(projects.projectNumber, id))
+        : eq(projects.projectNumber, id);
+
+      const [proj] = await db.select().from(projects).where(projectConditions).limit(1);
+      if (proj) {
+        const channels = await this.getOrProvisionProjectConversations(
+          proj.id,
+          currentUserId,
+          role,
+          profileId
+        );
+        const resolvedDto = role === 'partner' ? channels.partnerChannel : (channels.customerChannel || channels.partnerChannel);
+        if (resolvedDto) {
+          return resolvedDto;
+        }
+      }
+
       throw new ConversationError('Conversation not found', 404, 'CONVERSATION_NOT_FOUND');
     }
 

@@ -14,6 +14,7 @@ import {
   commercialActions,
   documents,
   users,
+  companySettings,
 } from '../../db/schema.js';
 import type {
   CreateQuoteInput,
@@ -51,11 +52,14 @@ export class QuoteError extends Error {
 
 export class QuoteService {
   /**
-   * Generates unique sequential quote number: OF-YYYY-XXX
+   * Generates unique sequential quote number based on company settings prefix
    */
   async generateQuoteNumber(): Promise<string> {
     const year = new Date().getFullYear();
-    const prefix = `OF-${year}-`;
+    const [comp] = await db.select({ quotePrefix: companySettings.quotePrefix }).from(companySettings).limit(1);
+    let rawPrefix = comp?.quotePrefix?.trim() || `OF-${year}`;
+    rawPrefix = rawPrefix.replace(/^#/, '');
+    const prefix = rawPrefix.endsWith('-') ? rawPrefix : `${rawPrefix}-`;
 
     const [latest] = await db
       .select({ quoteNumber: quotes.quoteNumber })
@@ -93,11 +97,14 @@ export class QuoteService {
   }
 
   /**
-   * Generates unique sequential invoice number: INV-YYYY-XXX
+   * Generates unique sequential invoice number based on company settings prefix
    */
   async generateInvoiceNumber(offset: number = 0, executor: any = db): Promise<string> {
     const year = new Date().getFullYear();
-    const prefix = `INV-${year}-`;
+    const [comp] = await executor.select({ invoicePrefix: companySettings.invoicePrefix }).from(companySettings).limit(1);
+    let rawPrefix = comp?.invoicePrefix?.trim() || `INV-${year}`;
+    rawPrefix = rawPrefix.replace(/^#/, '');
+    const prefix = rawPrefix.endsWith('-') ? rawPrefix : `${rawPrefix}-`;
 
     const [latest] = await executor
       .select({ invoiceNumber: invoices.invoiceNumber })
@@ -1598,7 +1605,8 @@ export class QuoteService {
    */
   async generatePdf(quoteId: string, user: JwtTokenPayload): Promise<{ buffer: Buffer; fileName: string }> {
     const quoteDto = await this.getById(quoteId, user);
-    const buffer = quotePdfService.generatePdf(quoteDto);
+    const [compSettings] = await db.select().from(companySettings).limit(1);
+    const buffer = quotePdfService.generatePdf(quoteDto, null, compSettings);
     const fileName = `Offerte_${quoteDto.quoteNumber}.pdf`;
     return { buffer, fileName };
   }

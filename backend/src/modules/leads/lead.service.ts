@@ -152,6 +152,11 @@ export class LeadService {
         assignedUser: {
           fullName: users.fullName,
         },
+        intakeNote: sql<string | null>`(
+          SELECT note FROM commercial_actions 
+          WHERE lead_id = ${leads.id} AND action_type = 'intake_note' 
+          ORDER BY created_at ASC LIMIT 1
+        )`,
       })
       .from(leads)
       .leftJoin(users, eq(leads.assignedToUserId, users.id))
@@ -177,6 +182,8 @@ export class LeadService {
       assignedToUserId: r.lead.assignedToUserId,
       assignedToName: r.assignedUser?.fullName,
       lostReason: r.lead.lostReason,
+      notes: r.intakeNote || null,
+      intakeNotes: r.intakeNote || null,
       createdAt: r.lead.createdAt.toISOString(),
       updatedAt: r.lead.updatedAt.toISOString(),
     }));
@@ -298,6 +305,9 @@ export class LeadService {
       createdAt: a.action.createdAt.toISOString(),
     }));
 
+    const intakeAction = actionsRows.find((a) => a.action.actionType === 'intake_note');
+    const intakeNote = intakeAction?.action.note || null;
+
     return {
       id: leadRow.lead.id,
       leadNumber: leadRow.lead.leadNumber,
@@ -315,6 +325,8 @@ export class LeadService {
       assignedToUserId: leadRow.lead.assignedToUserId,
       assignedToName: leadRow.assignedUser?.fullName,
       lostReason: leadRow.lead.lostReason,
+      notes: intakeNote,
+      intakeNotes: intakeNote,
       createdAt: leadRow.lead.createdAt.toISOString(),
       updatedAt: leadRow.lead.updatedAt.toISOString(),
       voiceNotes,
@@ -386,6 +398,8 @@ export class LeadService {
       assignedToUserId: created.assignedToUserId,
       assignedToName: assignedUser.fullName,
       lostReason: created.lostReason,
+      notes: data.notes || null,
+      intakeNotes: data.notes || null,
       createdAt: created.createdAt.toISOString(),
       updatedAt: created.updatedAt.toISOString(),
     };
@@ -405,10 +419,40 @@ export class LeadService {
       if (!u) throw new LeadError('Assigned user does not exist', 400, 'USER_NOT_FOUND');
     }
 
+    const { notes: updatedNotes, ...leadFields } = data;
+
+    if (updatedNotes !== undefined) {
+      const [existingNote] = await db
+        .select()
+        .from(commercialActions)
+        .where(and(eq(commercialActions.leadId, id), eq(commercialActions.actionType, 'intake_note')))
+        .limit(1);
+
+      if (existingNote) {
+        if (updatedNotes) {
+          await db
+            .update(commercialActions)
+            .set({ note: updatedNotes })
+            .where(eq(commercialActions.id, existingNote.id));
+        } else {
+          await db
+            .delete(commercialActions)
+            .where(eq(commercialActions.id, existingNote.id));
+        }
+      } else if (updatedNotes) {
+        await db.insert(commercialActions).values({
+          leadId: id,
+          createdByUserId: existing.assignedToUserId,
+          actionType: 'intake_note',
+          note: updatedNotes,
+        });
+      }
+    }
+
     const [updated] = await db
       .update(leads)
       .set({
-        ...data,
+        ...leadFields,
         updatedAt: new Date(),
       })
       .where(eq(leads.id, id))
@@ -418,6 +462,12 @@ export class LeadService {
       .select({ fullName: users.fullName })
       .from(users)
       .where(eq(users.id, updated.assignedToUserId))
+      .limit(1);
+
+    const [intakeAction] = await db
+      .select({ note: commercialActions.note })
+      .from(commercialActions)
+      .where(and(eq(commercialActions.leadId, id), eq(commercialActions.actionType, 'intake_note')))
       .limit(1);
 
     return {
@@ -437,6 +487,8 @@ export class LeadService {
       assignedToUserId: updated.assignedToUserId,
       assignedToName: assignedUser?.fullName,
       lostReason: updated.lostReason,
+      notes: intakeAction?.note || null,
+      intakeNotes: intakeAction?.note || null,
       createdAt: updated.createdAt.toISOString(),
       updatedAt: updated.updatedAt.toISOString(),
     };

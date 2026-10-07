@@ -25,6 +25,7 @@ export interface CustomerAction {
 export interface DeliverySlotData {
   proposedDate?: string;
   timeWindow?: string;
+  proposedTimeSlot?: string;
   notes?: string;
   status: 'pending' | 'tentative' | 'confirmed';
   confirmedAt?: string | null;
@@ -38,6 +39,11 @@ export interface SchouwData {
   foundationCheck?: boolean;
   notes?: string;
   completed?: boolean;
+  status?: string;
+  surveyDate?: string;
+  timeSlot?: string;
+  confirmedAt?: string;
+  confirmedBy?: string;
 }
 
 export interface WeekPlanningItem {
@@ -162,6 +168,8 @@ export interface ProjectDto {
   statusTexts: StatusTexts;
   customerActions: CustomerAction[];
   schouw: SchouwData | null;
+  customerChecklist?: Record<string, boolean>;
+  technicalSpecs?: any;
   weekPlanning: WeekPlanningItem[];
   renderVersions: RenderVersion[];
   oplevering: OpleveringData | null;
@@ -223,6 +231,8 @@ export interface CustomerProjectDto {
   statusTexts: StatusTexts; // Without internalNotes
   customerActions: CustomerAction[];
   schouw?: { schouwDate?: string; completed?: boolean } | null;
+  technicalSpecs?: any;
+  customerChecklist?: Record<string, boolean>;
   renderVersions: RenderVersion[];
   milestones?: ProjectMilestoneDto[];
   photos?: ProjectPhotoDto[]; // Only where visibleToCustomer = true

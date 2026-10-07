@@ -3,8 +3,17 @@ import { z } from 'zod';
 export const channelTypeSchema = z.enum(['customer', 'partner', 'internal']);
 
 export const sendMessageSchema = z.object({
-  content: z.string().min(1, 'Message content cannot be empty').max(5000, 'Message cannot exceed 5000 characters').transform(s => s.trim()),
+  content: z.string().optional(),
+  message: z.string().optional(),
+  text: z.string().optional(),
+  channel: z.string().optional(),
   attachmentDocumentId: z.string().uuid('Invalid document UUID').nullable().optional(),
+}).transform(data => ({
+  content: (data.content || data.message || data.text || '').trim(),
+  attachmentDocumentId: data.attachmentDocumentId,
+})).refine(data => data.content.length > 0, {
+  message: 'Message content cannot be empty',
+  path: ['content'],
 });
 
 export const createConversationSchema = z.object({

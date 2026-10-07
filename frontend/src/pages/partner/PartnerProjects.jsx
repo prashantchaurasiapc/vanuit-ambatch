@@ -35,6 +35,8 @@ export default function PartnerProjects() {
       if (res.success && Array.isArray(res.data) && res.data.length > 0) {
         const enriched = res.data.map((p, idx) => ({
           ...p,
+          customer: p.customer || p.customerName || 'Klant',
+          customerName: p.customerName || p.customer || 'Klant',
           deliveryAddress: p.deliveryAddress || p.city || 'Address TBC',
           agreedBuildPrice: p.agreedBuildPrice
             ? `€ ${Number(p.agreedBuildPrice).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`
@@ -497,7 +499,7 @@ export default function PartnerProjects() {
                 <div className="p-4 border-b border-[#D6CFC2] flex justify-between items-center bg-[#F7F4EE]">
                   <div>
                     <span className="font-mono text-[9px] text-[#736E64] uppercase tracking-wider">Opleverrapport OP-2026-042</span>
-                    <h4 className="text-lg font-heading font-bold text-primary mt-1">Opgeleverd. Veel plezier van je {selectedProject.name.toLowerCase().includes('keuken') ? 'buitenkeuken' : 'buitenverblijf'}, {selectedProject.customer.split(' ')[selectedProject.customer.split(' ').length - 1]}.</h4>
+                    <h4 className="text-lg font-heading font-bold text-primary mt-1">Opgeleverd. Veel plezier van je {(selectedProject.name || '').toLowerCase().includes('keuken') ? 'buitenkeuken' : 'buitenverblijf'}, {(selectedProject.customer || selectedProject.customerName || 'Klant').split(' ').pop()}.</h4>
                   </div>
                   <div className="px-3 py-1 border border-[#D6CFC2] rounded-full text-[10px] font-bold text-[#58534A] tracking-wider uppercase bg-white">
                     Oplevering
@@ -515,11 +517,11 @@ export default function PartnerProjects() {
                     </div>
                     <div>
                       <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Klant</p>
-                      <p className="font-bold text-[#2A2925] text-[11px] truncate">{selectedProject.customer || 'Sander de Vries'}</p>
+                      <p className="font-bold text-[#2A2925] text-[11px] truncate">{selectedProject.customer || selectedProject.customerName || 'Sander de Vries'}</p>
                     </div>
                     <div>
                       <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Locatie</p>
-                      <p className="font-bold text-[#2A2925] text-[11px] truncate">{selectedProject.deliveryAddress.split(' ').pop() || 'Oisterwijk'}</p>
+                      <p className="font-bold text-[#2A2925] text-[11px] truncate">{(selectedProject.deliveryAddress || selectedProject.city || 'Oisterwijk').split(' ').pop() || 'Oisterwijk'}</p>
                     </div>
                   </div>
                   

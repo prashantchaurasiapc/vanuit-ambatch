@@ -92,54 +92,56 @@ export default function Sidebar({ role }) {
   };
 
   const ADMIN_LINKS = [
-    { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Leads', path: '/admin/leads', icon: Users },
-    { name: 'Projects', path: '/admin/projects', icon: Briefcase, badge: '2' },
+    { name: t('common.dashboard') || 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+    { name: t('common.leads') || 'Leads', path: '/admin/leads', icon: Users },
+    { name: t('common.projects') || 'Projects', path: '/admin/projects', icon: Briefcase, badge: '2' },
     { 
-      name: 'Bookkeeping', 
+      name: t('common.bookkeeping') || 'Bookkeeping', 
       icon: PieChart, 
       isDropdown: true,
       children: [
-        { name: 'Quotes', path: '/admin/quotes' },
-        { name: 'Invoices', path: '/admin/invoices' },
-        { name: 'Customers', path: '/admin/customers' },
-        { name: 'Bank', path: '/admin/bank' },
-        { name: 'Taxes (VAT)', path: '/admin/taxes' },
-        { name: 'Profit & Loss', path: '/admin/profit-loss' },
+        { name: t('common.quotes') || 'Quotes', path: '/admin/quotes' },
+        { name: t('common.invoices') || 'Invoices', path: '/admin/invoices' },
+        { name: t('common.customers') || 'Customers', path: '/admin/customers' },
+        { name: t('common.bank') || 'Bank', path: '/admin/bank' },
+        { name: t('common.taxes') || 'Taxes (VAT)', path: '/admin/taxes' },
+        { name: t('common.profitLoss') || 'Profit & Loss', path: '/admin/profit-loss' },
       ]
     },
-    { name: 'Partners', path: '/admin/partners', icon: UserSquare },
-    { name: 'Planning', path: '/admin/planning', icon: Calendar },
-    { name: 'Photos & Media', path: '/admin/photos', icon: Camera },
-    { name: 'Tasks', path: '/admin/tasks', icon: FileText },
-    { name: 'Documents', path: '/admin/documents', icon: Folder },
-    { name: 'Settings', path: '/admin/settings', icon: Settings },
+    { name: t('common.partners') || 'Partners', path: '/admin/partners', icon: UserSquare },
+    { name: t('common.planning') || 'Planning', path: '/admin/planning', icon: Calendar },
+    { name: t('common.photosMedia') || 'Photos & Media', path: '/admin/photos', icon: Camera },
+    { name: t('common.tasks') || 'Tasks', path: '/admin/tasks', icon: FileText },
+    { name: t('common.documents') || 'Documents', path: '/admin/documents', icon: Folder },
+    { name: t('common.settings') || 'Settings', path: '/admin/settings', icon: Settings },
   ];
 
   const PARTNER_LINKS = [
-    { name: 'Dashboard', path: '/partner/dashboard', icon: LayoutDashboard },
-    { name: 'My Projects', path: '/partner/projects', icon: Briefcase },
-    { name: 'Price Requests', path: '/partner/price-requests', icon: FileText },
-    { name: 'Planning', path: '/partner/planning', icon: Calendar },
-    { name: 'Documents', path: '/partner/documents', icon: Folder },
-    { name: 'My Details', path: '/partner/profile', icon: UserSquare },
+    { name: t('common.dashboard') || 'Dashboard', path: '/partner/dashboard', icon: LayoutDashboard },
+    { name: t('common.myProjects') || 'My Projects', path: '/partner/projects', icon: Briefcase },
+    { name: t('common.priceRequests') || 'Price Requests', path: '/partner/price-requests', icon: FileText },
+    { name: t('common.planning') || 'Planning', path: '/partner/planning', icon: Calendar },
+    { name: t('common.documents') || 'Documents', path: '/partner/documents', icon: Folder },
+    { name: t('common.myDetails') || 'My Details', path: '/partner/profile', icon: UserSquare },
   ];
 
   const CUSTOMER_LINKS = [
-    { name: 'Overview', path: '/customer/project', icon: LayoutDashboard },
-    { name: 'My Quote', path: '/customer/quotes', icon: Receipt },
-    { name: 'Design & Renders', path: '/customer/project?tab=design', icon: FileText },
-    { name: 'Planning & Build', path: '/customer/project?tab=planning', icon: Calendar },
-    { name: 'Photos & Updates', path: '/customer/photos', icon: Camera },
-    { name: 'Documents', path: '/customer/documents', icon: Folder },
-    { name: 'Payments', path: '/customer/project?tab=payments', icon: CreditCard },
-    { name: 'Messages & Contact', path: '/customer/contact', icon: Phone },
-    { name: 'Handover & Aftercare', path: '/customer/project?tab=handover', icon: ShieldCheck },
-    { name: 'Mobile View', path: '/customer/project?tab=mobile-view', icon: Smartphone },
+    { name: t('common.overview') || 'Overview', path: '/customer/project', icon: LayoutDashboard },
+    { name: t('common.myQuote') || 'My Quote', path: '/customer/quotes', icon: Receipt },
+    { name: t('common.designRenders') || 'Design & Renders', path: '/customer/project?tab=design', icon: FileText },
+    { name: t('common.planningBuild') || 'Planning & Build', path: '/customer/project?tab=planning', icon: Calendar },
+    { name: t('common.photosUpdates') || 'Photos & Updates', path: '/customer/photos', icon: Camera },
+    { name: t('common.documents') || 'Documents', path: '/customer/documents', icon: Folder },
+    { name: t('common.payments') || 'Payments', path: '/customer/project?tab=payments', icon: CreditCard },
+    { name: t('common.messagesContact') || 'Messages & Contact', path: '/customer/contact', icon: Phone },
+    { name: t('common.handoverAftercare') || 'Handover & Aftercare', path: '/customer/project?tab=handover', icon: ShieldCheck },
+    { name: t('common.mobileView') || 'Mobile View', path: '/customer/project?tab=mobile-view', icon: Smartphone },
   ];
 
 
   const links = role === 'admin' ? ADMIN_LINKS : role === 'customer' ? CUSTOMER_LINKS : PARTNER_LINKS;
+
+
 
 
 

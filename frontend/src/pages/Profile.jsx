@@ -1,19 +1,24 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../context/LanguageContext';
-import { User, Mail, Phone, Lock, Save, Camera, CheckCircle, Globe } from 'lucide-react';
+import { User, Mail, Phone, Lock, Save, Camera, CheckCircle, Globe, Loader2 } from 'lucide-react';
+import api from '../api/apiClient';
 
 export default function Profile() {
   const { user } = useAuth();
   const { language } = useLanguage();
   const [toastMsg, setToastMsg] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [savingInfo, setSavingInfo] = useState(false);
+  const [savingPwd, setSavingPwd] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   const [personalInfo, setPersonalInfo] = useState({
-    name: user?.name || 'Admin User',
-    email: user?.role === 'admin' ? 'admin@vanuitambacht.nl' : 'partner@vanuitambacht.nl',
+    name: user?.name || 'User',
+    email: user?.email || (user?.role === 'admin' ? 'admin@vanuitambacht.nl' : 'partner@vanuitambacht.nl'),
     phone: '+31 6 98765432',
     language: 'English',
     timezone: 'Europe/Amsterdam'
@@ -27,6 +32,32 @@ export default function Profile() {
 
   const [avatar, setAvatar] = useState(null);
 
+  // Load real profile from backend
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    api.get('/users/profile').then(res => {
+      if (isMounted && res.success && res.data) {
+        setPersonalInfo({
+          name: res.data.fullName || user?.name || 'User',
+          email: res.data.email || user?.email || '',
+          phone: res.data.phone || '+31 6 98765432',
+          language: res.data.language || 'English',
+          timezone: res.data.timezone || 'Europe/Amsterdam'
+        });
+        if (res.data.avatarUrl) {
+          setAvatar(res.data.avatarUrl);
+        }
+      }
+    }).catch(err => {
+      console.warn('Failed to load profile:', err);
+    }).finally(() => {
+      if (isMounted) setLoading(false);
+    });
+
+    return () => { isMounted = false; };
+  }, [user]);
+
   const showToast = (msg) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 3000);
@@ -36,27 +67,90 @@ export default function Profile() {
     setPersonalInfo(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSaveInfo = (e) => {
+  const handleSaveInfo = async (e) => {
     e.preventDefault();
-    showToast(language === 'EN' ? 'Profile information updated successfully!' : 'Profielgegevens succesvol bijgewerkt!');
+    setSavingInfo(true);
+    try {
+      const res = await api.patch('/users/profile', {
+        fullName: personalInfo.name,
+        phone: personalInfo.phone,
+        language: personalInfo.language,
+        timezone: personalInfo.timezone
+      });
+      if (res.success) {
+        showToast(language === 'EN' ? '✓ Profile information saved to database!' : '✓ Profielgegevens succesvol opgeslagen in database!');
+      } else {
+        showToast(`⚠ ${res.error?.message || 'Failed to update profile'}`);
+      }
+    } catch (err) {
+      showToast('⚠ Failed to save profile to backend');
+    } finally {
+      setSavingInfo(false);
+    }
   };
 
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (passwords.new !== passwords.confirm) {
       alert(language === 'EN' ? "New passwords do not match!" : "Nieuwe wachtwoorden komen niet overeen!");
       return;
     }
-    showToast(language === 'EN' ? 'Password updated successfully!' : 'Wachtwoord succesvol bijgewerkt!');
-    setPasswords({ current: '', new: '', confirm: '' });
+    if (passwords.new.length < 6) {
+      alert(language === 'EN' ? "New password must be at least 6 characters long!" : "Nieuw wachtwoord moet minimaal 6 tekens lang zijn!");
+      return;
+    }
+
+    setSavingPwd(true);
+    try {
+      const res = await api.patch('/users/profile/password', {
+        currentPassword: passwords.current,
+        newPassword: passwords.new
+      });
+      if (res.success) {
+        showToast(language === 'EN' ? '✓ Password updated successfully!' : '✓ Wachtwoord succesvol bijgewerkt!');
+        setPasswords({ current: '', new: '', confirm: '' });
+      } else {
+        alert(`⚠ ${res.error?.message || 'Password update failed'}`);
+      }
+    } catch (err) {
+      alert('⚠ Failed to update password');
+    } finally {
+      setSavingPwd(false);
+    }
   };
 
   const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setAvatar(URL.createObjectURL(file));
-      showToast(language === 'EN' ? 'Avatar updated successfully!' : 'Profielfoto succesvol bijgewerkt!');
-    }
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const fullBase64 = reader.result;
+        const rawBase64 = typeof fullBase64 === 'string' && fullBase64.includes(',')
+          ? fullBase64.split(',')[1]
+          : fullBase64;
+
+        const res = await api.post('/users/profile/avatar', {
+          fileBase64: rawBase64,
+          fileName: file.name,
+          mimeType: file.type || 'image/jpeg'
+        });
+
+        if (res.success && res.data?.avatarUrl) {
+          setAvatar(res.data.avatarUrl);
+          showToast(language === 'EN' ? '✓ Avatar uploaded and saved!' : '✓ Profielfoto geüpload en opgeslagen!');
+        } else {
+          showToast(`⚠ ${res.error?.message || 'Avatar upload failed'}`);
+        }
+      } catch (err) {
+        showToast('⚠ Avatar upload error');
+      } finally {
+        setUploadingAvatar(false);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -147,9 +241,9 @@ export default function Profile() {
                   <input
                     type="email"
                     value={personalInfo.email}
-                    onChange={(e) => handleInfoChange('email', e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-[#EDE8DF] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
+                    disabled
+                    title="Email is managed via system administrator"
+                    className="w-full px-3 py-2 bg-[#E2DCD1] border border-[#D6CFC2] rounded-lg text-sm font-body opacity-75 cursor-not-allowed text-[#4A4A43]"
                   />
                 </div>
                 <div>
@@ -180,8 +274,10 @@ export default function Profile() {
               </div>
               
               <div className="flex justify-end pt-2">
-                <Button icon={Save} type="submit">
-                  {language === 'EN' ? 'Save changes' : 'Wijzigingen Opslaan'}
+                <Button icon={Save} type="submit" disabled={savingInfo}>
+                  {savingInfo 
+                    ? (language === 'EN' ? 'Saving...' : 'Opslaan...')
+                    : (language === 'EN' ? 'Save changes' : 'Wijzigingen Opslaan')}
                 </Button>
               </div>
             </form>
@@ -232,8 +328,10 @@ export default function Profile() {
               </div>
               
               <div className="flex justify-end pt-2">
-                <Button icon={Lock} type="submit">
-                  {language === 'EN' ? 'Update password' : 'Wachtwoord Bijwerken'}
+                <Button icon={Lock} type="submit" disabled={savingPwd}>
+                  {savingPwd
+                    ? (language === 'EN' ? 'Updating...' : 'Bijwerken...')
+                    : (language === 'EN' ? 'Update password' : 'Wachtwoord Bijwerken')}
                 </Button>
               </div>
             </form>

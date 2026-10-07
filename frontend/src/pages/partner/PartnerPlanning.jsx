@@ -6,9 +6,12 @@ import { Calendar as CalendarIcon, Clock, CheckCircle2, Circle, Plus, Filter, Ma
 import { useLanguage } from '../../context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import api from '../../api/apiClient';
+
 const DEFAULT_EVENTS = [
   {
-    id: 1,
+    id: 'evt-default-1',
+    backendId: null,
     titleNL: 'Inmeten & Locatie Inspectie Luxe Buitenkeuken',
     titleEN: 'Site Measurement & Inspection Luxury Outdoor Kitchen',
     client: 'Bjorn Valk',
@@ -25,24 +28,8 @@ const DEFAULT_EVENTS = [
     notesEN: 'Verify water pipe cutout and Kamado BBQ electrical supply on-site.'
   },
   {
-    id: 2,
-    titleNL: 'Levering Massief Teakhout & Zwart Beton Werkblad',
-    titleEN: 'Delivery Solid Teak Wood & Black Concrete Worktop',
-    client: 'John Miller',
-    location: 'Werkplaats Hoek Bouw, Utrecht',
-    date: '2026-08-12',
-    time: '13:00 - 15:00',
-    type: 'Delivery',
-    typeNL: 'Oplevering',
-    typeEN: 'Delivery',
-    status: 'Upcoming',
-    statusNL: 'Aankomend',
-    statusEN: 'Upcoming',
-    notesNL: 'Levering door houtleverancier Houtman B.V. Controleer houtvochtigheid.',
-    notesEN: 'Delivery by timber supplier Houtman B.V. Check wood moisture level.'
-  },
-  {
-    id: 3,
+    id: 'evt-default-2',
+    backendId: null,
     titleNL: 'Montage & Plaatsing Buitenkeuken in Tuin',
     titleEN: 'Assembly & Installation Outdoor Kitchen in Garden',
     client: 'Sanne Visser',
@@ -57,25 +44,47 @@ const DEFAULT_EVENTS = [
     statusEN: 'Upcoming',
     notesNL: 'Plaatsing teakhouten frame en stellen beton cire werkblad.',
     notesEN: 'Installation of teak wood frame and leveling concrete worktop.'
-  },
-  {
-    id: 4,
-    titleNL: 'Eindinspectie & Oplevering Overkapping',
-    titleEN: 'Final Inspection & Handover Oak Canopy',
-    client: 'Mark Davis',
-    location: 'Vondelstraat 12, Amsterdam',
-    date: '2026-08-04',
-    time: '14:00 - 16:00',
-    type: 'Site Visit',
-    typeNL: 'Locatiebezoek',
-    typeEN: 'Site Visit',
-    status: 'Completed',
-    statusNL: 'Afgerond',
-    statusEN: 'Completed',
-    notesNL: 'Klant akkoord getekend voor glazen schuifwand oplevering.',
-    notesEN: 'Customer signed final approval for glass sliding wall delivery.'
   }
 ];
+
+function mapBackendToPartnerEvent(item) {
+  const evt = item.event || item;
+  const prj = item.project;
+  const startDate = evt.startTime ? new Date(evt.startTime) : new Date();
+  const endDate = evt.endTime ? new Date(evt.endTime) : new Date();
+  const dateStr = startDate.toISOString().split('T')[0];
+  const timeStr = `${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')} - ${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
+
+  let type = 'Site Visit';
+  let typeNL = 'Locatiebezoek';
+  if (evt.eventType === 'single_day_delivery') { type = 'Delivery'; typeNL = 'Oplevering'; }
+  else if (evt.eventType === 'multi_day_bouw' || evt.eventType === 'workshop_production') { type = 'Assembly'; typeNL = 'Montage'; }
+
+  const isCompleted = evt.status === 'completed';
+  const status = isCompleted ? 'Completed' : 'Upcoming';
+  const statusNL = isCompleted ? 'Afgerond' : 'Aankomend';
+
+  return {
+    id: evt.id,
+    backendId: evt.id,
+    title: evt.title,
+    titleNL: evt.title,
+    titleEN: evt.title,
+    client: prj?.customerName || prj?.name || 'Klant',
+    location: evt.location || 'Werkplaats',
+    date: dateStr,
+    time: timeStr,
+    type,
+    typeNL,
+    typeEN: type,
+    status,
+    statusNL,
+    statusEN: status,
+    notes: evt.description || '',
+    notesNL: evt.description || '',
+    notesEN: evt.description || ''
+  };
+}
 
 export default function PartnerPlanning() {
   const { language } = useLanguage();
@@ -83,11 +92,27 @@ export default function PartnerPlanning() {
   const [filterType, setFilterType] = useState('All');
   const [selectedDate, setSelectedDate] = useState('2026-08-10');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [newEvent, setNewEvent] = useState({ title: '', client: '', location: '', time: '10:00 - 11:30', type: 'Site Visit' });
 
+  // Fetch planning events from real backend API
+  const loadEvents = async () => {
+    try {
+      const res = await api.get('/planning/events');
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        setEvents(res.data.map(mapBackendToPartnerEvent));
+      } else {
+        setEvents(DEFAULT_EVENTS);
+      }
+    } catch (err) {
+      console.warn('Failed to load backend planning events:', err);
+      setEvents(DEFAULT_EVENTS);
+    }
+  };
+
   useEffect(() => {
-    setEvents(DEFAULT_EVENTS);
+    loadEvents();
   }, []);
 
   const showToast = (msg) => {
@@ -95,39 +120,95 @@ export default function PartnerPlanning() {
     setTimeout(() => setToastMsg(''), 3000);
   };
 
-  const toggleEventStatus = (id) => {
-    const updated = events.map(e => e.id === id ? { ...e, status: e.status === 'Completed' ? 'Upcoming' : 'Completed' } : e);
+  const toggleEventStatus = async (id) => {
+    const target = events.find(e => e.id === id);
+    if (!target) return;
+
+    const nextStatus = target.status === 'Completed' ? 'Upcoming' : 'Completed';
+    const updated = events.map(e => e.id === id ? { 
+      ...e, 
+      status: nextStatus, 
+      statusNL: nextStatus === 'Completed' ? 'Afgerond' : 'Aankomend',
+      statusEN: nextStatus 
+    } : e);
     setEvents(updated);
-    showToast(language === 'EN' ? 'Task status updated!' : 'Planningstaak status bijgewerkt!');
+
+    if (target.backendId) {
+      try {
+        await api.patch(`/planning/events/${target.backendId}`, {
+          status: nextStatus === 'Completed' ? 'completed' : 'scheduled'
+        });
+      } catch (err) {
+        console.warn('Failed to update event status on backend:', err);
+      }
+    }
+
+    showToast(language === 'EN' ? '✓ Task status updated!' : '✓ Planningstaak status bijgewerkt!');
   };
 
-  const handleAddEvent = (e) => {
+  const handleAddEvent = async (e) => {
     e.preventDefault();
     if (!newEvent.title) return;
-    const added = [
-      ...events,
-      {
-        id: Date.now(),
-        titleNL: newEvent.title,
-        titleEN: newEvent.title,
-        client: newEvent.client || 'Client',
-        location: newEvent.location || 'Location',
-        date: selectedDate,
-        time: newEvent.time,
-        type: newEvent.type,
-        typeNL: newEvent.type === 'Site Visit' ? 'Locatiebezoek' : newEvent.type === 'Delivery' ? 'Oplevering' : 'Montage',
-        typeEN: newEvent.type,
-        status: 'Upcoming',
-        statusNL: 'Aankomend',
-        statusEN: 'Upcoming',
-        notesNL: 'Handmatig ingeplande taak.',
-        notesEN: 'Manually scheduled task.'
+
+    setIsSubmitting(true);
+    const timeParts = (newEvent.time || '10:00 - 11:30').split('-');
+    const startH = (timeParts[0] || '10:00').trim();
+    const endH = (timeParts[1] || '11:30').trim();
+    const validDate = selectedDate || '2026-08-10';
+
+    const startIso = new Date(`${validDate}T${startH.padStart(5, '0')}:00`).toISOString();
+    const endIso = new Date(`${validDate}T${endH.padStart(5, '0')}:00`).toISOString();
+
+    const eventType = newEvent.type === 'Delivery' ? 'single_day_delivery' : newEvent.type === 'Assembly' ? 'multi_day_bouw' : 'site_survey';
+    const calendarLane = newEvent.type === 'Delivery' ? 'delivery_lane' : 'bouw_lane';
+
+    try {
+      const res = await api.post('/planning/events', {
+        title: newEvent.title,
+        eventType,
+        calendarLane,
+        startTime: startIso,
+        endTime: endIso,
+        location: newEvent.location || 'Werkplaats',
+        description: newEvent.client ? `Klant: ${newEvent.client}` : 'Geplande taak'
+      });
+
+      if (res.success && res.data) {
+        await loadEvents();
+        showToast(language === 'EN' ? '✓ New schedule task saved to backend!' : '✓ Nieuwe taak opgeslagen in backend planning!');
+      } else {
+        // Fallback optimistic local addition
+        const added = [
+          ...events,
+          {
+            id: `evt-${Date.now()}`,
+            backendId: null,
+            titleNL: newEvent.title,
+            titleEN: newEvent.title,
+            client: newEvent.client || 'Client',
+            location: newEvent.location || 'Location',
+            date: validDate,
+            time: newEvent.time,
+            type: newEvent.type,
+            typeNL: newEvent.type === 'Site Visit' ? 'Locatiebezoek' : newEvent.type === 'Delivery' ? 'Oplevering' : 'Montage',
+            typeEN: newEvent.type,
+            status: 'Upcoming',
+            statusNL: 'Aankomend',
+            statusEN: 'Upcoming',
+            notesNL: 'Handmatig ingeplande taak.',
+            notesEN: 'Manually scheduled task.'
+          }
+        ];
+        setEvents(added);
+        showToast(language === 'EN' ? '✓ Schedule task added!' : '✓ Taak toegevoegd!');
       }
-    ];
-    setEvents(added);
-    setShowAddModal(false);
-    setNewEvent({ title: '', client: '', location: '', time: '10:00 - 11:30', type: 'Site Visit' });
-    showToast(language === 'EN' ? 'New schedule task added!' : 'Nieuwe taak toegevoegd aan planning!');
+    } catch (err) {
+      console.warn('POST /planning/events error:', err);
+    } finally {
+      setIsSubmitting(false);
+      setShowAddModal(false);
+      setNewEvent({ title: '', client: '', location: '', time: '10:00 - 11:30', type: 'Site Visit' });
+    }
   };
 
   const filteredEvents = filterType === 'All' 
@@ -486,8 +567,10 @@ export default function PartnerPlanning() {
                   <Button variant="outline" onClick={() => setShowAddModal(false)}>
                     {language === 'NL' ? 'Annuleren' : 'Cancel'}
                   </Button>
-                  <Button type="submit">
-                    {language === 'NL' ? 'Opslaan' : 'Save Task'}
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting 
+                      ? (language === 'NL' ? 'Opslaan...' : 'Saving...')
+                      : (language === 'NL' ? 'Opslaan' : 'Save Task')}
                   </Button>
                 </div>
               </form>

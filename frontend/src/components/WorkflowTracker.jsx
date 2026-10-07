@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -93,15 +93,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     });
   };
 
-  // Commercial Actions State
-  const [commercialActions, setCommercialActions] = useState([
-    {
-      id: 1,
-      date: '2026-08-05 14:30',
-      user: 'Tim (Admin)',
-      note: 'Initial phone consultation completed. Client confirmed interest in luxury teak wood finish and 3.5m length.'
-    }
-  ]);
+  // Lead Intake Notes & Commercial Actions State
+  const [intakeNotes, setIntakeNotes] = useState(lead?.notes || lead?.intakeNotes || '');
+  const [commercialActions, setCommercialActions] = useState([]);
   const [commercialModalOpen, setCommercialModalOpen] = useState(false);
   const [newCommercialNote, setNewCommercialNote] = useState('');
   const [commercialTaskForm, setCommercialTaskForm] = useState({
@@ -109,6 +103,57 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     assignee: 'Bram', // 'Bram' | 'Tim'
     dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   });
+
+  // Fetch lead dossier from backend to synchronize intake notes & commercial actions
+  useEffect(() => {
+    if (!lead?.id) return;
+    let isMounted = true;
+    api.get(`/leads/${lead.id}`).then((res) => {
+      if (!isMounted) return;
+      if (res.success && res.data) {
+        const d = res.data;
+        if (d.notes || d.intakeNotes) {
+          setIntakeNotes(d.notes || d.intakeNotes);
+        }
+        if (Array.isArray(d.commercialActions)) {
+          const mapped = d.commercialActions.map((a) => ({
+            id: a.id,
+            date: a.actionDate
+              ? new Date(a.actionDate).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' })
+              : (a.createdAt ? new Date(a.createdAt).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' }) : ''),
+            user: a.createdByName || 'Admin',
+            note: a.note,
+            assignee: a.linkedTask?.assignedToName || null,
+            dueDate: a.linkedTask?.dueDate || null
+          }));
+          setCommercialActions(mapped);
+        }
+      }
+    }).catch((err) => {
+      console.warn('Could not load dossier:', err);
+    });
+
+    const isLeadUuid = typeof lead.id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lead.id);
+    if (isLeadUuid) {
+      api.get(`/documents?leadId=${lead.id}`).then((res) => {
+        if (!isMounted) return;
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const docs = res.data.map((d) => ({
+            id: d.id,
+            name: d.fileName,
+            url: d.fileUrl,
+            documentNumber: d.documentNumber
+          }));
+          setAttachedPhotos(docs);
+          setAttachPhotos(true);
+        }
+      }).catch((err) => {
+        console.warn('Could not load lead documents:', err);
+      });
+    }
+
+    return () => { isMounted = false; };
+  }, [lead?.id]);
 
   const handleSaveCommercialAction = (e) => {
     e.preventDefault();
@@ -123,6 +168,17 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     };
     const updated = [newAction, ...commercialActions];
     setCommercialActions(updated);
+
+    // Save to real backend commercial-actions endpoint
+    if (lead?.id) {
+      api.post(`/leads/${lead.id}/commercial-actions`, {
+        actionType: 'consultation',
+        note: newCommercialNote.trim(),
+        createTask: commercialTaskForm.createTask,
+        taskDueDate: commercialTaskForm.dueDate,
+        taskPriority: 'medium',
+      }).catch((err) => console.warn('Could not save commercial action to API:', err));
+    }
 
     // Automatically create and sync related task to Task Board
     if (commercialTaskForm.createTask) {
@@ -235,7 +291,11 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const [specFormValues, setSpecFormValues] = useState({});
 
   const getCategoryKey = (catStr) => {
-    const s = (catStr || '').toLowerCase();
+    const s = (catStr || '').toLowerCase().trim();
+    if (!s) return 'buitenkeuken';
+    if (dynamicFieldSets[s]) return s;
+    const directMatch = Object.keys(dynamicFieldSets).find(k => s.includes(k) || k.includes(s));
+    if (directMatch) return directMatch;
     if (s.includes('verblijf') || s.includes('building') || s.includes('garden') || s.includes('tuinkamer')) return 'buitenverblijf';
     if (s.includes('overkapping') || s.includes('canopy') || s.includes('pergola')) return 'overkapping';
     if (s.includes('poolhouse')) return 'poolhouse';
@@ -463,17 +523,81 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const customerEmail = lead?.email || `${(lead?.name || 'sonu.jain').toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`;
   const customerPhone = lead?.phone || '+31 6 12345678';
   const customerCity = lead?.city || lead?.location || 'Rotterdam';
-  const customerCategory = lead?.category || (lead?.company?.toLowerCase().includes('snijplanken') ? 'Snijplanken' : 'Buitenkeukens');
+  const customerCategory = lead?.productType || lead?.category || (lead?.company?.toLowerCase().includes('snijplanken') ? 'Snijplanken' : 'Buitenkeukens');
   
   const translateCategory = (cat) => {
-    if (language !== 'EN' || !cat) return cat;
-    return cat
+    if (!cat) return '';
+    if (language !== 'EN') {
+      const s = String(cat).toLowerCase();
+      if (s.includes('kitchen') || s.includes('keuken')) return 'Buitenkeukens';
+      if (s.includes('verblijf') || s.includes('building') || s.includes('tuinkamer') || s.includes('garden')) return 'Buitenverblijf';
+      if (s.includes('overkapping') || s.includes('canopy') || s.includes('pergola')) return 'Overkapping';
+      if (s.includes('bin') || s.includes('kliko')) return 'Kliko Ombouw';
+      if (s.includes('cutting') || s.includes('snijplank')) return 'Snijplanken';
+      return cat;
+    }
+    const s = String(cat);
+    return s
       .replace(/Buitenkeukens/gi, 'Outdoor Kitchens')
       .replace(/Buitenkeuken/gi, 'Outdoor Kitchen')
+      .replace(/Buitenverblijven/gi, 'Garden Rooms')
+      .replace(/Buitenverblijf/gi, 'Garden Room')
+      .replace(/Garden \/ Outdoor Building/gi, 'Garden Room')
+      .replace(/Tuinkamers/gi, 'Garden Rooms')
+      .replace(/Tuinkamer/gi, 'Garden Room')
+      .replace(/Kliko ombouw/gi, 'Bin Storage')
       .replace(/Kliko/gi, 'Bin Storage')
-      .replace(/Overkappingen/gi, 'Canopies')
-      .replace(/Overkapping/gi, 'Canopy')
-      .replace(/Snijplanken/gi, 'Cutting Boards');
+      .replace(/Overkappingen/gi, 'Canopies / Pergolas')
+      .replace(/Overkapping/gi, 'Canopy / Pergola')
+      .replace(/Snijplanken/gi, 'Cutting Boards')
+      .replace(/Snijplank/gi, 'Cutting Board');
+  };
+
+  const SPEC_TRANSLATIONS = {
+    // Labels
+    'Isolatie Type (Dak & Wand)': { EN: 'Insulation Type (Roof & Wall)', NL: 'Isolatie Type (Dak & Wand)' },
+    'Glaswand Optie': { EN: 'Glass Wall Option', NL: 'Glaswand Optie' },
+    'Houtsoort Frame': { EN: 'Frame Wood Type', NL: 'Houtsoort Frame' },
+    'Werkblad Type & Afwerking': { EN: 'Worktop Type & Finish', NL: 'Werkblad Type & Afwerking' },
+    'Houtsoort Onderstel': { EN: 'Base Wood Type', NL: 'Houtsoort Onderstel' },
+    'Inbouw Kamado Cutout': { EN: 'Built-in Kamado Cutout', NL: 'Inbouw Kamado Cutout' },
+
+    // Options
+    'PIR 80mm': { EN: 'PIR 80mm', NL: 'PIR 80mm' },
+    'Steenwol 100mm': { EN: 'Rockwool 100mm', NL: 'Steenwol 100mm' },
+    'Geen isolatie': { EN: 'No Insulation', NL: 'Geen isolatie' },
+    'Glazen schuifwanden (5-rail)': { EN: 'Sliding Glass Walls (5-rail)', NL: 'Glazen schuifwanden (5-rail)' },
+    'Vaste glazen wanden': { EN: 'Fixed Glass Walls', NL: 'Vaste glazen wanden' },
+    'Geen glas': { EN: 'No Glass', NL: 'Geen glas' },
+    'Massief Teakhout': { EN: 'Solid Teak Wood', NL: 'Massief Teakhout' },
+    'Massief Teak Hout': { EN: 'Solid Teak Wood', NL: 'Massief Teak Hout' },
+    'Douglas Hout': { EN: 'Douglas Fir Wood', NL: 'Douglas Hout' },
+    'Douglas': { EN: 'Douglas Fir', NL: 'Douglas' },
+    'Eikenhout': { EN: 'Oak Wood', NL: 'Eikenhout' },
+    'Gepolijst Beton Cire (8cm Zwart)': { EN: 'Polished Beton Cire (8cm Black)', NL: 'Gepolijst Beton Cire (8cm Zwart)' },
+    'Graniet Zwart Mat': { EN: 'Granite Matte Black', NL: 'Graniet Zwart Mat' },
+    'RVS Werkblad': { EN: 'Stainless Steel Worktop', NL: 'RVS Werkblad' },
+    'Thermo Fraké Hout (Recommended)': { EN: 'Thermo Fraké Wood (Recommended)', NL: 'Thermo Fraké Hout (Recommended)' },
+    'Thermo Fraké': { EN: 'Thermo Fraké Wood', NL: 'Thermo Fraké' },
+    'Zwart Gepoedercoat Staal': { EN: 'Black Powder-Coated Steel', NL: 'Zwart Gepoedercoat Staal' },
+    'Big Green Egg Large': { EN: 'Big Green Egg Large', NL: 'Big Green Egg Large' },
+    'Kamado Joe Classic III': { EN: 'Kamado Joe Classic III', NL: 'Kamado Joe Classic III' },
+    'Bastard Large': { EN: 'Bastard Large', NL: 'Bastard Large' },
+    'Geen Kamado Cutout': { EN: 'No Kamado Cutout', NL: 'Geen Kamado Cutout' },
+    '2–3 weken': { EN: '2–3 weeks', NL: '2–3 weken' },
+    '4–5 weken': { EN: '4–5 weeks', NL: '4–5 weken' },
+    '6–8 weken': { EN: '6–8 weeks', NL: '6–8 weken' },
+    '8–10 weken': { EN: '8–10 weeks', NL: '8–10 weken' },
+    '10–12 weken': { EN: '10–12 weeks', NL: '10–12 weken' },
+    '12+ weken': { EN: '12+ weeks', NL: '12+ weken' },
+  };
+
+  const translateSpec = (text) => {
+    if (!text) return text;
+    if (SPEC_TRANSLATIONS[text]) {
+      return language === 'EN' ? SPEC_TRANSLATIONS[text].EN : SPEC_TRANSLATIONS[text].NL;
+    }
+    return text;
   };
 
   const translatedCat = translateCategory(lead?.productType || customerCategory);
@@ -1005,27 +1129,132 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     );
   };
 
-  // Section 2.3: Auto-Loaded Message Templates & Multiple WhatsApp Photo Attachments
+  // Section 2.3: Dynamic Auto-Loaded Message Templates from Settings
+  const [activeMessageTemplates, setActiveMessageTemplates] = useState({
+    template1: language === 'NL'
+      ? `Beste {client_name}, hartelijk dank voor uw interesse in Vanuit Ambacht betreffende uw {product_category} aanvraag. We bespreken graag uw wensen in detail. Wanneer schikt het u om hierover te praten? Met vriendelijke groet, Tim & Bram - Vanuit Ambacht`
+      : `Dear {client_name}, thank you for reaching out to Vanuit Ambacht regarding your {product_category} inquiry. We would love to discuss your requirements in detail. When would it suit you to talk? Kind regards, Tim & Bram - Vanuit Ambacht`,
+    template2: language === 'NL'
+      ? `Beste {client_name}, we nemen graag even contact op over uw {product_category} aanvraag. Laat het ons weten als u vragen heeft of wanneer u beschikbaar bent voor een kort gesprek. Met vriendelijke groet, Tim & Bram - Vanuit Ambacht`
+      : `Dear {client_name}, we wanted to follow up regarding your {product_category} inquiry. Please let us know if you have any questions or when you would be available for a brief phone call. Kind regards, Tim & Bram - Vanuit Ambacht`,
+    template3: language === 'NL'
+      ? `Beste {client_name}, naar aanleiding van uw {product_category} project bij Vanuit Ambacht. We helpen u graag bij het afronden van de specificaties wanneer u er klaar voor bent. Met vriendelijke groet, Tim & Bram - Vanuit Ambacht`
+      : `Dear {client_name}, following up regarding your {product_category} project with Vanuit Ambacht. We are happy to help you finalize the specifications whenever you are ready. Best regards, Tim & Bram - Vanuit Ambacht`,
+  });
+
   const [selectedTemplate, setSelectedTemplate] = useState('template1');
   const [attachPhotos, setAttachPhotos] = useState(false);
   const [attachedPhotos, setAttachedPhotos] = useState([]);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const fileInputRef = useRef(null);
 
-  const handlePhotoUpload = (e) => {
+  // Quote Template Settings State
+  const [quoteTemplateConfig, setQuoteTemplateConfig] = useState({
+    woodTypes: 'Thermo Fraké Hout, Massief Teakhout, Eikenhout, Zwart Gepoedercoat Staal',
+    bbqPresets: 'Big Green Egg Large, Kamado Joe Classic III, The Bastard Large, Roestvrijstalen Grill',
+    buildTime: '3 - 5 weken levertijd',
+    paymentScheme: '50/50'
+  });
+
+  // Fetch dynamic settings (Templates, Custom Fieldsets, Quote Settings) from backend & keep synced
+  const loadSettingsConfig = useCallback(() => {
+    api.get('/settings/company').then((res) => {
+      if (res.success && res.data) {
+        if (res.data.messageTemplates && typeof res.data.messageTemplates === 'object' && Object.keys(res.data.messageTemplates).length > 0) {
+          setActiveMessageTemplates(res.data.messageTemplates);
+        }
+        if (res.data.fieldsetsConfig && typeof res.data.fieldsetsConfig === 'object' && Object.keys(res.data.fieldsetsConfig).length > 0) {
+          setDynamicFieldSets(prev => ({
+            ...prev,
+            ...res.data.fieldsetsConfig
+          }));
+        }
+        if (res.data.quoteTemplateConfig && typeof res.data.quoteTemplateConfig === 'object') {
+          setQuoteTemplateConfig(res.data.quoteTemplateConfig);
+        }
+      }
+    }).catch(err => console.warn('Could not load settings in WorkflowTracker:', err));
+  }, []);
+
+  useEffect(() => {
+    loadSettingsConfig();
+    window.addEventListener('app_data_changed', loadSettingsConfig);
+    return () => window.removeEventListener('app_data_changed', loadSettingsConfig);
+  }, [loadSettingsConfig]);
+
+  const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      const newPhotos = files.map((file, idx) => ({
-        id: Date.now() + idx,
-        name: file.name,
-        url: URL.createObjectURL(file)
-      }));
-      setAttachedPhotos(prev => [...prev, ...newPhotos]);
-      setAttachPhotos(true);
-      showToast(language === 'EN' ? `${files.length} photo(s) attached!` : `${files.length} foto('s) bijgevoegd!`);
+    if (files.length === 0) return;
+
+    setIsUploadingPhoto(true);
+    let successCount = 0;
+
+    try {
+      for (const file of files) {
+        const base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result;
+            const base64 = typeof result === 'string' && result.includes(',')
+              ? result.split(',')[1]
+              : result;
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const isLeadUuid = typeof lead?.id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lead.id);
+
+        const payload = {
+          fileName: file.name,
+          fileData: base64Data,
+          mimeType: file.type || 'image/jpeg',
+          documentType: 'cad_blueprint',
+          category: 'Designs',
+          description: `3D Render / Project Photo for Lead (${lead?.name || 'Lead'})`,
+          leadId: isLeadUuid ? lead.id : null,
+          isPublicForCustomer: true,
+          isPublicForPartner: true
+        };
+
+        const res = await api.post('/documents', payload);
+        if (res.success && res.data) {
+          successCount++;
+          const newDoc = {
+            id: res.data.id,
+            name: res.data.fileName || file.name,
+            url: res.data.fileUrl || URL.createObjectURL(file),
+            documentNumber: res.data.documentNumber
+          };
+          setAttachedPhotos(prev => [...prev, newDoc]);
+        } else {
+          showToast(res.error?.message || (language === 'EN' ? 'Failed to upload photo' : 'Upload mislukt'));
+        }
+      }
+
+      if (successCount > 0) {
+        setAttachPhotos(true);
+        showToast(language === 'EN' ? `${successCount} photo(s) uploaded & attached!` : `${successCount} foto('s) geüpload & bijgevoegd!`);
+      }
+    } catch (err) {
+      console.error('Error uploading photo:', err);
+      showToast(err.message || 'Upload error');
+    } finally {
+      setIsUploadingPhoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleRemovePhoto = (photoId) => {
+  const handleRemovePhoto = async (photoId) => {
+    const isDocUuid = typeof photoId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(photoId);
+    if (isDocUuid) {
+      try {
+        await api.delete(`/documents/${photoId}`);
+      } catch (err) {
+        console.warn('Could not delete document from vault:', err);
+      }
+    }
     const updated = attachedPhotos.filter(p => p.id !== photoId);
     setAttachedPhotos(updated);
     if (updated.length === 0) setAttachPhotos(false);
@@ -1033,23 +1262,54 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   };
 
   const getTemplateText = (tmplId) => {
-    let rawText = (tmplId === 'template1'
-      ? `Dear {client_name}, thank you for reaching out to Vanuit Ambacht regarding your {product_category} inquiry. We would love to discuss your requirements in detail. When would it suit you to talk? Kind regards, Tim & Bram - Vanuit Ambacht`
-      : tmplId === 'template2'
-      ? `Dear {client_name}, we wanted to follow up regarding your {product_category} inquiry. Please let us know if you have any questions or when you would be available for a brief phone call. Kind regards, Tim & Bram - Vanuit Ambacht`
-      : `Dear {client_name}, following up regarding your {product_category} project with Vanuit Ambacht. We are happy to help you finalize the specifications whenever you are ready. Best regards, Tim & Bram - Vanuit Ambacht`);
+    const rawVal = activeMessageTemplates[tmplId];
+    let rawText = '';
+    if (typeof rawVal === 'object' && rawVal !== null && rawVal.text) {
+      rawText = rawVal.text;
+    } else if (typeof rawVal === 'string' && rawVal.trim()) {
+      rawText = rawVal;
+    } else if (tmplId === 'template1') {
+      rawText = language === 'NL'
+        ? `Beste {client_name}, hartelijk dank voor uw interesse in Vanuit Ambacht betreffende uw {product_category} aanvraag. We bespreken graag uw wensen in detail. Wanneer schikt het u om hierover te praten? Met vriendelijke groet, Tim & Bram - Vanuit Ambacht`
+        : `Dear {client_name}, thank you for reaching out to Vanuit Ambacht regarding your {product_category} inquiry. We would love to discuss your requirements in detail. When would it suit you to talk? Kind regards, Tim & Bram - Vanuit Ambacht`;
+    } else if (tmplId === 'template2') {
+      rawText = language === 'NL'
+        ? `Beste {client_name}, we nemen graag even contact op over uw {product_category} aanvraag. Laat het ons weten als u vragen heeft of wanneer u beschikbaar bent voor een kort gesprek. Met vriendelijke groet, Tim & Bram - Vanuit Ambacht`
+        : `Dear {client_name}, we wanted to follow up regarding your {product_category} inquiry. Please let us know if you have any questions or when you would be available for a brief phone call. Kind regards, Tim & Bram - Vanuit Ambacht`;
+    } else {
+      rawText = language === 'NL'
+        ? `Beste {client_name}, naar aanleiding van uw {product_category} project bij Vanuit Ambacht. We helpen u graag bij het afronden van de specificaties wanneer u er klaar voor bent. Met vriendelijke groet, Tim & Bram - Vanuit Ambacht`
+        : `Dear {client_name}, following up regarding your {product_category} project with Vanuit Ambacht. We are happy to help you finalize the specifications whenever you are ready. Best regards, Tim & Bram - Vanuit Ambacht`;
+    }
 
     return rawText
       .replace(/\{client_name\}/g, customerName)
-      .replace(/\{product_category\}/g, translatedCat)
+      .replace(/\{product_category\}/g, (translatedCat || 'outdoor living').toLowerCase())
       .replace(/\{company_name\}/g, 'Vanuit Ambacht');
+  };
+
+  const renderTemplateOptions = () => {
+    return Object.entries(activeMessageTemplates).map(([key, val], idx) => {
+      const isObj = typeof val === 'object' && val !== null;
+      const title = isObj && val.title
+        ? val.title
+        : key === 'template1' ? (language === 'EN' ? 'Template 1: Initial Inquiry Response' : 'Sjabloon 1: Eerste Aanvraag Reactie')
+        : key === 'template2' ? (language === 'EN' ? 'Template 2: 1st Follow-up Message' : 'Sjabloon 2: 1e Vervolgbericht')
+        : key === 'template3' ? (language === 'EN' ? 'Template 3: 2nd Follow-up Message' : 'Sjabloon 3: 2e Vervolgbericht')
+        : (language === 'EN' ? `Template ${idx + 1}: ${key}` : `Sjabloon ${idx + 1}: ${key}`);
+      return (
+        <option key={key} value={key}>
+          {title}
+        </option>
+      );
+    });
   };
 
   const [customMessageText, setCustomMessageText] = useState(() => getTemplateText('template1'));
 
   useEffect(() => {
     setCustomMessageText(getTemplateText(selectedTemplate));
-  }, [selectedTemplate, lead, language]);
+  }, [selectedTemplate, activeMessageTemplates, lead, language]);
   
   // Interactive Auto-Fill Modal Forms
   const [quoteForm, setQuoteForm] = useState({
@@ -1534,7 +1794,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         {dynamicFieldSets[activeCategoryKey].map((field) => (
                           <div key={field.id} className="space-y-1">
                             <label className="block text-[10px] font-bold text-dark/60 uppercase">
-                              {field.label} {field.required && <span className="text-red-500">*</span>}
+                              {translateSpec(field.label)} {field.required && <span className="text-red-500">*</span>}
                             </label>
                             {field.type === 'select' ? (
                               <select
@@ -1543,7 +1803,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                                 className="w-full px-2.5 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-semibold focus:ring-1 focus:ring-primary/20 outline-none"
                               >
                                 {field.options.map((opt, i) => (
-                                  <option key={i} value={opt}>{opt}</option>
+                                  <option key={i} value={opt}>{translateSpec(opt)}</option>
                                 ))}
                               </select>
                             ) : (
@@ -1551,7 +1811,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                                 type="text"
                                 value={specFormValues[field.id] || ''}
                                 onChange={(e) => setSpecFormValues(prev => ({ ...prev, [field.id]: e.target.value }))}
-                                placeholder={`Vul ${field.label} in...`}
+                                placeholder={language === 'EN' ? `Enter ${translateSpec(field.label)}...` : `Vul ${field.label} in...`}
                                 className="w-full px-2.5 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-semibold focus:ring-1 focus:ring-primary/20 outline-none"
                               />
                             )}
@@ -1568,7 +1828,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                   <div>
                     <h4 className="font-bold text-dark mb-1">Initial Intake Notes</h4>
                     <p className="p-3 bg-white/60 rounded-lg border border-[#D6CFC2]/40 text-dark/70 italic">
-                      {lead?.notes || lead?.intakeNotes || (language === 'EN' ? 'No initial notes provided during lead intake.' : 'Geen intake opmerkingen ingevoerd.')}
+                      {intakeNotes || lead?.notes || lead?.intakeNotes || (language === 'EN' ? 'No initial notes provided during lead intake.' : 'Geen intake opmerkingen ingevoerd.')}
                     </p>
                   </div>
 
@@ -1638,9 +1898,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         onChange={(e) => setSelectedTemplate(e.target.value)}
                         className="px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-body text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 font-medium shadow-2xs"
                       >
-                        <option value="template1">Template 1: Initial Inquiry Response</option>
-                        <option value="template2">Template 2: 1st Follow-up Message</option>
-                        <option value="template3">Template 3: 2nd Follow-up Message</option>
+                        {renderTemplateOptions()}
                       </select>
                     </div>
 
@@ -1668,10 +1926,11 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
 
                         <button
                           type="button"
+                          disabled={isUploadingPhoto}
                           onClick={() => fileInputRef.current?.click()}
-                          className="px-2.5 py-1 bg-[#EDE8DF] hover:bg-[#D6CFC2]/60 text-primary font-bold text-[10.5px] rounded-lg border border-[#D6CFC2] flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                          className="px-2.5 py-1 bg-[#EDE8DF] hover:bg-[#D6CFC2]/60 text-primary font-bold text-[10.5px] rounded-lg border border-[#D6CFC2] flex items-center gap-1 cursor-pointer transition-all active:scale-95 disabled:opacity-60"
                         >
-                          <span>📁 Upload File / Render</span>
+                          <span>{isUploadingPhoto ? '⏳ Uploading...' : '📁 Upload File / Render'}</span>
                         </button>
 
                         <input
@@ -1717,11 +1976,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             <span>📎 {photo.name}</span>
                             <button
                               type="button"
-                              onClick={() => {
-                                const next = attachedPhotos.filter(p => p.id !== photo.id);
-                                setAttachedPhotos(next);
-                                if (next.length === 0) setAttachPhotos(false);
-                              }}
+                              onClick={() => handleRemovePhoto(photo.id)}
                               className="text-emerald-700 hover:text-red-600 font-bold ml-1 cursor-pointer"
                             >
                               ×
@@ -1914,10 +2169,10 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             onChange={(e) => setStep2Material(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-semibold text-dark cursor-pointer focus:ring-2 focus:ring-primary/20"
                           >
-                            <option value="Douglas">Douglas ▾</option>
-                            <option value="Thermo Fraké Hout">Thermo Fraké Hout ▾</option>
-                            <option value="Massief Teakhout">Massief Teakhout ▾</option>
-                            <option value="Eikenhout">Eikenhout ▾</option>
+                            <option value="Douglas">{language === 'EN' ? 'Douglas Fir' : 'Douglas'} ▾</option>
+                            <option value="Thermo Fraké Hout">{language === 'EN' ? 'Thermo Fraké Wood' : 'Thermo Fraké Hout'} ▾</option>
+                            <option value="Massief Teakhout">{language === 'EN' ? 'Solid Teak Wood' : 'Massief Teakhout'} ▾</option>
+                            <option value="Eikenhout">{language === 'EN' ? 'Oak Wood' : 'Eikenhout'} ▾</option>
                           </select>
                         </div>
 
@@ -2077,9 +2332,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         onChange={(e) => setSelectedTemplate(e.target.value)}
                         className="px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-body text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 font-medium shadow-2xs"
                       >
-                        <option value="template1">Template 1: Initial Inquiry Response</option>
-                        <option value="template2">Template 2: 1st Follow-up Message</option>
-                        <option value="template3">Template 3: 2nd Follow-up Message</option>
+                        {renderTemplateOptions()}
                       </select>
                     </div>
 
@@ -2337,12 +2590,12 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             disabled={partnerPriceLocked}
                             className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs font-bold text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
                           >
-                            <option>2–3 weken</option>
-                            <option>4–5 weken</option>
-                            <option>6–8 weken</option>
-                            <option>8–10 weken</option>
-                            <option>10–12 weken</option>
-                            <option>12+ weken</option>
+                            <option value="2–3 weken">{language === 'EN' ? '2–3 weeks' : '2–3 weken'}</option>
+                            <option value="4–5 weken">{language === 'EN' ? '4–5 weeks' : '4–5 weken'}</option>
+                            <option value="6–8 weken">{language === 'EN' ? '6–8 weeks' : '6–8 weken'}</option>
+                            <option value="8–10 weken">{language === 'EN' ? '8–10 weeks' : '8–10 weken'}</option>
+                            <option value="10–12 weken">{language === 'EN' ? '10–12 weeks' : '10–12 weken'}</option>
+                            <option value="12+ weken">{language === 'EN' ? '12+ weeks' : '12+ weken'}</option>
                           </select>
                         </div>
                       </div>
@@ -2476,9 +2729,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         onChange={(e) => setSelectedTemplate(e.target.value)}
                         className="px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-body text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 font-medium shadow-2xs"
                       >
-                        <option value="template1">Template 1: Initial Inquiry Response</option>
-                        <option value="template2">Template 2: 1st Follow-up Message</option>
-                        <option value="template3">Template 3: Quote Ready Notification</option>
+                        {renderTemplateOptions()}
                       </select>
                     </div>
 
@@ -2930,7 +3181,11 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         <div className="space-y-2 text-xs bg-white p-4 rounded-xl border border-[#D6CFC2]/60">
                           <span className="font-bold text-primary block uppercase text-[10px]">Garantie & Betalingsvoorwaarden</span>
                           <ul className="list-disc pl-4 space-y-1 text-dark/70">
-                            <li>50% aanbetaling bij opdracht, 50% bij oplevering</li>
+                            <li>
+                              {quoteTemplateConfig?.paymentScheme === '40/40/20'
+                                ? '40% bij akkoord, 40% bij start bouw, 20% bij oplevering'
+                                : '50% aanbetaling bij opdracht, 50% bij oplevering'}
+                            </li>
                             <li>10 jaar garantie op de houten constructie</li>
                             <li>Offerte is 30 dagen geldig na dagtekening</li>
                           </ul>
@@ -3671,9 +3926,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         onChange={(e) => setSelectedTemplate(e.target.value)}
                         className="px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-body text-dark focus:outline-none focus:ring-2 focus:ring-primary/20 font-medium shadow-2xs"
                       >
-                        <option value="template1">Template 1: Initial Inquiry Response</option>
-                        <option value="template2">Template 2: 1st Follow-up Message</option>
-                        <option value="template3">Template 3: 2nd Follow-up Message</option>
+                        {renderTemplateOptions()}
                       </select>
                     </div>
 

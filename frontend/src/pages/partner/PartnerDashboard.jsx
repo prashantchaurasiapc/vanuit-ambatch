@@ -355,7 +355,7 @@ export default function PartnerDashboard() {
               <div className="grid grid-cols-2 gap-3 p-3 bg-white/70 rounded-xl">
                 <div>
                   <span className="text-dark/50 font-medium block">Client Name</span>
-                  <span className="font-bold text-dark">{selectedProject.customer}</span>
+                  <span className="font-bold text-dark">{selectedProject.customer || selectedProject.customerName || 'Klant'}</span>
                 </div>
                 <div>
                   <span className="text-dark/50 font-medium block">Deadline</span>

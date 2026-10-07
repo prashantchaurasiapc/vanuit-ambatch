@@ -4,43 +4,43 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Receipt, FileText, Users, LandPlot, Building2, PieChart } from 'lucide-react';
 
 export default function BookkeepingHeader({ activeTab = 'quotes' }) {
-  const { language } = useLanguage();
+  const { t } = useLanguage();
   const location = useLocation();
 
   const tabs = [
     {
       id: 'quotes',
-      name: language === 'EN' ? 'Quotes & Proposals' : 'Offertes (Quotes)',
+      name: t('common.quotes'),
       path: '/admin/quotes',
       icon: Receipt
     },
     {
       id: 'invoices',
-      name: language === 'EN' ? 'Invoices' : 'Facturen (Invoices)',
+      name: t('common.invoices'),
       path: '/admin/invoices',
       icon: FileText
     },
     {
       id: 'customers',
-      name: language === 'EN' ? 'Customers' : 'Klanten (Customers)',
+      name: t('common.customers'),
       path: '/admin/customers',
       icon: Users
     },
     {
       id: 'bank',
-      name: language === 'EN' ? 'Bank & Transactions' : 'Bank & Transacties',
+      name: t('common.bank'),
       path: '/admin/bank',
       icon: LandPlot
     },
     {
       id: 'taxes',
-      name: language === 'EN' ? 'Taxes (VAT)' : 'BTW Aangifte (Taxes)',
+      name: t('common.taxes'),
       path: '/admin/taxes',
       icon: Building2
     },
     {
       id: 'profit-loss',
-      name: language === 'EN' ? 'Profit & Loss' : 'Winst & Verlies',
+      name: t('common.profitLoss'),
       path: '/admin/profit-loss',
       icon: PieChart
     }
@@ -55,7 +55,7 @@ export default function BookkeepingHeader({ activeTab = 'quotes' }) {
             ADMIN PORTAL · BOOKKEEPING & FINANCE
           </span>
           <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#33422C] mt-0.5">
-            {language === 'EN' ? 'Bookkeeping Overview' : 'Boekhouding & Financieel Overzicht'}
+            {t('finance.title')}
           </h2>
         </div>
 

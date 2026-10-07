@@ -6,13 +6,11 @@ import { LanguageProvider } from './context/LanguageContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import App from './App.jsx'
 import './index.css'
+import './i18n'
 
-// Ensure app_language is set to EN by default
-if (!localStorage.getItem('testing_clean_v7')) {
-  localStorage.clear();
-  localStorage.setItem('testing_clean_v7', 'true');
+// Ensure app_language default is initialized if not present
+if (!localStorage.getItem('app_language')) {
   localStorage.setItem('app_language', 'EN');
-  console.log("Local storage re-initialized with rich connected seed data in English.");
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

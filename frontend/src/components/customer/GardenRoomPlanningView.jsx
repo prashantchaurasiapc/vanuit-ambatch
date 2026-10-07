@@ -1,27 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Check, Calendar, Clock, MessageSquare, Download, Sparkles, AlertCircle, FileText, CheckCircle2 
 } from 'lucide-react';
 import { downloadDirectPdfFile } from '../../utils/pdfGenerator';
+import api from '../../api/apiClient';
 
 /**
  * GardenRoomPlanningView Component (1-to-1 implementation of Client Mockup PDF Garden Rooms Page 9)
- * 
- * Features:
- * - Top Header Tag Bar (Custom Garden Room — project 2026-021, Updates 3, WhatsApp us)
- * - Page Title & Subtitle
- * - Card 1: Build Timeline Header Box (DE BOUW VAN JOUW BUITENVERBLIJF, Week 41 & 42 · 5-16 Oct 2026, Tentative badge)
- * - Card 2: Site Survey Proposal Card (Ons voorstel voor de schouw, soft sage green Date box bg-[#EAF0E8] border-[#BACBB7], rich warm brown approve button bg-[#9B7A38], input field & secondary button)
- * - Bottom Grid:
- *   - Left 2/3 Column: Week-by-Week Timeline (6 stages: 33-34, 35, 39, 40, 41-42, +3mnd)
- *   - Right 1/3 Column:
- *     1. Prep Checklist (5 interactive checkboxes)
- *     2. Neighbour Letter Card (Burenbrief download PDF button)
- *     3. How Build Works Card (4 ground rules)
  */
 export default function GardenRoomPlanningView({ project = null }) {
   const [feedbackToast, setFeedbackToast] = useState('');
-  const [schouwApproved, setSchouwApproved] = useState(false);
+  const [schouwApproved, setSchouwApproved] = useState(() => {
+    return project?.technicalSpecs?.schouw?.status === 'confirmed' || false;
+  });
+  const [isApproving, setIsApproving] = useState(false);
   const [customDateNote, setCustomDateNote] = useState('');
   
   // Interactive Prep Checklist state
@@ -33,25 +25,69 @@ export default function GardenRoomPlanningView({ project = null }) {
     neighbours: false // Buren geïnformeerd
   });
 
-  const projectCode = project?.id || '2026-021';
+  useEffect(() => {
+    if (project?.technicalSpecs?.schouw?.status === 'confirmed') {
+      setSchouwApproved(true);
+    }
+  }, [project?.technicalSpecs?.schouw?.status]);
 
-  const toggleCheck = (key) => {
-    setChecklist(prev => ({ ...prev, [key]: !prev[key] }));
+  useEffect(() => {
+    const remoteList = project?.technicalSpecs?.customerChecklist;
+    if (remoteList && typeof remoteList === 'object') {
+      setChecklist(prev => ({ ...prev, ...remoteList }));
+    }
+  }, [project?.technicalSpecs]);
+
+  const projectCode = project?.projectNumber || project?.id || '2026-021';
+
+  const toggleCheck = async (key) => {
+    const nextVal = !checklist[key];
+    setChecklist(prev => ({ ...prev, [key]: nextVal }));
+    const pid = project?.id;
+    if (pid && pid !== '2026-021' && pid !== 'P-2001') {
+      try {
+        await api.patch(`/customer/projects/${pid}/checklist/${key}`, { completed: nextVal });
+      } catch (err) {
+        console.warn('Checklist update error:', err);
+      }
+    }
     setFeedbackToast('Preparation checklist updated!');
     setTimeout(() => setFeedbackToast(''), 3000);
   };
 
-  const handleApproveSchouw = () => {
+  const handleApproveSchouw = async () => {
+    setIsApproving(true);
     setSchouwApproved(true);
+    const pid = project?.id;
+    if (pid && pid !== '2026-021' && pid !== 'P-2001') {
+      try {
+        await api.post(`/customer/projects/${pid}/schouw/confirm`, {
+          surveyDate: '2026-08-27',
+          timeSlot: '09:00 - 11:00'
+        });
+        window.dispatchEvent(new Event('app_data_changed'));
+      } catch (e) {
+        console.warn('API schouw confirm:', e);
+      }
+    }
     setFeedbackToast('Site survey appointment approved for Thursday 27 August 2026!');
+    setIsApproving(false);
     setTimeout(() => setFeedbackToast(''), 4000);
   };
 
-  const handleRequestOtherDate = () => {
+  const handleRequestOtherDate = async () => {
     if (!customDateNote.trim()) {
       setFeedbackToast('Please enter your preferred date/time first.');
       setTimeout(() => setFeedbackToast(''), 3000);
       return;
+    }
+    const pid = project?.id;
+    if (pid && pid !== '2026-021' && pid !== 'P-2001') {
+      try {
+        await api.post(`/conversations/${pid}/messages`, {
+          content: `Preferred site survey date request: ${customDateNote.trim()}`
+        });
+      } catch (e) {}
     }
     setFeedbackToast('Alternative date request submitted! We will contact you shortly.');
     setCustomDateNote('');

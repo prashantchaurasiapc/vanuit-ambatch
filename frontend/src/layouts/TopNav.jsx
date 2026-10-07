@@ -3,13 +3,36 @@ import { Bell, Search, ChevronDown, User, LogOut, Settings, Check, Clock, FileTe
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../context/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
-function getBreadcrumb(pathname, t) {
-  return pathname.split('/').filter(Boolean).map(p => {
+function getBreadcrumb(pathname, search, t) {
+  const parts = pathname.split('/').filter(Boolean).map(p => {
     const key = `breadcrumbs.${p.toLowerCase()}`;
     const trans = t(key);
     return trans !== key ? trans : p.charAt(0).toUpperCase() + p.slice(1);
   });
+
+  if (search) {
+    const params = new URLSearchParams(search);
+    const tab = params.get('tab');
+    if (tab) {
+      const tabTitles = {
+        'payments': 'Payments',
+        'planning': 'Planning & Build',
+        'design': 'Design & Renders',
+        'handover': 'Handover & Aftercare',
+        'mobile-view': 'Mobile View',
+      };
+      const title = tabTitles[tab] || (tab.charAt(0).toUpperCase() + tab.slice(1));
+      if (parts.length > 0 && parts[parts.length - 1] === 'Project') {
+        parts[parts.length - 1] = title;
+      } else {
+        parts.push(title);
+      }
+    }
+  }
+
+  return parts;
 }
 
 const ADMIN_NOTIFS = [
@@ -41,7 +64,7 @@ export default function TopNav() {
   const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
-  const crumbs = getBreadcrumb(location.pathname, t);
+  const crumbs = getBreadcrumb(location.pathname, location.search, t);
   const cleanDisplayName = (name) => {
     if (!name) return 'Admin User';
     if (name.includes('Tim') || name.includes('Bram')) return 'Tim & Bram';
@@ -153,51 +176,8 @@ export default function TopNav() {
 
       {/* Right Controls */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
-        {/* Language Switcher — compact globe icon with dropdown */}
-        <div className="relative z-50" ref={langDropdownRef}>
-          <button
-            onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#D6CFC2] bg-[#F8F7F4] hover:bg-[#EDE8DF] text-dark/80 text-xs font-semibold font-body transition-all"
-            title={language === 'NL' ? 'Taal wijzigen' : 'Change language'}
-          >
-            <Globe className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-            <span className="font-mono text-xs font-bold text-primary">{language}</span>
-            <ChevronDown className={`w-3 h-3 text-dark/40 transition-transform ${langDropdownOpen ? 'rotate-180' : ''}`} />
-          </button>
-
-          {/* Language dropdown */}
-          {langDropdownOpen && (
-            <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-1.5 w-36 bg-[#F8F7F4] border border-[#C4BEB3] rounded-xl shadow-2xl z-[9999] overflow-hidden font-body text-xs">
-              <div className="px-3 py-2 border-b border-[#D6CFC2] text-[10px] font-bold text-dark/40 uppercase tracking-wider">
-                Taal / Language
-              </div>
-              <button
-                onClick={() => { setLanguage('NL'); setLangDropdownOpen(false); }}
-                className={`flex items-center gap-2.5 w-full px-3 py-2.5 text-left transition-colors ${
-                  language === 'NL'
-                    ? 'bg-primary/10 text-primary font-bold'
-                    : 'text-dark/70 hover:bg-[#D6CFC2]/40'
-                }`}
-              >
-                <span className="text-base">🇳🇱</span>
-                <span>Nederlands</span>
-                {language === 'NL' && <Check className="w-3 h-3 ml-auto text-primary" />}
-              </button>
-              <button
-                onClick={() => { setLanguage('EN'); setLangDropdownOpen(false); }}
-                className={`flex items-center gap-2.5 w-full px-3 py-2.5 text-left transition-colors ${
-                  language === 'EN'
-                    ? 'bg-primary/10 text-primary font-bold'
-                    : 'text-dark/70 hover:bg-[#D6CFC2]/40'
-                }`}
-              >
-                <span className="text-base">🇬🇧</span>
-                <span>English</span>
-                {language === 'EN' && <Check className="w-3 h-3 ml-auto text-primary" />}
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Language Switcher (Google Translate Controlled Component) */}
+        <LanguageSwitcher />
 
         {/* Search */}
         <div className="relative hidden md:block">

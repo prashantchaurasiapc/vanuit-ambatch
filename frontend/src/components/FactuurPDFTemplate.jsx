@@ -11,23 +11,26 @@ export default function FactuurPDFTemplate({ invoice, companyDetails }) {
       setLoadedCompanyInfo(companyDetails);
       return;
     }
-    let isMounted = true;
-    api.get('/settings/company').then(res => {
-      if (isMounted && res.success && res.data) {
-        setLoadedCompanyInfo(res.data);
-      }
-    }).catch(() => {});
-    return () => { isMounted = false; };
+    const loadComp = () => {
+      api.get('/settings/company').then(res => {
+        if (res.success && res.data) {
+          setLoadedCompanyInfo(res.data);
+        }
+      }).catch(() => {});
+    };
+    loadComp();
+    window.addEventListener('app_data_changed', loadComp);
+    return () => window.removeEventListener('app_data_changed', loadComp);
   }, [companyDetails]);
 
   const companyInfo = loadedCompanyInfo || companyDetails || {};
 
-  const compName = companyInfo.name || 'Vanuit Ambacht';
+  const compName = companyInfo.companyName || companyInfo.name || 'Vanuit Ambacht';
   const compAddress = companyInfo.address || 'Koningshof 33, 3451 LM Vleuten';
   const compEmail = companyInfo.email || 'info@vanuitambacht.nl';
   const compPhone = companyInfo.phone || '06 82 00 80 25';
-  const compKvk = companyInfo.kvk || 'KVK 93097429';
-  const compVat = companyInfo.vatNumber || 'BTW NL866264863B01';
+  const compKvk = companyInfo.kvkNumber ? `KVK ${companyInfo.kvkNumber}` : companyInfo.kvk || 'KVK 93097429';
+  const compVat = companyInfo.btwNumber ? `BTW ${companyInfo.btwNumber}` : companyInfo.vatNumber || 'BTW NL866264863B01';
   const compIban = companyInfo.iban || 'NL27 ABNA 0132 2698 56';
   const compWebsite = companyInfo.website || 'vanuitambacht.nl';
 

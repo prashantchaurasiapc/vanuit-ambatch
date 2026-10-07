@@ -679,35 +679,12 @@ export function LanguageProvider({ children }) {
     return localStorage.getItem('app_language') || 'EN';
   });
 
-  // ── Google Translate integration ────────────────────────────────
-  // When language changes, forward it to Google Translate so any
-  // text not covered by t() keys is also translated at the DOM level.
-  // The existing t() / tStatus / DICTIONARY system is unchanged.
   const setLanguage = (lang) => {
-    setLanguageState(lang);
-    localStorage.setItem('app_language', lang);
-
-    // Forward to Google Translate (defined in index.html)
-    if (typeof window.googleTranslatePage === 'function') {
-      // Google Translate uses lowercase ISO codes: 'en' | 'nl'
-      const gtLang = lang === 'NL' ? 'nl' : 'en';
-      window.googleTranslatePage(gtLang);
-    }
+    const formatted = lang ? String(lang).toUpperCase() : 'EN';
+    setLanguageState(formatted);
+    localStorage.setItem('app_language', formatted);
   };
 
-  // Re-apply Google Translate on initial page load / navigation if NL was saved.
-  // This ensures language persists across React Router navigations and refreshes.
-  useEffect(() => {
-    const saved = localStorage.getItem('app_language') || 'EN';
-    if (saved === 'NL' && typeof window.googleTranslatePage === 'function') {
-      // Small delay to allow Google Translate SDK to finish initialising
-      const timer = setTimeout(() => {
-        window.googleTranslatePage('nl');
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, []);
-  // ── End Google Translate integration ────────────────────────────
 
   // Do not mutate the rendered DOM to translate text. The former
   // MutationObserver solution repeatedly scanned the entire application after
@@ -717,21 +694,33 @@ export function LanguageProvider({ children }) {
 
   // Nested object lookup helper e.g. t('common.search') or t('dashboard.totalLeads')
   const t = (path, params = {}) => {
+    if (!path || typeof path !== 'string') return '';
     const keys = path.split('.');
-    let result = DICTIONARY[language];
     
+    // 1. Try selected language
+    let result = DICTIONARY[language];
+    let found = true;
     for (const key of keys) {
-      if (result && result[key] !== undefined) {
+      if (result && typeof result === 'object' && result[key] !== undefined) {
         result = result[key];
       } else {
-        // Fallback to English dictionary
-        let fallback = DICTIONARY['EN'];
-        for (const k of keys) {
-          fallback = fallback?.[k];
-        }
-        result = fallback || path;
+        found = false;
         break;
       }
+    }
+    
+    // 2. Fallback to English dictionary if not found or empty
+    if (!found || result === undefined) {
+      let fallback = DICTIONARY['EN'];
+      for (const k of keys) {
+        if (fallback && typeof fallback === 'object' && fallback[k] !== undefined) {
+          fallback = fallback[k];
+        } else {
+          fallback = undefined;
+          break;
+        }
+      }
+      result = fallback !== undefined ? fallback : path;
     }
 
     if (typeof result === 'string' && params) {

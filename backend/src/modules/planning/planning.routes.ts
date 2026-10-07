@@ -62,7 +62,7 @@ export const planningRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.post(
     '/events',
-    { preHandler: [fastify.authenticate, fastify.authorize(['admin'])] },
+    { preHandler: [fastify.authenticate, fastify.authorize(['admin', 'partner'])] },
     async (request, reply) => {
       const parsed = createPlanningEventSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -85,7 +85,7 @@ export const planningRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.patch(
     '/events/:id',
-    { preHandler: [fastify.authenticate, fastify.authorize(['admin'])] },
+    { preHandler: [fastify.authenticate, fastify.authorize(['admin', 'partner'])] },
     async (request, reply) => {
       const paramCheck = planningEventIdSchema.safeParse(request.params);
       if (!paramCheck.success) {
