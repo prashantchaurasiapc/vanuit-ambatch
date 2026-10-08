@@ -437,10 +437,25 @@ export class QuoteService {
   }
 
   /**
+   * Helper to resolve a quote record by UUID or human-readable quoteNumber (e.g. Q-2026-003)
+   */
+  async findQuoteRecord(idOrNumber: string) {
+    if (!idOrNumber || typeof idOrNumber !== 'string') return null;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrNumber.trim());
+    const [quote] = await db
+      .select()
+      .from(quotes)
+      .where(isUuid ? eq(quotes.id, idOrNumber.trim()) : eq(quotes.quoteNumber, idOrNumber.trim()))
+      .limit(1);
+    return quote || null;
+  }
+
+  /**
    * GET /api/quotes/:id
-   * Complete Quote Dossier with all versions & line items
+   * Complete Quote Dossier with all versions & line items (supports UUID or QuoteNumber)
    */
   async getById(id: string, user: JwtTokenPayload): Promise<QuoteDto> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id.trim());
     const [row] = await db
       .select({
         quote: quotes,
@@ -450,12 +465,14 @@ export class QuoteService {
       .from(quotes)
       .leftJoin(customers, eq(quotes.customerId, customers.id))
       .leftJoin(leads, eq(quotes.leadId, leads.id))
-      .where(eq(quotes.id, id))
+      .where(isUuid ? eq(quotes.id, id.trim()) : eq(quotes.quoteNumber, id.trim()))
       .limit(1);
 
     if (!row) {
       throw new QuoteError('Quote not found', 404, 'NOT_FOUND');
     }
+
+    const realQuoteId = row.quote.id;
 
     // Customer security check
     if (user.role === 'customer' && row.quote.customerId !== user.profileId) {
@@ -466,7 +483,7 @@ export class QuoteService {
     const rawVersions = await db
       .select()
       .from(quoteVersions)
-      .where(eq(quoteVersions.quoteId, id))
+      .where(eq(quoteVersions.quoteId, realQuoteId))
       .orderBy(desc(quoteVersions.versionNumber));
 
     // Load line items for all versions
@@ -650,7 +667,7 @@ export class QuoteService {
    * Update top-level quote properties (dates, productType, customer)
    */
   async update(id: string, input: UpdateQuoteInput, adminUserId: string): Promise<QuoteDto> {
-    const [existing] = await db.select().from(quotes).where(eq(quotes.id, id)).limit(1);
+    const existing = await this.findQuoteRecord(id);
     if (!existing) {
       throw new QuoteError('Quote not found', 404, 'NOT_FOUND');
     }
@@ -666,8 +683,8 @@ export class QuoteService {
     if (input.customerId !== undefined) updateData.customerId = input.customerId;
     if (input.leadId !== undefined) updateData.leadId = input.leadId;
 
-    await db.update(quotes).set(updateData).where(eq(quotes.id, id));
-    return await this.getById(id, { sub: adminUserId, role: 'admin', email: '', fullName: '' });
+    await db.update(quotes).set(updateData).where(eq(quotes.id, existing.id));
+    return await this.getById(existing.id, { sub: adminUserId, role: 'admin', email: '', fullName: '' });
   }
 
   /**
@@ -675,7 +692,7 @@ export class QuoteService {
    * Continuous draft autosave: updates current draft, or spawns new revision if current version is already sent
    */
   async saveDraftVersion(quoteId: string, input: SaveDraftVersionInput, adminUserId: string): Promise<QuoteDto> {
-    const [quote] = await db.select().from(quotes).where(eq(quotes.id, quoteId)).limit(1);
+    const quote = await this.findQuoteRecord(quoteId);
     if (!quote) {
       throw new QuoteError('Quote not found', 404, 'NOT_FOUND');
     }
@@ -688,7 +705,7 @@ export class QuoteService {
     const [currentVersion] = await db
       .select()
       .from(quoteVersions)
-      .where(and(eq(quoteVersions.quoteId, quoteId), eq(quoteVersions.isCurrent, true)))
+      .where(and(eq(quoteVersions.quoteId, quote.id), eq(quoteVersions.isCurrent, true)))
       .limit(1);
 
     await db.transaction(async (tx) => {
@@ -705,7 +722,7 @@ export class QuoteService {
         const [newDraftV] = await tx
           .insert(quoteVersions)
           .values({
-            quoteId,
+            quoteId: quote.id,
             versionNumber: nextVersionNum,
             isCurrent: true,
             createdByUserId: adminUserId,
@@ -813,18 +830,18 @@ export class QuoteService {
       }
 
       // Update quote timestamp
-      await tx.update(quotes).set({ updatedAt: new Date() }).where(eq(quotes.id, quoteId));
+      await tx.update(quotes).set({ updatedAt: new Date() }).where(eq(quotes.id, quote.id));
     });
 
-    return await this.getById(quoteId, { sub: adminUserId, role: 'admin', email: '', fullName: '' });
+    return await this.getById(quote.id, { sub: adminUserId, role: 'admin', email: '', fullName: '' });
   }
 
   /**
    * POST /api/quotes/:id/publish
-   * Publish & send official quote proposal (atomic transaction)
+   * Publish & send official quote proposal (atomic transaction - supports UUID or quoteNumber)
    */
   async publish(quoteId: string, input: PublishQuoteInput, adminUserId: string): Promise<QuoteDto> {
-    const [quote] = await db.select().from(quotes).where(eq(quotes.id, quoteId)).limit(1);
+    const quote = await this.findQuoteRecord(quoteId);
     if (!quote) {
       throw new QuoteError('Quote not found', 404, 'NOT_FOUND');
     }
@@ -836,7 +853,7 @@ export class QuoteService {
     const [currentVersion] = await db
       .select()
       .from(quoteVersions)
-      .where(and(eq(quoteVersions.quoteId, quoteId), eq(quoteVersions.isCurrent, true)))
+      .where(and(eq(quoteVersions.quoteId, quote.id), eq(quoteVersions.isCurrent, true)))
       .limit(1);
 
     if (!currentVersion) {
@@ -858,7 +875,7 @@ export class QuoteService {
           sentAt: new Date(),
           updatedAt: new Date(),
         })
-        .where(eq(quotes.id, quoteId));
+        .where(eq(quotes.id, quote.id));
 
       // Advance linked lead to Step 5 (Review & send)
       if (quote.leadId) {
@@ -884,7 +901,7 @@ export class QuoteService {
       }
     });
 
-    return await this.getById(quoteId, { sub: adminUserId, role: 'admin', email: '', fullName: '' });
+    return await this.getById(quote.id, { sub: adminUserId, role: 'admin', email: '', fullName: '' });
   }
 
   /**
@@ -1012,7 +1029,18 @@ export class QuoteService {
    */
   async acceptAndConvert(quoteId: string, note?: string | null, adminUserId?: string): Promise<{ quote: QuoteDto; project: any; upfrontInvoice: any; finalInvoice: any }> {
     const fullQuote = await this.getById(quoteId, { sub: adminUserId || '', role: 'admin', email: '', fullName: '' });
+    const realQuoteId = fullQuote.id;
+
     if (fullQuote.status === 'approved') {
+      const [existingProject] = await db.select().from(projects).where(eq(projects.quoteId, realQuoteId)).limit(1);
+      if (existingProject) {
+        return {
+          quote: fullQuote,
+          project: existingProject,
+          upfrontInvoice: null,
+          finalInvoice: null,
+        };
+      }
       throw new QuoteError('This quote has already been approved and converted', 409, 'ALREADY_APPROVED');
     }
 
@@ -1029,7 +1057,7 @@ export class QuoteService {
           status: 'approved',
           updatedAt: new Date(),
         })
-        .where(eq(quotes.id, quoteId))
+        .where(eq(quotes.id, realQuoteId))
         .returning();
 
       // 2. Lock approved version
@@ -1083,7 +1111,7 @@ export class QuoteService {
             .returning();
 
           customerId = newCust.id;
-          await tx.update(quotes).set({ customerId }).where(eq(quotes.id, quoteId));
+          await tx.update(quotes).set({ customerId }).where(eq(quotes.id, realQuoteId));
           await tx.update(leads).set({ customerId }).where(eq(leads.id, approvedQuote.leadId));
         }
       }
@@ -1102,7 +1130,7 @@ export class QuoteService {
           })
           .returning();
         customerId = fallbackCust.id;
-        await tx.update(quotes).set({ customerId }).where(eq(quotes.id, quoteId));
+        await tx.update(quotes).set({ customerId }).where(eq(quotes.id, realQuoteId));
       }
 
       // 4. Create Project with status = 'in_progress' and orderStatus = 'in_voorbereiding'

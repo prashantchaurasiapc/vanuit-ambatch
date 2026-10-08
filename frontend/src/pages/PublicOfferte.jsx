@@ -72,11 +72,91 @@ export default function PublicOfferte() {
             setIsDeclined(true);
           }
         } else {
-          setLoadError(res.error?.message || 'Quotation proposal not found or link has expired');
+          // Robust fallback: check local cache for draft or direct lead quotes
+          let localFound = null;
+          try {
+            const rawExact = localStorage.getItem(`active_quote_${token}`);
+            if (rawExact) localFound = JSON.parse(rawExact);
+            if (!localFound) {
+              const list = JSON.parse(localStorage.getItem('app_quotes_v2') || '[]');
+              localFound = list.find(q => q.id === token || q.publicToken === token || q.quoteNumber === token || q.backendId === token);
+            }
+          } catch (e) {
+            console.warn('Fallback cache read error:', e);
+          }
+
+          if (localFound) {
+            const mappedQuote = {
+              id: localFound.quoteNumber || localFound.id || token,
+              quoteNumber: localFound.quoteNumber || localFound.id || token,
+              publicToken: localFound.publicToken || token,
+              customer: {
+                name: typeof localFound.customer === 'object' ? (localFound.customer?.name || 'Klant') : (localFound.customer || 'Klant'),
+                city: typeof localFound.customer === 'object' ? (localFound.customer?.city || 'Amsterdam') : 'Amsterdam',
+                address: typeof localFound.customer === 'object' ? (localFound.customer?.address || '') : ''
+              },
+              productType: localFound.productType || 'outdoor_kitchen',
+              cover: localFound.cover || {},
+              configuration: localFound.configuration || {},
+              investment: localFound.investment || {},
+              letterAndProcess: localFound.letterAndProcess || {},
+              company: localFound.company || {},
+              date: localFound.issueDate || localFound.date || new Date().toISOString().split('T')[0],
+              validUntil: localFound.validUntil || '',
+              isExpired: false,
+              status: localFound.status || 'Concept',
+              amount: localFound.investment?.totalInclVat ? `€ ${Math.round(localFound.investment.totalInclVat).toLocaleString('nl-NL')}` : (localFound.amount || '€ 0'),
+              numericAmount: localFound.investment?.totalInclVat || localFound.totalInclVat || 0,
+              digitalSignature: localFound.digitalSignature
+            };
+            setQuote(mappedQuote);
+            setLoadError(null);
+          } else {
+            setLoadError(res.error?.message || 'Quotation proposal not found or link has expired');
+          }
         }
       } catch (err) {
         console.error('Error fetching proposal:', err);
-        setLoadError(err.message || 'Error loading proposal');
+        // Robust fallback on fetch exception
+        let localFound = null;
+        try {
+          const rawExact = localStorage.getItem(`active_quote_${token}`);
+          if (rawExact) localFound = JSON.parse(rawExact);
+          if (!localFound) {
+            const list = JSON.parse(localStorage.getItem('app_quotes_v2') || '[]');
+            localFound = list.find(q => q.id === token || q.publicToken === token || q.quoteNumber === token || q.backendId === token);
+          }
+        } catch (e) {}
+
+        if (localFound) {
+          const mappedQuote = {
+            id: localFound.quoteNumber || localFound.id || token,
+            quoteNumber: localFound.quoteNumber || localFound.id || token,
+            publicToken: localFound.publicToken || token,
+            customer: {
+              name: typeof localFound.customer === 'object' ? (localFound.customer?.name || 'Klant') : (localFound.customer || 'Klant'),
+              city: typeof localFound.customer === 'object' ? (localFound.customer?.city || 'Amsterdam') : 'Amsterdam',
+              address: typeof localFound.customer === 'object' ? (localFound.customer?.address || '') : ''
+            },
+            productType: localFound.productType || 'outdoor_kitchen',
+            cover: localFound.cover || {},
+            configuration: localFound.configuration || {},
+            investment: localFound.investment || {},
+            letterAndProcess: localFound.letterAndProcess || {},
+            company: localFound.company || {},
+            date: localFound.issueDate || localFound.date || new Date().toISOString().split('T')[0],
+            validUntil: localFound.validUntil || '',
+            isExpired: false,
+            status: localFound.status || 'Concept',
+            amount: localFound.investment?.totalInclVat ? `€ ${Math.round(localFound.investment.totalInclVat).toLocaleString('nl-NL')}` : (localFound.amount || '€ 0'),
+            numericAmount: localFound.investment?.totalInclVat || localFound.totalInclVat || 0,
+            digitalSignature: localFound.digitalSignature
+          };
+          setQuote(mappedQuote);
+          setLoadError(null);
+        } else {
+          setLoadError(err.message || 'Error loading proposal');
+        }
       } finally {
         setLoading(false);
       }

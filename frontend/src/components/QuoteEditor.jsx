@@ -2919,12 +2919,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                 <span className="text-[10px] font-mono font-bold text-dark/60 uppercase tracking-wider block">Approval Link (for client)</span>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-primary truncate flex-1 bg-white border border-[#D6CFC2] rounded-lg px-2.5 py-1.5">
-                    {window.location.origin}/offerte/{quote.id}
+                    {window.location.origin}/offerte/{quote.publicToken || quote.id}
                   </span>
                   <button
                     type="button"
                     onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/offerte/${quote.id}`);
+                      const shareToken = quote.publicToken || quote.id;
+                      navigator.clipboard.writeText(`${window.location.origin}/offerte/${shareToken}`);
                       showToast('Link copied!');
                     }}
                     className="px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-dark hover:bg-[#EDE8DF] cursor-pointer font-mono"

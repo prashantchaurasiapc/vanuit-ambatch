@@ -650,9 +650,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const [step5SendConfirmed, setStep5SendConfirmed] = useState(false);
   const [step5SendChannelLabel, setStep5SendChannelLabel] = useState(''); // 'E-mail Sent' | 'WhatsApp Sent'
   const [step5PreviewPage, setStep5PreviewPage] = useState(1);
-  const [step5EditableMsg, setStep5EditableMsg] = useState(
-    `Beste ${customerName},\n\nHierbij ontvangt u onze maatofferte voor uw ${customerCategory}. Bekijk de specificaties en accordeer eenvoudig via onderstaande link:\nhttps://vanuitambacht.nl/offerte/OF-2026331/bekijken\n\nMet vriendelijke groet,\nTeam Vanuit Ambacht`
-  );
+  const [step5EditableMsg, setStep5EditableMsg] = useState('');
 
   // Target Quote ID tied directly to Lead ID
   const targetQuoteId = `OF-${lead?.id ? String(lead.id).replace(/[^0-9]/g, '') : '1005'}`;
@@ -787,24 +785,146 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
 
   const [leadQuote, setLeadQuote] = useState(getLeadQuote);
 
-  const handleSaveQuote = (savedQuote, isExplicit = false) => {
+  // Synchronize Step 5 message with language and customer details
+  useEffect(() => {
+    const activeToken = leadQuote?.publicToken || leadQuote?.id || targetQuoteId;
+    const quoteUrl = `${window.location.origin}/offerte/${activeToken}`;
+    if (language === 'EN') {
+      setStep5EditableMsg(
+        `Dear ${customerName},\n\nPlease find attached our bespoke quotation for your ${customerCategory || 'project'}. Review the specifications and easily approve via the link below:\n${quoteUrl}\n\nKind regards,\nTeam Vanuit Ambacht`
+      );
+    } else {
+      setStep5EditableMsg(
+        `Beste ${customerName},\n\nHierbij ontvangt u onze maatofferte voor uw ${customerCategory || 'buitenverblijf'}. Bekijk de specificaties en accordeer eenvoudig via onderstaande link:\n${quoteUrl}\n\nMet vriendelijke groet,\nTeam Vanuit Ambacht`
+      );
+    }
+  }, [language, customerName, customerCategory, leadQuote?.id, leadQuote?.publicToken, targetQuoteId]);
+
+  // Ensure quote is linked to backend DB when lead is present
+  useEffect(() => {
+    if (!lead?.id) return;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(lead.id));
+    
+    api.get(`/quotes?limit=10${isUuid ? `&leadId=${lead.id}` : ''}`).then(res => {
+      if (res.success && Array.isArray(res.data?.items) && res.data.items.length > 0) {
+        const found = res.data.items.find(q => q.leadId === lead.id || q.customerName === (lead.customer || lead.name));
+        if (found) {
+          setLeadQuote(prev => ({
+            ...prev,
+            backendId: found.id,
+            publicToken: found.publicToken,
+            id: found.quoteNumber || prev.id
+          }));
+        }
+      }
+    }).catch(() => {});
+  }, [lead?.id]);
+
+  const handleSaveQuote = async (savedQuote, isExplicit = false) => {
     if (!savedQuote) return;
     setLeadQuote(savedQuote);
     window.dispatchEvent(new Event('app_data_changed'));
 
-    api.post('/quotes', {
-      quoteNumber: savedQuote.id,
-      customerName: typeof savedQuote.customer === 'object' ? savedQuote.customer.name : (savedQuote.customer || customerName),
-      leadId: lead?.id,
-      totalAmount: savedQuote.totalInclVat || step4TotalInclVat,
-      status: 'draft'
-    }).catch(err => console.warn('Could not sync quote to API:', err));
+    // 1. Instant local cache for public link fallback
+    try {
+      localStorage.setItem(`active_quote_${savedQuote.id}`, JSON.stringify(savedQuote));
+      if (savedQuote.publicToken) {
+        localStorage.setItem(`active_quote_${savedQuote.publicToken}`, JSON.stringify(savedQuote));
+      }
+      const existingQuotes = JSON.parse(localStorage.getItem('app_quotes_v2') || '[]');
+      const filtered = existingQuotes.filter(q => q.id !== savedQuote.id && q.id !== savedQuote.backendId);
+      localStorage.setItem('app_quotes_v2', JSON.stringify([savedQuote, ...filtered]));
+    } catch (e) {
+      console.warn('Local storage cache error:', e);
+    }
+
+    // 2. Persist to PostgreSQL Database via Fastify Backend API
+    try {
+      let targetBackendId = savedQuote.backendId;
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(lead?.id));
+
+      if (!targetBackendId) {
+        const pType = (step2ProductType || lead?.productType || customerCategory || 'outdoor_kitchen').toLowerCase().includes('garden')
+          ? 'garden_room'
+          : 'outdoor_kitchen';
+
+        const createRes = await api.post('/quotes', {
+          leadId: isUuid ? lead.id : undefined,
+          productType: pType
+        });
+
+        if (createRes.success && createRes.data) {
+          targetBackendId = createRes.data.id;
+          savedQuote.backendId = createRes.data.id;
+          savedQuote.publicToken = createRes.data.publicToken;
+          savedQuote.id = createRes.data.quoteNumber || savedQuote.id;
+          setLeadQuote({ ...savedQuote });
+          localStorage.setItem(`active_quote_${savedQuote.id}`, JSON.stringify(savedQuote));
+          localStorage.setItem(`active_quote_${savedQuote.publicToken}`, JSON.stringify(savedQuote));
+        }
+      }
+
+      if (targetBackendId) {
+        const lineItems = (savedQuote.investment?.lineItems || []).map((it, idx) => ({
+          position: idx + 1,
+          title: it.title || 'Maatwerk item',
+          description: it.description || null,
+          quantity: Number(it.quantity) || 1,
+          priceInclVat: Number(it.priceInclVat ?? it.unitPriceInclVat ?? 0),
+          vatRate: Number(it.vatRate) || 21,
+          isIncluded: Boolean(it.isIncluded),
+          isStelpost: Boolean(it.isStelpost)
+        }));
+
+        const draftPayload = {
+          coverTitleLine1: savedQuote.cover?.titleLine1 || savedQuote.name || 'EEN MAATWERK MEUBEL',
+          coverTitleLine2: savedQuote.cover?.titleLine2 || `VOOR ${(customerName || 'KLANT').toUpperCase()}`,
+          customSubtitle: savedQuote.cover?.subtitle || 'Exclusief vakwerk vervaardigd door Vanuit Ambacht',
+          coverPhotos: savedQuote.cover?.photos || ['/cover_img1.png', '/cover_img2.png', '/cover_img3.png'],
+          dimensionsText: savedQuote.configuration?.dimensions || '240 x 80 cm',
+          woodType: savedQuote.configuration?.woodType || 'Thermo Frake',
+          woodLifespan: savedQuote.configuration?.woodLifespan || '20 tot 25 jaar',
+          optionsTitle: savedQuote.configuration?.optionsTitle || 'Kamado / BBQ integratie',
+          optionsSubtext: savedQuote.configuration?.optionsSubtext || 'Rechts van het midden',
+          deliveryTimeText: savedQuote.configuration?.deliveryTime || '3 tot 5 weken',
+          deliverySubtext: savedQuote.configuration?.deliverySubtext || 'na technisch akkoord',
+          costPrice: savedQuote.investment?.costPrice ? Number(savedQuote.investment.costPrice) : undefined,
+          marginPercent: savedQuote.investment?.marginPercent ? Number(savedQuote.investment.marginPercent) : undefined,
+          marginAmount: savedQuote.investment?.marginAmount ? Number(savedQuote.investment.marginAmount) : undefined,
+          lineItems: lineItems.length > 0 ? lineItems : undefined,
+          finishTreatment: savedQuote.configuration?.finishTreatment || 'Twee-laags natuurlijke beschermende olie',
+          stelpostDisclaimer: savedQuote.investment?.stelpostDisclaimer,
+          vatDisclaimer: savedQuote.investment?.vatDisclaimer,
+          letterConfig: savedQuote.letterAndProcess
+        };
+
+        await api.put(`/quotes/${targetBackendId}/versions/draft`, draftPayload);
+      }
+    } catch (err) {
+      console.warn('Could not sync quote to DB:', err);
+    }
 
     if (isExplicit) {
       setShowInlineQuoteEditor(false);
       setToastMsg(`Quote ${savedQuote.id || ''} saved & sent! Back to lead.`);
       setTimeout(() => setToastMsg(''), 4000);
     }
+  };
+
+  const handlePublishQuote = async (quoteToPublish) => {
+    const targetId = quoteToPublish.backendId || quoteToPublish.id;
+    if (targetId) {
+      try {
+        await handleSaveQuote(quoteToPublish, false);
+        await api.post(`/quotes/${targetId}/publish`, { sendEmail: false });
+      } catch (err) {
+        console.warn('Could not publish quote to DB:', err);
+      }
+    }
+    setStep5ApprovalStatus('APPROVED');
+    setStep5ApprovedBy('Bram (Admin)');
+    setStep5ApprovedAt(new Date().toISOString().split('T')[0]);
+    showToast(language === 'EN' ? 'Quote published and ready for sending!' : 'Offerte gepubliceerd en gereed voor verzending!');
   };
 
   // Dynamic PDF Filename matching exact customer slug
@@ -873,17 +993,17 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     setIsSendingSimulated(true);
     
     if (step5SelectedChannel === 'EMAIL') {
-      setSendingProgressText('1/3: Offerte PDF genereren en cryptografisch digitaal ondertekenen...');
-      await new Promise(r => setTimeout(r, 650));
-      setSendingProgressText('2/3: Bezig met veilige SMTP handdruk (mail.vanuitambacht.nl)...');
-      await new Promise(r => setTimeout(r, 750));
-      setSendingProgressText(`3/3: Offerte succesvol afgeleverd in inbox van ${customerEmail}!`);
-      await new Promise(r => setTimeout(r, 600));
-    } else {
-      setSendingProgressText('1/2: WhatsApp bericht klaarmaken met live goedkeuringslink...');
-      await new Promise(r => setTimeout(r, 550));
-      setSendingProgressText(`2/2: Klaar voor verzending naar ${customerPhone}!`);
+      setSendingProgressText(language === 'EN' ? '1/3: Generating proposal PDF and cryptographic seal...' : '1/3: Offerte PDF genereren en cryptografisch digitaal ondertekenen...');
       await new Promise(r => setTimeout(r, 450));
+      setSendingProgressText(language === 'EN' ? '2/3: Secure SMTP handshake (mail.vanuitambacht.nl)...' : '2/3: Bezig met veilige SMTP handdruk (mail.vanuitambacht.nl)...');
+      await new Promise(r => setTimeout(r, 450));
+      setSendingProgressText(language === 'EN' ? `3/3: Proposal successfully delivered to ${customerEmail}!` : `3/3: Offerte succesvol afgeleverd in inbox van ${customerEmail}!`);
+      await new Promise(r => setTimeout(r, 400));
+    } else {
+      setSendingProgressText(language === 'EN' ? '1/2: Preparing WhatsApp message with live approval link...' : '1/2: WhatsApp bericht klaarmaken met live goedkeuringslink...');
+      await new Promise(r => setTimeout(r, 400));
+      setSendingProgressText(language === 'EN' ? `2/2: Ready for dispatch to ${customerPhone}!` : `2/2: Klaar voor verzending naar ${customerPhone}!`);
+      await new Promise(r => setTimeout(r, 350));
     }
 
     setIsSendingSimulated(false);
@@ -892,7 +1012,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
 
     window.dispatchEvent(new Event('app_data_changed'));
 
-    const qId = leadQuote?.id || targetQuoteId;
+    const qId = leadQuote?.backendId || leadQuote?.id || targetQuoteId;
     api.post(`/quotes/${qId}/publish`).catch(() => {});
 
     const channelLabel = step5SelectedChannel === 'EMAIL' ? 'E-mail Sent' : 'WhatsApp Sent';
@@ -922,18 +1042,18 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     const syncStep6FromPortal = async () => {
       try {
         const res = await api.get('/quotes');
-        if (!res.success || !Array.isArray(res.data) || !isMounted) return;
-        const allQuotes = res.data;
+        if (!res.success || !isMounted) return;
+        const allQuotes = Array.isArray(res.data) ? res.data : (res.data?.items || []);
 
-        // Match quote by lead customer name or lead id
-        const leadCustomer = (lead?.name || lead?.customerName || '').toLowerCase();
+        // Match quote by lead id, quote id/number, or lead customer name
+        const leadCustomer = (lead?.name || lead?.customerName || '').toLowerCase().trim();
         const matchedQuote = allQuotes.find(q => {
-          const qCustomer = (typeof q.customer === 'object' ? q.customer.name : (q.customer || '')).toLowerCase();
+          if (lead?.id && q.leadId === lead.id) return true;
+          if (leadQuote?.backendId && q.id === leadQuote.backendId) return true;
+          if (leadQuote?.id && (q.id === leadQuote.id || q.quoteNumber === leadQuote.id)) return true;
+          const qCustomer = (typeof q.customer === 'object' ? q.customer?.name : (q.customer || q.customerName || '')).toLowerCase().trim();
           return (
-            qCustomer === leadCustomer ||
-            qCustomer.includes(leadCustomer) ||
-            leadCustomer.includes(qCustomer) ||
-            (lead?.id && q.leadId === lead.id)
+            leadCustomer && qCustomer && (qCustomer === leadCustomer || qCustomer.includes(leadCustomer) || leadCustomer.includes(qCustomer))
           );
         });
 
@@ -942,17 +1062,17 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
         const approvedStatuses = ['geaccepteerd', 'accepted', 'approved', 'akkoord'];
         const isPortalApproved = approvedStatuses.includes((matchedQuote.status || '').toLowerCase());
 
-        if (isPortalApproved && !step6Approved) {
+        if (isPortalApproved) {
           setStep6Approved(true);
-          setStep6ApprovalRoute('ROUTE_A_ONLINE');
+          setStep6ApprovalRoute(matchedQuote.approvalRoute || 'ROUTE_A_ONLINE');
           setStep6ApprovalMetaData({
-            route: 'ROUTE_A_ONLINE',
-            customerName: matchedQuote.signerName || (typeof matchedQuote.customer === 'object' ? matchedQuote.customer.name : matchedQuote.customer),
-            dateTime: matchedQuote.approvedAt || new Date().toLocaleString('nl-NL'),
+            route: matchedQuote.approvalRoute || 'ROUTE_A_ONLINE',
+            customerName: matchedQuote.signerName || (typeof matchedQuote.customer === 'object' ? matchedQuote.customer?.name : matchedQuote.customer) || customerName,
+            dateTime: matchedQuote.approvedAt ? new Date(matchedQuote.approvedAt).toLocaleString('nl-NL') : new Date().toLocaleString('nl-NL'),
             ipAddress: matchedQuote.signerIp || '84.112.45.198 (Amsterdam, NL)',
-            quoteVersion: `#${matchedQuote.id} v1.0`,
-            signerName: matchedQuote.signerName || (typeof matchedQuote.customer === 'object' ? matchedQuote.customer.name : matchedQuote.customer),
-            statusLabel: `✓ Customer Signed & Approved Online (${matchedQuote.signerName || matchedQuote.customer})`
+            quoteVersion: `${matchedQuote.quoteNumber || matchedQuote.id} v1.0`,
+            signerName: matchedQuote.signerName || (typeof matchedQuote.customer === 'object' ? matchedQuote.customer?.name : matchedQuote.customer) || customerName,
+            statusLabel: `✓ Customer Signed & Approved Online (${matchedQuote.signerName || (typeof matchedQuote.customer === 'object' ? matchedQuote.customer?.name : matchedQuote.customer) || customerName})`
           });
         }
       } catch (e) {
@@ -966,61 +1086,26 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
       isMounted = false;
       window.removeEventListener('app_data_changed', syncStep6FromPortal);
     };
-  }, [lead?.id, lead?.name, step6Approved]);
+  }, [lead?.id, lead?.name, leadQuote?.backendId, leadQuote?.id, customerName]);
 
-  // Automatic consequence helper function: Project created immediately upon approval & appears in Projects tab
-  const autoCreateProjectOnApproval = (meta) => {
-    const projId = `P-${lead?.id?.replace('LEAD', 'L') || '2001'}`;
-    const projTitle = `Luxe ${customerCategory || 'Buitenkeuken'} — ${customerName}`;
-    
-    const newProject = {
-      id: projId,
-      name: projTitle,
-      projectName: projTitle,
-      customer: customerName,
-      customerEmail,
-      customerPhone,
-      quoteId: 'OF-2026331',
-      value: `€ ${step4TotalInclVat.toLocaleString('nl-NL')}`,
-      numericAmount: step4TotalInclVat,
-      category: customerCategory || 'Buitenkeukens',
-      dimensions: step2Size || '8,00 × 4,00 m',
-      woodType: step2Material || 'Thermo Fraké',
-      material: step2Material || 'Thermo Fraké with concrete countertop',
-      products: [
-        { 
-          description: `Maatwerk ${customerCategory || 'Buitenkeuken'} (${step2Size || '8,00 × 4,00 m'})`, 
-          quantity: 1, 
-          unitPrice: step4CustomerPriceExclVat 
-        }
-      ],
-      partner: partnerForm?.partnerName || lead?.partner || '',
-      partnerCost: effectivePartnerCost,
-      margin: step4MarginAmount,
-      marginPercent: step4MarginPercent,
-      isPartnerConfirmed: false,
-      partnerStatus: 'Pending Confirmation',
-      progress: 10,
-      deadline: '2026-09-27',
-      totalAmount: `€ ${step4TotalInclVat.toLocaleString('nl-NL')}`,
-      status: 'In uitvoering',
-      approvalRoute: meta.route,
-      approvedAt: meta.dateTime,
-      createdAt: new Date().toISOString()
-    };
-
+  // Automatic consequence helper function: Convert quote via official accept-and-convert endpoint
+  const autoCreateProjectOnApproval = async (meta) => {
     window.dispatchEvent(new Event('app_data_changed'));
-    api.post('/projects', {
-      projectNumber: newProject.id,
-      name: newProject.name,
-      customerName: newProject.customer,
-      leadId: lead?.id,
-      totalAmount: step4TotalInclVat,
-      status: 'in_progress'
-    }).catch(() => {});
+    const targetQId = leadQuote?.backendId || leadQuote?.id || targetQuoteId;
+    if (targetQId) {
+      try {
+        await api.post(`/quotes/${targetQId}/accept-and-convert`, {
+          note: meta?.statusLabel || `Approved via ${meta?.route || 'Route A'}`
+        });
+        window.dispatchEvent(new Event('app_data_changed'));
+      } catch (err) {
+        // If already approved (409), that is completely expected and means it is already converted
+        console.warn('Quote conversion notice:', err);
+      }
+    }
   };
 
-  const handleRouteAOnlineApproval = () => {
+  const handleRouteAOnlineApproval = async () => {
     const now = new Date();
     const formattedDate = `${now.toLocaleDateString('nl-NL')} ${now.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}`;
     const meta = {
@@ -1028,20 +1113,20 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
       customerName,
       dateTime: formattedDate,
       ipAddress: '84.112.45.198 (Amsterdam, NL)',
-      quoteVersion: 'Quote #OF-2026331 v1.0',
+      quoteVersion: `Quote #${leadQuote?.id || targetQuoteId || 'Q-2026-003'} v1.0`,
       statusLabel: '✓ Customer Approved (Online Link)'
     };
     setStep6Approved(true);
     setStep6ApprovalRoute('ROUTE_A_ONLINE');
     setStep6ApprovalMetaData(meta);
 
-    // AUTOMATIC CONSEQUENCE: Project Created Immediately
-    autoCreateProjectOnApproval(meta);
+    // AUTOMATIC CONSEQUENCE: Project & Customer converted officially via backend
+    await autoCreateProjectOnApproval(meta);
 
     showToast(language === 'EN' ? `✓ Quote approved online by ${customerName}! Project auto-created.` : `✓ Offerte online goedgekeurd door ${customerName}! Project automatisch aangemaakt.`);
   };
 
-  const handleRouteBManualApproval = (e) => {
+  const handleRouteBManualApproval = async (e) => {
     if (e) e.preventDefault();
     const now = new Date();
     const formattedDate = `${now.toLocaleDateString('nl-NL')} ${now.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}`;
@@ -1060,8 +1145,8 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     setStep6ApprovalMetaData(meta);
     setStep6ManualModalOpen(false);
 
-    // AUTOMATIC CONSEQUENCE: Project Created Immediately
-    autoCreateProjectOnApproval(meta);
+    // AUTOMATIC CONSEQUENCE: Project & Customer converted officially via backend
+    await autoCreateProjectOnApproval(meta);
 
     showToast(language === 'EN' ? `✓ Manual approval recorded (${step6ManualForm.channel})! Project auto-created.` : `✓ Handmatige akkoord geregistreerd (${step6ManualForm.channel})! Project automatisch aangemaakt.`);
   };
@@ -1121,14 +1206,19 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     setStep7Confirmed(true);
     window.dispatchEvent(new Event('app_data_changed'));
 
-    api.post('/projects', {
-      projectNumber: confirmedProject.id,
-      name: confirmedProject.name,
-      customerName: confirmedProject.customer,
-      leadId: lead?.id,
-      partnerName: step7SelectedPartner,
-      totalAmount: step4TotalInclVat,
-      status: 'in_progress'
+    // Link partner to project in backend if partner is selected
+    const matchedPartner = availablePartners.find(p => p.name === step7SelectedPartner || p.company === step7SelectedPartner);
+    const partnerId = matchedPartner?.id || partnerForm?.partnerId;
+
+    api.get('/projects?limit=50').then(pRes => {
+      const projs = pRes?.data?.items || (Array.isArray(pRes?.data) ? pRes.data : []);
+      const pFound = projs.find(p => (lead?.id && p.leadId === lead.id) || (leadQuote?.backendId && p.quoteId === leadQuote.backendId));
+      if (pFound && partnerId) {
+        api.patch(`/projects/${pFound.id}/assign-partner`, {
+          partnerId,
+          agreedBuildPrice: effectivePartnerCost || undefined
+        }).catch(() => {});
+      }
     }).catch(() => {});
 
     showToast(language === 'EN'
@@ -1443,31 +1533,17 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     const partnerName = assignedPartner || projectForm.partner || partnerForm?.partnerName || '';
 
     let assignedProjId = 'PRJ-LIVE';
-    try {
-      const pRes = await api.post('/projects', {
-        name: projName,
-        customerName: custName,
-        partnerName: partnerName,
-        leadId: lead?.id,
-        status: 'in_progress'
-      });
-      if (pRes?.data) {
-        assignedProjId = pRes.data.projectNumber || pRes.data.id || assignedProjId;
-      }
-    } catch (err) {}
-
-    try {
-      await api.post('/customers', {
-        name: custName,
-        email: customerEmail || (custName ? `${custName.toLowerCase().replace(/\s+/g, '')}@gmail.com` : 'client@vanuitambacht.nl'),
-        phone: lead?.phone || '+31 6 12345678',
-        address: lead?.location || 'Breda, NL',
-        city: lead?.location || 'Breda, NL',
-        productInterest: translatedCat || 'Bespoke Outdoor Kitchen',
-        totalSpend: step4TotalInclVat,
-        status: 'active'
-      });
-    } catch (err) {}
+    const targetQId = leadQuote?.backendId || leadQuote?.id || targetQuoteId;
+    if (targetQId) {
+      try {
+        const convRes = await api.post(`/quotes/${targetQId}/accept-and-convert`, {
+          note: `Auto-converted via project assignment (${partnerName || 'Direct'})`
+        });
+        if (convRes?.data?.project) {
+          assignedProjId = convRes.data.project.projectNumber || convRes.data.project.id || assignedProjId;
+        }
+      } catch (err) {}
+    }
 
     // Trigger global event for real-time synchronization
     window.dispatchEvent(new Event('app_data_changed'));
@@ -3455,7 +3531,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           <div>
                             <span className="text-[10px] font-bold text-dark/50 uppercase block mb-0.5">Customer Approval Portal URL</span>
                             <span className="text-xs font-mono font-bold text-primary bg-[#F8F7F4] px-2.5 py-1 rounded border border-[#D6CFC2] block truncate">
-                              https://vanuitambacht.nl/offerte/OF-2026331/bekijken
+                              {leadQuote?.publicToken ? `${window.location.origin}/offerte/${leadQuote.publicToken}` : `https://vanuitambacht.nl/offerte/${leadQuote?.id || targetQuoteId || 'OF-2026331'}/bekijken`}
                             </span>
                           </div>
                           <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/60 text-xs space-y-1 text-dark/80">
@@ -3464,7 +3540,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             <div className="pt-2 border-t border-[#D6CFC2]/50 text-[10px] text-dark/60 space-y-0.5">
                               <div>• <strong>Recorded:</strong> Customer name ({customerName})</div>
                               <div>• <strong>Recorded:</strong> Date / time & IP (84.112.45.198)</div>
-                              <div>• <strong>Recorded:</strong> Quote version (#OF-2026331 v1.0)</div>
+                              <div>• <strong>Recorded:</strong> Quote version (#{leadQuote?.id || targetQuoteId || 'Q-2026-003'} v1.0)</div>
                             </div>
                           </div>
                         </div>
@@ -4899,14 +4975,16 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       
                       {/* Security / Dispatch Notice */}
                       <div className="bg-amber-100/90 text-amber-900 border border-amber-300/80 rounded-xl p-2.5 text-[11px] text-center shadow-2xs">
-                        🔒 End-to-end direct client link. WhatsApp sends the digital proposal token directly to the customer's phone.
+                        {language === 'EN'
+                          ? "🔒 End-to-end direct client link. WhatsApp sends the digital proposal token directly to the customer's phone."
+                          : "🔒 Directe beveiligde klantlink. WhatsApp verzendt het digitale offertetoken direct naar de telefoon van de klant."}
                       </div>
 
                       {/* Realistic WhatsApp Chat Bubble */}
                       <div className="bg-[#D9FDD3] rounded-2xl rounded-tr-xs p-4 shadow-sm border border-[#C5E8BF] text-xs text-dark space-y-2.5 relative">
                         <div className="flex items-center justify-between text-[10px] text-emerald-900/70 font-mono font-bold border-b border-emerald-900/15 pb-1">
-                          <span>VANUIT AMBACHT · MAATWERK</span>
-                          <span>Quote {leadQuote?.id || targetQuoteId}</span>
+                          <span>{language === 'EN' ? 'VANUIT AMBACHT · BESPOKE' : 'VANUIT AMBACHT · MAATWERK'}</span>
+                          <span>{language === 'EN' ? 'Quote' : 'Offerte'} {leadQuote?.id || targetQuoteId}</span>
                         </div>
 
                         <p className="leading-relaxed whitespace-pre-wrap font-body text-dark/90">
@@ -4915,9 +4993,11 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
 
                         {/* Interactive Link Card inside Chat Bubble */}
                         <div className="p-3 bg-white/90 rounded-xl border border-emerald-900/20 space-y-1.5 shadow-2xs">
-                          <span className="text-[10px] font-mono uppercase font-bold text-[#D97706] block">DIGITALE OFFERTE PORTAAL</span>
+                          <span className="text-[10px] font-mono uppercase font-bold text-[#D97706] block">
+                            {language === 'EN' ? 'DIGITAL PROPOSAL PORTAL' : 'DIGITALE OFFERTE PORTAAL'}
+                          </span>
                           <p className="font-bold text-dark text-xs truncate">
-                            Offerte {leadQuote?.id || targetQuoteId} — {customerCategory || 'Buitenkeuken'}
+                            {language === 'EN' ? 'Proposal' : 'Offerte'} {leadQuote?.id || targetQuoteId} — {customerCategory || (language === 'EN' ? 'Outdoor kitchen' : 'Buitenkeuken')}
                           </p>
                           <a
                             href={`${window.location.origin}/offerte/${leadQuote?.id || targetQuoteId}`}
@@ -4931,7 +5011,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
 
                         {/* Chat Metadata / Blue Checks */}
                         <div className="flex justify-end items-center gap-1 text-[10px] text-dark/50 font-mono pt-1">
-                          <span>{new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span>{new Date().toLocaleTimeString(language === 'EN' ? 'en-GB' : 'nl-NL', { hour: '2-digit', minute: '2-digit' })}</span>
                           <span className="text-[#34B7F1] font-bold">✓✓</span>
                         </div>
                       </div>
@@ -4959,9 +5039,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         onClick={() => {
                           const cleanPhone = String(customerPhone || '').replace(/[^0-9]/g, '');
                           const fullUrl = `${window.location.origin}/offerte/${leadQuote?.id || targetQuoteId}`;
-                          const msg = `${step5EditableMsg}\n\nBekijk en accordeer uw offerte hier:\n${fullUrl}`;
+                          const msg = `${step5EditableMsg}\n\n${language === 'EN' ? 'View and approve your quotation here:' : 'Bekijk en accordeer uw offerte hier:'}\n${fullUrl}`;
                           window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`, '_blank');
-                          showToast('✓ WhatsApp Web geopend met bericht en offerte link!');
+                          showToast(language === 'EN' ? '✓ WhatsApp Web opened with message and quote link!' : '✓ WhatsApp Web geopend met bericht en offerte link!');
                         }}
                         className="flex-1 sm:flex-initial px-3.5 py-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer font-mono"
                       >
@@ -4972,15 +5052,15 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         type="button"
                         onClick={() => {
                           const fullUrl = `${window.location.origin}/offerte/${leadQuote?.id || targetQuoteId}`;
-                          const msg = `${step5EditableMsg}\n\nBekijk en accordeer uw offerte hier:\n${fullUrl}`;
+                          const msg = `${step5EditableMsg}\n\n${language === 'EN' ? 'View and approve your quotation here:' : 'Bekijk en accordeer uw offerte hier:'}\n${fullUrl}`;
                           navigator.clipboard.writeText(msg);
-                          showToast('✓ WhatsApp bericht & offerte link gekopieerd!');
+                          showToast(language === 'EN' ? '✓ WhatsApp message & proposal link copied!' : '✓ WhatsApp bericht & offerte link gekopieerd!');
                         }}
                         className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-dark font-bold text-xs rounded-xl border border-gray-300 transition-all cursor-pointer font-mono flex items-center gap-1"
                         title="Copy to Clipboard"
                       >
                         <Copy className="w-3.5 h-3.5" />
-                        <span>Kopieer</span>
+                        <span>{language === 'EN' ? 'Copy' : 'Kopieer'}</span>
                       </button>
                     </div>
 
@@ -4990,7 +5070,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         onClick={() => setStep5ConfirmModalOpen(false)}
                         className="px-4 py-2.5 text-xs font-bold text-dark/70 hover:text-dark border border-[#D6CFC2] rounded-xl cursor-pointer"
                       >
-                        Annuleren
+                        {language === 'EN' ? 'Cancel' : 'Annuleren'}
                       </button>
                       <button
                         type="button"
@@ -4999,7 +5079,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         className="px-5 py-2.5 text-xs font-bold bg-[#3E4E36] hover:bg-[#2F3C29] text-white rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-2 font-mono transition-all"
                       >
                         <CheckCircle className="w-4 h-4 text-emerald-300" />
-                        <span>Mark as Sent & Continue →</span>
+                        <span>{language === 'EN' ? 'Mark as Sent & Continue →' : 'Markeer als Verzonden & Doorgaan →'}</span>
                       </button>
                     </div>
                   </div>
@@ -5019,10 +5099,12 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       </div>
                       <div>
                         <h3 className="font-heading font-bold text-base text-white leading-tight">
-                          Vanuit Ambacht Mail Composer
+                          {language === 'EN' ? 'Vanuit Ambacht Mail Composer' : 'Vanuit Ambacht Mail Composer'}
                         </h3>
                         <p className="text-[11px] text-[#D6CFC2] font-mono">
-                          Official Branded Proposal Delivery · SMTP Server (mail.vanuitambacht.nl)
+                          {language === 'EN'
+                            ? 'Official Branded Proposal Delivery · SMTP Server (mail.vanuitambacht.nl)'
+                            : 'Officiële Merkgebonden Offerteverzending · SMTP Server (mail.vanuitambacht.nl)'}
                         </p>
                       </div>
                     </div>
@@ -5038,17 +5120,25 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                   {/* Email Header Fields */}
                   <div className="p-4 bg-[#F8F7F4] border-b border-[#D6CFC2] text-xs space-y-2 font-mono">
                     <div className="flex items-center gap-2">
-                      <span className="w-20 text-dark/50 font-bold uppercase tracking-wider text-[10px]">Van:</span>
+                      <span className="w-20 text-dark/50 font-bold uppercase tracking-wider text-[10px]">
+                        {language === 'EN' ? 'From:' : 'Van:'}
+                      </span>
                       <span className="font-bold text-dark">Vanuit Ambacht Offertes &lt;offertes@vanuitambacht.nl&gt;</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="w-20 text-dark/50 font-bold uppercase tracking-wider text-[10px]">Aan:</span>
+                      <span className="w-20 text-dark/50 font-bold uppercase tracking-wider text-[10px]">
+                        {language === 'EN' ? 'To:' : 'Aan:'}
+                      </span>
                       <span className="font-bold text-primary">{customerName} &lt;{customerEmail}&gt;</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="w-20 text-dark/50 font-bold uppercase tracking-wider text-[10px]">Onderwerp:</span>
+                      <span className="w-20 text-dark/50 font-bold uppercase tracking-wider text-[10px]">
+                        {language === 'EN' ? 'Subject:' : 'Onderwerp:'}
+                      </span>
                       <span className="font-bold text-dark">
-                        Offerte {leadQuote?.id || targetQuoteId} — {customerCategory || 'Buitenkeuken'} op maat gemaakt voor {customerName}
+                        {language === 'EN'
+                          ? `Quote ${leadQuote?.id || targetQuoteId} — bespoke ${customerCategory || 'project'} crafted for ${customerName}`
+                          : `Offerte ${leadQuote?.id || targetQuoteId} — ${customerCategory || 'Buitenkeuken'} op maat gemaakt voor ${customerName}`}
                       </span>
                     </div>
                     <div className="flex items-center justify-between pt-1 border-t border-[#D6CFC2]/60">
@@ -5084,7 +5174,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       <div className="bg-[#3E4E36] text-[#FDFBF7] p-4 rounded-xl flex justify-between items-center">
                         <div>
                           <span className="text-[9px] uppercase font-bold tracking-widest text-[#D97706] font-mono block">
-                            OFFICIËLE MAATOFFERTE
+                            {language === 'EN' ? 'OFFICIAL BESPOKE PROPOSAL' : 'OFFICIËLE MAATOFFERTE'}
                           </span>
                           <h4 className="text-base font-serif font-bold text-white mt-0.5" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                             Vanuit Ambacht
@@ -5097,7 +5187,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
 
                       {/* Greeting & Custom Message */}
                       <div className="space-y-2 text-xs text-dark/80 leading-relaxed font-body">
-                        <p className="font-bold text-dark text-sm">Beste {customerName},</p>
+                        <p className="font-bold text-dark text-sm">
+                          {language === 'EN' ? `Dear ${customerName},` : `Beste ${customerName},`}
+                        </p>
                         <p className="whitespace-pre-wrap">
                           {step5EditableMsg}
                         </p>
@@ -5106,16 +5198,16 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       {/* Quotation Highlight Box */}
                       <div className="bg-[#F8F7F4] rounded-xl p-4 border border-[#D6CFC2] space-y-2.5 text-xs font-body">
                         <span className="text-[10px] font-mono uppercase font-bold text-[#D97706] tracking-wider block">
-                          CONFIGURATIE OVERZICHT
+                          {language === 'EN' ? 'CONFIGURATION OVERVIEW' : 'CONFIGURATIE OVERZICHT'}
                         </span>
                         <div className="grid grid-cols-2 gap-2 text-[11px]">
-                          <div><strong>Project:</strong> {customerCategory || 'Buitenkeuken'}</div>
-                          <div><strong>Houtsoort:</strong> {specFormValues['f-002'] || step2Material || 'Thermo Fraké'}</div>
-                          <div><strong>Afmeting:</strong> {step2Size || '240 × 80 cm'}</div>
-                          <div><strong>Levertijd:</strong> {partnerLeadTime || '3 tot 5 weken'}</div>
+                          <div><strong>{language === 'EN' ? 'Project:' : 'Project:'}</strong> {customerCategory || (language === 'EN' ? 'Outdoor kitchen' : 'Buitenkeuken')}</div>
+                          <div><strong>{language === 'EN' ? 'Wood type:' : 'Houtsoort:'}</strong> {specFormValues['f-002'] || step2Material || 'Thermo Fraké'}</div>
+                          <div><strong>{language === 'EN' ? 'Dimensions:' : 'Afmeting:'}</strong> {step2Size || '240 × 80 cm'}</div>
+                          <div><strong>{language === 'EN' ? 'Delivery time:' : 'Levertijd:'}</strong> {partnerLeadTime || (language === 'EN' ? '3 to 5 weeks' : '3 tot 5 weken')}</div>
                         </div>
                         <div className="pt-2 border-t border-[#D6CFC2] flex justify-between items-center font-bold text-primary">
-                          <span>Totaalbedrag (incl. 21% BTW):</span>
+                          <span>{language === 'EN' ? 'Total amount (incl. 21% VAT):' : 'Totaalbedrag (incl. 21% BTW):'}</span>
                           <span className="text-sm font-mono font-black text-primary">
                             € {step4TotalInclVat.toLocaleString('nl-NL')}
                           </span>
@@ -5130,10 +5222,11 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           rel="noreferrer"
                           className="inline-flex items-center gap-2 px-6 py-3 bg-[#3E4E36] hover:bg-[#283523] text-white font-bold text-xs rounded-xl shadow-md font-mono tracking-wide transition-all"
                         >
-                          <span>🌐 BEKIJK & ACCORDEER UW OFFERTE ONLINE →</span>
+                          <span>{language === 'EN' ? '🌐 VIEW & APPROVE YOUR QUOTE ONLINE →' : '🌐 BEKIJK & ACCORDEER UW OFFERTE ONLINE →'}</span>
                         </a>
                         <p className="text-[10px] text-dark/50 mt-1.5 font-mono">
-                          Of open direct in browser: {`${window.location.origin}/offerte/${leadQuote?.id || targetQuoteId}`}
+                          {language === 'EN' ? 'Or open directly in browser: ' : 'Of open direct in browser: '}
+                          {`${window.location.origin}/offerte/${leadQuote?.id || targetQuoteId}`}
                         </p>
                       </div>
 
@@ -5142,7 +5235,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         <p className="font-serif italic font-bold text-primary text-sm" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
                           Tim & Bram
                         </p>
-                        <p className="text-[10px] font-mono text-dark/50">Oprichters Vanuit Ambacht · info@vanuitambacht.nl</p>
+                        <p className="text-[10px] font-mono text-dark/50">
+                          {language === 'EN' ? 'Founders Vanuit Ambacht · info@vanuitambacht.nl' : 'Oprichters Vanuit Ambacht · info@vanuitambacht.nl'}
+                        </p>
                       </div>
                     </div>
 
@@ -5167,8 +5262,10 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         type="button"
                         onClick={() => {
                           const fullUrl = `${window.location.origin}/offerte/${leadQuote?.id || targetQuoteId}`;
-                          const subject = `Offerte ${leadQuote?.id || targetQuoteId} — ${customerCategory || 'Buitenkeuken'} op maat voor ${customerName}`;
-                          const body = `${step5EditableMsg}\n\nBekijk en accordeer uw offerte direct online via:\n${fullUrl}\n\nMet vriendelijke groet,\nTim & Bram — Vanuit Ambacht`;
+                          const subject = language === 'EN'
+                            ? `Quote ${leadQuote?.id || targetQuoteId} — bespoke ${customerCategory || 'project'} for ${customerName}`
+                            : `Offerte ${leadQuote?.id || targetQuoteId} — ${customerCategory || 'Buitenkeuken'} op maat voor ${customerName}`;
+                          const body = `${step5EditableMsg}\n\n${language === 'EN' ? 'View and approve your proposal online via:' : 'Bekijk en accordeer uw offerte direct online via:'}\n${fullUrl}\n\n${language === 'EN' ? 'Kind regards,' : 'Met vriendelijke groet,'}\nTim & Bram — Vanuit Ambacht`;
                           window.location.href = `mailto:${customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                         }}
                         className="px-3.5 py-2.5 bg-[#EDE8DF] hover:bg-[#E2DCCE] text-dark font-bold text-xs rounded-xl border border-[#D6CFC2] flex items-center gap-1.5 cursor-pointer font-mono transition-colors"
@@ -5185,7 +5282,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         onClick={() => setStep5ConfirmModalOpen(false)}
                         className="px-4 py-2.5 text-xs font-bold text-dark/70 hover:text-dark border border-[#D6CFC2] rounded-xl cursor-pointer"
                       >
-                        Annuleren
+                        {language === 'EN' ? 'Cancel' : 'Annuleren'}
                       </button>
                       <button
                         type="button"
@@ -5194,7 +5291,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         className="px-5 py-2.5 text-xs font-bold bg-[#3E4E36] hover:bg-[#2F3C29] text-white rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-2 font-mono transition-all"
                       >
                         <Send className="w-4 h-4 text-emerald-300" />
-                        <span>Verstuur Offerte E-mail (Send Now) →</span>
+                        <span>{language === 'EN' ? 'Send Proposal E-mail (Send Now) →' : 'Verstuur Offerte E-mail (Send Now) →'}</span>
                       </button>
                     </div>
                   </div>
@@ -5356,6 +5453,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                 quoteData={leadQuote}
                 onClose={() => setShowInlineQuoteEditor(false)}
                 onSaveQuote={(savedQuote, isExplicit) => handleSaveQuote(savedQuote, isExplicit)}
+                onPublishQuote={(quoteToPublish) => handlePublishQuote(quoteToPublish)}
               />
             </div>
           </div>

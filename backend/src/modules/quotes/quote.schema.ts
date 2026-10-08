@@ -149,7 +149,7 @@ export const quoteQuerySchema = z.object({
 });
 
 export const quoteIdParamSchema = z.object({
-  id: z.string().uuid('Invalid quote UUID format'),
+  id: z.string().trim().min(1, 'Quote ID or quote number parameter is required'),
 });
 
 export const tokenParamSchema = z.object({

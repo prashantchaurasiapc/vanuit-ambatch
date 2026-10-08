@@ -50,7 +50,7 @@ export const quoteRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const paramResult = quoteIdParamSchema.safeParse(request.params);
       if (!paramResult.success) {
-        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote UUID' } });
+        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote ID' } });
       }
 
       try {
@@ -109,7 +109,7 @@ export const quoteRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const paramResult = quoteIdParamSchema.safeParse(request.params);
       if (!paramResult.success) {
-        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote UUID' } });
+        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote ID' } });
       }
 
       const parseResult = updateQuoteSchema.safeParse(request.body);
@@ -143,7 +143,7 @@ export const quoteRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const paramResult = quoteIdParamSchema.safeParse(request.params);
       if (!paramResult.success) {
-        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote UUID' } });
+        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote ID' } });
       }
 
       const parseResult = saveDraftVersionSchema.safeParse(request.body);
@@ -177,7 +177,7 @@ export const quoteRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const paramResult = quoteIdParamSchema.safeParse(request.params);
       if (!paramResult.success) {
-        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote UUID' } });
+        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote ID' } });
       }
 
       const parseResult = publishQuoteSchema.safeParse(request.body || {});
@@ -215,7 +215,7 @@ export const quoteRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const paramResult = quoteIdParamSchema.safeParse(request.params);
       if (!paramResult.success) {
-        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote UUID' } });
+        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote ID' } });
       }
 
       try {
@@ -245,7 +245,7 @@ export const quoteRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const paramResult = quoteIdParamSchema.safeParse(request.params);
       if (!paramResult.success) {
-        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote UUID' } });
+        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote ID' } });
       }
 
       try {
@@ -271,7 +271,7 @@ export const quoteRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const paramResult = quoteIdParamSchema.safeParse(request.params);
       if (!paramResult.success) {
-        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote UUID' } });
+        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote ID' } });
       }
 
       const parseResult = acceptAndConvertSchema.safeParse(request.body || {});
@@ -309,7 +309,7 @@ export const quoteRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const paramResult = quoteIdParamSchema.safeParse(request.params);
       if (!paramResult.success) {
-        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote UUID' } });
+        return reply.status(400).send({ success: false, error: { code: 'INVALID_ID', message: 'Invalid quote ID' } });
       }
 
       try {
