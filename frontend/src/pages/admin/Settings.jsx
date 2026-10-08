@@ -218,13 +218,13 @@ export default function Settings() {
 
   const handleAddCategorySubmit = async (e) => {
     e.preventDefault();
-    if (!categoryForm.name.trim()) return showToast('Vul een categorienaam in.');
+    if (!categoryForm.name.trim()) return showToast(language === 'EN' ? 'Please enter a category name.' : 'Vul een categorienaam in.');
     const newCat = {
       id: `cat-${Date.now()}`,
       name: categoryForm.name.trim(),
       icon: categoryForm.icon || '📦',
-      description: categoryForm.description || 'Nieuwe product categorie',
-      status: 'Actief'
+      description: categoryForm.description || (language === 'EN' ? 'New product category' : 'Nieuwe product categorie'),
+      status: language === 'EN' ? 'Active' : 'Actief'
     };
     const updated = [...dynamicCategories, newCat];
     setDynamicCategories(updated);
@@ -232,7 +232,7 @@ export default function Settings() {
       await api.patch('/settings/config/categories', updated);
     } catch (err) {}
     window.dispatchEvent(new Event('app_data_changed'));
-    showToast(`Nieuwe categorie "${newCat.name}" aangemaakt!`);
+    showToast(language === 'EN' ? `New category "${newCat.name}" created!` : `Nieuwe categorie "${newCat.name}" aangemaakt!`);
     setCategoryForm({ name: '', icon: '🪵', description: '' });
     setAddCategoryModalOpen(false);
   };
@@ -244,7 +244,7 @@ export default function Settings() {
       await api.patch('/settings/config/categories', updated);
     } catch (err) {}
     window.dispatchEvent(new Event('app_data_changed'));
-    showToast('Categorie verwijderd.');
+    showToast(language === 'EN' ? 'Category deleted.' : 'Categorie verwijderd.');
   };
 
   // -------------------------------------------------------------
@@ -331,6 +331,28 @@ export default function Settings() {
     buildTime: '3 - 5 weken levertijd',
     paymentScheme: '50/50'
   });
+
+  const saveQuoteTemplateField = async (updatedConfig, fieldType) => {
+    try {
+      await api.patch('/settings/config/quote-template', updatedConfig);
+      window.dispatchEvent(new Event('app_data_changed'));
+      if (fieldType === 'woodTypes') {
+        showToast(language === 'EN' ? 'Wood types saved!' : 'Houtsoorten opgeslagen!');
+      } else if (fieldType === 'bbqPresets') {
+        showToast(language === 'EN' ? 'BBQ presets saved!' : 'BBQ inbouw opties opgeslagen!');
+      } else if (fieldType === 'buildTime') {
+        showToast(language === 'EN' ? 'Standard lead time saved!' : 'Standaard levertijd opgeslagen!');
+      } else if (fieldType === 'paymentScheme') {
+        showToast(
+          language === 'EN'
+            ? `Payment scheme changed to ${updatedConfig.paymentScheme}!`
+            : `Betalingsschema gewijzigd naar ${updatedConfig.paymentScheme}!`
+        );
+      }
+    } catch (err) {
+      showToast(language === 'EN' ? 'Failed to save settings.' : 'Opslaan mislukt.');
+    }
+  };
 
   const savePlConfig = async () => {
     try {
@@ -594,9 +616,9 @@ export default function Settings() {
       await api.patch(`/settings/users/${userId}/status`, { isActive: nextActive });
       setUsersList(prev => prev.map(u => u.id === userId ? { ...u, status: nextActive ? 'Actief' : 'Inactief' } : u));
       window.dispatchEvent(new Event('app_data_changed'));
-      showToast(`Gebruiker ${user.name} status gewijzigd naar ${nextActive ? 'Actief' : 'Inactief'}.`);
+      showToast(language === 'EN' ? `User ${user.name} status changed to ${nextActive ? 'Active' : 'Inactive'}.` : `Gebruiker ${user.name} status gewijzigd naar ${nextActive ? 'Actief' : 'Inactief'}.`);
     } catch (e) {
-      showToast('Wijzigen status mislukt.');
+      showToast(language === 'EN' ? 'Failed to update user status.' : 'Wijzigen status mislukt.');
     }
   };
 
@@ -605,9 +627,9 @@ export default function Settings() {
       await api.patch(`/settings/users/${userId}/role`, { role: newRole });
       setUsersList(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
       window.dispatchEvent(new Event('app_data_changed'));
-      showToast(`Rol gewijzigd naar ${newRole.toUpperCase()}`);
+      showToast(language === 'EN' ? `Role updated to ${newRole.toUpperCase()}` : `Rol gewijzigd naar ${newRole.toUpperCase()}`);
     } catch (e) {
-      showToast('Wijzigen rol mislukt.');
+      showToast(language === 'EN' ? 'Failed to update role.' : 'Wijzigen rol mislukt.');
     }
   };
 
@@ -937,7 +959,7 @@ export default function Settings() {
                     <div>
                       <div className="flex items-center gap-2">
                         <h4 className="font-bold text-primary text-sm font-heading">{cat.name}</h4>
-                        <Badge variant="success" className="text-[9px]">{cat.status || 'Actief'}</Badge>
+                        <Badge variant="success" className="text-[9px]">{language === 'EN' ? 'Active' : (cat.status || 'Actief')}</Badge>
                       </div>
                       <p className="text-xs text-dark/60 mt-1 font-body">{cat.description}</p>
                     </div>
@@ -1232,14 +1254,15 @@ export default function Settings() {
                   <input
                     type="text"
                     value={quoteTemplateConfig.woodTypes || ''}
-                    onChange={async (e) => {
+                    onChange={(e) => {
+                      setQuoteTemplateConfig({ ...quoteTemplateConfig, woodTypes: e.target.value });
+                    }}
+                    onBlur={(e) => {
                       const updated = { ...quoteTemplateConfig, woodTypes: e.target.value };
-                      setQuoteTemplateConfig(updated);
-                      try {
-                        await api.patch('/settings/config/quote-template', updated);
-                      } catch (err) {}
-                      window.dispatchEvent(new Event('app_data_changed'));
-                      showToast('Houtsoorten opgeslagen!');
+                      saveQuoteTemplateField(updated, 'woodTypes');
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.target.blur();
                     }}
                     className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold"
                   />
@@ -1251,14 +1274,15 @@ export default function Settings() {
                   <input
                     type="text"
                     value={quoteTemplateConfig.bbqPresets || ''}
-                    onChange={async (e) => {
+                    onChange={(e) => {
+                      setQuoteTemplateConfig({ ...quoteTemplateConfig, bbqPresets: e.target.value });
+                    }}
+                    onBlur={(e) => {
                       const updated = { ...quoteTemplateConfig, bbqPresets: e.target.value };
-                      setQuoteTemplateConfig(updated);
-                      try {
-                        await api.patch('/settings/config/quote-template', updated);
-                      } catch (err) {}
-                      window.dispatchEvent(new Event('app_data_changed'));
-                      showToast('BBQ inbouw opties opgeslagen!');
+                      saveQuoteTemplateField(updated, 'bbqPresets');
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.target.blur();
                     }}
                     className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold"
                   />
@@ -1270,14 +1294,15 @@ export default function Settings() {
                   <input
                     type="text"
                     value={quoteTemplateConfig.buildTime || ''}
-                    onChange={async (e) => {
+                    onChange={(e) => {
+                      setQuoteTemplateConfig({ ...quoteTemplateConfig, buildTime: e.target.value });
+                    }}
+                    onBlur={(e) => {
                       const updated = { ...quoteTemplateConfig, buildTime: e.target.value };
-                      setQuoteTemplateConfig(updated);
-                      try {
-                        await api.patch('/settings/config/quote-template', updated);
-                      } catch (err) {}
-                      window.dispatchEvent(new Event('app_data_changed'));
-                      showToast('Standaard levertijd opgeslagen!');
+                      saveQuoteTemplateField(updated, 'buildTime');
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.target.blur();
                     }}
                     className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold"
                   />
@@ -1288,14 +1313,10 @@ export default function Settings() {
                   <label className="font-bold text-primary text-xs uppercase tracking-wider block">💶 Betalingsschema (Termijnen)</label>
                   <select
                     value={quoteTemplateConfig.paymentScheme || '50/50'}
-                    onChange={async (e) => {
+                    onChange={(e) => {
                       const updated = { ...quoteTemplateConfig, paymentScheme: e.target.value };
                       setQuoteTemplateConfig(updated);
-                      try {
-                        await api.patch('/settings/config/quote-template', updated);
-                      } catch (err) {}
-                      window.dispatchEvent(new Event('app_data_changed'));
-                      showToast(`Betalingsschema gewijzigd naar ${e.target.value}!`);
+                      saveQuoteTemplateField(updated, 'paymentScheme');
                     }}
                     className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
                   >
