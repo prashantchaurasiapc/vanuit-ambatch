@@ -1235,7 +1235,7 @@ export default function Quotes() {
                     size="sm" 
                     icon={Download} 
                     onClick={() => {
-                      const downloadedName = downloadQuotePdf(pdfPreviewQuote);
+                      const downloadedName = downloadQuotePdf({ ...pdfPreviewQuote, language });
                       showToast(language === 'EN' ? `✓ Downloaded ${downloadedName}!` : `✓ ${downloadedName} gedownload!`);
                     }} 
                     className="text-xs font-bold bg-[#D97706] hover:bg-[#B45309] text-white shadow-sm cursor-pointer"
@@ -1253,7 +1253,7 @@ export default function Quotes() {
 
               {/* 6-PAGE DOCUMENT CONTAINER */}
               <div className="bg-[#EBE6DD] p-3 sm:p-6 rounded-2xl border border-[#C4BEB3]">
-                <Offerte6PagePDF quote={pdfPreviewQuote} />
+                <Offerte6PagePDF quote={pdfPreviewQuote} language={language} />
               </div>
             </motion.div>
           </div>
@@ -1263,7 +1263,7 @@ export default function Quotes() {
       {/* 100% CLEAN PDF PRINT PORTAL ATTACHED DIRECTLY TO DOCUMENT BODY */}
       {pdfPreviewQuote && !selectedQuote && createPortal(
         <div id="printable-offerte-portal">
-          <Offerte6PagePDF quote={pdfPreviewQuote} />
+          <Offerte6PagePDF quote={pdfPreviewQuote} language={language} />
         </div>,
         document.body
       )}

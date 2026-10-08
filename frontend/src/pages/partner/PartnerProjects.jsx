@@ -314,7 +314,7 @@ export default function PartnerProjects() {
             {/* Action Buttons */}
             <div className="px-3 sm:px-4 pb-3.5 pt-1 flex flex-wrap gap-1.5">
               <Button size="sm" variant="outline" icon={Edit3} className="flex-1 text-xs justify-center whitespace-nowrap" onClick={() => setEditProject({ ...project })}>
-                <span className="sm:hidden">{label('Voortgang', 'Voortgang')}</span>
+                <span className="sm:hidden">{label('Progress', 'Voortgang')}</span>
                 <span className="hidden sm:inline">{label('Update Progress', 'Voortgang bijwerken')}</span>
               </Button>
               <Button size="sm" variant="custom" icon={Camera} className="bg-[#555046] text-cream hover:bg-[#3E3A33] text-xs justify-center whitespace-nowrap px-2.5" onClick={() => { setUploadPhotoProject(project); setPhotoForm({ title: `${project.name} - Werkplaatsvoortgang`, desc: 'Kwaliteitscontrole en montage in werkplaats voltooid.', img: projectImg }); }}>
@@ -338,29 +338,29 @@ export default function PartnerProjects() {
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
               <div className="flex justify-between items-center pb-2 border-b border-[#D6CFC2]">
-                <h3 className="text-lg font-heading font-bold text-primary">Voortgang & Status Bijwerken</h3>
+                <h3 className="text-lg font-heading font-bold text-primary">{label('Update Progress & Status', 'Voortgang & Status Bijwerken')}</h3>
                 <button onClick={() => setEditProject(null)} className="text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
               </div>
               <form onSubmit={handleUpdateProgress} className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-dark/70 font-semibold mb-1 uppercase">Projectnaam</label>
+                  <label className="block text-dark/70 font-semibold mb-1 uppercase">{label('Project Name', 'Projectnaam')}</label>
                   <input type="text" disabled value={editProject.name} className="w-full p-2.5 bg-white/70 border border-[#D6CFC2] rounded-lg text-dark/60 font-bold" />
                 </div>
                 <div>
-                  <label className="block text-dark/70 font-semibold mb-1 uppercase">Status</label>
+                  <label className="block text-dark/70 font-semibold mb-1 uppercase">{label('Status', 'Status')}</label>
                   <select
                     value={editProject.status}
                     onChange={e => setEditProject({ ...editProject, status: e.target.value })}
                     className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg text-dark font-bold focus:outline-none"
                   >
-                    <option value="In Progress">In Progress (In Uitvoering)</option>
-                    <option value="Review Required">Review Required (Ter Controle)</option>
-                    <option value="Completed">Completed (Afgerond)</option>
+                    <option value="In Progress">{label('In Progress', 'In Uitvoering')}</option>
+                    <option value="Review Required">{label('Review Required', 'Ter Controle')}</option>
+                    <option value="Completed">{label('Completed', 'Afgerond')}</option>
                   </select>
                 </div>
                 <div>
                   <div className="flex justify-between mb-1">
-                    <label className="text-dark/70 font-semibold uppercase">Voortgang Percentage</label>
+                    <label className="text-dark/70 font-semibold uppercase">{label('Progress Percentage', 'Voortgang Percentage')}</label>
                     <span className="font-bold text-primary font-mono">{editProject.progress}%</span>
                   </div>
                   <input
@@ -374,8 +374,8 @@ export default function PartnerProjects() {
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-2 border-t border-[#D6CFC2]">
-                  <Button type="button" variant="outline" onClick={() => setEditProject(null)}>Annuleren</Button>
-                  <Button type="submit">Opslaan</Button>
+                  <Button type="button" variant="outline" onClick={() => setEditProject(null)}>{label('Cancel', 'Annuleren')}</Button>
+                  <Button type="submit">{label('Save', 'Opslaan')}</Button>
                 </div>
               </form>
             </motion.div>
@@ -391,7 +391,9 @@ export default function PartnerProjects() {
               
               <div className="flex justify-between items-start pb-3 border-b border-[#D6CFC2]">
                 <div>
-                  <span className="font-mono font-bold text-accent text-[10px] uppercase">Technical Specs & Blueprint Files</span>
+                  <span className="font-mono font-bold text-accent text-[10px] uppercase">
+                    {label('Technical Specs & Blueprint Files', 'Technische Specificaties & Bouwtekening')}
+                  </span>
                   <h3 className="text-xl font-heading font-bold text-primary mt-0.5">{selectedProject.name}</h3>
                 </div>
                 <button onClick={() => setSelectedProject(null)} className="text-dark/40 hover:text-dark p-1"><X className="w-5 h-5" /></button>
@@ -400,11 +402,15 @@ export default function PartnerProjects() {
               {/* Financial & Delivery Header */}
               <div className="grid grid-cols-2 gap-3 p-3 bg-white rounded-xl border border-[#D6CFC2]/60">
                 <div>
-                  <span className="text-dark/50 font-bold uppercase text-[10px] block">Overeengekomen Bouwsom</span>
+                  <span className="text-dark/50 font-bold uppercase text-[10px] block">
+                    {label('Agreed Build Price', 'Overeengekomen Bouwsom')}
+                  </span>
                   <span className="text-base font-bold text-primary">{selectedProject.agreedBuildPrice}</span>
                 </div>
                 <div>
-                  <span className="text-dark/50 font-bold uppercase text-[10px] block">Target Deadline</span>
+                  <span className="text-dark/50 font-bold uppercase text-[10px] block">
+                    {label('Target Deadline', 'Streefdeadline')}
+                  </span>
                   <span className="font-bold text-dark">{selectedProject.deadline}</span>
                 </div>
               </div>
@@ -413,20 +419,27 @@ export default function PartnerProjects() {
               <div className="p-3 bg-white rounded-xl border border-[#D6CFC2]/60 flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <span className="text-dark/50 font-bold uppercase text-[10px] block">Opleverlocatie / Delivery Address</span>
+                  <span className="text-dark/50 font-bold uppercase text-[10px] block">
+                    {label('Delivery Location / Address', 'Opleverlocatie / Bezorgadres')}
+                  </span>
                   <span className="font-bold text-dark">{selectedProject.deliveryAddress}</span>
                 </div>
               </div>
 
               {/* Specs & Materials Breakdown */}
               <div className="space-y-2">
-                <span className="text-dark/70 font-bold uppercase block text-[10px]">Technische Specificaties & Materialen</span>
+                <span className="text-dark/70 font-bold uppercase block text-[10px]">
+                  {label('Technical Specifications & Materials', 'Technische Specificaties & Materialen')}
+                </span>
                 <div className="p-3 bg-white rounded-xl border border-[#D6CFC2]/60 space-y-1.5">
-                  <p><span className="font-bold text-dark">Afmetingen:</span> {selectedProject.dimensions}</p>
-                  <p><span className="font-bold text-dark">Frame Constructie:</span> {selectedProject.frameMaterial}</p>
-                  <p><span className="font-bold text-dark">Aanrechtblad Afwerking:</span> {selectedProject.topMaterial}</p>
+                  <p><span className="font-bold text-dark">{label('Dimensions:', 'Afmetingen:')}</span> {selectedProject.dimensions}</p>
+                  <p><span className="font-bold text-dark">{label('Frame Construction:', 'Frame Constructie:')}</span> {selectedProject.frameMaterial}</p>
+                  <p><span className="font-bold text-dark">{label('Countertop Finish:', 'Aanrechtblad Afwerking:')}</span> {selectedProject.topMaterial}</p>
                   <p className="text-dark/70 pt-1 text-[11px] border-t border-[#D6CFC2]/40">
-                    Geïntegreerde uitsparing voor Kamado grill, kabeldoorvoer voor verlichting, en roestvrijstalen stelpootjes.
+                    {label(
+                      'Integrated cutout for Kamado grill, cable routing for lighting, and stainless steel leveling feet.',
+                      'Geïntegreerde uitsparing voor Kamado grill, kabeldoorvoer voor verlichting, en roestvrijstalen stelpootjes.'
+                    )}
                   </p>
                 </div>
               </div>
@@ -434,7 +447,7 @@ export default function PartnerProjects() {
               {/* AutoCAD Schematic Diagram & Blueprint Download Box */}
               <div className="p-4 bg-slate-900 text-cyan-400 rounded-xl border border-cyan-800 space-y-2 font-mono text-[11px]">
                 <div className="flex justify-between items-center border-b border-cyan-800 pb-1 text-[9px] text-cyan-300">
-                  <span>📐 TECHNICAL BLUEPRINT DIAGRAM</span>
+                  <span>{label('📐 TECHNICAL BLUEPRINT DIAGRAM', '📐 TECHNISCHE BOUWTEKENING DIAGRAM')}</span>
                   <span>AUTOCAD 1:20 SPEC</span>
                 </div>
                 <div className="py-4 text-center border border-dashed border-cyan-700 rounded bg-slate-950/70">
@@ -447,9 +460,9 @@ export default function PartnerProjects() {
                   <span className="text-cyan-300 text-[10px]">{selectedProject.blueprintFile}</span>
                   <button
                     onClick={() => handleDownloadBlueprint(selectedProject.blueprintFile)}
-                    className="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold rounded-lg text-[10px] flex items-center gap-1"
+                    className="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold rounded-lg text-[10px] flex items-center gap-1 cursor-pointer"
                   >
-                    <Download className="w-3 h-3" /> Download PDF Blueprint
+                    <Download className="w-3 h-3" /> {label('Download PDF Blueprint', 'PDF Bouwtekening Downloaden')}
                   </button>
                 </div>
               </div>
@@ -458,38 +471,40 @@ export default function PartnerProjects() {
               <div className="bg-white rounded-xl border border-[#D6CFC2] overflow-hidden shadow-sm mt-4">
                 <div className="p-4 border-b border-[#D6CFC2] flex justify-between items-center bg-[#F7F4EE]">
                   <div>
-                    <span className="font-mono text-[9px] text-[#736E64] uppercase tracking-wider">Werkorder WO-2026-084 · Project {selectedProject.id || 'OF-2026418'}</span>
+                    <span className="font-mono text-[9px] text-[#736E64] uppercase tracking-wider">
+                      {label('Work Order', 'Werkorder')} WO-2026-084 · {label('Project', 'Project')} {selectedProject.id || 'OF-2026418'}
+                    </span>
                     <h4 className="text-lg font-heading font-bold text-primary mt-1">{selectedProject.name}</h4>
                   </div>
                   <div className="px-3 py-1 border border-[#D6CFC2] rounded-full text-[10px] font-bold text-[#58534A] tracking-wider uppercase bg-white">
-                    Werkorder
+                    {label('Work Order', 'Werkorder')}
                   </div>
                 </div>
                 <div className="p-4 bg-white flex justify-between items-start">
                   <div className="grid grid-cols-4 gap-4 w-full p-3 bg-[#F7F4EE] rounded-lg border border-[#E6E0D4] text-[#58534A]">
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Vakspecialist</p>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">{label('Craftsman / Partner', 'Vakspecialist')}</p>
                       <p className="font-bold text-[#2A2925] text-[11px] truncate">{selectedProject.partner || 'J. van den Berg'}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Schouw</p>
-                      <p className="font-bold text-[#2A2925] text-[11px]">15 sept 2026</p>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">{label('Site Inspection', 'Schouw')}</p>
+                      <p className="font-bold text-[#2A2925] text-[11px]">{label('Sep 15, 2026', '15 sept 2026')}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Start Bouw</p>
-                      <p className="font-bold text-[#2A2925] text-[11px]">13 okt 2026</p>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">{label('Build Start', 'Start Bouw')}</p>
+                      <p className="font-bold text-[#2A2925] text-[11px]">{label('Oct 13, 2026', '13 okt 2026')}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Oplevering</p>
-                      <p className="font-bold text-[#2A2925] text-[11px]">31 okt 2026</p>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">{label('Delivery', 'Oplevering')}</p>
+                      <p className="font-bold text-[#2A2925] text-[11px]">{label('Oct 31, 2026', '31 okt 2026')}</p>
                     </div>
                   </div>
                 </div>
                 <div className="p-3 bg-[#F7F4EE] border-t border-[#D6CFC2] flex justify-end">
                   <button 
                     onClick={() => downloadWerkorderPdf(selectedProject)}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-[#2A3329] text-white rounded-lg text-xs font-bold transition-colors">
-                    <Download className="w-3.5 h-3.5" /> Download Werkorder PDF
+                    className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-[#2A3329] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer">
+                    <Download className="w-3.5 h-3.5" /> {label('Download Work Order PDF', 'Download Werkorder PDF')}
                   </button>
                 </div>
               </div>
@@ -498,29 +513,36 @@ export default function PartnerProjects() {
               <div className="bg-white rounded-xl border border-[#D6CFC2] overflow-hidden shadow-sm mt-4">
                 <div className="p-4 border-b border-[#D6CFC2] flex justify-between items-center bg-[#F7F4EE]">
                   <div>
-                    <span className="font-mono text-[9px] text-[#736E64] uppercase tracking-wider">Opleverrapport OP-2026-042</span>
-                    <h4 className="text-lg font-heading font-bold text-primary mt-1">Opgeleverd. Veel plezier van je {(selectedProject.name || '').toLowerCase().includes('keuken') ? 'buitenkeuken' : 'buitenverblijf'}, {(selectedProject.customer || selectedProject.customerName || 'Klant').split(' ').pop()}.</h4>
+                    <span className="font-mono text-[9px] text-[#736E64] uppercase tracking-wider">
+                      {label('Handover Report', 'Opleverrapport')} OP-2026-042
+                    </span>
+                    <h4 className="text-lg font-heading font-bold text-primary mt-1">
+                      {label(
+                        `Delivered. Enjoy your ${(selectedProject.name || '').toLowerCase().includes('keuken') ? 'outdoor kitchen' : 'outdoor living'}, ${(selectedProject.customer || selectedProject.customerName || 'Client').split(' ').pop()}.`,
+                        `Opgeleverd. Veel plezier van je ${(selectedProject.name || '').toLowerCase().includes('keuken') ? 'buitenkeuken' : 'buitenverblijf'}, ${(selectedProject.customer || selectedProject.customerName || 'Klant').split(' ').pop()}.`
+                      )}
+                    </h4>
                   </div>
                   <div className="px-3 py-1 border border-[#D6CFC2] rounded-full text-[10px] font-bold text-[#58534A] tracking-wider uppercase bg-white">
-                    Oplevering
+                    {label('Handover', 'Oplevering')}
                   </div>
                 </div>
                 <div className="p-4 bg-white space-y-4">
                   <div className="grid grid-cols-4 gap-4 w-full p-3 bg-[#F7F4EE] rounded-lg border border-[#E6E0D4] text-[#58534A]">
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Project</p>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">{label('Project', 'Project')}</p>
                       <p className="font-bold text-[#2A2925] text-[11px] truncate">OF-2026418</p>
                     </div>
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Opleverdatum</p>
-                      <p className="font-bold text-[#2A2925] text-[11px]">28 okt 2026</p>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">{label('Delivery Date', 'Opleverdatum')}</p>
+                      <p className="font-bold text-[#2A2925] text-[11px]">{label('Oct 28, 2026', '28 okt 2026')}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Klant</p>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">{label('Client', 'Klant')}</p>
                       <p className="font-bold text-[#2A2925] text-[11px] truncate">{selectedProject.customer || selectedProject.customerName || 'Sander de Vries'}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">Locatie</p>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1">{label('Location', 'Locatie')}</p>
                       <p className="font-bold text-[#2A2925] text-[11px] truncate">{(selectedProject.deliveryAddress || selectedProject.city || 'Oisterwijk').split(' ').pop() || 'Oisterwijk'}</p>
                     </div>
                   </div>
@@ -528,8 +550,8 @@ export default function PartnerProjects() {
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <button 
                       onClick={() => downloadOpleverrapportPdf(selectedProject)}
-                      className="flex items-center justify-center gap-1.5 px-4 py-2 border border-primary text-primary hover:bg-[#F7F4EE] rounded-lg text-xs font-bold transition-colors sm:w-1/2 shrink-0">
-                      <Download className="w-3.5 h-3.5" /> Download Blank Form
+                      className="flex items-center justify-center gap-1.5 px-4 py-2 border border-primary text-primary hover:bg-[#F7F4EE] rounded-lg text-xs font-bold transition-colors sm:w-1/2 shrink-0 cursor-pointer">
+                      <Download className="w-3.5 h-3.5" /> {label('Download Blank Form', 'Download Blanco Formulier')}
                     </button>
                     
                     <div className={`flex-1 relative group cursor-pointer border ${uploadedFile ? 'border-green-500 bg-green-50/50' : 'border-dashed border-[#C4BEB3] hover:border-primary bg-[#F7F4EE]'} rounded-lg p-2 text-center transition-colors`}>
@@ -545,12 +567,12 @@ export default function PartnerProjects() {
                         {uploadedFile ? (
                           <>
                             <Check className="w-4 h-4" />
-                            <span>{uploadedFile} Uploaded</span>
+                            <span>{uploadedFile} {label('Uploaded', 'Geüpload')}</span>
                           </>
                         ) : (
                           <>
                             <Upload className="w-3 h-3" />
-                            <span>Upload Signed Handover Report</span>
+                            <span>{label('Upload Signed Handover Report', 'Ondertekend Opleverrapport Uploaden')}</span>
                           </>
                         )}
                       </div>
@@ -560,7 +582,7 @@ export default function PartnerProjects() {
               </div>
 
               <div className="flex justify-end pt-4">
-                <Button onClick={() => setSelectedProject(null)}>Sluiten</Button>
+                <Button onClick={() => setSelectedProject(null)}>{label('Close', 'Sluiten')}</Button>
               </div>
             </motion.div>
           </div>
@@ -584,32 +606,32 @@ export default function PartnerProjects() {
 
               <form onSubmit={handleUploadPartnerPhoto} className="space-y-3">
                 <div className="p-3 bg-white/80 rounded-xl border border-[#D6CFC2]/60 space-y-1">
-                  <span className="text-[10px] text-dark/50 uppercase font-bold block">Gekoppeld Project</span>
+                  <span className="text-[10px] text-dark/50 uppercase font-bold block">{label('Linked Project', 'Gekoppeld Project')}</span>
                   <span className="font-bold text-primary text-sm block">{uploadPhotoProject.name} ({uploadPhotoProject.id})</span>
-                  <span className="text-[11px] text-dark/60 font-mono block">Opleverlocatie: {uploadPhotoProject.deliveryAddress}</span>
+                  <span className="text-[11px] text-dark/60 font-mono block">{label('Delivery Address:', 'Opleverlocatie:')} {uploadPhotoProject.deliveryAddress}</span>
                 </div>
 
                 <div>
-                  <label className="block text-dark/70 font-semibold mb-1 uppercase tracking-wider">Foto Titel / Onderwerp *</label>
+                  <label className="block text-dark/70 font-semibold mb-1 uppercase tracking-wider">{label('Photo Title / Subject *', 'Foto Titel / Onderwerp *')}</label>
                   <input
                     type="text"
                     required
                     value={photoForm.title}
                     onChange={e => setPhotoForm(prev => ({ ...prev, title: e.target.value }))}
                     className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark"
-                    placeholder="e.g. Massief Teakhout Frame Gezaagd"
+                    placeholder={label('e.g. Solid Teak Frame Assembled', 'bijv. Massief Teakhout Frame Gezaagd')}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-dark/70 font-semibold mb-1 uppercase tracking-wider">Werkplaats Toelichting *</label>
+                  <label className="block text-dark/70 font-semibold mb-1 uppercase tracking-wider">{label('Workshop Note / Explanation *', 'Werkplaats Toelichting *')}</label>
                   <textarea
                     required
                     rows={3}
                     value={photoForm.desc}
                     onChange={e => setPhotoForm(prev => ({ ...prev, desc: e.target.value }))}
                     className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg text-dark"
-                    placeholder="Korte toelichting over de voortgang..."
+                    placeholder={label('Brief update on workshop progress...', 'Korte toelichting over de voortgang...')}
                   />
                 </div>
 
@@ -646,12 +668,12 @@ export default function PartnerProjects() {
 
                 <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px] flex items-center gap-2">
                   <Bell className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                  <span>Beheerder (Tim & Bram) ontvangt direct een automatische melding bij het opslaan!</span>
+                  <span>{label('Admin (Tim & Bram) immediately receives an automatic notification upon save!', 'Beheerder (Tim & Bram) ontvangt direct een automatische melding bij het opslaan!')}</span>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
-                  <Button type="button" variant="outline" onClick={() => setUploadPhotoProject(null)}>Annuleren</Button>
-                  <Button type="submit" icon={Upload} className="bg-primary text-cream font-bold">Foto Uploaden & Melden →</Button>
+                  <Button type="button" variant="outline" onClick={() => setUploadPhotoProject(null)}>{label('Cancel', 'Annuleren')}</Button>
+                  <Button type="submit" icon={Upload} className="bg-primary text-cream font-bold cursor-pointer">{label('Upload Photo & Notify →', 'Foto Uploaden & Melden →')}</Button>
                 </div>
               </form>
             </motion.div>
