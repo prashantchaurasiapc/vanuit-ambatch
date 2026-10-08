@@ -311,12 +311,13 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const [step2RequestedDate, setStep2RequestedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [step2ExpectedDate, setStep2ExpectedDate] = useState(() => new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [step2Material, setStep2Material] = useState('Douglas');
+  const [step2SiteAccess, setStep2SiteAccess] = useState('good — rear access 1.20 m');
   const [isPriceRequestSent, setIsPriceRequestSent] = useState(false);
 
   // Partner Form State (Declared early so all step handlers can access it)
   const [partnerForm, setPartnerForm] = useState({
-    partnerName: 'Ruben Verbeij — RV Meubels',
-    company: 'RV Meubels',
+    partnerName: lead?.partner || '',
+    company: '',
     buildPrice: '8500',
     deliveryWeek: 'Week 49 (Dec 2023)'
   });
@@ -336,21 +337,22 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   useEffect(() => {
     let isMounted = true;
     const loadPartners = async () => {
-      let combined = [
-        { id: '1', name: 'Ruben Verbeij — RV Meubels', company: 'RV Meubels' },
-        { id: '2', name: 'Sven Hoek (Hoek Bouw)', company: 'Hoek Bouw' },
-        { id: '3', name: 'Lars Jansen (Jansen Houtwerk)', company: 'Jansen Houtwerk' },
-        { id: '4', name: 'Theo Mulder (Mulder Tuinen)', company: 'Mulder Tuinen' }
-      ];
+      let combined = [];
 
       try {
-        const res = await api.get('/partners');
-        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-          combined = res.data.map(p => ({
-            id: p.id || p.name,
-            name: p.name || p.companyName || p.contactName,
-            company: p.companyName || p.name
-          }));
+        const res = await api.get('/partners?limit=100');
+        const items = res?.data?.items || res?.data?.partners || (Array.isArray(res?.data) ? res.data : []);
+        if (items && items.length > 0) {
+          combined = items.map(p => {
+            const displayName = p.contactPerson && p.companyName
+              ? `${p.contactPerson} (${p.companyName})`
+              : (p.companyName || p.contactPerson || 'Partner');
+            return {
+              id: p.id,
+              name: displayName,
+              company: p.companyName || p.contactPerson || displayName
+            };
+          });
         }
       } catch (e) {}
 
@@ -358,7 +360,12 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
         setAvailablePartners(combined);
         // Auto-set initial selected partner if not set
         if (!partnerForm.partnerName && combined.length > 0) {
-          setPartnerForm(prev => ({ ...prev, partnerName: combined[0].name, company: combined[0].company || combined[0].name }));
+          setPartnerForm(prev => ({ 
+            ...prev, 
+            partnerName: combined[0].name, 
+            partnerId: combined[0].id,
+            company: combined[0].company || combined[0].name 
+          }));
         }
       }
     };
@@ -426,7 +433,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   // Helper to construct STRICT Privacy-Sanitized Partner Payload (NO customerName, phone, email, address, budget)
   const buildSanitizedPartnerPayload = () => {
     return {
-      partnerName: partnerForm.partnerName || 'Ruben Verbeij — RV Meubels',
+      partnerName: partnerForm.partnerName || lead?.partner || '',
       requestedOn: step2RequestedDate,
       responseExpected: step2ExpectedDate,
       town: lead?.city || (lead?.location ? lead.location.split(',')[0].trim() : 'Amsterdam'),
@@ -986,7 +993,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
           unitPrice: step4CustomerPriceExclVat 
         }
       ],
-      partner: 'Ruben Verbeij — RV Meubels',
+      partner: partnerForm?.partnerName || lead?.partner || '',
       partnerCost: effectivePartnerCost,
       margin: step4MarginAmount,
       marginPercent: step4MarginPercent,
@@ -1059,7 +1066,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   };
 
   // Step 7 — Create Project State (Final Check & Partner Privacy Unlock)
-  const initialStep2Partner = partnerForm?.partnerName || lead?.partner || 'Ruben Verbeij — RV Meubels';
+  const initialStep2Partner = partnerForm?.partnerName || lead?.partner || '';
   const [step7SelectedPartner, setStep7SelectedPartner] = useState(initialStep2Partner);
   const [step7PartnerChangeReason, setStep7PartnerChangeReason] = useState('');
   const [step7StartDate, setStep7StartDate] = useState('2026-09-02');
@@ -1075,7 +1082,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   }, [partnerForm?.partnerName]);
 
   const handleConfirmProjectStep7 = () => {
-    const originalPartner = partnerForm?.partnerName || lead?.partner || 'Ruben Verbeij — RV Meubels';
+    const originalPartner = partnerForm?.partnerName || lead?.partner || '';
     if (step7SelectedPartner !== originalPartner && !step7PartnerChangeReason.trim()) {
       showToast(language === 'EN' 
         ? `Why are you changing the partner? Please specify a mandatory reason before confirming.` 
@@ -1324,7 +1331,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const [projectForm, setProjectForm] = useState({
     projectName: `Luxury ${customerCategory} — ${customerName}`,
     customer: customerName,
-    partner: 'Sven Hoek (Hoek Bouw)',
+    partner: lead?.partner || '',
     deadline: '2023-12-12',
   });
 
@@ -1339,7 +1346,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     let events = [
       { id: 1, title: 'Lead Ingestion', desc: `Inquiry received for ${customerCategory}`, time: '10:15 AM (Day 1)', user: 'System' },
       { id: 2, title: 'Partner Price Request Sent', desc: 'Sanitized request sent to partner (no contact data)', time: '10:20 AM (Day 1)', user: 'Tim (Admin)' },
-      { id: 3, title: 'Partner Price Received', desc: 'Partner cost recorded for internal pricing', time: '11:45 AM (Day 2)', user: 'Ruben Verbeij' },
+      { id: 3, title: 'Partner Price Received', desc: 'Partner cost recorded for internal pricing', time: '11:45 AM (Day 2)', user: partnerForm?.partnerName || 'Partner' },
       { id: 4, title: 'Quote Draft Created', desc: 'Draft quotation created for internal review. Nothing sent to customer.', time: '02:30 PM (Day 3)', user: 'Tim (Admin)' }
     ];
 
@@ -1432,7 +1439,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const autoConvertProjectAndCustomer = async (assignedPartner) => {
     const projName = projectForm.projectName || `Bespoke ${translatedCat}`;
     const custName = projectForm.customer || customerName;
-    const partnerName = assignedPartner || projectForm.partner || 'Sven Hoek (Hoek Bouw)';
+    const partnerName = assignedPartner || projectForm.partner || partnerForm?.partnerName || '';
 
     let assignedProjId = 'PRJ-LIVE';
     try {
@@ -2094,16 +2101,21 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                               setPartnerForm(prev => ({ 
                                 ...prev, 
                                 partnerName: selectedVal,
+                                partnerId: partnerObj?.id,
                                 company: partnerObj?.company || selectedVal
                               }));
                             }}
                             className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer shadow-2xs"
                           >
-                            {availablePartners.map((p) => (
-                              <option key={p.id || p.name} value={p.name}>
-                                {p.name} ▾
-                              </option>
-                            ))}
+                            {availablePartners.length > 0 ? (
+                              availablePartners.map((p) => (
+                                <option key={p.id || p.name} value={p.name}>
+                                  {p.name} ▾
+                                </option>
+                              ))
+                            ) : (
+                              <option value="">{language === 'EN' ? 'No partners available' : 'Geen partners beschikbaar'}</option>
+                            )}
                           </select>
                         </div>
                         <div>
@@ -2198,7 +2210,8 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Site Access</label>
                           <input 
                             type="text" 
-                            defaultValue="good — rear access 1.20 m"
+                            value={step2SiteAccess}
+                            onChange={(e) => setStep2SiteAccess(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-semibold text-dark focus:ring-2 focus:ring-primary/20" 
                           />
                         </div>
@@ -2392,8 +2405,10 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       type="button"
                       onClick={async () => {
                         const sanitizedPayload = buildSanitizedPartnerPayload();
-                        const selectedPartner = partners.find(p => p.id === partnerForm.partnerId || p.companyName === partnerForm.partnerName) || partners[0];
-                        if (selectedPartner && lead?.id) {
+                        const selectedPartner = availablePartners.find(p => (partnerForm.partnerId && p.id === partnerForm.partnerId) || p.name === partnerForm.partnerName || p.company === partnerForm.partnerName) || availablePartners[0];
+                        const isLeadUuid = typeof lead?.id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lead.id);
+
+                        if (selectedPartner?.id && isLeadUuid) {
                           const futureDate = new Date();
                           futureDate.setDate(futureDate.getDate() + 7);
                           const expDate = step2ExpectedDate || futureDate.toISOString().split('T')[0];
@@ -2420,7 +2435,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             if (res.success) {
                               window.dispatchEvent(new Event('app_data_changed'));
                             }
-                          } catch (e) {}
+                          } catch (e) {
+                            console.error('Error creating partner request:', e);
+                          }
                         }
 
                         setIsPriceRequestSent(true);
@@ -2469,7 +2486,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="p-3 bg-white rounded-xl border border-[#D6CFC2]/80">
                         <span className="text-[10px] font-bold text-dark/50 uppercase block mb-1">Partner</span>
-                        <span className="font-bold text-primary text-sm">{partnerForm?.partnerName || 'Ruben Verbeij — RV Meubels'}</span>
+                        <span className="font-bold text-primary text-sm">{partnerForm?.partnerName || lead?.partner || '—'}</span>
                       </div>
                       <div className="p-3 bg-white rounded-xl border border-[#D6CFC2]/80">
                         <span className="text-[10px] font-bold text-dark/50 uppercase block mb-1">{language === 'EN' ? 'Price Request Sent' : 'Prijsaanvraag Verstuurd'}</span>
@@ -2866,7 +2883,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           🔒 Internal Partner Cost (Auto Carried from Step 3)
                         </span>
                         <span className="text-xs text-amber-950 font-medium">
-                          Partner: {partnerForm?.partnerName || 'Ruben Verbeij — RV Meubels'}
+                          Partner: {partnerForm?.partnerName || lead?.partner || '—'}
                         </span>
                       </div>
                       <div className="text-right">
@@ -3748,16 +3765,12 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                               </option>
                             ))
                           ) : (
-                            <>
-                              <option value="Ruben Verbeij — RV Meubels">Ruben Verbeij — RV Meubels</option>
-                              <option value="Sven Hoek — Hoek Bouw">Sven Hoek — Hoek Bouw</option>
-                              <option value="Kees van der Meer — De Zaagtafel">Kees van der Meer — De Zaagtafel</option>
-                            </>
+                            <option value="">{language === 'EN' ? 'No partners available' : 'Geen partners beschikbaar'}</option>
                           )}
                         </select>
 
                         {/* Mandatory Reason if selecting another partner */}
-                        {step7SelectedPartner !== (partnerForm?.partnerName || lead?.partner || 'Ruben Verbeij — RV Meubels') && (
+                        {step7SelectedPartner !== (partnerForm?.partnerName || lead?.partner || '') && (
                           <div className="pt-2 animate-fade-in space-y-1">
                             <label className="block text-[10px] font-bold text-amber-900 uppercase">
                               Why are you changing the partner? * (Mandatory Reason)
@@ -4649,9 +4662,13 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                 <div>
                   <label className="block font-semibold text-dark/70 mb-1">Select Craftsman Partner</label>
                   <select value={partnerForm.partnerName} onChange={e => setPartnerForm(prev => ({ ...prev, partnerName: e.target.value }))} className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg font-semibold text-dark">
-                    <option value="Sven Hoek">Sven Hoek (Hoek Bouw) — 2 Active Projects</option>
-                    <option value="Lars Jansen">Lars Jansen (Jansen Houtwerk) — 1 Active Project</option>
-                    <option value="Theo Mulder">Theo Mulder (Mulder Tuinen) — 3 Active Projects</option>
+                    {availablePartners.length > 0 ? (
+                      availablePartners.map(p => (
+                        <option key={p.id || p.name} value={p.name}>{p.name}</option>
+                      ))
+                    ) : (
+                      <option value="">{language === 'EN' ? 'No partners available' : 'Geen partners beschikbaar'}</option>
+                    )}
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
