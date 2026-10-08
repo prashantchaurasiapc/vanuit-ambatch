@@ -643,8 +643,35 @@ export default function Leads() {
         (lead.phone && lead.phone.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (lead.leadNumber && lead.leadNumber.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      const matchesStatus = statusFilter === 'All' || lead.status === statusFilter || lead.backendStatus === statusFilter.toLowerCase();
-      const matchesProduct = productTypeFilter === 'All' || lead.productType === productTypeFilter || lead.backendProductType === productTypeFilter;
+      const normalizedStatusFilter = statusFilter.toLowerCase().replace(/[\s-]+/g, '_');
+      const matchesStatus = statusFilter === 'All' ||
+        (lead.status && lead.status.toLowerCase() === statusFilter.toLowerCase()) ||
+        (lead.backendStatus && lead.backendStatus.toLowerCase() === normalizedStatusFilter) ||
+        (statusFilter === 'New' && (lead.backendStatus === 'new' || lead.status === 'Nieuw')) ||
+        (statusFilter === 'In conversation' && (lead.backendStatus === 'in_conversation' || lead.status === 'In gesprek' || lead.status === 'In Conversation')) ||
+        (statusFilter === 'Quote Sent' && (lead.backendStatus === 'quote_sent' || lead.status === 'Offerte verstuurd' || lead.status === 'Quote Sent')) ||
+        (statusFilter === 'Won' && (lead.backendStatus === 'won' || lead.status === 'Gewonnen' || lead.status === 'Won')) ||
+        (statusFilter === 'Lost' && (lead.backendStatus === 'lost' || lead.status === 'Verloren' || lead.status === 'Lost'));
+
+      const fProduct = productTypeFilter.toLowerCase().trim();
+      const ptLower = (lead.productType || '').toLowerCase().trim();
+      const bptLower = (lead.backendProductType || '').toLowerCase().trim();
+
+      const matchesProduct = productTypeFilter === 'All' ||
+        ptLower === fProduct ||
+        bptLower === fProduct ||
+        (fProduct.includes('keuken') && (ptLower.includes('keuken') || bptLower === 'outdoor_kitchen')) ||
+        (fProduct.includes('kitchen') && (ptLower.includes('kitchen') || bptLower === 'outdoor_kitchen')) ||
+        (fProduct.includes('verblijf') && (ptLower.includes('verblijf') || bptLower === 'garden_room')) ||
+        (fProduct.includes('garden') && (ptLower.includes('garden') || bptLower === 'garden_room')) ||
+        (fProduct.includes('poolhouse') && (ptLower.includes('poolhouse') || bptLower === 'garden_room')) ||
+        (fProduct.includes('overkapping') && (ptLower.includes('overkapping') || bptLower === 'canopy')) ||
+        (fProduct.includes('canopy') && (ptLower.includes('canopy') || bptLower === 'canopy')) ||
+        (fProduct.includes('pergola') && (ptLower.includes('pergola') || bptLower === 'canopy')) ||
+        (fProduct.includes('kliko') && (ptLower.includes('kliko') || bptLower === 'bin_storage')) ||
+        (fProduct.includes('snijplank') && (ptLower.includes('snijplank') || bptLower === 'bin_storage')) ||
+        (fProduct.length > 2 && (ptLower.includes(fProduct) || fProduct.includes(ptLower)));
+
       const matchesSource = sourceFilter === 'All' || lead.source === sourceFilter;
       const matchesAssignee = assigneeFilter === 'All' || (lead.assignedTo || 'Tim') === assigneeFilter;
 
