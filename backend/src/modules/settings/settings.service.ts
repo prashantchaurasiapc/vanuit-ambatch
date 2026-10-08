@@ -1,6 +1,6 @@
 import { db } from '../../db/index.js';
-import { companySettings, users } from '../../db/schema.js';
-import { eq, and, ne, desc, asc, count } from 'drizzle-orm';
+import { companySettings, users, partners, customers } from '../../db/schema.js';
+import { eq, and, ne, desc, asc, count, ilike } from 'drizzle-orm';
 import bcryptjs from 'bcryptjs';
 import type {
   CompanySettingsDto,
@@ -280,6 +280,70 @@ export class SettingsService {
         updatedAt: users.updatedAt,
       });
 
+    // 4. Auto-create Partner profile if role is 'partner'
+    if (input.role === 'partner') {
+      try {
+        const cleanName = (input.fullName || 'PRT')
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, '')
+          .slice(0, 4);
+        const prefix = cleanName ? `PRT-${cleanName}-` : 'PRT-';
+        const [latest] = await db
+          .select({ partnerCode: partners.partnerCode })
+          .from(partners)
+          .where(ilike(partners.partnerCode, `${prefix}%`))
+          .orderBy(desc(partners.partnerCode))
+          .limit(1);
+        const suffix = latest ? parseInt(latest.partnerCode.replace(prefix, ''), 10) : 0;
+        const nextSeq = isNaN(suffix) ? 1 : suffix + 1;
+        const partnerCode = `${prefix}${nextSeq.toString().padStart(2, '0')}`;
+
+        await db.insert(partners).values({
+          userId: newUser.id,
+          partnerCode,
+          companyName: input.fullName.trim(),
+          contactPerson: input.fullName.trim(),
+          email: normalizedEmail,
+          phone: input.phone || '+31 6 00000000',
+          workloadStatus: 'available',
+          rating: '5.00',
+          isActive: true,
+        });
+      } catch (err) {
+        console.error('Failed to auto-create partner profile in settings:', err);
+      }
+    } else if (input.role === 'customer') {
+      try {
+        const [latest] = await db
+          .select({ customerNumber: customers.customerNumber })
+          .from(customers)
+          .where(ilike(customers.customerNumber, 'CUST-%'))
+          .orderBy(desc(customers.customerNumber))
+          .limit(1);
+        const currentNumber = latest ? parseInt(latest.customerNumber.replace('CUST-', ''), 10) : 0;
+        const nextSeq = isNaN(currentNumber) ? 1 : currentNumber + 1;
+        const customerNumber = `CUST-${nextSeq.toString().padStart(3, '0')}`;
+
+        const nameParts = input.fullName.trim().split(' ');
+        const firstName = nameParts[0] || 'Customer';
+        const lastName = nameParts.slice(1).join(' ') || 'Account';
+
+        await db.insert(customers).values({
+          userId: newUser.id,
+          customerNumber,
+          firstName,
+          lastName,
+          email: normalizedEmail,
+          phone: input.phone || '+31 6 00000000',
+          city: 'Amsterdam',
+          country: 'NL',
+        });
+      } catch (err) {
+        console.error('Failed to auto-create customer profile in settings:', err);
+      }
+    }
+
     return {
       id: newUser.id,
       fullName: newUser.fullName,
@@ -357,6 +421,13 @@ export class SettingsService {
         updatedAt: users.updatedAt,
       });
 
+    try {
+      await db
+        .update(partners)
+        .set({ isActive, updatedAt: new Date() })
+        .where(eq(partners.userId, targetUserId));
+    } catch (err) {}
+
     return {
       id: updated.id,
       fullName: updated.fullName,
@@ -422,6 +493,45 @@ export class SettingsService {
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
       });
+
+    if (newRole === 'partner') {
+      try {
+        const [existingPartner] = await db
+          .select({ id: partners.id })
+          .from(partners)
+          .where(eq(partners.userId, targetUserId))
+          .limit(1);
+        if (!existingPartner) {
+          const cleanName = (targetUser.fullName || 'PRT')
+            .trim()
+            .toUpperCase()
+            .replace(/[^A-Z0-9]/g, '')
+            .slice(0, 4);
+          const prefix = cleanName ? `PRT-${cleanName}-` : 'PRT-';
+          const [latest] = await db
+            .select({ partnerCode: partners.partnerCode })
+            .from(partners)
+            .where(ilike(partners.partnerCode, `${prefix}%`))
+            .orderBy(desc(partners.partnerCode))
+            .limit(1);
+          const suffix = latest ? parseInt(latest.partnerCode.replace(prefix, ''), 10) : 0;
+          const nextSeq = isNaN(suffix) ? 1 : suffix + 1;
+          const partnerCode = `${prefix}${nextSeq.toString().padStart(2, '0')}`;
+
+          await db.insert(partners).values({
+            userId: targetUserId,
+            partnerCode,
+            companyName: targetUser.fullName.trim(),
+            contactPerson: targetUser.fullName.trim(),
+            email: targetUser.email,
+            phone: targetUser.phone || '+31 6 00000000',
+            workloadStatus: 'available',
+            rating: '5.00',
+            isActive: targetUser.isActive,
+          });
+        }
+      } catch (err) {}
+    }
 
     return {
       id: updated.id,

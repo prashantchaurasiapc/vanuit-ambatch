@@ -50,12 +50,32 @@ export default function Partners() {
   const [detailModalPartner, setDetailModalPartner] = useState(null);
   const [selectedPartner, setSelectedPartner] = useState(null);
 
-  // Pipeline (UI-only, no backend — intentionally kept local per audit)
-  const [pipelineCandidates, setPipelineCandidates] = useState([
-    { id: 'PIPE-101', name: 'Mark van Dijk', company: 'Van Dijk Houtbouw', phone: '+31 6 12399887', email: 'mark@vandijk.nl', region: 'Utrecht', productTypes: ['Buitenkeukens', 'Pergolas'], stage: 'Geïnteresseerd', notes: 'Eerste telefonische kennismaking gehad.' },
-    { id: 'PIPE-102', name: 'Sander Koster', company: 'Koster Maatwerk', phone: '+31 6 55449911', email: 'sander@koster.nl', region: 'Zuid-Holland', productTypes: ['Kliko-ombouw', 'Snijplanken'], stage: 'In gesprek', notes: 'Afspraak gepland op werkplaats in Rotterdam.' },
-    { id: 'PIPE-103', name: 'Frank de Boer', company: 'De Boer Keukens', phone: '+31 6 88776655', email: 'frank@deboer.nl', region: 'Noord-Holland', productTypes: ['Buitenkeukens'], stage: 'Proefproject', notes: 'Gestart met proefproject P-2003.' }
-  ]);
+  // Pipeline (Local state / localStorage persistence)
+  const [pipelineCandidates, setPipelineCandidates] = useState(() => {
+    try {
+      const saved = localStorage.getItem('app_pipeline_candidates');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [candidateModalOpen, setCandidateModalOpen] = useState(false);
+  const [candidateForm, setCandidateForm] = useState({
+    name: '',
+    company: '',
+    phone: '',
+    email: '',
+    region: 'Noord-Holland',
+    stage: 'Geïnteresseerd',
+    notes: '',
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('app_pipeline_candidates', JSON.stringify(pipelineCandidates));
+    } catch {}
+  }, [pipelineCandidates]);
 
   // Form
   const [form, setForm] = useState({
@@ -227,6 +247,33 @@ export default function Partners() {
       return cand;
     }));
     showToast(language === 'EN' ? 'Candidate advanced to next stage!' : 'Kandidaat doorgeschoven naar volgende fase!');
+  };
+
+  const handleAddCandidate = (e) => {
+    e.preventDefault();
+    if (!candidateForm.name.trim()) {
+      showToast(language === 'EN' ? 'Please enter a candidate name.' : 'Vul een geldige naam in.');
+      return;
+    }
+    const newCand = {
+      id: `PIPE-${Date.now()}`,
+      name: candidateForm.name.trim(),
+      company: candidateForm.company.trim() || candidateForm.name.trim(),
+      phone: candidateForm.phone.trim() || '+31 6 00000000',
+      email: candidateForm.email.trim() || '',
+      region: candidateForm.region.trim() || 'Nederland',
+      stage: candidateForm.stage || 'Geïnteresseerd',
+      notes: candidateForm.notes.trim() || '',
+    };
+    setPipelineCandidates(prev => [...prev, newCand]);
+    showToast(language === 'EN' ? 'Candidate added to pipeline!' : 'Kandidaat toegevoegd aan pijplijn!');
+    setCandidateForm({ name: '', company: '', phone: '', email: '', region: 'Noord-Holland', stage: 'Geïnteresseerd', notes: '' });
+    setCandidateModalOpen(false);
+  };
+
+  const handleDeleteCandidate = (candId) => {
+    setPipelineCandidates(prev => prev.filter(c => c.id !== candId));
+    showToast(language === 'EN' ? 'Candidate removed.' : 'Kandidaat verwijderd.');
   };
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -458,12 +505,17 @@ export default function Partners() {
       {/* ── TAB 2: PIPELINE KANBAN (UI-only) ── */}
       {activeTab === 'Pipeline' && (
         <div className="space-y-4 font-body">
-          <div className="bg-[#EDE8DF]/50 p-4 rounded-xl border border-[#D6CFC2] flex justify-between items-center text-xs">
+          <div className="bg-[#EDE8DF]/50 p-4 rounded-xl border border-[#D6CFC2] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs">
             <div>
               <h3 className="font-heading font-bold text-primary text-sm">{language === 'EN' ? 'Prospective Partner Recruitment Pipeline' : 'Potentiële Partner Wervingspijplijn'}</h3>
               <p className="text-dark/60">{language === 'EN' ? 'Track new craftsman applications from initial interest to active trial project.' : 'Volg nieuwe vakman-sollicitaties van eerste interesse tot actief proefproject.'}</p>
             </div>
-            <Badge variant="info">{language === 'EN' ? '4 Stage Pipeline' : '4 Fasen Pipeline'}</Badge>
+            <div className="flex items-center gap-2">
+              <Button size="sm" icon={Plus} onClick={() => setCandidateModalOpen(true)} className="py-1 px-2.5 text-xs">
+                {language === 'EN' ? 'Add Candidate' : 'Kandidaat Toevoegen'}
+              </Button>
+              <Badge variant="info">{language === 'EN' ? '4 Stage Pipeline' : '4 Fasen Pipeline'}</Badge>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -481,13 +533,18 @@ export default function Partners() {
                     <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-full border border-[#D6CFC2]">{cands.length}</span>
                   </div>
                   {cands.map(cand => (
-                    <Card key={cand.id} noPadding className="p-2.5 bg-white space-y-1.5 border border-[#D6CFC2] shadow-xs text-xs rounded-xl">
+                    <Card key={cand.id} noPadding className="p-2.5 bg-white space-y-1.5 border border-[#D6CFC2] shadow-xs text-xs rounded-xl relative group">
                       <div className="flex justify-between items-start gap-1">
-                        <div className="min-w-0">
+                        <div className="min-w-0 pr-6">
                           <h5 className="font-bold text-dark text-xs truncate leading-tight">{cand.name}</h5>
                           <p className="text-[10px] text-primary font-bold truncate">{cand.company}</p>
                         </div>
-                        <span className="text-[9px] font-mono font-bold bg-[#EDE8DF] text-primary px-1.5 py-0.5 rounded-md flex-shrink-0">{cand.region}</span>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className="text-[9px] font-mono font-bold bg-[#EDE8DF] text-primary px-1.5 py-0.5 rounded-md">{cand.region}</span>
+                          <button onClick={() => handleDeleteCandidate(cand.id)} className="p-0.5 text-red-500 hover:text-red-700 opacity-60 hover:opacity-100 transition-opacity" title="Delete">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                       <div className="text-[10px] text-dark/70 space-y-0.5 pt-1 border-t border-[#D6CFC2]/40">
                         <p className="flex items-center gap-1 truncate"><Phone className="w-3 h-3 text-primary flex-shrink-0" /> {cand.phone}</p>
@@ -650,6 +707,69 @@ export default function Partners() {
                   <Button type="submit" disabled={isSaving} className="flex items-center gap-2">
                     {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                     {language === 'NL' ? 'Opslaan' : 'Save'}
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* ── ADD PIPELINE CANDIDATE MODAL ── */}
+      <AnimatePresence>
+        {candidateModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setCandidateModalOpen(false)} />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4">
+              <div className="flex items-center justify-between border-b border-cream-dark/60 pb-3">
+                <h3 className="text-lg font-heading font-bold text-primary">
+                  {language === 'EN' ? 'Add Candidate to Pipeline' : 'Kandidaat Toevoegen aan Pijplijn'}
+                </h3>
+                <button onClick={() => setCandidateModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleAddCandidate} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Candidate Name *' : 'Naam Kandidaat *'}</label>
+                  <input type="text" required value={candidateForm.name} onChange={e => setCandidateForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="e.g. Frank de Boer" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Company Name' : 'Bedrijfsnaam'}</label>
+                  <input type="text" value={candidateForm.company} onChange={e => setCandidateForm(p => ({ ...p, company: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="e.g. De Boer Keukens" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Phone' : 'Telefoon'}</label>
+                    <input type="text" value={candidateForm.phone} onChange={e => setCandidateForm(p => ({ ...p, phone: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="+31 6 12345678" />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-dark/60 mb-1 uppercase">Email</label>
+                    <input type="email" value={candidateForm.email} onChange={e => setCandidateForm(p => ({ ...p, email: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="candidate@example.nl" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Region' : 'Regio'}</label>
+                    <input type="text" value={candidateForm.region} onChange={e => setCandidateForm(p => ({ ...p, region: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="e.g. Utrecht" />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Initial Stage' : 'Startfase'}</label>
+                    <select value={candidateForm.stage} onChange={e => setCandidateForm(p => ({ ...p, stage: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-bold">
+                      <option value="Geïnteresseerd">🟡 1. Interested</option>
+                      <option value="In gesprek">🔵 2. In Discussion</option>
+                      <option value="Proefproject">🟣 3. Trial Project</option>
+                      <option value="Actief">🟢 4. Active Partner</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Notes' : 'Notities'}</label>
+                  <textarea rows={2} value={candidateForm.notes} onChange={e => setCandidateForm(p => ({ ...p, notes: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="e.g. First contact made..." />
+                </div>
+                <div className="flex justify-end gap-2 pt-3 border-t border-cream-dark/60">
+                  <Button type="button" variant="outline" onClick={() => setCandidateModalOpen(false)}>{t('common.cancel')}</Button>
+                  <Button type="submit">
+                    {language === 'EN' ? 'Add Candidate' : 'Toevoegen'}
                   </Button>
                 </div>
               </form>
