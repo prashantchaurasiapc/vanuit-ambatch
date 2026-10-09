@@ -10,24 +10,24 @@ export function createDefaultQuote(customerData = null, existingQuote = null) {
   const existingCustomerName = existingCustomer
     ? (typeof existingCustomer === 'object' ? existingCustomer.name : existingCustomer)
     : null;
-  const custName = customerData?.name || existingCustomerName || 'Bjorn Valk';
-  const firstName = (typeof custName === 'string' ? custName : '').split(' ')[0] || 'Bjorn';
-  const city = customerData?.city || customerData?.location || existingQuote?.deliveryLocation || existingQuote?.city || (typeof existingCustomer === 'object' ? existingCustomer.city : null) || 'Dongen';
-  const email = customerData?.email || customerData?.customerEmail || (typeof existingCustomer === 'object' ? existingCustomer.email : null) || `${firstName.toLowerCase()}@gmail.com`;
-  const phone = customerData?.phone || customerData?.customerPhone || (typeof existingCustomer === 'object' ? existingCustomer.phone : null) || '+31 6 12345678';
-  const address = customerData?.address || (typeof existingCustomer === 'object' ? existingCustomer.address : null) || 'Keizersgracht 420';
+  const custName = customerData?.name || existingCustomerName || '';
+  const firstName = (typeof custName === 'string' ? custName : '').split(' ')[0] || '';
+  const city = customerData?.city || customerData?.location || existingQuote?.deliveryLocation || existingQuote?.city || (typeof existingCustomer === 'object' ? existingCustomer.city : null) || '';
+  const email = customerData?.email || customerData?.customerEmail || (typeof existingCustomer === 'object' ? existingCustomer.email : null) || (firstName ? `${firstName.toLowerCase()}@gmail.com` : '');
+  const phone = customerData?.phone || customerData?.customerPhone || (typeof existingCustomer === 'object' ? existingCustomer.phone : null) || '';
+  const address = customerData?.address || (typeof existingCustomer === 'object' ? existingCustomer.address : null) || '';
 
   const woodName = existingQuote?.configuration?.woodType || existingQuote?.woodType || customerData?.woodType || customerData?.material || 'Thermo Fraké';
   const defaultWood = WOOD_LIBRARY.find(w => w.name.toLowerCase() === woodName.toLowerCase()) || WOOD_LIBRARY[0];
   const defaultProductType = existingQuote?.productType || customerData?.productType || 'Outdoor kitchen';
   const productDefaults = PRODUCT_TYPE_DEFAULTS[defaultProductType] || PRODUCT_TYPE_DEFAULTS['Outdoor kitchen'];
 
-  const dimensions = existingQuote?.configuration?.dimensions || existingQuote?.dimensions || customerData?.dimensions || customerData?.size || '240 × 80';
+  const dimensions = existingQuote?.configuration?.dimensions || existingQuote?.dimensions || customerData?.dimensions || customerData?.size || '';
   const cleanDimensions = String(dimensions).replace(/\s*cm$/i, '').trim();
   const cutoutName = existingQuote?.configuration?.optionsTitle || existingQuote?.cutout || customerData?.cutout || 'Big Green Egg Large';
   const deliveryTime = existingQuote?.configuration?.deliveryTime || existingQuote?.deliveryTime || customerData?.deliveryTime || '3 to 5 weeks';
 
-  let targetPrice = 3495;
+  let targetPrice = 0;
   if (existingQuote?.calculatedPrice && Number(existingQuote.calculatedPrice) > 0) {
     targetPrice = Number(existingQuote.calculatedPrice);
   } else if (existingQuote?.totalInclVat && Number(existingQuote.totalInclVat) > 0) {

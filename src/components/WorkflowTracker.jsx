@@ -214,17 +214,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   };
 
   // Plaud AI Audio Recordings State
-  const [plaudRecordings, setPlaudRecordings] = useState([
-    {
-      id: 1,
-      title: 'Call Recording — Teak Wood & Concrete Countertop Discussion',
-      duration: '03:42 min',
-      date: '2026-08-05 15:10',
-      user: 'Plaud AI Note',
-      summary: 'Plaud AI Summary: Client confirmed 3.5m length for teak wood kitchen with dark polished concrete cire countertop. Requested site visit next week.',
-      fileName: 'plaud_rec_mark_davis_05082026.mp3'
-    }
-  ]);
+  const [plaudRecordings, setPlaudRecordings] = useState([]);
   const [plaudModalOpen, setPlaudModalOpen] = useState(false);
   const [plaudAudioForm, setPlaudAudioForm] = useState({
     title: '',
@@ -311,15 +301,17 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const [step2RequestedDate, setStep2RequestedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [step2ExpectedDate, setStep2ExpectedDate] = useState(() => new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [step2Material, setStep2Material] = useState('Douglas');
-  const [step2SiteAccess, setStep2SiteAccess] = useState('good — rear access 1.20 m');
+  const [step2SiteAccess, setStep2SiteAccess] = useState(lead?.siteAccess || '');
+  const [step2RoofBaseWalls, setStep2RoofBaseWalls] = useState(lead?.roofBaseWalls || '');
+  const [step2Electrics, setStep2Electrics] = useState(lead?.electrics || '');
   const [isPriceRequestSent, setIsPriceRequestSent] = useState(false);
 
   // Partner Form State (Declared early so all step handlers can access it)
   const [partnerForm, setPartnerForm] = useState({
     partnerName: lead?.partner || '',
     company: '',
-    buildPrice: '8500',
-    deliveryWeek: 'Week 49 (Dec 2023)'
+    buildPrice: '',
+    deliveryWeek: ''
   });
 
   // Step 3 — Partner Price Received (Internal Cost — NEVER shown to customer or partner)
@@ -436,17 +428,17 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
       partnerName: partnerForm.partnerName || lead?.partner || '',
       requestedOn: step2RequestedDate,
       responseExpected: step2ExpectedDate,
-      town: lead?.city || (lead?.location ? lead.location.split(',')[0].trim() : 'Amsterdam'),
+      town: lead?.city || (lead?.location ? lead.location.split(',')[0].trim() : ''),
       category: activeCategoryKey,
-      dimensions: step2Size || '8,00 × 4,00 m · h 2,80 m',
+      dimensions: step2Size || lead?.dimensions || lead?.size || '',
       material: step2Material,
-      roofBaseWalls: 'flat · existing concrete · part glazed',
-      electrics: 'yes',
-      lighting: 'yes',
-      heating: 'none',
-      siteAccess: 'good — rear access 1.20 m',
-      notes: step2Notes || 'connect to existing services',
-      approvedPhotos: ['3 photos', '1 sketch']
+      roofBaseWalls: step2RoofBaseWalls || '',
+      electrics: step2Electrics || '',
+      lighting: '',
+      heating: '',
+      siteAccess: step2SiteAccess || '',
+      notes: step2Notes || lead?.notes || '',
+      approvedPhotos: attachedPhotos.map(p => p.name)
       // EXPLICITLY STRIPPED / DELETED FOR PRIVACY: customerName, customerPhone, customerEmail, customerAddress, customerBudget
     };
   };
@@ -462,11 +454,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     { desc: 'Transport, Plaatsing & Locatie Montage', unitPrice: 850 }
   ];
 
-  const [quoteLineItems, setQuoteLineItems] = useState([
-    { id: 1, desc: 'Maatwerk Thermo Fraké Hout Frame (3.5m)', qty: 1, unitPrice: 8500 },
-    { id: 2, desc: 'Gepolijst Beton Cire Aanrechtblad (8cm Zwart)', qty: 1, unitPrice: 2800 },
-    { id: 3, desc: 'Inbouw Kamado Big Green Egg Cutout & RVS Kraan', qty: 1, unitPrice: 1200 }
-  ]);
+  const [quoteLineItems, setQuoteLineItems] = useState([]);
 
   const handleGenerateClaudeProposal = (recording) => {
     setIsGeneratingProposal(true);
@@ -479,14 +467,12 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
         customerName: customerName,
         productCategory: lead?.productType || customerCategory,
         date: new Date().toISOString().split('T')[0],
-        introText: `Beste ${customerName},\n\nHartelijk dank voor het prettige telefoongesprek via Vanuit Ambacht. Op basis van onze bespreking in de audio-opname hebben wij met genoegen deze maatofferte voor uw ${translateCategory(customerCategory)} opgesteld. Wij garanderen ambachtelijke topkwaliteit en een duurzame afwerking met oog voor elk detail.`,
+        introText: `Beste ${customerName || 'klant'},\n\nHartelijk dank voor het prettige telefoongesprek via Vanuit Ambacht. Op basis van onze bespreking hebben wij met genoegen deze maatofferte voor uw ${translateCategory(customerCategory)} opgesteld. Wij garanderen ambachtelijke topkwaliteit en een duurzame afwerking met oog voor elk detail.`,
         items: [
-          { desc: `Maatwerk ${translateCategory(customerCategory)} (3.5m Teak Hout Frame)`, price: '€ 8.500' },
-          { desc: 'Gepolijst Beton Cire Aanrechtblad (Zwart Polijst 8cm)', price: '€ 2.800' },
-          { desc: 'Inbouw Kamado Big Green Egg Large + RVS Kraan & Spoelbak', price: '€ 1.450' },
-          { desc: 'Transport, Plaatsing & Locatie Montage op Locatie (Amsterdam)', price: '€ 850' }
+          { desc: `Maatwerk ${translateCategory(customerCategory)} ${step2Size ? `(${step2Size})` : ''}`, price: `€ ${step4CustomerPriceExclVat.toLocaleString('nl-NL')}` },
+          { desc: `Montage & Plaatsing (${customerCity || 'op locatie'})`, price: 'Inbegrepen' }
         ],
-        totalAmount: '€ 13.600',
+        totalAmount: `€ ${step4TotalInclVat.toLocaleString('nl-NL')}`,
         brandNote: 'Vanuit Ambacht — Ambachtelijk Meesterschap & Duurzaam Buitenleven'
       });
       setIsGeneratingProposal(false);
@@ -526,10 +512,10 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   }, [lead?.id]);
 
   // Prefilled State Inherited from Lead (Zero Dead Data Entry & Exact Match)
-  const customerName = lead?.name || lead?.customerName || 'Sonu Jain';
-  const customerEmail = lead?.email || `${(lead?.name || 'sonu.jain').toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`;
-  const customerPhone = lead?.phone || '+31 6 12345678';
-  const customerCity = lead?.city || lead?.location || 'Rotterdam';
+  const customerName = lead?.name || lead?.customerName || '';
+  const customerEmail = lead?.email || '';
+  const customerPhone = lead?.phone || '';
+  const customerCity = lead?.city || lead?.location || '';
   const customerCategory = lead?.productType || lead?.category || (lead?.company?.toLowerCase().includes('snijplanken') ? 'Snijplanken' : 'Buitenkeukens');
   
   const translateCategory = (cat) => {
@@ -615,11 +601,19 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const customerSellPrice = partnerCostNum + grossMarginAmount;
 
   // Step 4 — Build the Quote State (Two-Way Margin Synchronization & Calculated Totals)
-  const effectivePartnerCost = partnerCostNum > 0 ? partnerCostNum : 28500; // Auto carry-forward from Step 3 (or default €28,500)
+  const effectivePartnerCost = partnerCostNum > 0 ? partnerCostNum : 0; // Auto carry-forward from Step 3
   const [step4MarginPercent, setStep4MarginPercent] = useState(20);
-  const [step4MarginAmount, setStep4MarginAmount] = useState(() => Math.round(28500 * 0.20)); // €5,700
+  const [step4MarginAmount, setStep4MarginAmount] = useState(() => Math.round(effectivePartnerCost * 0.20));
   const [step4VatRate, setStep4VatRate] = useState(21);
   const [quoteSavedAsDraft, setQuoteSavedAsDraft] = useState(false);
+
+  useEffect(() => {
+    if (effectivePartnerCost > 0) {
+      setStep4MarginAmount(Math.round(effectivePartnerCost * (step4MarginPercent / 100)));
+    } else {
+      setStep4MarginAmount(0);
+    }
+  }, [effectivePartnerCost, step4MarginPercent]);
 
   // Two-way synchronization handlers
   const handleMarginPercentChange = (val) => {
@@ -660,20 +654,20 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     return createDefaultQuote(
       {
         id: lead?.id,
-        name: lead?.customer || lead?.name || customerName || 'Klant',
-        email: lead?.email || customerEmail || 'klant@example.nl',
-        phone: lead?.phone || customerPhone || '+31 6 12345678',
-        address: lead?.address || 'Kerkstraat 12',
-        city: lead?.city || customerCity || 'Rotterdam',
-        dimensions: step2Size || lead?.dimensions || lead?.size || '240 × 80',
-        woodType: specFormValues['f-002'] || step2Material || lead?.woodType || 'Thermo Fraké',
-        cutout: specFormValues['f-003'] || lead?.cutout || 'Big Green Egg Large',
-        deliveryTime: partnerLeadTime || '3 to 5 weeks',
+        name: lead?.customer || lead?.name || customerName || '',
+        email: lead?.email || customerEmail || '',
+        phone: lead?.phone || customerPhone || '',
+        address: lead?.address || '',
+        city: lead?.city || customerCity || '',
+        dimensions: step2Size || lead?.dimensions || lead?.size || '',
+        woodType: specFormValues['f-002'] || step2Material || lead?.woodType || '',
+        cutout: specFormValues['f-003'] || lead?.cutout || '',
+        deliveryTime: partnerLeadTime || '',
       },
       {
         id: targetQuoteId,
-        productType: step2ProductType || lead?.productType || customerCategory || 'Outdoor kitchen',
-        project: step2ProductType || lead?.productType || 'Bespoke Outdoor Kitchen',
+        productType: step2ProductType || lead?.productType || customerCategory || '',
+        project: step2ProductType || lead?.productType || customerCategory || '',
         calculatedPrice: step4TotalInclVat,
         totalInclVat: step4TotalInclVat,
         amount: step4TotalInclVat,
@@ -681,11 +675,11 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
         vatRate: step4VatRate || 21,
         vatAmount: step4VatAmount,
         configuration: {
-          dimensions: String(step2Size || lead?.dimensions || lead?.size || '240 × 80').replace(/\s*cm$/i, '').trim(),
-          woodType: specFormValues['f-002'] || step2Material || lead?.woodType || 'Thermo Fraké',
+          dimensions: String(step2Size || lead?.dimensions || lead?.size || '').replace(/\s*cm$/i, '').trim(),
+          woodType: specFormValues['f-002'] || step2Material || lead?.woodType || '',
           woodLifespan: '20 to 25 years',
-          optionsTitle: specFormValues['f-003'] || lead?.cutout || 'Big Green Egg Large',
-          deliveryTime: partnerLeadTime || '3 to 5 weeks',
+          optionsTitle: specFormValues['f-003'] || lead?.cutout || '',
+          deliveryTime: partnerLeadTime || '',
           options: {
             bbqCutout: {
               enabled: true,
@@ -1155,9 +1149,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const initialStep2Partner = partnerForm?.partnerName || lead?.partner || '';
   const [step7SelectedPartner, setStep7SelectedPartner] = useState(initialStep2Partner);
   const [step7PartnerChangeReason, setStep7PartnerChangeReason] = useState('');
-  const [step7StartDate, setStep7StartDate] = useState('2026-09-02');
-  const [step7CompletionDate, setStep7CompletionDate] = useState('2026-09-27');
-  const [step7InternalNote, setStep7InternalNote] = useState('Workshop pre-assembly scheduled. Site installation date agreed.');
+  const [step7StartDate, setStep7StartDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [step7CompletionDate, setStep7CompletionDate] = useState(() => new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  const [step7InternalNote, setStep7InternalNote] = useState('');
   const [step7Confirmed, setStep7Confirmed] = useState(false);
 
   // Sync Step 2 partner to Step 7 when partnerForm updates
@@ -1415,51 +1409,58 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     email: customerEmail,
     phone: customerPhone,
     product: customerCategory,
-    amount: '12500',
-    notes: 'Bespoke teak wood frame with polished concrete countertop (3.5m width)'
+    amount: step4TotalInclVat > 0 ? String(step4TotalInclVat) : '',
+    notes: ''
   });
 
   const [projectForm, setProjectForm] = useState({
-    projectName: `Luxury ${customerCategory} — ${customerName}`,
+    projectName: customerCategory ? `Project — ${customerName || customerCategory}` : (customerName ? `Project — ${customerName}` : ''),
     customer: customerName,
     partner: lead?.partner || '',
-    deadline: '2023-12-12',
+    deadline: '',
   });
 
   const [invoiceForm, setInvoiceForm] = useState({
     invoiceNumber: '',
     customer: customerName,
-    amount: '12500',
+    amount: step4TotalInclVat > 0 ? String(step4TotalInclVat) : '',
   });
 
   // Event-driven dynamic activity timeline strictly reflecting past/current events
   const getDynamicTimeline = () => {
     let events = [
-      { id: 1, title: 'Lead Ingestion', desc: `Inquiry received for ${customerCategory}`, time: '10:15 AM (Day 1)', user: 'System' },
-      { id: 2, title: 'Partner Price Request Sent', desc: 'Sanitized request sent to partner (no contact data)', time: '10:20 AM (Day 1)', user: 'Tim (Admin)' },
-      { id: 3, title: 'Partner Price Received', desc: 'Partner cost recorded for internal pricing', time: '11:45 AM (Day 2)', user: partnerForm?.partnerName || 'Partner' },
-      { id: 4, title: 'Quote Draft Created', desc: 'Draft quotation created for internal review. Nothing sent to customer.', time: '02:30 PM (Day 3)', user: 'Tim (Admin)' }
+      { id: 1, title: 'Lead Ingestion', desc: customerCategory ? `Inquiry received for ${customerCategory}` : 'Inquiry received', time: lead?.createdAt ? new Date(lead.createdAt).toLocaleDateString([], { day: '2-digit', month: 'short' }) : 'Intake', user: 'System' }
     ];
+
+    if (currentStep >= 2 && isPriceRequestSent) {
+      events.push({ id: 2, title: 'Partner Price Request Sent', desc: `Sanitized request sent to ${partnerForm?.partnerName || 'partner'}`, time: step2RequestedDate || 'Step 2', user: 'Admin' });
+    }
+    if (currentStep >= 3 && (partnerCostPrice || submittedPartnerOffer)) {
+      events.push({ id: 3, title: 'Partner Price Received', desc: 'Partner cost recorded for internal pricing', time: submittedPartnerOffer?.submittedOn || 'Step 3', user: partnerForm?.partnerName || 'Partner' });
+    }
+    if (currentStep >= 4 && quoteSavedAsDraft) {
+      events.push({ id: 4, title: 'Quote Draft Created', desc: 'Draft quotation created for internal review.', time: 'Step 4', user: 'Admin' });
+    }
 
     if (currentStep >= 5) {
       if (step5ApprovalStatus === 'APPROVED') {
-        events.push({ id: 5, title: 'Quote Approved Internally', desc: `Approved by ${step5ApprovedBy || 'Bram (Admin)'} on ${step5ApprovedAt || 'Today'}`, time: '04:10 PM', user: step5ApprovedBy || 'Bram (Admin)' });
+        events.push({ id: 5, title: 'Quote Approved Internally', desc: `Approved by ${step5ApprovedBy || 'Admin'} on ${step5ApprovedAt || 'Today'}`, time: 'Step 5', user: step5ApprovedBy || 'Admin' });
       }
       if (step5SendConfirmed) {
-        events.push({ id: 6, title: `Customer Quote Sent (${step5SelectedChannel === 'EMAIL' ? 'E-mail' : 'WhatsApp'})`, desc: `Formal proposal sent to ${step5SelectedChannel === 'EMAIL' ? customerEmail : customerPhone}`, time: '04:15 PM', user: 'Tim (Admin)' });
+        events.push({ id: 6, title: `Customer Quote Sent (${step5SelectedChannel === 'EMAIL' ? 'E-mail' : 'WhatsApp'})`, desc: `Formal proposal sent to ${step5SelectedChannel === 'EMAIL' ? customerEmail : customerPhone}`, time: 'Step 5', user: 'Admin' });
       }
     }
 
-    if (currentStep >= 6) {
-      events.push({ id: 7, title: 'Quote Approved & Deposit Paid', desc: `Client accepted proposal & paid 50% deposit`, time: '09:00 AM (Day 5)', user: customerName });
+    if (currentStep >= 6 && step6Approved) {
+      events.push({ id: 7, title: 'Quote Approved', desc: `Client confirmed quotation`, time: 'Step 6', user: customerName || 'Customer' });
     }
 
-    if (currentStep >= 7) {
-      events.push({ id: 8, title: 'Project Created', desc: `Work order setup for ${customerCategory}`, time: '10:00 AM (Day 6)', user: 'Tim (Admin)' });
+    if (currentStep >= 7 && step7Confirmed) {
+      events.push({ id: 8, title: 'Project Created', desc: `Work order setup for ${customerCategory || 'project'}`, time: 'Step 7', user: 'Admin' });
     }
 
     if (currentStep >= 8) {
-      events.push({ id: 9, title: 'Planning & Delivery Completed', desc: 'Final inspection passed & 100% invoice paid', time: '04:00 PM (Day 8)', user: 'Bram (Admin)' });
+      events.push({ id: 9, title: 'Planning & Delivery Completed', desc: 'Project finished & delivered', time: 'Step 8', user: 'Admin' });
     }
 
     return events;
@@ -1831,28 +1832,28 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       <UserPlus className="w-4 h-4 text-primary" />
                       <div>
                         <p className="text-[10px] text-dark/50 font-bold uppercase">Customer Name</p>
-                        <p className="font-semibold text-dark">{customerName}</p>
+                        <p className="font-semibold text-dark">{customerName || '—'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2.5">
                       <Phone className="w-4 h-4 text-primary" />
                       <div>
                         <p className="text-[10px] text-dark/50 font-bold uppercase">Phone Number</p>
-                        <p className="font-semibold text-dark">{customerPhone}</p>
+                        <p className="font-semibold text-dark">{customerPhone || '—'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2.5">
                       <Mail className="w-4 h-4 text-primary" />
                       <div>
                         <p className="text-[10px] text-dark/50 font-bold uppercase">Email Address</p>
-                        <p className="font-semibold text-dark">{customerEmail}</p>
+                        <p className="font-semibold text-dark">{customerEmail || '—'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2.5">
                       <MapPin className="w-4 h-4 text-primary" />
                       <div>
                         <p className="text-[10px] text-dark/50 font-bold uppercase">Location & Product</p>
-                        <p className="font-semibold text-dark">{lead?.location || lead?.city || 'Amsterdam, NL'} ({translateCategory(customerCategory)})</p>
+                        <p className="font-semibold text-dark">{(lead?.location || lead?.city || '—') + (customerCategory ? ` (${translateCategory(customerCategory)})` : '')}</p>
                       </div>
                     </div>
                   </div>
@@ -2245,8 +2246,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Dimensions</label>
                           <input 
                             type="text" 
-                            value={step2Size || '8,00 × 4,00 m · h 2,80 m'} 
+                            value={step2Size} 
                             onChange={(e) => setStep2Size(e.target.value)}
+                            placeholder="e.g. 8,00 × 4,00 m"
                             className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-semibold text-dark focus:ring-2 focus:ring-primary/20" 
                           />
                         </div>
@@ -2269,7 +2271,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Roof · Base · Walls</label>
                           <input 
                             type="text" 
-                            defaultValue="flat · existing concrete · part glazed"
+                            value={step2RoofBaseWalls}
+                            onChange={(e) => setStep2RoofBaseWalls(e.target.value)}
+                            placeholder="e.g. flat · existing concrete · part glazed"
                             className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-semibold text-dark focus:ring-2 focus:ring-primary/20" 
                           />
                         </div>
@@ -2278,7 +2282,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Electrics, Lighting, Heating</label>
                           <input 
                             type="text" 
-                            defaultValue="yes · yes · none"
+                            value={step2Electrics}
+                            onChange={(e) => setStep2Electrics(e.target.value)}
+                            placeholder="e.g. yes · yes · none"
                             className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-semibold text-dark focus:ring-2 focus:ring-primary/20" 
                           />
                         </div>
@@ -2289,6 +2295,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             type="text" 
                             value={step2SiteAccess}
                             onChange={(e) => setStep2SiteAccess(e.target.value)}
+                            placeholder="e.g. good — rear access 1.20 m"
                             className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-semibold text-dark focus:ring-2 focus:ring-primary/20" 
                           />
                         </div>
@@ -2297,8 +2304,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       <div>
                         <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Notes</label>
                         <textarea
-                          value={step2Notes || 'connect to existing services'}
+                          value={step2Notes}
                           onChange={(e) => setStep2Notes(e.target.value)}
+                          placeholder="Add any specific requirements or notes..."
                           className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:ring-2 focus:ring-primary/20 min-h-[60px] resize-none"
                         />
                       </div>
@@ -2306,7 +2314,11 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       <div>
                         <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Attachments</label>
                         <div className="p-3 bg-white rounded-xl border border-[#D6CFC2] flex items-center justify-between text-xs">
-                          <span className="font-semibold text-dark">3 photos · 1 sketch</span>
+                          <span className="font-semibold text-dark">
+                            {attachedPhotos.length > 0 
+                              ? `${attachedPhotos.length} ${attachedPhotos.length === 1 ? 'file' : 'files'} (${attachedPhotos.map(p => p.name).join(', ')})`
+                              : (language === 'EN' ? 'No attachments' : 'Geen bijlagen')}
+                          </span>
                           {isPriceRequestSent ? (
                             <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                               ✓ Sent to Partner
@@ -2495,17 +2507,18 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             category: activeCategoryKey,
                             productInfo: `${lead?.productType || customerCategory || 'Maatwerk Project'} - ${step2Material}`,
                             dimensions: {
-                              rawText: step2Size || '8,00 × 4,00 m',
+                              rawText: step2Size || '',
                             },
                             materials: {
                               woodType: step2Material,
                               notes: step2Notes || '',
                             },
                             locationAccess: {
-                              city: lead?.city || (lead?.location ? lead.location.split(',')[0].trim() : 'Amsterdam'),
+                              city: lead?.city || (lead?.location ? lead.location.split(',')[0].trim() : ''),
                               siteAccess: step2SiteAccess,
                             },
                             expectedResponseDate: expDate,
+                            attachmentIds: attachedPhotos.map(p => p.id).filter(Boolean),
                           };
                           try {
                             const res = await api.post('/partner-requests', payload);
@@ -3236,11 +3249,11 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       <div className="flex justify-between items-start border-b border-[#D6CFC2] pb-4">
                         <div>
                           <span className="font-heading font-black text-lg text-primary block">VANUIT AMBACHT</span>
-                          <span className="text-[10px] text-dark/50 uppercase font-mono tracking-wider">OFFICIËLE MAATOFFERTE #OF-2026331</span>
+                          <span className="text-[10px] text-dark/50 uppercase font-mono tracking-wider">OFFICIËLE MAATOFFERTE #{leadQuote?.id || targetQuoteId}</span>
                         </div>
                         <div className="text-right text-xs">
-                          <span className="font-bold text-dark block">{customerName}</span>
-                          <span className="text-dark/60 text-[11px] block">{customerEmail}</span>
+                          <span className="font-bold text-dark block">{customerName || '—'}</span>
+                          <span className="text-dark/60 text-[11px] block">{customerEmail || '—'}</span>
                           <span className="text-dark/60 text-[11px] block">{step2RequestedDate}</span>
                         </div>
                       </div>
@@ -3248,10 +3261,10 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       {step5PreviewPage === 1 && (
                         <div className="space-y-3 text-xs">
                           <p className="text-dark/80 italic bg-white p-3 rounded-lg border border-[#D6CFC2]/50">
-                            "Beste {customerName}, bedankt voor uw aanvraag bij Vanuit Ambacht. Op basis van uw wensen hebben wij onderstaande maatofferte voor uw {customerCategory} opgesteld."
+                            "Beste {customerName || 'klant'}, bedankt voor uw aanvraag bij Vanuit Ambacht. Op basis van uw wensen hebben wij onderstaande maatofferte voor uw {customerCategory || 'project'} opgesteld."
                           </p>
                           <div className="space-y-2 bg-white p-4 rounded-xl border border-[#D6CFC2]/60">
-                            <div className="flex justify-between font-medium"><span>Maatwerk {customerCategory} Frame (3.5m)</span><span>€ {step4CustomerPriceExclVat.toLocaleString('nl-NL')}</span></div>
+                            <div className="flex justify-between font-medium"><span>Maatwerk {customerCategory} {step2Size ? `(${step2Size})` : ''}</span><span>€ {step4CustomerPriceExclVat.toLocaleString('nl-NL')}</span></div>
                             <div className="flex justify-between font-medium"><span>BTW (21%)</span><span>€ {step4VatAmount.toLocaleString('nl-NL')}</span></div>
                             <div className="flex justify-between font-black text-primary text-sm pt-2 border-t border-[#D6CFC2]">
                               <span>Totaal incl. BTW</span>
@@ -3265,9 +3278,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         <div className="space-y-2 text-xs bg-white p-4 rounded-xl border border-[#D6CFC2]/60">
                           <span className="font-bold text-primary block uppercase text-[10px]">Project Specificaties</span>
                           <div className="grid grid-cols-2 gap-2 text-dark/80">
-                            <div><strong>Categorie:</strong> {customerCategory}</div>
-                            <div><strong>Afmetingen:</strong> {step2Size || '8,00 × 4,00 m'}</div>
-                            <div><strong>Hout / Materiaal:</strong> {step2Material}</div>
+                            <div><strong>Categorie:</strong> {customerCategory || '—'}</div>
+                            <div><strong>Afmetingen:</strong> {step2Size || '—'}</div>
+                            <div><strong>Hout / Materiaal:</strong> {step2Material || '—'}</div>
                             <div><strong>Montage & Transport:</strong> Inbegrepen</div>
                           </div>
                         </div>
@@ -3531,16 +3544,16 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           <div>
                             <span className="text-[10px] font-bold text-dark/50 uppercase block mb-0.5">Customer Approval Portal URL</span>
                             <span className="text-xs font-mono font-bold text-primary bg-[#F8F7F4] px-2.5 py-1 rounded border border-[#D6CFC2] block truncate">
-                              {leadQuote?.publicToken ? `${window.location.origin}/offerte/${leadQuote.publicToken}` : `https://vanuitambacht.nl/offerte/${leadQuote?.id || targetQuoteId || 'OF-2026331'}/bekijken`}
+                              {leadQuote?.publicToken ? `${window.location.origin}/offerte/${leadQuote.publicToken}` : `https://vanuitambacht.nl/offerte/${leadQuote?.id || targetQuoteId}/bekijken`}
                             </span>
                           </div>
                           <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/60 text-xs space-y-1 text-dark/80">
                             <p className="font-bold text-dark text-[11px]">What the customer sees:</p>
                             <p className="text-[11px] text-dark/70">Quote in browser + "Approve Quote & Pay Deposit" button</p>
                             <div className="pt-2 border-t border-[#D6CFC2]/50 text-[10px] text-dark/60 space-y-0.5">
-                              <div>• <strong>Recorded:</strong> Customer name ({customerName})</div>
-                              <div>• <strong>Recorded:</strong> Date / time & IP (84.112.45.198)</div>
-                              <div>• <strong>Recorded:</strong> Quote version (#{leadQuote?.id || targetQuoteId || 'Q-2026-003'} v1.0)</div>
+                              <div>• <strong>Recorded:</strong> Customer name ({customerName || 'Customer'})</div>
+                              <div>• <strong>Recorded:</strong> Date, timestamp & IP</div>
+                              <div>• <strong>Recorded:</strong> Quote version (#{leadQuote?.id || targetQuoteId} v1.0)</div>
                             </div>
                           </div>
                         </div>
@@ -3632,7 +3645,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           <div className="p-3 bg-white/80 rounded-xl border border-emerald-200/80">
                             <span className="text-[10px] font-bold text-emerald-900/60 uppercase block mb-0.5">Quote Version</span>
                             <span className="font-mono font-bold text-emerald-950">
-                              {step6ApprovalMetaData?.quoteVersion || '#OF-2026331 v1.0'}
+                              {step6ApprovalMetaData?.quoteVersion || `#${leadQuote?.id || targetQuoteId} v1.0`}
                             </span>
                           </div>
                         </div>
@@ -3776,7 +3789,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70">
                         <span className="text-[10px] font-bold text-dark/50 uppercase block mb-1">Project Number</span>
                         <span className="font-mono font-bold text-primary text-sm">
-                          PRJ-{lead?.id?.replace('LEAD', 'L') || '103'}
+                          PRJ-{lead?.id ? String(lead.id).replace(/[^0-9]/g, '').slice(-4) || '101' : '101'}
                         </span>
                         <span className="text-[9px] text-dark/50 block font-mono">Auto-generated Step 6</span>
                       </div>
@@ -3784,16 +3797,16 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       {/* Customer & Location */}
                       <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70">
                         <span className="text-[10px] font-bold text-dark/50 uppercase block mb-1">Customer & Location</span>
-                        <span className="font-bold text-dark block">{customerName}</span>
-                        <span className="text-[11px] text-dark/60 block">{lead?.city || 'Amsterdam'}</span>
+                        <span className="font-bold text-dark block">{customerName || '—'}</span>
+                        <span className="text-[11px] text-dark/60 block">{lead?.city || lead?.location || '—'}</span>
                         <span className="text-[9px] text-dark/50 block font-mono">From Step 1</span>
                       </div>
 
                       {/* Linked Quote */}
                       <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70">
                         <span className="text-[10px] font-bold text-dark/50 uppercase block mb-1">Linked Quotation</span>
-                        <span className="font-bold text-primary block">OF-2026331</span>
-                        <span className="font-bold text-emerald-800 text-xs block">€ {step4TotalInclVat.toLocaleString('nl-NL')} incl. VAT</span>
+                        <span className="font-bold text-primary block">{leadQuote?.id || targetQuoteId}</span>
+                        <span className="font-bold text-emerald-800 text-xs block">€ {step4TotalInclVat.toLocaleString('nl-NL')} incl. BTW</span>
                         <span className="text-[9px] text-dark/50 block font-mono">From Step 4/5</span>
                       </div>
 
@@ -3813,7 +3826,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         <span className="text-[9px] font-bold text-primary font-mono">Copied in full</span>
                       </div>
                       <p className="font-semibold text-dark">
-                        Bespoke {customerCategory} ({step2Size || '8,00 × 4,00 m'}) — {step2Material || 'Teak Wood frame with polished concrete countertop'}
+                        Bespoke {customerCategory || 'Project'} {step2Size ? `(${step2Size})` : ''} {step2Material ? `— ${step2Material}` : ''}
                       </p>
                     </div>
                   </div>
@@ -4005,7 +4018,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       <span>Project Completed & Archived</span>
                     </div>
                     <p className="text-xs text-[#EDE8DF]/90 font-normal leading-relaxed">
-                      Final inspection passed, 100% invoice paid (€12,500), customer signature received for {customerName}.
+                      Final inspection passed, 100% invoice paid{step4TotalInclVat > 0 ? ` (€${step4TotalInclVat.toLocaleString('nl-NL')})` : ''}, customer signature received for {customerName || 'customer'}.
                     </p>
                   </div>
 
@@ -4789,16 +4802,16 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Invoice #</label>
-                    <input type="text" readOnly value={invoiceForm.invoiceNumber || 'INV-1369'} className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl font-mono font-bold text-dark text-xs" />
+                    <input type="text" readOnly value={invoiceForm.invoiceNumber || (lead?.id ? `INV-${String(lead.id).replace(/[^0-9]/g, '').slice(-4) || '1001'}` : 'INV-1001')} className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl font-mono font-bold text-dark text-xs" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Customer</label>
-                    <input type="text" readOnly value={customerName || 'Mark Davis'} className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl font-semibold text-dark text-xs" />
+                    <input type="text" readOnly value={customerName || '—'} className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl font-semibold text-dark text-xs" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Total Paid Amount (€)</label>
-                  <input type="text" value={invoiceForm.amount || '12500'} onChange={e => setInvoiceForm(prev => ({ ...prev, amount: e.target.value }))} className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl font-mono font-bold text-[#15803D] text-base" />
+                  <input type="text" value={invoiceForm.amount} placeholder="0.00" onChange={e => setInvoiceForm(prev => ({ ...prev, amount: e.target.value }))} className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl font-mono font-bold text-[#15803D] text-base" />
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4 border-t border-[#D6CFC2]/60">
@@ -4836,13 +4849,13 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                 </button>
               </div>
 
-              {/* Pixel-Perfect 6-Page Proposal Summary */}
+              {/* Pixel-Perfect Proposal Summary */}
               <div className="bg-[#FDFBF7] p-6 rounded-xl border border-[#C4BEB3] shadow-inner space-y-4 text-[#4A4A43]">
-                {/* Green Status Toast Banner (Screenshot 3 Match) */}
+                {/* Green Status Toast Banner */}
                 <div className="p-3 bg-[#15803D] text-white rounded-xl font-bold text-xs flex items-center justify-between gap-2 shadow-2xs">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-200 flex-shrink-0" />
-                    <span>Quotation Q-4294 sent to {customerName} via Email & delivered to Customer Portal!</span>
+                    <span>Quotation #{leadQuote?.id || targetQuoteId} sent to {customerName || 'Customer'} via Email & delivered to Customer Portal!</span>
                   </div>
                 </div>
 
@@ -4850,17 +4863,17 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                 <div className="bg-[#3E4E36] text-[#FDFBF7] p-4 rounded-lg flex justify-between items-center">
                   <div>
                     <span className="text-[10px] uppercase font-bold tracking-widest text-[#70624F] bg-[#EDE8DF] px-2 py-0.5 rounded">OFFERTE PROPOSAL</span>
-                    <h4 className="text-lg font-heading font-bold mt-1 text-white">Uw buitenkeuken, op maat gemaakt</h4>
+                    <h4 className="text-lg font-heading font-bold mt-1 text-white">Uw {customerCategory || 'project'}, op maat gemaakt</h4>
                   </div>
                   <div className="text-right font-mono text-xs">
-                    <p className="font-bold text-cream">#Q-4001</p>
-                    <p className="text-white/70">Datum: 04-08-2026</p>
+                    <p className="font-bold text-cream">#{leadQuote?.id || targetQuoteId}</p>
+                    <p className="text-white/70">Datum: {new Date().toLocaleDateString('nl-NL')}</p>
                   </div>
                 </div>
 
                 {/* Cover Letter */}
                 <div className="p-4 bg-white rounded-lg border border-[#D6CFC2]/60 space-y-2 text-xs leading-relaxed">
-                  <p className="font-semibold text-dark">Beste {customerName},</p>
+                  <p className="font-semibold text-dark">Beste {customerName || 'klant'},</p>
                   <p className="text-dark/80">
                     Hartelijk dank voor uw aanvraag bij Vanuit Ambacht. Wij hebben met genoegen deze maatofferte voor uw {translateCategory(customerCategory)} opgesteld. Onze vakmensen garanderen duurzame topkwaliteit met oog voor elk detail.
                   </p>
@@ -4870,25 +4883,25 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                   <div className="p-3 bg-[#EDE8DF]/60 rounded-lg border border-[#D6CFC2]/40">
                     <span className="text-[10px] text-dark/50 uppercase font-bold block">Afmeting</span>
-                    <span className="font-semibold text-dark">350 x 80 x 95 cm</span>
+                    <span className="font-semibold text-dark">{step2Size || lead?.size || lead?.dimensions || '—'}</span>
                   </div>
                   <div className="p-3 bg-[#EDE8DF]/60 rounded-lg border border-[#D6CFC2]/40">
                     <span className="text-[10px] text-dark/50 uppercase font-bold block">Houtsoort</span>
-                    <span className="font-semibold text-dark">Thermo Fraké Hout</span>
+                    <span className="font-semibold text-dark">{step2Material || '—'}</span>
                   </div>
                   <div className="p-3 bg-[#EDE8DF]/60 rounded-lg border border-[#D6CFC2]/40">
-                    <span className="text-[10px] text-dark/50 uppercase font-bold block">Aanrechtblad</span>
-                    <span className="font-semibold text-dark">Beton Cire Zwart</span>
+                    <span className="text-[10px] text-dark/50 uppercase font-bold block">Afwerking</span>
+                    <span className="font-semibold text-dark">{step2RoofBaseWalls || '—'}</span>
                   </div>
                   <div className="p-3 bg-[#EDE8DF]/60 rounded-lg border border-[#D6CFC2]/40">
                     <span className="text-[10px] text-dark/50 uppercase font-bold block">Levertijd</span>
-                    <span className="font-semibold text-primary font-mono">Week 49 (2026)</span>
+                    <span className="font-semibold text-primary font-mono">{partnerLeadTime || '—'}</span>
                   </div>
                 </div>
 
                 {/* Pricing Table */}
                 <div className="space-y-2">
-                  <h5 className="font-bold text-xs text-primary uppercase tracking-wider">Investeringsingoverzicht (Pricing Breakdown)</h5>
+                  <h5 className="font-bold text-xs text-primary uppercase tracking-wider">Investeringsoverzicht (Pricing Breakdown)</h5>
                   <div className="border border-[#D6CFC2] rounded-lg overflow-hidden bg-white text-xs">
                     <table className="w-full text-left">
                       <thead className="bg-[#3E4E36] text-[#FDFBF7] uppercase text-[10px]">
@@ -4898,14 +4911,19 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#D6CFC2]/40">
-                        <tr><td className="p-2.5">Maatwerk Buitenkeuken Frame (Thermo Fraké Hout)</td><td className="p-2.5 text-right font-semibold">€ 8,500.00</td></tr>
-                        <tr><td className="p-2.5">Gepolijst Beton Cire Aanrechtblad (8cm Zwart)</td><td className="p-2.5 text-right font-semibold">€ 2,800.00</td></tr>
-                        <tr><td className="p-2.5">Inbouw Kamado Big Green Egg Cutout & RVS Kraan</td><td className="p-2.5 text-right font-semibold">€ 1,200.00</td></tr>
+                        <tr>
+                          <td className="p-2.5">Maatwerk {customerCategory || 'Project'} {step2Size ? `(${step2Size})` : ''}</td>
+                          <td className="p-2.5 text-right font-semibold">€ {step4CustomerPriceExclVat.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5">BTW ({step4VatRate}%)</td>
+                          <td className="p-2.5 text-right font-semibold">€ {step4VatAmount.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</td>
+                        </tr>
                       </tbody>
                     </table>
                     <div className="p-3 bg-[#EDE8DF]/80 border-t border-[#D6CFC2] flex justify-between items-center font-bold text-primary text-sm">
-                      <span>Totaalbedrag (Incl. 21% BTW)</span>
-                      <span className="text-base font-heading">€ 12,500.00</span>
+                      <span>Totaalbedrag (Incl. {step4VatRate}% BTW)</span>
+                      <span className="text-base font-heading">€ {step4TotalInclVat.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
@@ -4922,7 +4940,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                 <button 
                   type="button" 
                   onClick={() => {
-                    showToast(`Downloading Official PDF Quote #Q-4001 for ${customerName}...`);
+                    showToast(`Downloading Official PDF Quote #${leadQuote?.id || targetQuoteId} for ${customerName || 'customer'}...`);
                     setQuoteViewModalOpen(false);
                   }}
                   className="px-5 py-2.5 bg-[#3E4E36] hover:bg-[#2F3C29] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-2"

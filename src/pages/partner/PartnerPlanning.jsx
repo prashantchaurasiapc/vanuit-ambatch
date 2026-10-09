@@ -8,44 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import api from '../../api/apiClient';
 
-const DEFAULT_EVENTS = [
-  {
-    id: 'evt-default-1',
-    backendId: null,
-    titleNL: 'Inmeten & Locatie Inspectie Luxe Buitenkeuken',
-    titleEN: 'Site Measurement & Inspection Luxury Outdoor Kitchen',
-    client: 'Bjorn Valk',
-    location: 'Keizersgracht 420, Amsterdam',
-    date: '2026-08-10',
-    time: '09:00 - 11:30',
-    type: 'Site Visit',
-    typeNL: 'Locatiebezoek',
-    typeEN: 'Site Visit',
-    status: 'Upcoming',
-    statusNL: 'Aankomend',
-    statusEN: 'Upcoming',
-    notesNL: 'Controleer uitsparing waterleiding en Kamado BBQ elektra op locatie.',
-    notesEN: 'Verify water pipe cutout and Kamado BBQ electrical supply on-site.'
-  },
-  {
-    id: 'evt-default-2',
-    backendId: null,
-    titleNL: 'Montage & Plaatsing Buitenkeuken in Tuin',
-    titleEN: 'Assembly & Installation Outdoor Kitchen in Garden',
-    client: 'Sanne Visser',
-    location: 'Kerkstraat 88, Rotterdam',
-    date: '2026-08-15',
-    time: '08:30 - 17:00',
-    type: 'Assembly',
-    typeNL: 'Montage',
-    typeEN: 'Assembly',
-    status: 'Upcoming',
-    statusNL: 'Aankomend',
-    statusEN: 'Upcoming',
-    notesNL: 'Plaatsing teakhouten frame en stellen beton cire werkblad.',
-    notesEN: 'Installation of teak wood frame and leveling concrete worktop.'
-  }
-];
+const DEFAULT_EVENTS = [];
 
 function mapBackendToPartnerEvent(item) {
   const evt = item.event || item;
@@ -100,14 +63,14 @@ export default function PartnerPlanning() {
   const loadEvents = async () => {
     try {
       const res = await api.get('/planning/events');
-      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+      if (res.success && Array.isArray(res.data)) {
         setEvents(res.data.map(mapBackendToPartnerEvent));
       } else {
-        setEvents(DEFAULT_EVENTS);
+        setEvents([]);
       }
     } catch (err) {
       console.warn('Failed to load backend planning events:', err);
-      setEvents(DEFAULT_EVENTS);
+      setEvents([]);
     }
   };
 

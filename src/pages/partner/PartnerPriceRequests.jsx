@@ -144,7 +144,7 @@ export default function PartnerPriceRequests() {
             specsNL: formatSpecs(item),
             specsEN: formatSpecs(item),
             status: item.status,
-            attachments: item.attachmentIds || [],
+            attachments: item.attachments || item.attachmentIds || [],
             activeOffer: item.activeOffer,
             raw: item,
           };
@@ -474,18 +474,22 @@ export default function PartnerPriceRequests() {
                                 <div className="flex flex-wrap gap-2 items-center p-3 bg-white rounded-xl border border-[#D6CFC2]">
                                   <Paperclip className="w-4 h-4 text-primary" />
                                   <span className="text-xs font-bold text-dark">{language === 'NL' ? 'Bijlagen / Bouwtekeningen:' : 'Attachments & Blueprints:'}</span>
-                                  {req.attachments.map((docId, idx) => (
-                                    <a
-                                      key={docId}
-                                      href={`/api/documents/${docId}/download`}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="inline-flex items-center gap-1 text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-lg hover:bg-primary/20 transition-colors"
-                                    >
-                                      <Download className="w-3.5 h-3.5" />
-                                      {language === 'NL' ? `Document #${idx + 1}` : `Blueprint #${idx + 1}`}
-                                    </a>
-                                  ))}
+                                  {req.attachments.map((doc, idx) => {
+                                    const docId = doc?.id || doc;
+                                    const docName = doc?.fileName || (language === 'NL' ? `Bijlage #${idx + 1}` : `Attachment #${idx + 1}`);
+                                    return (
+                                      <a
+                                        key={docId || idx}
+                                        href={`/api/documents/${docId}/download`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors border border-primary/20 shadow-2xs"
+                                      >
+                                        <Download className="w-3.5 h-3.5" />
+                                        <span>{docName}</span>
+                                      </a>
+                                    );
+                                  })}
                                 </div>
                               )}
 
