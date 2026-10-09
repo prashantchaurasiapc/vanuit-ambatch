@@ -761,7 +761,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     onBlur={() => setHighlightField(null)}
                     onChange={(e) => {
                       const selectedName = e.target.value;
-                      const leadObj = leadsList.find(l => l.name === selectedName);
+                      const leadObj = (leadsList || []).find(l => l.name === selectedName);
                       if (leadObj) {
                         const fullName = leadObj.name;
                         const first = leadObj.firstName || fullName.split(' ')[0];
@@ -779,20 +779,8 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                             city: cityVal,
                             email: emailVal,
                             phone: phoneVal,
-                            address: addrVal
-                          }
-                        }));
-                      } else if (selectedName === 'Bjorn Valk') {
-                        setQuote(prev => ({
-                          ...prev,
-                          customer: {
-                            ...(prev.customer || {}),
-                            name: 'Bjorn Valk',
-                            firstName: 'Bjorn',
-                            city: 'Dongen',
-                            address: 'Dongeheuvel 3, 5101 WE Dongen',
-                            phone: '+31 6 53562542',
-                            email: 'bjorn@mail.nl'
+                            address: addrVal,
+                            leadId: leadObj.id
                           }
                         }));
                       } else if (selectedName) {
@@ -802,8 +790,10 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     className="w-full px-3.5 py-2.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-primary cursor-pointer"
                   >
                     <option value="">-- Choose lead or enter details below --</option>
-                    <option value="Bjorn Valk">Bjorn Valk (Lead)</option>
-                    {leadsList.filter(l => l.name !== 'Bjorn Valk').map((lead, idx) => (
+                    {quote.customer?.name && !(leadsList || []).some(l => l.name === quote.customer.name) && (
+                      <option value={quote.customer.name}>{quote.customer.name} (Lead)</option>
+                    )}
+                    {(leadsList || []).map((lead, idx) => (
                       <option key={idx} value={lead.name}>{lead.name} (Lead)</option>
                     ))}
                   </select>

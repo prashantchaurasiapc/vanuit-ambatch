@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Wrench, MessageSquare, ShieldCheck, DollarSign, Calendar, Pencil, Clock } from 'lucide-react';
 import projectImg from '../assets/outdoor_project_card.png';
-import heroImg from '/dasbordes images.png';
 import { calculateTotals, calculateInstalments } from '../utils/quoteSchema';
-import { useLanguage } from '../context/LanguageContext';
+import { LanguageContext } from '../context/LanguageContext';
 import api from '../api/apiClient';
 
 export default function Offerte6PagePDF({ quote, activePage = null, highlightField = null, companyDetails = null, language: propLanguage = null }) {
+  // Safely read language context if rendered inside LanguageProvider
+  const langCtx = useContext(LanguageContext);
+
   // Extract Company Details dynamically from backend Settings API or prop
   const [loadedCompanyInfo, setLoadedCompanyInfo] = useState(companyDetails || null);
 
@@ -38,16 +40,8 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   const compIban = companyInfo.iban || 'NL27 ABNA 0132 2698 56';
   const compWebsite = companyInfo.website || 'vanuitambacht.nl';
 
-  // Language resolution: prop -> quote.language -> useLanguage() context -> localStorage -> 'EN' default
-  let currentLang = propLanguage || quote?.language;
-  if (!currentLang) {
-    try {
-      const langCtx = useLanguage();
-      if (langCtx && langCtx.language) currentLang = langCtx.language;
-    } catch (e) {
-      // outside LanguageProvider context
-    }
-  }
+  // Language resolution: prop -> quote.language -> langCtx -> localStorage -> 'EN' default
+  let currentLang = propLanguage || quote?.language || langCtx?.language;
   if (!currentLang) {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -259,8 +253,8 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   };
 
   // Format Helpers
-  const formatEuro = (num) => `€ ${Math.round(num).toLocaleString('nl-NL')},00`;
-  const formatDecEuro = (num) => `€ ${num.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatEuro = (num) => `€\u00A0${Number(num || 0).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatDecEuro = (num) => `€\u00A0${Number(num || 0).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const formatDutchDate = (dateStr) => {
     if (!dateStr) return '';
     try {
@@ -302,27 +296,27 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             {/* Subtitle & Main Title */}
             <div className="space-y-3 pt-12 sm:pt-16">
               <div className="space-y-1.5">
-                <div className="text-xs tracking-[0.14em] uppercase block font-semibold text-[#F7C873]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                <div className="text-xs tracking-[0.14em] uppercase block font-semibold text-[#D6CFC2]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {language === 'EN' ? 'CUSTOM PROPOSAL' : 'VOORSTEL OP MAAT'} &nbsp;·&nbsp; {quoteId}
                 </div>
                 <div className="w-16 h-[2px] bg-[#8A7966]"></div>
               </div>
 
-              <h2 className={`text-4xl sm:text-5xl text-[#FDFBF7] leading-[1.15] pt-2 font-normal transition-all duration-300 ${highlightField === 'title' ? 'bg-amber-300/80 text-dark px-2 rounded ring-2 ring-amber-400' : ''}`} style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 400 }}>
+              <h2 className={`text-4xl sm:text-5xl text-[#FDFBF7] leading-[1.15] pt-2 font-normal transition-all duration-300 ${highlightField === 'title' ? 'bg-amber-300/80 text-dark px-2 rounded ring-2 ring-amber-400' : ''}`} style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
                 {titleLine1}<br />
-                <span className="italic" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 400 }}>{titleLine2}</span>
+                <span className="italic" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>{titleLine2}</span>
               </h2>
 
               <p className={`text-xs sm:text-sm pt-3 transition-all duration-300 ${highlightField === 'wood' || highlightField === 'title' ? 'bg-amber-300/80 text-dark px-2 py-0.5 rounded ring-2 ring-amber-400 font-extrabold' : ''}`} style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 {cover.subtitleOverrideEnabled && cover.customSubtitle ? (
-                  <span className="text-[#F7C873] font-normal">{cover.customSubtitle}</span>
+                  <span className="text-[#D6CFC2] font-normal">{cover.customSubtitle}</span>
                 ) : (
                   <>
-                    <span className="text-[#F7C873] font-normal">{woodType}</span>
-                    <span className="text-[#F7C873] mx-2">·</span>
-                    <span className="text-[#F7C873] font-normal">{cleanDimensions} {language === 'EN' ? 'cm' : 'cm'}</span>
-                    <span className="text-[#F7C873] mx-2">·</span>
-                    <span className="text-[#F7C873] font-normal">{coverOptionStr}</span>
+                    <span className="text-[#D6CFC2] font-normal">{woodType}</span>
+                    <span className="text-[#D6CFC2] mx-2">·</span>
+                    <span className="text-[#D6CFC2] font-normal">{cleanDimensions} {language === 'EN' ? 'cm' : 'cm'}</span>
+                    <span className="text-[#D6CFC2] mx-2">·</span>
+                    <span className="text-[#D6CFC2] font-normal">{coverOptionStr}</span>
                   </>
                 )}
               </p>
@@ -334,19 +328,19 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             <div className="pt-4 border-t border-[#4E5E45]/80 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'customer' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
                 <span className="text-[10px] text-[#A7AC9B] uppercase block tracking-[0.16em] font-medium">{language === 'EN' ? 'PREPARED FOR' : 'OPGESTELD VOOR'}</span>
-                <span className="font-medium text-[#F7C873] text-xs sm:text-sm block mt-1 tracking-wide">{customerName}</span>
+                <span className="font-medium text-[#FDFBF7] text-xs sm:text-sm block mt-1 tracking-wide">{customerName}</span>
               </div>
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'date' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
                 <span className="text-[10px] text-[#A7AC9B] uppercase block tracking-[0.16em] font-medium">{language === 'EN' ? 'PROPOSAL NUMBER' : 'OFFERTENUMMER'}</span>
-                <span className="font-medium text-[#F7C873] text-xs sm:text-sm block mt-1 tracking-wide">{quoteId}</span>
+                <span className="font-medium text-[#FDFBF7] text-xs sm:text-sm block mt-1 tracking-wide">{quoteId}</span>
               </div>
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'date' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
                 <span className="text-[10px] text-[#A7AC9B] uppercase block tracking-[0.16em] font-medium">{language === 'EN' ? 'DATE' : 'DATUM'}</span>
-                <span className="font-medium text-[#F7C873] text-xs sm:text-sm block mt-1 tracking-wide">{quoteDate}</span>
+                <span className="font-medium text-[#FDFBF7] text-xs sm:text-sm block mt-1 tracking-wide">{quoteDate}</span>
               </div>
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'date' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
                 <span className="text-[10px] text-[#A7AC9B] uppercase block tracking-[0.16em] font-medium">{language === 'EN' ? 'VALID UNTIL' : 'GELDIG T/M'}</span>
-                <span className="font-medium text-[#F7C873] text-xs sm:text-sm block mt-1 tracking-wide">{validUntil}</span>
+                <span className="font-medium text-[#FDFBF7] text-xs sm:text-sm block mt-1 tracking-wide">{validUntil}</span>
               </div>
             </div>
 
@@ -371,7 +365,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             </div>
 
             {quote?.isDraft && (
-              <div className="bg-amber-600/90 text-white text-center py-1.5 px-3 text-[10px] font-mono font-bold tracking-widest uppercase rounded-lg shadow-xs">
+              <div className="bg-amber-600/90 text-white text-center py-1.5 px-3 text-[10px] font-semibold tracking-widest uppercase rounded-lg shadow-xs" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 {language === 'EN' ? '⚠ INTERNAL DRAFT PROPOSAL — NOT YET SENT TO CLIENT' : '⚠ CONCEPT OFFERTE — NOG NIET VERZONDEN NAAR KLANT'}
               </div>
             )}
@@ -394,8 +388,8 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
               <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
-                <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
+                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#3E4E36] font-bold">{quoteId}</span></div>
+                <div className="text-[#4A4A43] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
 
@@ -407,7 +401,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               <div className="grid grid-cols-3 gap-5 items-start">
                 <div className="col-span-2 space-y-3 text-[13px] leading-[1.65] text-[#4A4A43]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   <h3 className="text-2xl sm:text-3xl font-normal text-[#33422C]" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
-                    {language === 'EN' ? 'Dear' : 'Beste'} <span className="text-[#C2571B] capitalize font-medium">{firstName}</span>,
+                    {language === 'EN' ? 'Dear' : 'Beste'} <span className="text-[#3E4E36] capitalize font-semibold">{firstName}</span>,
                   </h3>
                   {(quote?.letterAndProcess?.letterParagraphs && quote.letterAndProcess.letterParagraphs.length > 0 && !quote.letterAndProcess.letterParagraphs[0].includes('Hartelijk dank voor je aanvraag')
                     ? quote.letterAndProcess.letterParagraphs
@@ -537,7 +531,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           {/* Footer */}
           <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
-            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#C2571B]">{quoteId}</strong></span>
+            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#3E4E36]">{quoteId}</strong></span>
             <span className="font-bold">2 / 6</span>
           </div>
         </div>
@@ -552,16 +546,16 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
               <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
-                <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
+                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#3E4E36] font-bold">{quoteId}</span></div>
+                <div className="text-[#4A4A43] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
 
             <div className="space-y-1">
-              <span className="text-[10px] font-mono text-accent font-bold uppercase tracking-wider block">
+              <span className="text-[10px] text-[#8A8275] font-semibold uppercase tracking-[0.16em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 {language === 'EN' ? '03 · YOUR CONFIGURATION' : '03 · UW CONFIGURATIE'}
               </span>
-              <h3 className="text-2xl sm:text-3xl font-serif text-primary font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+              <h3 className="text-2xl sm:text-3xl font-serif text-[#3E4E36] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                 {isGardenRoom
                   ? (language === 'EN' ? 'Your garden room at a glance' : 'Jouw buitenverblijf in één oogopslag')
                   : (language === 'EN' ? 'Your outdoor kitchen at a glance' : 'Jouw buitenkeuken in één oogopslag')}
@@ -571,36 +565,36 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             {/* 4 Green Stat Tiles */}
             <div className="grid grid-cols-4 gap-2.5">
               <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
-                <span className="text-[9px] uppercase font-mono tracking-widest text-[#F7C873] block font-bold">
+                <span className="text-[9px] uppercase tracking-widest text-[#D6CFC2] block font-bold" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {language === 'EN' ? 'DIMENSIONS' : 'AFMETING'}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#F7C873] leading-tight font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{cleanDimensions}</p>
+                <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{cleanDimensions}</p>
                 <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">{config.dimensionsUnit || (language === 'EN' ? 'centimeters' : 'centimeter')}</span>
               </div>
 
               <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
-                <span className="text-[9px] uppercase font-mono tracking-widest text-[#F7C873] block font-bold">
+                <span className="text-[9px] uppercase tracking-widest text-[#D6CFC2] block font-bold" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {language === 'EN' ? 'WOOD TYPE' : 'HOUTSOORT'}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#F7C873] leading-tight font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{woodType}</p>
+                <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{woodType}</p>
                 <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">{config.woodLifespan || woodLifespan}</span>
               </div>
 
               <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
-                <span className="text-[9px] uppercase font-mono tracking-widest text-[#F7C873] block font-bold">
+                <span className="text-[9px] uppercase tracking-widest text-[#D6CFC2] block font-bold" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {tile3Title}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#F7C873] leading-tight font-normal truncate" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{tile3Value}</p>
+                <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal truncate" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{tile3Value}</p>
                 <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
                   {config.optionsSubtext || tile3Subtext}
                 </span>
               </div>
 
               <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
-                <span className="text-[9px] uppercase font-mono tracking-widest text-[#F7C873] block font-bold">
+                <span className="text-[9px] uppercase tracking-widest text-[#D6CFC2] block font-bold" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {language === 'EN' ? 'DELIVERY TIME' : 'LEVERTIJD'}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#F7C873] leading-tight font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>{deliveryTime}</p>
+                <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{deliveryTime}</p>
                 <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
                   {config.deliverySubtext || (language === 'EN' ? 'upon drawing approval' : 'na akkoord op tekening')}
                 </span>
@@ -622,12 +616,12 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   return (
                     <div key={sec.id || sIdx}>
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className="font-bold text-[#C2571B] text-[11px] uppercase tracking-[0.14em] whitespace-nowrap" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                        <span className="font-bold text-[#3E4E36] text-[11px] uppercase tracking-[0.14em] whitespace-nowrap" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                           {displaySecTitle}
                         </span>
                         <div className="flex-1 h-[1px] bg-[#E2DDD3]"></div>
                       </div>
-                      <ul className="space-y-1.5 text-[#C2571B] font-medium text-[11.5px] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                      <ul className="space-y-1.5 text-[#4A4A43] font-medium text-[11.5px] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                         {(sec.lines || []).map((l, lIdx) => (
                           <li key={lIdx} className="flex items-start gap-2">
                             <span className="text-[#33422C] font-bold flex-shrink-0">✓</span>
@@ -644,9 +638,6 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               <div className="space-y-3">
                 <div className={`relative rounded-2xl overflow-hidden border border-[#D6CFC2] shadow-xs bg-[#F4EFE6] flex items-center justify-center p-1.5 transition-all ${diagram.show ? 'h-44 sm:h-48' : 'h-64 sm:h-72'
                   }`}>
-                  <div className="absolute top-2.5 left-2.5 bg-[#C2571B] text-white text-[9px] font-bold tracking-[0.14em] px-2.5 py-1 rounded-md uppercase font-sans z-10 shadow-xs">
-                    {language === 'EN' ? 'DYNAMIC · PHOTO / RENDER' : 'DYNAMISCH · FOTO / RENDER'}
-                  </div>
                   <img
                     src={config.configPhoto || projectImg}
                     alt="Configuration"
@@ -671,19 +662,19 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                       </div>
 
                       {/* Right: Lounge / Overkapt Section */}
-                      <div className="flex-1 bg-white border border-[#D6CFC2] text-[#C2571B] rounded-xl p-2.5 flex flex-col justify-center items-center text-center">
+                      <div className="flex-1 bg-white border border-[#D6CFC2] text-[#3E4E36] rounded-xl p-2.5 flex flex-col justify-center items-center text-center">
                         <span className="text-xs font-semibold" style={{ fontFamily: "'Montserrat', sans-serif" }}>lounge</span>
-                        <span className="text-[10.5px] text-[#C2571B] font-medium mt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'canopy · 5.00 m' : 'overkapt · 5,00 m'}</span>
+                        <span className="text-[10.5px] text-[#4A4A43] font-medium mt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'canopy · 5.00 m' : 'overkapt · 5,00 m'}</span>
                       </div>
                     </div>
 
                     {/* Dimension Bar */}
-                    <div className="flex items-center justify-between text-[11px] font-mono text-[#C2571B] font-bold px-1 pt-0.5">
+                    <div className="flex items-center justify-between text-[11px] text-[#4A4A43] font-bold px-1 pt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                       <span>0</span>
                       <div className="flex-1 mx-2.5 flex items-center">
-                        <div className="w-[1.5px] h-3 bg-[#C2571B]"></div>
-                        <div className="flex-1 h-[1.5px] bg-[#C2571B]"></div>
-                        <div className="w-[1.5px] h-3 bg-[#C2571B]"></div>
+                        <div className="w-[1.5px] h-3 bg-[#70624F]"></div>
+                        <div className="flex-1 h-[1.5px] bg-[#D6CFC2]"></div>
+                        <div className="w-[1.5px] h-3 bg-[#70624F]"></div>
                       </div>
                       <span>8,00 m</span>
                     </div>
@@ -694,7 +685,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                       {language === 'EN' ? `FRONT VIEW DIAGRAM (${diagram.totalWidth} CM)` : `VOORAANZICHT TEKENING (${diagram.totalWidth} CM)`}
                     </span>
 
-                    <div className="flex items-center justify-center gap-1 font-mono text-[9px]">
+                    <div className="flex items-center justify-center gap-1 text-[9px]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                       {diagram.segments.map((seg, sIdx) => {
                         const isDark = seg.type === 'CUTOUT' || seg.type === 'FRIDGE' || seg.type === 'SINK';
                         const segLabel = seg.label === 'kastje' && language === 'EN' ? 'cabinet' : (seg.label || (language === 'EN' ? 'cabinet' : 'kastje'));
@@ -712,9 +703,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                       })}
                     </div>
 
-                    <div className="text-[9px] font-mono text-dark/60 border-t border-[#D6CFC2]/60 pt-1 flex justify-between px-2">
-                      <span className="font-bold text-[#C2571B]">0 cm</span>
-                      <span className="font-bold text-[#C2571B]">{diagram.totalWidth} cm</span>
+                    <div className="text-[9px] text-[#4A4A43] border-t border-[#D6CFC2]/60 pt-1 flex justify-between px-2" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                      <span className="font-bold text-[#4A4A43]">0 cm</span>
+                      <span className="font-bold text-[#4A4A43]">{diagram.totalWidth} cm</span>
                     </div>
                   </div>
                 )}
@@ -722,7 +713,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 {/* Wood Infobox */}
                 {infobox.show && (
                   <div className="p-3.5 bg-[#35442E] text-[#FDFBF7] rounded-2xl space-y-1 shadow-sm border border-[#43543A]">
-                    <h4 className="text-sm font-normal text-[#F7C873]" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>{infobox.title}</h4>
+                    <h4 className="text-sm font-normal text-[#FDFBF7]" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>{infobox.title}</h4>
                     <p className="text-[11px] text-[#E5DFD5] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                       {infobox.text}
                     </p>
@@ -735,7 +726,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           {/* Footer */}
           <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
-            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#C2571B]">{quoteId}</strong></span>
+            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#3E4E36]">{quoteId}</strong></span>
             <span className="font-bold">3 / 6</span>
           </div>
         </div>
@@ -750,8 +741,8 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
               <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
-                <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
+                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#3E4E36] font-bold">{quoteId}</span></div>
+                <div className="text-[#4A4A43] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
 
@@ -778,20 +769,20 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   {items.map((item, idx) => (
                     <tr key={idx}>
                       <td className="py-3 px-1">
-                        <p className="font-bold text-[#C2571B] text-xs sm:text-sm" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                        <p className="font-bold text-[#3E4E36] text-xs sm:text-sm" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                           {item.title || item.description}
                         </p>
                         {item.description && item.title && (
-                          <p className="text-[11px] text-[#C2571B] mt-0.5 leading-relaxed font-normal" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                          <p className="text-[11px] text-[#4A4A43] mt-0.5 leading-relaxed font-normal" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                             {item.description}
                           </p>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-center font-mono font-bold text-[#33422C]">{item.quantity || 1}</td>
-                      <td className="py-3 px-1 text-right font-mono font-bold text-[#C2571B] text-sm whitespace-nowrap">
+                      <td className="py-3 px-3 text-center font-bold text-[#33422C]" style={{ fontFamily: "'Montserrat', sans-serif" }}>{item.quantity || 1}</td>
+                      <td className="py-3 px-1 text-right font-bold text-[#2E2E29] text-sm whitespace-nowrap" style={{ fontFamily: "'Montserrat', sans-serif", fontVariantNumeric: 'tabular-nums' }}>
                         {item.isIncluded || Number(item.priceInclVat || item.unitPrice || 0) === 0
-                          ? <span className="font-bold text-[#C2571B]">{language === 'EN' ? 'Included' : 'Inbegrepen'}</span>
-                          : formatEuro(Number(item.priceInclVat || item.unitPrice || 0) * Number(item.quantity || 1))}
+                          ? <span className="font-bold text-[#3E4E36]">{language === 'EN' ? 'Included' : 'Inbegrepen'}</span>
+                          : formatDecEuro(Number(item.priceInclVat || item.unitPrice || 0) * Number(item.quantity || 1))}
                       </td>
                     </tr>
                   ))}
@@ -799,7 +790,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               </table>
 
               <div className="border-b border-[#E2DDD3] pb-2 mb-3">
-                <p className="text-[10px] text-[#C2571B]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                <p className="text-[10px] text-[#70624F]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {language === 'EN'
                     ? '* Provisional sum: this amount is an estimate. Final settlement is based on actual costs, always coordinated beforehand.'
                     : (quote?.investment?.stelpostDisclaimer || '* Stelpost: dit bedrag is een zorgvuldige inschatting. We rekenen af op basis van de werkelijke kosten, altijd in overleg vooraf.')}
@@ -844,15 +835,15 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   <div className="space-y-2 text-xs" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                     <div className="flex justify-between text-[#E5DFD5]">
                       <span>{language === 'EN' ? 'Total excl. VAT' : 'Totaal excl. btw'}</span>
-                      <span className="text-[#F7C873] font-medium">{formatDecEuro(totalExcl)}</span>
+                      <span className="text-[#FDFBF7] font-medium" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDecEuro(totalExcl)}</span>
                     </div>
                     <div className="flex justify-between text-[#E5DFD5]">
                       <span>{language === 'EN' ? 'VAT 21%' : 'Btw 21%'}</span>
-                      <span className="text-[#F7C873] font-medium">{formatDecEuro(vatAmount)}</span>
+                      <span className="text-[#FDFBF7] font-medium" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDecEuro(vatAmount)}</span>
                     </div>
                     <div className="flex justify-between items-baseline pt-3 border-t border-[#4E5E45]">
                       <span className="text-sm font-semibold text-[#FDFBF7]">{language === 'EN' ? 'Total incl. VAT' : 'Totaal incl. btw'}</span>
-                      <span className="text-2xl sm:text-3xl text-[#F7C873] font-serif font-bold" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{formatEuro(totalIncl)}</span>
+                      <span className="text-2xl sm:text-3xl text-[#FDFBF7] font-serif font-bold" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontVariantNumeric: 'tabular-nums' }}>{formatDecEuro(totalIncl)}</span>
                     </div>
                     <p className="text-[10px] text-[#D6CFC2] italic text-right block pt-0.5">
                       {quote?.investment?.vatDisclaimer || (language === 'EN' ? 'All amounts include VAT' : 'Alle bedragen inclusief btw')}
@@ -867,14 +858,14 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                       quote.investment.validityText.includes('{date}') ? (
                         <>
                           {quote.investment.validityText.split('{date}')[0]}
-                          <strong className="text-[#C2571B] font-bold">{formatDutchDate(validUntil)}</strong>
+                          <strong className="text-[#3E4E36] font-bold">{formatDutchDate(validUntil)}</strong>
                           {quote.investment.validityText.split('{date}')[1] || ''}
                         </>
                       ) : (
                         quote.investment.validityText
                       )
                     ) : (
-                      <>{language === 'EN' ? 'This proposal is valid until ' : 'Deze offerte is geldig tot en met '}<strong className="text-[#C2571B] font-bold">{formatDutchDate(validUntil)}</strong></>
+                      <>{language === 'EN' ? 'This proposal is valid until ' : 'Deze offerte is geldig tot en met '}<strong className="text-[#3E4E36] font-bold">{formatDutchDate(validUntil)}</strong></>
                     )}
                   </span>
                 </div>
@@ -905,17 +896,17 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
                   return (
                     <div key={idx} className="p-4 bg-white rounded-2xl border border-[#E3DDD3] flex items-center justify-between shadow-2xs">
-                      <span className="text-3xl sm:text-4xl text-[#C2571B] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                      <span className="text-3xl sm:text-4xl text-[#3E4E36] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                         {inst.percentage}%
                       </span>
                       <div className="text-right space-y-0.5">
-                        <p className="font-bold text-[#C2571B] text-xs" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                        <p className="font-bold text-[#3E4E36] text-xs" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                           {instLabel}
                         </p>
-                        <p className="text-xs font-bold text-[#C2571B]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                          {formatEuro(inst.amount)}
+                        <p className="text-xs font-bold text-[#2E2E29]" style={{ fontFamily: "'Montserrat', sans-serif", fontVariantNumeric: 'tabular-nums' }}>
+                          {formatDecEuro(inst.amount)}
                         </p>
-                        <p className="text-[10px] text-[#C2571B] font-medium leading-tight pt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                        <p className="text-[10px] text-[#70624F] font-medium leading-tight pt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                           {defaultSubtext}
                         </p>
                       </div>
@@ -929,7 +920,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           {/* Footer */}
           <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
-            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#C2571B]">{quoteId}</strong></span>
+            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#3E4E36]">{quoteId}</strong></span>
             <span className="font-bold">4 / 6</span>
           </div>
         </div>
@@ -944,33 +935,33 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
               <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
-                <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
+                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#3E4E36] font-bold">{quoteId}</span></div>
+                <div className="text-[#4A4A43] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
 
             <div className="space-y-1">
-              <span className="text-[10px] font-mono text-accent font-bold uppercase tracking-wider block">
+              <span className="text-[10px] text-[#8A8275] font-semibold uppercase tracking-[0.16em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 05 &nbsp;·&nbsp; {language === 'EN' ? 'APPROVAL' : 'AKKOORD'}
               </span>
-              <h3 className="text-2xl font-serif font-bold text-primary" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+              <h3 className="text-2xl font-serif font-bold text-[#33422C]" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                 {language === 'EN' ? 'Shall we craft this for you?' : (quote?.letterAndProcess?.approvalTitle || 'Zullen we hem gaan maken?')}
               </h3>
             </div>
 
             <div className="p-6 sm:p-7 bg-[#35442E] text-[#FDFBF7] rounded-2xl space-y-4 shadow-sm border border-[#43543A] relative overflow-hidden">
               <div className="relative z-10 space-y-1.5">
-                <h4 className="text-xl font-serif text-[#FDFBF7] font-normal" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+                <h4 className="text-xl font-serif text-[#FDFBF7] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                   {language === 'EN' ? 'Approving takes just one minute' : (quote?.letterAndProcess?.approvalSubheading || 'Akkoord geven kan in één minuut')}
                 </h4>
-                <p className="text-xs text-[#E5DFD5] leading-relaxed max-w-xl">
+                <p className="text-xs text-[#E5DFD5] leading-relaxed max-w-xl" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {language === 'EN'
                     ? 'Send a quick confirmation via WhatsApp or email, or sign below. You will then receive the final design with technical drawings for confirmation, and we will get right to work.'
                     : (quote?.letterAndProcess?.approvalText || 'Stuur een korte bevestiging per WhatsApp of mail, of onderteken hieronder. Daarna ontvang je het definitieve ontwerp met technische tekening ter bevestiging en gaan we voor je aan de slag.')}
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-3 pt-2 font-mono text-xs relative z-10">
+              <div className="flex flex-wrap gap-3 pt-2 text-xs relative z-10" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 <a href="https://wa.me/31682008025" target="_blank" rel="noopener noreferrer" className="px-5 py-2.5 bg-[#EAE5DC] text-[#33422C] font-bold rounded-xl shadow-2xs hover:bg-white transition-colors inline-flex items-center gap-2 border border-[#E2DDD3]">
                   💬 WhatsApp · 06 82 00 80 25
                 </a>
@@ -982,27 +973,27 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
               <div className="p-6 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] space-y-4 shadow-xs">
-                <span className="text-[10px] font-mono uppercase font-bold text-accent tracking-widest block">
+                <span className="text-[10px] uppercase font-bold text-[#3E4E36] tracking-widest block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {language === 'EN' ? 'APPROVED BY · CLIENT' : 'VOOR AKKOORD · OPDRACHTGEVER'}
                 </span>
                 <div className="pt-2 space-y-4 font-body">
                   <div className="relative pb-1 border-b-2 border-[#33422C]">
-                    <span className="font-serif italic text-[#C2571B] text-xl font-medium block h-7" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{customerName}</span>
-                    <span className="text-[10px] font-mono text-dark/60 block mt-1">{language === 'EN' ? 'Name' : 'Naam'}</span>
+                    <span className="font-serif italic text-[#33422C] text-xl font-medium block h-7" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{customerName}</span>
+                    <span className="text-[10px] text-dark/60 block mt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'Name' : 'Naam'}</span>
                   </div>
                   <div className="pb-1 border-b-2 border-[#33422C]">
                     <span className="block h-6"></span>
-                    <span className="text-[10px] font-mono text-dark/60 block mt-1">{language === 'EN' ? 'Date' : 'Datum'}</span>
+                    <span className="text-[10px] text-dark/60 block mt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'Date' : 'Datum'}</span>
                   </div>
                   <div className="pb-1 border-b-2 border-[#33422C]">
                     <span className="block h-6"></span>
-                    <span className="text-[10px] font-mono text-dark/60 block mt-1">{language === 'EN' ? 'Signature' : 'Handtekening'}</span>
+                    <span className="text-[10px] text-dark/60 block mt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'Signature' : 'Handtekening'}</span>
                   </div>
                 </div>
               </div>
 
               <div className="p-6 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] space-y-4 shadow-xs">
-                <span className="text-[10px] font-mono uppercase font-bold text-accent tracking-widest block">
+                <span className="text-[10px] uppercase font-bold text-[#3E4E36] tracking-widest block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {language === 'EN' ? 'ON BEHALF OF VANUIT AMBACHT' : 'NAMENS VANUIT AMBACHT'}
                 </span>
                 <div className="pt-2 space-y-4 font-body">
@@ -1010,15 +1001,15 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                     <span className="font-serif italic text-[#33422C] text-xl font-medium block h-7" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                       {quote?.letterAndProcess?.signoffName || 'Tim & Bram'}
                     </span>
-                    <span className="text-[10px] font-mono text-dark/60 block mt-1">{language === 'EN' ? 'Name' : 'Naam'} · {quote?.letterAndProcess?.signoffRole || (language === 'EN' ? 'Vanuit Ambacht' : 'Vanuit Ambacht')}</span>
+                    <span className="text-[10px] text-dark/60 block mt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'Name' : 'Naam'} · {quote?.letterAndProcess?.signoffRole || (language === 'EN' ? 'Vanuit Ambacht' : 'Vanuit Ambacht')}</span>
                   </div>
                   <div className="pb-1 border-b-2 border-[#33422C]">
                     <span className="block h-6"></span>
-                    <span className="text-[10px] font-mono text-dark/60 block mt-1">{language === 'EN' ? 'Date' : 'Datum'}</span>
+                    <span className="text-[10px] text-dark/60 block mt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'Date' : 'Datum'}</span>
                   </div>
                   <div className="pb-1 border-b-2 border-[#33422C]">
                     <span className="block h-6"></span>
-                    <span className="text-[10px] font-mono text-dark/60 block mt-1">{language === 'EN' ? 'Signature' : 'Handtekening'}</span>
+                    <span className="text-[10px] text-dark/60 block mt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'Signature' : 'Handtekening'}</span>
                   </div>
                 </div>
               </div>
@@ -1038,7 +1029,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
               if (!isApproved) return null;
               return (
-                <div className="p-3 bg-[#3E4E36]/10 border border-[#3E4E36] rounded-xl flex items-center justify-between text-xs font-mono text-[#3E4E36] shadow-xs">
+                <div className="p-3 bg-[#3E4E36]/10 border border-[#3E4E36] rounded-xl flex items-center justify-between text-xs text-[#3E4E36] shadow-xs" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-[#3E4E36]" />
                     <span>{language === 'EN' ? 'Officially Digitally Accepted' : 'Officiëel Digitaal Geaccepteerd'} · <strong className="text-dark">{signerName}</strong> ({approvedAtDate})</span>
@@ -1050,7 +1041,14 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               );
             })()}
 
-            <div className="pt-4 border-t-2 border-[#33422C] grid grid-cols-3 gap-4 text-[10px] font-mono text-dark/80">
+            {/* Authentic Terms & Conditions disclaimer matching client template */}
+            <p className="text-[10px] text-[#70624F] leading-relaxed pt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+              {language === 'EN'
+                ? `Our general terms and conditions apply to this proposal and to all agreements entered into with Vanuit Ambacht. You can find these on vanuitambacht.nl or receive them upon request. This proposal is valid until ${formatDutchDate(validUntil)}.`
+                : `Op deze offerte en op alle overeenkomsten die je met Vanuit Ambacht aangaat, zijn onze algemene voorwaarden van toepassing. Deze vind je op vanuitambacht.nl of ontvang je op aanvraag. Deze offerte is geldig tot en met ${formatDutchDate(validUntil)}.`}
+            </p>
+
+            <div className="pt-3 border-t-2 border-[#33422C] grid grid-cols-3 gap-4 text-[10px] text-[#4A4A43]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
               <div>
                 <span className="font-bold uppercase text-[#33422C] block mb-1 tracking-wider">{language === 'EN' ? 'ADDRESS' : 'ADRES'}</span>
                 {quote?.company?.name || compName}<br />
@@ -1074,7 +1072,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           {/* Footer */}
           <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
-            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#C2571B]">{quoteId}</strong></span>
+            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#3E4E36]">{quoteId}</strong></span>
             <span className="font-bold">5 / 6</span>
           </div>
         </div>
@@ -1089,8 +1087,8 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
               <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#C2571B] font-bold">{quoteId}</span></div>
-                <div className="text-[#C2571B] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
+                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#3E4E36] font-bold">{quoteId}</span></div>
+                <div className="text-[#4A4A43] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
 
@@ -1166,7 +1164,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                             </span>
                             {badge && (
                               <span
-                                className="bg-[#F5EBE1] text-[#C2571B] text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider"
+                                className="bg-[#3E4E36]/15 text-[#3E4E36] text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider"
                                 style={{ fontFamily: "'Montserrat', sans-serif" }}
                               >
                                 {badge}
@@ -1230,7 +1228,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           {/* Footer */}
           <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">{compName.toUpperCase()}</span>
-            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#C2571B]">{quoteId}</strong></span>
+            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#3E4E36]">{quoteId}</strong></span>
             <span className="font-bold">6 / 6</span>
           </div>
         </div>

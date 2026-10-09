@@ -31,13 +31,28 @@ export const WORKFLOW_STEPS = [
   { id: 8, name: 'Planning & delivery', desc: 'Site schedule & completion', icon: Calendar, statusKey: 'won', color: 'emerald' }
 ];
 
-export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenPartnerWizard }) {
+export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenPartnerWizard, leadsList = [] }) {
   const navigate = useNavigate();
   const { t, tStatus, language } = useLanguage();
   const initialStep = lead?.workflowStep || 1;
   const [currentStep, setCurrentStep] = useState(initialStep);
   const isLeadCompleted = currentStep === 8;
   const [autoModalType, setAutoModalType] = useState(null); // 'quote' | 'project' | 'partner' | 'invoice' | null
+  const [activeLeadsList, setActiveLeadsList] = useState(leadsList);
+
+  useEffect(() => {
+    if (leadsList && leadsList.length > 0) {
+      setActiveLeadsList(leadsList);
+    } else {
+      api.get('/leads?limit=100').then(res => {
+        if (res.success) {
+          const items = res.data?.items || (Array.isArray(res.data) ? res.data : []);
+          if (items.length > 0) setActiveLeadsList(items);
+        }
+      }).catch(() => {});
+    }
+  }, [leadsList]);
+
   // D1 FIX: Inline Quote Editor Modal — no redirect to /admin/quotes
   const [showInlineQuoteEditor, setShowInlineQuoteEditor] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
@@ -779,6 +794,12 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
 
   const [leadQuote, setLeadQuote] = useState(getLeadQuote);
 
+  useEffect(() => {
+    if (lead) {
+      setLeadQuote(getLeadQuote());
+    }
+  }, [lead?.id, lead?.name, lead?.customer]);
+
   // Synchronize Step 5 message with language and customer details
   useEffect(() => {
     const activeToken = leadQuote?.publicToken || leadQuote?.id || targetQuoteId;
@@ -963,11 +984,12 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     }
   };
 
-  const handleSaveDraftStep4 = () => {
+  const handleSaveDraftStep4 = async () => {
     setQuoteSavedAsDraft(true);
+    await handleSaveQuote(leadQuote, false);
     showToast(language === 'EN'
-      ? `✓ Draft saved! Status: DRAFT — NOT SENT.`
-      : `✓ Concept opgeslagen! Status: CONCEPT — NIET VERZONDEN.`
+      ? `✓ Draft saved to Quote Management! (Status: Draft)`
+      : `✓ Concept opgeslagen in Offertebeheer! (Status: Concept)`
     );
   };
 
@@ -1085,18 +1107,54 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   // Automatic consequence helper function: Convert quote via official accept-and-convert endpoint
   const autoCreateProjectOnApproval = async (meta) => {
     window.dispatchEvent(new Event('app_data_changed'));
-    const targetQId = leadQuote?.backendId || leadQuote?.id || targetQuoteId;
+
+    // Ensure quote is persisted to backend first if not yet done
+    let targetQId = leadQuote?.backendId;
+    if (!targetQId) {
+      await handleSaveQuote(leadQuote, false);
+      targetQId = leadQuote?.backendId;
+    }
+    targetQId = targetQId || leadQuote?.id || targetQuoteId;
+
+    // Cache confirmed project for offline/UI preview fallback
+    try {
+      const projId = `PRJ-${lead?.id ? String(lead.id).replace(/[^0-9]/g, '').slice(-4) || '101' : '101'}`;
+      const projTitle = `Luxe ${customerCategory || 'Buitenkeuken'} — ${customerName || 'Klant'}`;
+      const newProj = {
+        id: projId,
+        projectNumber: projId,
+        name: projTitle,
+        customer: customerName || 'Klant',
+        customerEmail,
+        customerPhone,
+        projectType: (customerCategory || 'outdoor_kitchen').toLowerCase().includes('garden') ? 'garden_room' : 'outdoor_kitchen',
+        status: 'In execution',
+        progress: 25,
+        deadline: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        quoteId: targetQId,
+        leadId: lead?.id,
+        partner: partnerForm?.partnerName || lead?.partner || 'Unassigned',
+        orderStatus: 'in_voorbereiding',
+        createdAt: new Date().toISOString()
+      };
+      const existingProjects = JSON.parse(localStorage.getItem('app_projects_v2') || '[]');
+      const filteredP = existingProjects.filter(p => p.id !== projId && p.quoteId !== targetQId);
+      localStorage.setItem('app_projects_v2', JSON.stringify([newProj, ...filteredP]));
+    } catch (e) {
+      console.warn('Local project cache write error:', e);
+    }
+
     if (targetQId) {
       try {
         await api.post(`/quotes/${targetQId}/accept-and-convert`, {
           note: meta?.statusLabel || `Approved via ${meta?.route || 'Route A'}`
         });
-        window.dispatchEvent(new Event('app_data_changed'));
       } catch (err) {
         // If already approved (409), that is completely expected and means it is already converted
         console.warn('Quote conversion notice:', err);
       }
     }
+    window.dispatchEvent(new Event('app_data_changed'));
   };
 
   const handleRouteAOnlineApproval = async () => {
@@ -5469,6 +5527,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
             <div className="flex-1">
               <QuoteEditor
                 quoteData={leadQuote}
+                leadsList={activeLeadsList}
                 onClose={() => setShowInlineQuoteEditor(false)}
                 onSaveQuote={(savedQuote, isExplicit) => handleSaveQuote(savedQuote, isExplicit)}
                 onPublishQuote={(quoteToPublish) => handlePublishQuote(quoteToPublish)}

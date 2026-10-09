@@ -2,8 +2,8 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import Offerte6PagePDF from '../components/Offerte6PagePDF';
-import FactuurPDFTemplate from '../components/FactuurPDFTemplate';
+import Offerte6PagePDF from '../components/Offerte6PagePDF.jsx';
+import FactuurPDFTemplate from '../components/FactuurPDFTemplate.jsx';
 
 // ─────────────────────────────────────────────────────────────────
 // VANUIT AMBACHT — Unified Real PDF Generator
@@ -156,9 +156,18 @@ export async function generateFull6PagePdf(quoteData) {
     );
 
     // Wait for React DOM commit and all image elements to complete loading
-    await new Promise(resolve => setTimeout(resolve, 350));
-    // Wait for all fonts to be fully loaded so html2canvas captures Cormorant Garamond and Montserrat
-    await document.fonts.ready;
+    // Wait for all fonts (Playfair Display & Montserrat) to be fully loaded so html2canvas captures sharp brand typography
+    if (document.fonts) {
+      await Promise.all([
+        document.fonts.load('400 16px "Playfair Display"').catch(() => {}),
+        document.fonts.load('600 16px "Playfair Display"').catch(() => {}),
+        document.fonts.load('italic 16px "Playfair Display"').catch(() => {}),
+        document.fonts.load('400 14px "Montserrat"').catch(() => {}),
+        document.fonts.load('600 14px "Montserrat"').catch(() => {}),
+        document.fonts.load('700 14px "Montserrat"').catch(() => {}),
+        document.fonts.ready
+      ]);
+    }
 
     const imgs = Array.from(tempDiv.querySelectorAll('img'));
     await Promise.all(
@@ -176,24 +185,33 @@ export async function generateFull6PagePdf(quoteData) {
     const pageElements = Array.from(tempDiv.querySelectorAll('.offerte-pdf-page'));
 
     if (pageElements.length > 0) {
+      // Normalize page geometry for exact flat A4 export matching client template
+      pageElements.forEach(el => {
+        el.style.borderRadius = '0px';
+        el.style.boxShadow = 'none';
+        el.style.border = 'none';
+        el.style.width = '794px';
+        el.style.height = '1123px';
+      });
+
       const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
       for (let i = 0; i < pageElements.length; i++) {
         const el = pageElements[i];
         const canvas = await html2canvas(el, {
-          scale: 2,
+          scale: 3, // 300 DPI high-resolution razor-sharp typography
           useCORS: true,
           allowTaint: false,
-          backgroundColor: '#FFFFFF',
+          backgroundColor: el.classList.contains('bg-[#33422C]') ? '#33422C' : '#FDFBF7',
           logging: false,
-          windowWidth: 1200
+          windowWidth: 794
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgData = canvas.toDataURL('image/png'); // Lossless PNG: zero compression blur
         if (i > 0) {
           pdf.addPage('a4', 'portrait');
         }
-        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
       }
 
       pdf.save(fileName);

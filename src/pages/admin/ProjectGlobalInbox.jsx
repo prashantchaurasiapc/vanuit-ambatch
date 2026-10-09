@@ -63,24 +63,44 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
   // Load initial data from real API
   const loadProjectsData = async () => {
-    const res = await api.get('/projects?limit=50');
-    if (res.success && Array.isArray(res.data)) {
-      setProjects(res.data);
+    try {
+      const res = await api.get('/projects?limit=50');
+      const localProjects = JSON.parse(localStorage.getItem('app_projects_v2') || '[]');
+      if (res.success && Array.isArray(res.data)) {
+        const merged = [
+          ...res.data,
+          ...localProjects.filter(lp => !res.data.some(bp => bp.id === lp.id || bp.projectNumber === lp.projectNumber || (lp.quoteId && bp.quoteId === lp.quoteId)))
+        ];
+        setProjects(merged);
+      } else if (localProjects.length > 0) {
+        setProjects(localProjects);
+      }
+    } catch {
+      const localProjects = JSON.parse(localStorage.getItem('app_projects_v2') || '[]');
+      if (localProjects.length > 0) setProjects(localProjects);
     }
   };
 
   useEffect(() => {
     loadProjectsData();
+    window.addEventListener('app_data_changed', loadProjectsData);
 
-    // Leads list for dropdowns
+    // Leads list for dropdowns (handles both { items: [...] } and [...])
     api.get('/leads?limit=100').then(res => {
-      if (res.success && Array.isArray(res.data)) setLeadsList(res.data);
+      if (res.success) {
+        const items = res.data?.items || (Array.isArray(res.data) ? res.data : []);
+        setLeadsList(items);
+      }
     });
 
     // Partners list for dropdowns
     api.get('/partners?limit=100').then(res => {
       if (res.success && Array.isArray(res.data)) setPartnersList(res.data);
     });
+
+    return () => {
+      window.removeEventListener('app_data_changed', loadProjectsData);
+    };
   }, [modalOpen]);
 
   const showToast = (msg) => {
