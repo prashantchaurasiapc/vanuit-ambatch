@@ -56,14 +56,28 @@ export default function Invoices() {
   };
 
   const translateInvoiceStatus = (statusStr) => {
-    if (language !== 'EN' || !statusStr) return statusStr;
-    switch (statusStr) {
-      case 'Betaald': return 'Paid';
-      case 'Verzonden': return 'Sent';
-      case 'Concept': return 'Concept';
-      case 'Openstaand': return 'Pending';
-      case 'Vervallen': return 'Overdue';
-      default: return statusStr;
+    if (!statusStr) return statusStr;
+    if (language === 'NL') {
+      switch (statusStr) {
+        case 'Paid': return 'Betaald';
+        case 'Sent': return 'Verzonden';
+        case 'Concept': return 'Concept';
+        case 'Draft': return 'Concept';
+        case 'Pending': return 'Openstaand';
+        case 'Partially Paid': return 'Gedeeltelijk Betaald';
+        case 'Overdue': return 'Vervallen';
+        default: return statusStr;
+      }
+    } else {
+      switch (statusStr) {
+        case 'Betaald': return 'Paid';
+        case 'Verzonden': return 'Sent';
+        case 'Concept': return 'Draft';
+        case 'Openstaand': return 'Pending';
+        case 'Gedeeltelijk Betaald': return 'Partially Paid';
+        case 'Vervallen': return 'Overdue';
+        default: return statusStr;
+      }
     }
   };
 
@@ -486,35 +500,39 @@ export default function Invoices() {
       )
     },
     { 
-      header: 'Total Amount (incl. VAT)', 
+      header: language === 'NL' ? 'Totaalbedrag (incl. btw)' : 'Total Amount (incl. VAT)', 
       render: (row) => <span className="font-mono font-bold text-xs">{row.amount || `€ ${row.numericAmount}`}</span> 
     },
     {
-      header: 'Received / Outstanding',
+      header: language === 'NL' ? 'Ontvangen / Openstaand' : 'Received / Outstanding',
       render: (row) => {
         const orderVal = getNumericAmount(row.amount, row.numericAmount);
         const settlement = calculateOrderSettlement({ id: row.id, totalAmount: orderVal }, bankTxns);
         return (
           <div className="font-mono text-xs leading-tight">
-            <p className="text-emerald-700 font-bold">Received: € {settlement.totalReceived.toLocaleString('nl-NL')}</p>
+            <p className="text-emerald-700 font-bold">
+              {language === 'NL' ? 'Ontvangen' : 'Received'}: € {settlement.totalReceived.toLocaleString('nl-NL')}
+            </p>
             <p className={`font-bold ${settlement.outstanding > 0 ? 'text-amber-800' : 'text-dark/40'}`}>
-              Outstanding: € {settlement.outstanding.toLocaleString('nl-NL')}
+              {language === 'NL' ? 'Openstaand' : 'Outstanding'}: € {settlement.outstanding.toLocaleString('nl-NL')}
             </p>
           </div>
         );
       }
     },
     { 
-      header: 'Project Purchasing & Margin',
+      header: language === 'NL' ? 'Projectinkoop & Marge' : 'Project Purchasing & Margin',
       render: (row) => {
         const orderVal = getNumericAmount(row.amount, row.numericAmount);
         const linkedPurchasing = bankTxns.filter(t => t.category === UNIFIED_PURCHASING_CATEGORY && (t.orderId === row.id || t.projectId === row.id || t.customerName === row.customer));
         const marginInfo = calculateProjectMarginWithPurchasing(orderVal, linkedPurchasing);
         return (
           <div className="text-[11px] leading-tight space-y-1 font-mono">
-            <p className="text-blue-950 font-medium">Purchasing: € {marginInfo.totalPurchasing.toLocaleString('nl-NL')}</p>
+            <p className="text-blue-950 font-medium">
+              {language === 'NL' ? 'Inkoop' : 'Purchasing'}: € {marginInfo.totalPurchasing.toLocaleString('nl-NL')}
+            </p>
             <span className="inline-block px-2 py-0.5 bg-emerald-100 text-emerald-900 font-bold rounded-md">
-              Margin: € {marginInfo.projectMargin.toLocaleString('nl-NL')} ({marginInfo.marginPercentage}%)
+              {language === 'NL' ? 'Marge' : 'Margin'}: € {marginInfo.projectMargin.toLocaleString('nl-NL')} ({marginInfo.marginPercentage}%)
             </span>
           </div>
         );
@@ -525,14 +543,17 @@ export default function Invoices() {
       render: (row) => {
         const orderVal = getNumericAmount(row.amount, row.numericAmount);
         const settlement = calculateOrderSettlement({ id: row.id, totalAmount: orderVal }, bankTxns);
-        const displayStatus = row.status === 'Betaald' || row.status === 'Paid' || settlement.paymentStatus === 'Paid / Settled' 
+        const rawStatus = row.status === 'Betaald' || row.status === 'Paid' || settlement.paymentStatus === 'Paid / Settled' 
           ? 'Paid' 
           : settlement.paymentStatus === 'Partially Paid' 
           ? 'Partially Paid' 
-          : translateInvoiceStatus(row.status);
+          : row.status;
+        const displayStatus = translateInvoiceStatus(rawStatus);
+        const isPaid = displayStatus === 'Paid' || displayStatus === 'Betaald';
+        const isPartiallyPaid = displayStatus === 'Partially Paid' || displayStatus === 'Gedeeltelijk Betaald';
         
         return (
-          <Badge variant={displayStatus === 'Paid' ? 'success' : displayStatus === 'Partially Paid' ? 'warning' : getBadgeVariant(row.status)}>
+          <Badge variant={isPaid ? 'success' : isPartiallyPaid ? 'warning' : getBadgeVariant(row.status)}>
             {displayStatus}
           </Badge>
         );

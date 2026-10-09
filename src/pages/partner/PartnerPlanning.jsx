@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
-import { Calendar as CalendarIcon, Clock, CheckCircle2, Circle, Plus, Filter, MapPin, User, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, CheckCircle2, Circle, Plus, Filter, MapPin, User, ChevronLeft, ChevronRight, X, Sliders } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import api from '../../api/apiClient';
+import PartnerWorkloadAvailabilityCard from '../../components/partner/PartnerWorkloadAvailabilityCard';
 
 const DEFAULT_EVENTS = [];
 
@@ -53,8 +54,9 @@ export default function PartnerPlanning() {
   const { language } = useLanguage();
   const [events, setEvents] = useState([]);
   const [filterType, setFilterType] = useState('All');
-  const [selectedDate, setSelectedDate] = useState('2026-08-10');
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [newEvent, setNewEvent] = useState({ title: '', client: '', location: '', time: '10:00 - 11:30', type: 'Site Visit' });
@@ -212,9 +214,19 @@ export default function PartnerPlanning() {
             {language === 'NL' ? 'Beheer uw wekelijkse planning, locatiebezoeken en montages.' : 'Manage your weekly schedule, site visits, and installations.'}
           </p>
         </div>
-        <Button icon={Plus} onClick={() => setShowAddModal(true)}>
-          {language === 'NL' ? 'Planningstaak Toevoegen' : 'Add Schedule Task'}
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button 
+            variant="outline" 
+            icon={Sliders} 
+            onClick={() => setShowAvailabilityModal(true)}
+            className="text-xs bg-white/80 border-[#C4BEB3] hover:border-primary text-primary font-semibold"
+          >
+            {language === 'NL' ? 'Werkdruk & Beschikbaarheid' : 'Workload & Availability'}
+          </Button>
+          <Button icon={Plus} onClick={() => setShowAddModal(true)}>
+            {language === 'NL' ? 'Planningstaak Toevoegen' : 'Add Schedule Task'}
+          </Button>
+        </div>
       </div>
 
       {/* Stats Summary */}
@@ -537,6 +549,30 @@ export default function PartnerPlanning() {
                   </Button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Availability & Workload Modal */}
+        {showAvailabilityModal && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-4xl relative my-auto"
+            >
+              <button 
+                onClick={() => setShowAvailabilityModal(false)}
+                className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 text-dark flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <PartnerWorkloadAvailabilityCard 
+                onWorkloadChange={() => {
+                  showToast(language === 'NL' ? '✓ Beschikbaarheid opgeslagen' : '✓ Availability updated');
+                }} 
+              />
             </motion.div>
           </div>
         )}

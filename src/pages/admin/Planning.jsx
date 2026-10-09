@@ -34,6 +34,24 @@ function mapFrontendToBackend(type) {
   }
 }
 
+function getISOWeekNumber(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
+function getMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() + diff);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
 export default function Planning() {
   const { language, t } = useLanguage();
   const [activeTab, setActiveTab] = useState('Project Planning');
@@ -43,6 +61,9 @@ export default function Planning() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeView, setActiveView] = useState('Week');
+
+  // Dynamic Date state (defaulting to current date / today)
+  const [currentDate, setCurrentDate] = useState(() => new Date());
 
   // Backend state
   const [rawEvents, setRawEvents] = useState([]);
@@ -58,13 +79,61 @@ export default function Planning() {
     projectId: '',
     partnerId: '',
     type: 'Kitchen Delivery',
-    date: '2026-09-30',
+    date: new Date().toISOString().split('T')[0],
     startTime: '09:00',
     endTime: '12:00',
     location: ''
   });
 
-  // Load planning events, tasks, projects, partners
+  // Calculate current week bounds and ISO week
+  const monday = getMonday(currentDate);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  const isoWeek = getISOWeekNumber(currentDate);
+
+  const handlePrevWeek = () => {
+    setCurrentDate((prev) => new Date(prev.getTime() - 7 * 86400000));
+  };
+
+  const handleNextWeek = () => {
+    setCurrentDate((prev) => new Date(prev.getTime() + 7 * 86400000));
+  };
+
+  const handleToday = () => {
+    // Jump to current real date / today
+    setCurrentDate(new Date());
+  };
+
+  const monthNamesNL = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  const monthNamesEN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const mNames = language === 'NL' ? monthNamesNL : monthNamesEN;
+
+  const weekRangeLabel = `${monday.getDate()} ${mNames[monday.getMonth()]} – ${sunday.getDate()} ${mNames[sunday.getMonth()]}`;
+
+  const daysData = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dayNames = [
+      t('planning.mo') || (language === 'NL' ? 'Ma' : 'Mon'),
+      t('planning.tu') || (language === 'NL' ? 'Di' : 'Tue'),
+      t('planning.we') || (language === 'NL' ? 'Wo' : 'Wed'),
+      t('planning.th') || (language === 'NL' ? 'Do' : 'Thu'),
+      t('planning.fr') || (language === 'NL' ? 'Vr' : 'Fri'),
+      t('planning.sa') || (language === 'NL' ? 'Za' : 'Sat'),
+      t('planning.su') || (language === 'NL' ? 'Zo' : 'Sun'),
+    ];
+    return {
+      name: dayNames[i],
+      num: d.getDate().toString(),
+      month: mNames[d.getMonth()],
+      fullDate: d,
+      isToday: d.toDateString() === new Date().toDateString(),
+    };
+  });
+
+  // Load planning events, tasks, projects, partners with robust extraction
   const loadData = async () => {
     try {
       setLoading(true);
@@ -72,20 +141,23 @@ export default function Planning() {
         api.get('/planning/events'),
         api.get('/tasks?limit=50'),
         api.get('/projects?limit=50'),
-        api.get('/partners?limit=50')
+        api.get('/partners?limit=100')
       ]);
 
-      if (eventsRes.success && Array.isArray(eventsRes.data)) {
-        setRawEvents(eventsRes.data);
+      if (eventsRes.success) {
+        setRawEvents(Array.isArray(eventsRes.data) ? eventsRes.data : []);
       }
-      if (tasksRes.success && Array.isArray(tasksRes.data)) {
-        setTasks(tasksRes.data);
+      if (tasksRes.success) {
+        const tList = tasksRes.data?.tasks || tasksRes.data?.items || (Array.isArray(tasksRes.data) ? tasksRes.data : []);
+        setTasks(tList);
       }
-      if (projectsRes.success && Array.isArray(projectsRes.data)) {
-        setProjects(projectsRes.data);
+      if (projectsRes.success) {
+        const pList = projectsRes.data?.items || projectsRes.data?.projects || (Array.isArray(projectsRes.data) ? projectsRes.data : []);
+        setProjects(pList);
       }
-      if (partnersRes.success && Array.isArray(partnersRes.data)) {
-        setPartners(partnersRes.data);
+      if (partnersRes.success) {
+        const ptList = partnersRes.data?.items || partnersRes.data?.partners || (Array.isArray(partnersRes.data) ? partnersRes.data : []);
+        setPartners(ptList);
       }
     } catch (err) {
       console.error('Error loading planning data:', err);
@@ -107,27 +179,18 @@ export default function Planning() {
     const startDate = new Date(evt.startTime);
     const endDate = new Date(evt.endTime);
 
-    const startUTC = {
-      year: startDate.getUTCFullYear(),
-      month: startDate.getUTCMonth(),
-      date: startDate.getUTCDate(),
-      day: startDate.getUTCDay(),
-      hours: startDate.getUTCHours(),
-      minutes: startDate.getUTCMinutes()
-    };
+    // Difference in days from Monday of the viewed week
+    const startMidnight = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()).getTime();
+    const mondayMidnight = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate()).getTime();
+    const dayIndex = Math.round((startMidnight - mondayMidnight) / 86400000);
 
-    const endUTC = {
-      hours: endDate.getUTCHours(),
-      minutes: endDate.getUTCMinutes()
-    };
+    const startHours = startDate.getHours();
+    const startMinutes = startDate.getMinutes();
+    const endHours = endDate.getHours();
+    const endMinutes = endDate.getMinutes();
 
-    // Calculate dayIndex for week 40 (Sep 28 – Oct 4, 2026)
-    // Mon Sep 28 = 0, Tue Sep 29 = 1, Wed Sep 30 = 2, Thu Oct 1 = 3, Fri Oct 2 = 4, Sat Oct 3 = 5, Sun Oct 4 = 6
-    let dayIndex = startUTC.day === 0 ? 6 : startUTC.day - 1;
-
-    // Time calculations
-    const startHourDec = startUTC.hours + startUTC.minutes / 60;
-    const endHourDec = endUTC.hours + endUTC.minutes / 60;
+    const startHourDec = startHours + startMinutes / 60;
+    const endHourDec = endHours + endMinutes / 60;
     const duration = Math.max(endHourDec - startHourDec, 1);
 
     const topPx = (startHourDec - 7) * 54;
@@ -135,15 +198,21 @@ export default function Planning() {
 
     const mappedType = mapBackendEventType(evt.eventType);
 
-    // Customer display name
-    let customerName = 'Klant Afspraak';
-    if (prj) {
-      customerName = `Fam. Valk (${prj.projectNumber})`;
-    } else if (evt.location?.includes('Amsterdam') || evt.title?.includes('Tuinkamer')) {
-      customerName = 'Sanne Visser';
-    } else if (evt.location) {
-      customerName = evt.title;
-    }
+    const customerName = prj?.name || prj?.customerName || prj?.title || evt.title || 'Klant Afspraak';
+    const partnerName = ptn?.companyName || ptn?.contactPerson || (language === 'NL' ? 'Interne regie' : 'Internal');
+
+    const isMultiDay = evt.eventType === 'multi_day_bouw' || (evt.calendarLane === 'bouw_lane' && duration > 8);
+
+    // Check if event belongs to currently viewed week
+    const isInCurrentWeek = isMultiDay
+      ? (startDate.getTime() <= sunday.getTime() && endDate.getTime() >= monday.getTime())
+      : (dayIndex >= 0 && dayIndex < 7);
+
+    const startOffsetDays = Math.max(0, Math.min(6, Math.round((startMidnight - mondayMidnight) / 86400000)));
+    const endMidnight = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).getTime();
+    const endOffsetDays = Math.max(startOffsetDays, Math.min(6, Math.round((endMidnight - mondayMidnight) / 86400000)));
+    const multiDayLeft = `calc(${startOffsetDays} * (100% / 7) + 2px)`;
+    const multiDayWidth = `calc(${(endOffsetDays - startOffsetDays + 1)} * (100% / 7) - 4px)`;
 
     return {
       id: evt.id,
@@ -153,31 +222,36 @@ export default function Planning() {
       calendarLane: evt.calendarLane,
       title: evt.title,
       customer: customerName,
-      product: prj ? prj.title : evt.title,
-      partner: ptn ? (ptn.contactName || ptn.companyName) : 'Bram & Tim',
+      product: prj ? (prj.name || prj.title) : evt.title,
+      partner: partnerName,
       partnerCompany: ptn?.companyName,
       partnerId: evt.partnerId,
-      date: startDate.toLocaleDateString('nl-NL', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }),
-      startTime: `${String(startUTC.hours).padStart(2, '0')}:${String(startUTC.minutes).padStart(2, '0')}`,
-      endTime: `${String(endUTC.hours).padStart(2, '0')}:${String(endUTC.minutes).padStart(2, '0')}`,
+      date: startDate.toLocaleDateString(language === 'NL' ? 'nl-NL' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+      startTime: `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}`,
+      endTime: `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`,
+      dayIndex,
+      isInCurrentWeek,
       left: `calc(${dayIndex} * (100% / 7) + 4px)`,
       width: `calc(100% / 7 - 8px)`,
+      multiDayLeft,
+      multiDayWidth,
       top: `${Math.max(0, topPx)}px`,
       height: `${heightPx}px`,
       location: evt.location || 'Nederland',
-      address: evt.location || '–',
-      contact: prj ? 'Bjorn Valk' : 'Sanne Visser',
-      phone: prj ? '+31 6 11223344' : '+31 6 98765432',
+      address: prj?.address || evt.location || '–',
+      contact: prj?.customerName || customerName,
+      phone: prj?.customerPhone || prj?.phone || '–',
       projectRef: prj ? prj.projectNumber : evt.eventNumber,
       status: evt.status === 'confirmed' ? 'Confirmed' : evt.status === 'completed' ? 'Completed' : 'Scheduled',
-      progress: prj ? ['site_visit', 'design', 'build'] : ['site_survey'],
-      isMultiDay: evt.eventType === 'multi_day_bouw' || evt.calendarLane === 'bouw_lane' && duration > 8,
+      progress: prj ? ['site_survey', 'design', 'build'] : ['site_survey'],
+      isMultiDay,
       raw: item
     };
   });
 
-  // Filter events
+  // Filter events (must be in currently viewed week)
   const filteredEvents = formattedEvents.filter((appt) => {
+    if (!appt.isInCurrentWeek) return false;
     if (activeFilter !== 'All' && appt.type !== activeFilter) return false;
     if (partnerFilter !== 'All' && appt.partnerId !== partnerFilter) return false;
     if (statusFilter !== 'All' && appt.status.toLowerCase() !== statusFilter.toLowerCase()) return false;
@@ -188,17 +262,17 @@ export default function Planning() {
   const gridAppointments = filteredEvents.filter((e) => !e.isMultiDay);
   const ongoingBuilds = filteredEvents.filter((e) => e.isMultiDay);
 
-  // Type counts
-  const countKitchen = formattedEvents.filter((e) => e.type === 'Kitchen Delivery').length;
-  const countCanopy = formattedEvents.filter((e) => e.type === 'Canopy Build').length;
-  const countSiteVisit = formattedEvents.filter((e) => e.type === 'Site Visit').length;
-  const countHandover = formattedEvents.filter((e) => e.type === 'Handover').length;
-  const countService = formattedEvents.filter((e) => e.type === 'Service').length;
+  // Type counts for currently viewed week
+  const countKitchen = filteredEvents.filter((e) => e.type === 'Kitchen Delivery').length;
+  const countCanopy = filteredEvents.filter((e) => e.type === 'Canopy Build').length;
+  const countSiteVisit = filteredEvents.filter((e) => e.type === 'Site Visit').length;
+  const countHandover = filteredEvents.filter((e) => e.type === 'Handover').length;
+  const countService = filteredEvents.filter((e) => e.type === 'Service').length;
 
   // Handle saving new appointment to backend
   const handleSave = async () => {
     if (!newApptData.date || !newApptData.startTime) {
-      alert('Vul a.u.b. een datum en begintijd in.');
+      alert(language === 'NL' ? 'Vul a.u.b. een datum en begintijd in.' : 'Please enter a date and start time.');
       return;
     }
 
@@ -206,12 +280,12 @@ export default function Planning() {
       setSaving(true);
       const { eventType, calendarLane } = mapFrontendToBackend(newApptData.type);
 
-      const startDateTime = `${newApptData.date}T${newApptData.startTime}:00.000Z`;
-      const endDateTime = `${newApptData.date}T${newApptData.endTime || '12:00'}:00.000Z`;
+      const startDateTime = new Date(`${newApptData.date}T${newApptData.startTime}:00`).toISOString();
+      const endDateTime = new Date(`${newApptData.date}T${newApptData.endTime || '12:00'}:00`).toISOString();
 
       const payload = {
-        projectId: newApptData.projectId ? newApptData.projectId : null,
-        partnerId: newApptData.partnerId ? newApptData.partnerId : null,
+        projectId: newApptData.projectId || null,
+        partnerId: newApptData.partnerId || null,
         eventType,
         calendarLane,
         title: newApptData.title.trim() || `${newApptData.type} - Afspraak`,
@@ -225,12 +299,14 @@ export default function Planning() {
       if (res.success) {
         await loadData();
         setIsModalOpen(false);
+        // Switch calendar view to the week of the newly created appointment
+        setCurrentDate(new Date(`${newApptData.date}T10:00:00Z`));
         setNewApptData({
           title: '',
           projectId: '',
           partnerId: '',
           type: 'Kitchen Delivery',
-          date: '2026-09-30',
+          date: new Date().toISOString().split('T')[0],
           startTime: '09:00',
           endTime: '12:00',
           location: ''
@@ -269,15 +345,6 @@ export default function Planning() {
 
   // Grid layout parameters
   const hours = Array.from({ length: 12 }, (_, i) => i + 7); // 07:00 to 18:00
-  const daysData = [
-    { name: t('planning.mo'), num: '28', month: 'sep' },
-    { name: t('planning.tu'), num: '29', month: 'sep' },
-    { name: t('planning.we'), num: '30', month: 'sep' },
-    { name: t('planning.th'), num: '1', month: 'oct' },
-    { name: t('planning.fr'), num: '2', month: 'oct' },
-    { name: t('planning.sa'), num: '3', month: 'oct' },
-    { name: t('planning.su'), num: '4', month: 'oct' },
-  ];
 
   return (
     <div className="flex h-full w-full bg-[#F7F4EE] font-body text-[#2A2925] overflow-hidden">
@@ -316,7 +383,14 @@ export default function Planning() {
             </div>
           </div>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              const dStr = currentDate.toISOString().split('T')[0];
+              setNewApptData((prev) => ({
+                ...prev,
+                date: dStr
+              }));
+              setIsModalOpen(true);
+            }}
             className="bg-[#3E4A3D] text-white px-5 py-2.5 rounded-xl text-[14px] font-bold hover:bg-[#2A3329] active:scale-95 transition-all flex items-center gap-1.5 mb-2 shadow-sm cursor-pointer"
           >
             <span className="text-xl leading-none font-normal">+</span> {activeTab === 'Project Planning' ? t('planning.newPlanning') : t('planning.newTask')}
@@ -327,39 +401,54 @@ export default function Planning() {
         {activeTab === 'Project Planning' ? (
           <div className="w-full">
             {/* Toolbar */}
-            <div className="flex justify-between items-center mb-4 mt-2 pt-1">
+            <div className="flex justify-between items-center mb-4 mt-2 pt-1 flex-wrap gap-3">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <button className="px-3 py-1.5 bg-transparent border border-[#E6E0D4] rounded-xl hover:bg-white text-[#2A2925] transition-colors cursor-pointer">
+                  <button 
+                    onClick={handlePrevWeek}
+                    title={language === 'NL' ? 'Vorige week' : 'Previous week'}
+                    className="px-3 py-1.5 bg-transparent border border-[#E6E0D4] rounded-xl hover:bg-white text-[#2A2925] transition-colors cursor-pointer"
+                  >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <button className="px-4 py-1.5 bg-transparent border border-[#E6E0D4] rounded-xl text-[13px] font-bold hover:bg-white text-[#2A2925] transition-colors cursor-pointer">
-                    {t('planning.today')}
+                  <button 
+                    onClick={handleToday}
+                    className="px-4 py-1.5 bg-transparent border border-[#E6E0D4] rounded-xl text-[13px] font-bold hover:bg-white text-[#2A2925] transition-colors cursor-pointer"
+                  >
+                    {t('planning.today') || (language === 'NL' ? 'Vandaag' : 'Today')}
                   </button>
-                  <button className="px-3 py-1.5 bg-transparent border border-[#E6E0D4] rounded-xl hover:bg-white text-[#2A2925] transition-colors cursor-pointer">
+                  <button 
+                    onClick={handleNextWeek}
+                    title={language === 'NL' ? 'Volgende week' : 'Next week'}
+                    className="px-3 py-1.5 bg-transparent border border-[#E6E0D4] rounded-xl hover:bg-white text-[#2A2925] transition-colors cursor-pointer"
+                  >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="text-[22px] font-heading font-medium text-[#2A2925] flex items-center gap-3 whitespace-nowrap">
-                  Sep 28 – Oct 4
+                  {weekRangeLabel}
                   <span className="text-[10px] font-body bg-transparent border border-[#E6E0D4] text-[#736E64] px-1.5 py-0.5 rounded uppercase font-bold font-mono">
-                    WEEK 40
+                    WEEK {isoWeek}
                   </span>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <div className="relative">
                   <select
                     value={partnerFilter}
                     onChange={(e) => setPartnerFilter(e.target.value)}
-                    className="appearance-none text-[13px] bg-transparent border border-[#E6E0D4] rounded-xl pl-4 pr-8 py-2 font-bold text-[#2A2925] outline-none cursor-pointer hover:bg-white transition-colors"
+                    className="appearance-none text-[13px] bg-transparent border border-[#E6E0D4] rounded-xl pl-4 pr-8 py-2 font-bold text-[#2A2925] outline-none cursor-pointer hover:bg-white transition-colors max-w-[280px] truncate"
                   >
-                    <option value="All">{t('planning.partnerAll')}</option>
-                    {partners.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.companyName || p.contactName}
-                      </option>
-                    ))}
+                    <option value="All">{t('planning.partnerAll') || (language === 'NL' ? 'Alle Partners' : 'All Partners')}</option>
+                    {partners.map((p) => {
+                      const icon = p.workloadStatus === 'available' ? '🟢' : p.workloadStatus === 'busy' ? '🟡' : '🔴';
+                      const weeks = p.availableWeeks?.length ? ` · Wk ${p.availableWeeks.join(',')}` : '';
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {icon} {p.companyName || p.contactPerson} ({p.workloadStatus || 'available'}{weeks})
+                        </option>
+                      );
+                    })}
                   </select>
                   <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-[#736E64] pointer-events-none" />
                 </div>
@@ -452,11 +541,11 @@ export default function Planning() {
                     <div
                       key={i}
                       className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 border-r border-[#E6E0D4] last:border-0 relative ${
-                        i === 1 ? 'bg-white' : ''
+                        d.isToday ? 'bg-white' : ''
                       }`}
                     >
-                      {i === 1 && <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3E4A3D]"></div>}
-                      <span className={`text-[10px] font-bold ${i === 1 ? 'text-[#2A2925]' : 'text-[#736E64]'}`}>{d.name}</span>
+                      {d.isToday && <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3E4A3D]"></div>}
+                      <span className={`text-[10px] font-bold ${d.isToday ? 'text-[#2A2925]' : 'text-[#736E64]'}`}>{d.name}</span>
                       <span className="text-[24px] font-heading leading-none text-[#2A2925]">{d.num}</span>
                       <span className="text-[11px] font-heading font-medium text-[#736E64]">{d.month}</span>
                     </div>
@@ -480,7 +569,8 @@ export default function Planning() {
                         <div
                           key={b.id}
                           onClick={() => setSelectedAppointment(b)}
-                          className={`absolute left-[0%] right-[30%] top-1.5 h-[26px] rounded bg-[#E3EEEE] border border-[#B3CCCB] flex justify-between items-center px-2 cursor-pointer shadow-sm hover:brightness-95 transition-all ${
+                          style={{ left: b.multiDayLeft, width: b.multiDayWidth }}
+                          className={`absolute top-1.5 h-[26px] rounded bg-[#E3EEEE] border border-[#B3CCCB] flex justify-between items-center px-2 cursor-pointer shadow-sm hover:brightness-95 transition-all ${
                             selectedAppointment?.id === b.id ? 'ring-2 ring-[#3E4A3D] ring-offset-[1.5px] z-30' : 'z-10'
                           }`}
                         >
@@ -510,7 +600,7 @@ export default function Planning() {
                     {/* Vertical & Horizontal lines for days */}
                     <div className="flex-1 flex">
                       {daysData.map((d, i) => (
-                        <div key={i} className={`flex-1 border-r border-[#E6E0D4] last:border-0 relative ${i === 1 ? 'bg-white' : ''}`}>
+                        <div key={i} className={`flex-1 border-r border-[#E6E0D4] last:border-0 relative ${d.isToday ? 'bg-white' : ''}`}>
                           {hours.map((h) => (
                             <div key={h} className="h-[54px] border-b border-[#E6E0D4] opacity-50"></div>
                           ))}
@@ -910,13 +1000,21 @@ export default function Planning() {
                   <label className="block text-xs font-bold text-[#58534A] mb-1">{language === 'NL' ? 'Koppel Project (optioneel)' : 'Link Project (optional)'}</label>
                   <select
                     value={newApptData.projectId}
-                    onChange={(e) => setNewApptData({ ...newApptData, projectId: e.target.value })}
+                    onChange={(e) => {
+                      const selProjId = e.target.value;
+                      const selProj = projects.find((p) => p.id === selProjId);
+                      setNewApptData({
+                        ...newApptData,
+                        projectId: selProjId,
+                        title: newApptData.title ? newApptData.title : (selProj ? (selProj.title || selProj.name) : '')
+                      });
+                    }}
                     className="w-full bg-white border border-[#E6E0D4] rounded-lg px-3 py-2 text-sm text-[#2A2925] outline-none"
                   >
-                    <option value="">Geen gekoppeld project</option>
+                    <option value="">{language === 'NL' ? 'Geen gekoppeld project' : 'No linked project'}</option>
                     {projects.map((prj) => (
                       <option key={prj.id} value={prj.id}>
-                        {prj.projectNumber} · {prj.title}
+                        {prj.projectNumber ? `${prj.projectNumber} · ` : ''}{prj.title || prj.name || 'Project'}{prj.customerName ? ` (${prj.customerName})` : ''}
                       </option>
                     ))}
                   </select>
@@ -929,13 +1027,67 @@ export default function Planning() {
                     onChange={(e) => setNewApptData({ ...newApptData, partnerId: e.target.value })}
                     className="w-full bg-white border border-[#E6E0D4] rounded-lg px-3 py-2 text-sm text-[#2A2925] outline-none"
                   >
-                    <option value="">Geen partner (Interne regie)</option>
-                    {partners.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.companyName || p.contactName}
-                      </option>
-                    ))}
+                    <option value="">{language === 'NL' ? 'Geen partner (Interne regie)' : 'No partner (Internal coordination)'}</option>
+                    {partners.map((p) => {
+                      const icon = p.workloadStatus === 'available' ? '🟢' : p.workloadStatus === 'busy' ? '🟡' : '🔴';
+                      const weeks = p.availableWeeks?.length ? ` · Wk ${p.availableWeeks.join(',')}` : '';
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {icon} {p.companyName || p.contactPerson || p.contactName} ({p.workloadStatus || 'available'}{weeks})
+                        </option>
+                      );
+                    })}
                   </select>
+
+                  {/* Live Partner Workload & Availability Feedback Badge */}
+                  {(() => {
+                    if (!newApptData.partnerId) return null;
+                    const selP = partners.find((p) => p.id === newApptData.partnerId);
+                    if (!selP) return null;
+
+                    const apptDateObj = newApptData.date ? new Date(`${newApptData.date}T12:00:00Z`) : null;
+                    const apptWeek = apptDateObj && !isNaN(apptDateObj.getTime()) ? getISOWeekNumber(apptDateObj) : null;
+                    const isAvailableThisWeek = apptWeek && Array.isArray(selP.availableWeeks) && selP.availableWeeks.includes(apptWeek);
+                    const hasSpecifiedWeeks = Array.isArray(selP.availableWeeks) && selP.availableWeeks.length > 0;
+
+                    return (
+                      <div className={`mt-2 p-2.5 rounded-lg text-xs flex items-start gap-2 border ${
+                        isAvailableThisWeek
+                          ? 'bg-[#E8F0E2] text-[#345330] border-[#C3D5B8]'
+                          : hasSpecifiedWeeks
+                            ? 'bg-[#FFF8E6] text-[#8C6D1F] border-[#F2DEAC]'
+                            : 'bg-[#F0EAF4] text-[#553C68] border-[#D5C8E0]'
+                      }`}>
+                        {isAvailableThisWeek ? (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-[#4B7355]" />
+                            <div>
+                              <span className="font-bold">{selP.companyName || selP.contactPerson}</span>
+                              <span> {language === 'NL' ? `is gemarkeerd als BESCHIKBAAR voor Week ${apptWeek}!` : `is marked as AVAILABLE for Week ${apptWeek}!`}</span>
+                            </div>
+                          </>
+                        ) : hasSpecifiedWeeks ? (
+                          <>
+                            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-[#D97706]" />
+                            <div>
+                              <span className="font-bold">{selP.companyName || selP.contactPerson}</span>
+                              <span> {language === 'NL'
+                                ? `heeft Week ${apptWeek} niet als beschikbaar aangegeven. Aangegeven weken: ${selP.availableWeeks.map((w) => `Wk ${w}`).join(', ')}.`
+                                : `has not marked Week ${apptWeek} as available. Available weeks: ${selP.availableWeeks.map((w) => `Wk ${w}`).join(', ')}.`}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="font-bold">{selP.companyName || selP.contactPerson}</span>
+                              <span> — {language === 'NL' ? `Status: ${selP.workloadStatus || 'beschikbaar'}` : `Status: ${selP.workloadStatus || 'available'}`}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">

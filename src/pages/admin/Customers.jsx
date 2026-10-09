@@ -282,7 +282,7 @@ export default function Customers() {
                 {isLoading ? '—' : totalCustomersCount}
               </h3>
               <p className="text-[10px] text-green-700 font-semibold mt-0.5 flex items-center gap-0.5">
-                <Sparkles className="w-3 h-3" /> Auto-synced from backend
+                <Sparkles className="w-3 h-3" /> {language === 'NL' ? 'Automatisch gesynchroniseerd' : 'Auto-synced from backend'}
               </p>
             </div>
             <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
@@ -300,7 +300,9 @@ export default function Customers() {
               <h3 className="text-xl sm:text-2xl font-heading font-bold text-indigo-900 mt-0.5">
                 {isLoading ? '—' : activeProjectsCount}
               </h3>
-              <p className="text-[10px] text-dark/50 mt-0.5">Managed via Projects Panel</p>
+              <p className="text-[10px] text-dark/50 mt-0.5">
+                {language === 'NL' ? 'Beheerd via Projectenpaneel' : 'Managed via Projects Panel'}
+              </p>
             </div>
             <div className="p-2.5 bg-indigo-50 rounded-xl text-indigo-700">
               <Briefcase className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -317,7 +319,9 @@ export default function Customers() {
               <h3 className="text-xl sm:text-2xl font-heading font-bold text-emerald-900 mt-0.5">
                 {isLoading ? '—' : `€ ${totalRevenue.toLocaleString('nl-NL')}`}
               </h3>
-              <p className="text-[10px] text-emerald-700 font-semibold mt-0.5">Combined lifetime value</p>
+              <p className="text-[10px] text-emerald-700 font-semibold mt-0.5">
+                {language === 'NL' ? 'Gecombineerde totale waarde' : 'Combined lifetime value'}
+              </p>
             </div>
             <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-700">
               <DollarSign className="w-5 h-5 sm:w-6 sm:h-6" />

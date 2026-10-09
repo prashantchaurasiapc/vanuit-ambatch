@@ -1,22 +1,25 @@
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import { Download, TrendingUp, Briefcase, Users } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import { downloadDocumentPdf } from '../../utils/pdfGenerator';
 
 
 export default function Reports() {
+  const { t, language } = useLanguage();
+
   const handleExportExcel = () => {
     const reportData = [
-      ['Lead Conversion Funnel Metric Report'],
-      ['Stage', 'Inquiries Count', 'Percentage'],
-      ['Total Inquiries', 220, '100%'],
-      ['Leads Created', 142, '65%'],
-      ['Quotes Sent', 80, '36%'],
-      ['Projects Started', 52, '24%'],
-      ['Completed', 48, '22%'],
+      [language === 'NL' ? 'Leadconversietrechter Metrisch Rapport' : 'Lead Conversion Funnel Metric Report'],
+      [language === 'NL' ? 'Fase' : 'Stage', language === 'NL' ? 'Aantal Aanvragen' : 'Inquiries Count', language === 'NL' ? 'Percentage' : 'Percentage'],
+      [language === 'NL' ? 'Totaal Aanvragen' : 'Total Inquiries', 220, '100%'],
+      [language === 'NL' ? 'Leads Aangemaakt' : 'Leads Created', 142, '65%'],
+      [language === 'NL' ? 'Offertes Verstuurd' : 'Quotes Sent', 80, '36%'],
+      [language === 'NL' ? 'Projecten Gestart' : 'Projects Started', 52, '24%'],
+      [language === 'NL' ? 'Afgerond' : 'Completed', 48, '22%'],
       [],
-      ['Monthly Revenue Performance (2023)'],
-      ['Month', 'Revenue (€)'],
+      [language === 'NL' ? 'Maandelijkse Omzetprestaties (2026)' : 'Monthly Revenue Performance (2026)'],
+      [language === 'NL' ? 'Maand' : 'Month', language === 'NL' ? 'Omzet (€)' : 'Revenue (€)'],
       ['Jan', 32000], ['Feb', 41000], ['Mar', 38000],
       ['Apr', 55000], ['May', 48000], ['Jun', 62000],
       ['Jul', 58000], ['Aug', 71000], ['Sep', 65000],
@@ -38,9 +41,9 @@ export default function Reports() {
     downloadDocumentPdf({
       name: `Vanuit-Ambacht-Reports-${new Date().toISOString().split('T')[0]}.pdf`,
       id: `RPT-${new Date().toISOString().split('T')[0]}`,
-      category: 'Business Reports & Analytics',
+      category: language === 'NL' ? 'Bedrijfsrapporten & Analytics' : 'Business Reports & Analytics',
       uploader: 'Vanuit Ambacht System',
-      date: new Date().toLocaleDateString('nl-NL'),
+      date: new Date().toLocaleDateString(language === 'NL' ? 'nl-NL' : 'en-US'),
     });
   };
 
@@ -48,21 +51,44 @@ export default function Reports() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-heading font-bold text-primary">Reports</h2>
-          <p className="text-dark/60 text-sm">Business performance reports and analytics.</p>
+          <h2 className="text-2xl font-heading font-bold text-primary">
+            {t('reports.title') || (language === 'NL' ? 'Rapporten' : 'Reports')}
+          </h2>
+          <p className="text-dark/60 text-sm">
+            {language === 'NL' ? 'Bedrijfsprestaties, rapporten en analyses.' : 'Business performance reports and analytics.'}
+          </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" icon={Download} size="sm" onClick={handleDownloadPDF}>Download PDF</Button>
-          <Button variant="outline" icon={Download} size="sm" onClick={handleExportExcel}>Export Excel</Button>
+          <Button variant="outline" icon={Download} size="sm" onClick={handleDownloadPDF}>
+            {language === 'NL' ? 'PDF Downloaden' : 'Download PDF'}
+          </Button>
+          <Button variant="outline" icon={Download} size="sm" onClick={handleExportExcel}>
+            {language === 'NL' ? 'Excel Exporteren' : 'Export Excel'}
+          </Button>
         </div>
       </div>
 
       {/* Report Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { title: 'Revenue Report', icon: TrendingUp, desc: 'Monthly and yearly revenue trends', color: 'bg-green-50 text-green-600' },
-          { title: 'Projects Report', icon: Briefcase, desc: 'Project completion and progress stats', color: 'bg-primary/10 text-primary' },
-          { title: 'Lead Conversion', icon: Users, desc: 'Lead to project conversion rate', color: 'bg-blue-50 text-blue-600' },
+          { 
+            title: language === 'NL' ? 'Omzetrapport' : 'Revenue Report', 
+            icon: TrendingUp, 
+            desc: language === 'NL' ? 'Maandelijkse en jaarlijkse omzettrends' : 'Monthly and yearly revenue trends', 
+            color: 'bg-green-50 text-green-600' 
+          },
+          { 
+            title: language === 'NL' ? 'Projectenrapport' : 'Projects Report', 
+            icon: Briefcase, 
+            desc: language === 'NL' ? 'Projectafronding en voortgangsstatistieken' : 'Project completion and progress stats', 
+            color: 'bg-primary/10 text-primary' 
+          },
+          { 
+            title: language === 'NL' ? 'Leadconversie' : 'Lead Conversion', 
+            icon: Users, 
+            desc: language === 'NL' ? 'Conversiepercentage van lead naar project' : 'Lead to project conversion rate', 
+            color: 'bg-blue-50 text-blue-600' 
+          },
         ].map((report, i) => (
           <Card key={i} className="hover:shadow-md transition-shadow cursor-pointer group">
             <div className={`p-3 rounded-xl ${report.color} inline-block mb-4`}>
@@ -70,20 +96,22 @@ export default function Reports() {
             </div>
             <h3 className="font-heading font-semibold text-dark group-hover:text-primary transition-colors">{report.title}</h3>
             <p className="text-sm text-dark/60 mt-1">{report.desc}</p>
-            <Button variant="ghost" size="sm" className="mt-4 px-0 text-primary">View Report →</Button>
+            <Button variant="ghost" size="sm" className="mt-4 px-0 text-primary">
+              {language === 'NL' ? 'Rapport Bekijken →' : 'View Report →'}
+            </Button>
           </Card>
         ))}
       </div>
 
       {/* Lead Conversion Chart */}
-      <Card title="Lead Conversion Funnel">
+      <Card title={language === 'NL' ? 'Leadconversietrechter' : 'Lead Conversion Funnel'}>
         <div className="space-y-4">
           {[
-            { stage: 'Total Inquiries', count: 220, pct: 100, color: 'bg-blue-400' },
-            { stage: 'Leads Created', count: 142, pct: 65, color: 'bg-primary/80' },
-            { stage: 'Quotes Sent', count: 80, pct: 36, color: 'bg-accent' },
-            { stage: 'Projects Started', count: 52, pct: 24, color: 'bg-green-500' },
-            { stage: 'Completed', count: 48, pct: 22, color: 'bg-green-600' },
+            { stage: language === 'NL' ? 'Totaal Aanvragen' : 'Total Inquiries', count: 220, pct: 100, color: 'bg-blue-400' },
+            { stage: language === 'NL' ? 'Leads Aangemaakt' : 'Leads Created', count: 142, pct: 65, color: 'bg-primary/80' },
+            { stage: language === 'NL' ? 'Offertes Verstuurd' : 'Quotes Sent', count: 80, pct: 36, color: 'bg-accent' },
+            { stage: language === 'NL' ? 'Projecten Gestart' : 'Projects Started', count: 52, pct: 24, color: 'bg-green-500' },
+            { stage: language === 'NL' ? 'Afgerond' : 'Completed', count: 48, pct: 22, color: 'bg-green-600' },
           ].map((item, i) => (
             <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
               <span className="text-xs sm:text-sm font-body font-medium text-dark/70 sm:w-36 flex-shrink-0">{item.stage}</span>
@@ -101,7 +129,7 @@ export default function Reports() {
       </Card>
 
       {/* Monthly Performance */}
-      <Card title="Monthly Revenue Performance">
+      <Card title={language === 'NL' ? 'Maandelijkse Omzetprestaties' : 'Monthly Revenue Performance'}>
         <div className="overflow-x-auto pb-2 min-w-0">
           <div className="flex items-end justify-between gap-2 h-44 min-w-[420px] pt-4 px-1">
             {[

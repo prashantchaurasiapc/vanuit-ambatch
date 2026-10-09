@@ -12,7 +12,7 @@ export default function FieldMapping({ onBackToOverview }) {
 
   const [newProjectModal, setNewProjectModal] = useState(false);
   const [newProjectClient, setNewProjectClient] = useState('');
-  const [newProjectType, setNewProjectType] = useState(isEn ? 'Garden Room' : 'Buitenverblijf');
+  const [newProjectType, setNewProjectType] = useState('garden_room');
   const [newProjectBudget, setNewProjectBudget] = useState('€ 25,000.00');
 
   const showToast = (msg) => {
@@ -249,7 +249,6 @@ export default function FieldMapping({ onBackToOverview }) {
 
           <button 
             onClick={() => {
-              setActiveTab(isEn ? 'Pending Field Mapping' : 'In afwachting Inmeting');
               showToast(isEn ? 'Filtered: 3 tasks waiting for us' : 'Gefilterd: 3 taken wachten op ons');
             }}
             className="px-2 py-0.5 bg-[#FDF2E3] text-[#B86B14] border border-[#F6DCB8] rounded-lg font-bold text-[10px] flex items-center gap-1.5 shadow-2xs cursor-pointer hover:bg-[#FCEAD0] transition-all"
@@ -382,9 +381,9 @@ export default function FieldMapping({ onBackToOverview }) {
                       onChange={(e) => setNewProjectType(e.target.value)}
                       className="w-full p-2.5 bg-[#FAF8F5] border border-[#D6CFC2] rounded-xl text-xs text-dark focus:ring-2 focus:ring-[#33422C]/20 cursor-pointer"
                     >
-                      <option value="Garden Room">{isEn ? 'Garden Room' : 'Buitenverblijf'}</option>
-                      <option value="Canopy with Poolhouse">{isEn ? 'Canopy with Poolhouse' : 'Overkapping met poolhouse'}</option>
-                      <option value="Outdoor Kitchen">{isEn ? 'Outdoor Kitchen' : 'Buitenkeuken'}</option>
+                      <option value="garden_room">{isEn ? 'Garden Room' : 'Buitenverblijf'}</option>
+                      <option value="canopy">{isEn ? 'Canopy with Poolhouse' : 'Overkapping met poolhouse'}</option>
+                      <option value="outdoor_kitchen">{isEn ? 'Outdoor Kitchen' : 'Buitenkeuken'}</option>
                     </select>
                   </div>
 

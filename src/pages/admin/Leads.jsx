@@ -729,8 +729,8 @@ export default function Leads() {
     },
     {
       header: (
-        <button onClick={() => setShowFilterPanel(prev => !prev)} className="flex items-center gap-1.5 font-bold hover:text-primary transition-colors text-left focus:outline-none cursor-pointer" title="Filter by Product Type">
-          <span>{language === 'EN' ? 'Product Type' : 'Product Type'}</span>
+        <button onClick={() => setShowFilterPanel(prev => !prev)} className="flex items-center gap-1.5 font-bold hover:text-primary transition-colors text-left focus:outline-none cursor-pointer" title={language === 'NL' ? 'Filteren op producttype' : 'Filter by Product Type'}>
+          <span>{language === 'NL' ? 'Producttype' : 'Product Type'}</span>
           <Filter className={`w-3 h-3 ${productTypeFilter !== 'All' ? 'text-primary fill-primary' : 'text-dark/40'}`} />
         </button>
       ),
@@ -867,10 +867,16 @@ export default function Leads() {
                 ? 'bg-red-50 text-red-700 font-bold border border-red-200 hover:bg-red-100 cursor-pointer animate-pulse'
                 : 'text-dark/60 font-medium bg-[#EDE8DF]/50 border border-[#D6CFC2]/40'
             }`}
-            title={isRedFlag ? (language === 'NL' ? 'Klik om direct 1st Follow-up te sturen' : 'Click to send 1st follow-up') : ''}
+            title={isRedFlag ? (language === 'NL' ? 'Klik om direct 1e opvolging te sturen' : 'Click to send 1st follow-up') : ''}
           >
             {isRedFlag && <AlertTriangle className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />}
-            <span>{diffDays === 0 ? 'Today' : `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`}</span>
+            <span>
+              {diffDays === 0
+                ? (language === 'NL' ? 'Vandaag' : 'Today')
+                : (language === 'NL'
+                    ? `${diffDays} ${diffDays === 1 ? 'dag' : 'dagen'} geleden`
+                    : `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`)}
+            </span>
             {isRedFlag && <span className="text-[9px] underline ml-0.5 whitespace-nowrap flex-shrink-0">{language === 'NL' ? 'Volg op' : 'Follow up'}</span>}
           </button>
         );
@@ -995,7 +1001,7 @@ export default function Leads() {
       ) : (
         <>
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <h2 className="text-2xl font-heading font-bold text-primary">Leads Management</h2>
+            <h2 className="text-2xl font-heading font-bold text-primary">{language === 'NL' ? 'Leadbeheer' : 'Leads Management'}</h2>
             <div className="flex gap-2 items-center">
               {/* Combined CSV Dropdown */}
               <div className="relative" ref={csvDropdownRef}>
@@ -1021,7 +1027,7 @@ export default function Leads() {
                         className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium font-body text-dark/70 hover:bg-[#F8F7F4] hover:text-primary transition-colors cursor-pointer"
                       >
                         <Download className="w-3.5 h-3.5 text-primary" />
-                        Export as CSV
+                        {language === 'NL' ? 'Exporteren als CSV' : 'Export as CSV'}
                       </button>
                       <div className="border-t border-[#D6CFC2]/50" />
                       <button
@@ -1029,7 +1035,7 @@ export default function Leads() {
                         className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium font-body text-dark/70 hover:bg-[#F8F7F4] hover:text-primary transition-colors cursor-pointer"
                       >
                         <Upload className="w-3.5 h-3.5 text-primary" />
-                        Import from CSV
+                        {language === 'NL' ? 'Importeren vanuit CSV' : 'Import from CSV'}
                       </button>
                     </motion.div>
                   )}
@@ -1053,7 +1059,7 @@ export default function Leads() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark/40" />
               <input
                 type="text"
-                placeholder="Search by name, phone, or #LEAD..."
+                placeholder={language === 'NL' ? 'Zoek op naam, telefoon of #LEAD...' : 'Search by name, phone, or #LEAD...'}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 bg-[#EDE8DF]/30 border border-[#D6CFC2] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
@@ -1064,7 +1070,7 @@ export default function Leads() {
               icon={Filter}
               onClick={() => setShowFilterPanel(!showFilterPanel)}
             >
-              Filters
+              {language === 'NL' ? 'Filters' : 'Filters'}
             </Button>
             {hasActiveFilters && (
               <Button
@@ -1073,7 +1079,7 @@ export default function Leads() {
                 onClick={handleResetFilters}
                 className="text-xs text-dark/65"
               >
-                Reset
+                {language === 'NL' ? 'Herstellen' : 'Reset'}
               </Button>
             )}
           </div>
@@ -1089,30 +1095,30 @@ export default function Leads() {
               >
                 {/* Status Filter */}
                 <div className="min-w-0">
-                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">Status</label>
+                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">{language === 'NL' ? 'Status' : 'Status'}</label>
                   <select
                     value={statusFilter}
                     onChange={e => setStatusFilter(e.target.value)}
                     className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none text-[#4A4A43]"
                   >
-                    <option value="All">All Statuses</option>
-                    <option value="New">New</option>
-                    <option value="In conversation">In Discussion</option>
-                    <option value="Quote Sent">Quote Sent</option>
-                    <option value="Won">Won</option>
-                    <option value="Lost">Lost</option>
+                    <option value="All">{language === 'NL' ? 'Alle Statussen' : 'All Statuses'}</option>
+                    <option value="New">{language === 'NL' ? 'Nieuw' : 'New'}</option>
+                    <option value="In conversation">{language === 'NL' ? 'In gesprek' : 'In Discussion'}</option>
+                    <option value="Quote Sent">{language === 'NL' ? 'Offerte verstuurd' : 'Quote Sent'}</option>
+                    <option value="Won">{language === 'NL' ? 'Gewonnen' : 'Won'}</option>
+                    <option value="Lost">{language === 'NL' ? 'Verloren' : 'Lost'}</option>
                   </select>
                 </div>
 
                 {/* Product Type Filter */}
                 <div className="min-w-0">
-                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">Product Type</label>
+                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">{language === 'NL' ? 'Producttype' : 'Product Type'}</label>
                   <select
                     value={productTypeFilter}
                     onChange={e => setProductTypeFilter(e.target.value)}
                     className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none text-[#4A4A43]"
                   >
-                    <option value="All">All Products</option>
+                    <option value="All">{language === 'NL' ? 'Alle Producten' : 'All Products'}</option>
                     {dynamicCategoriesList.map((cat) => (
                       <option key={cat.id || cat.name} value={cat.name.toLowerCase()}>
                         {(cat.icon ? `${cat.icon} ` : '') + cat.name}
@@ -1123,13 +1129,13 @@ export default function Leads() {
 
                 {/* Source Filter */}
                 <div className="min-w-0">
-                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">Source / Campaign</label>
+                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">{language === 'NL' ? 'Bron / Campagne' : 'Source / Campaign'}</label>
                   <select
                     value={sourceFilter}
                     onChange={e => setSourceFilter(e.target.value)}
                     className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none text-[#4A4A43]"
                   >
-                    <option value="All">All Sources</option>
+                    <option value="All">{language === 'NL' ? 'Alle Bronnen' : 'All Sources'}</option>
                     <option value="Google Ads">Google Ads</option>
                     <option value="Facebook">Facebook</option>
                     <option value="Meta Ads">Meta Ads</option>
@@ -1140,13 +1146,13 @@ export default function Leads() {
 
                 {/* Assignee Filter */}
                 <div className="min-w-0">
-                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">Assignee</label>
+                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">{language === 'NL' ? 'Eigenaar' : 'Assignee'}</label>
                   <select
                     value={assigneeFilter}
                     onChange={e => setAssigneeFilter(e.target.value)}
                     className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none text-[#4A4A43]"
                   >
-                    <option value="All">All Assignees</option>
+                    <option value="All">{language === 'NL' ? 'Alle Eigenaren' : 'All Assignees'}</option>
                     <option value="Tim">Tim</option>
                     <option value="Bram">Bram</option>
                   </select>
@@ -1154,15 +1160,15 @@ export default function Leads() {
 
                 {/* Last Contact Filter */}
                 <div className="min-w-0">
-                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">Last Contact</label>
+                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">{language === 'NL' ? 'Laatste Contact' : 'Last Contact'}</label>
                   <select
                     value={lastContactFilter}
                     onChange={e => setLastContactFilter(e.target.value)}
                     className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none text-[#4A4A43]"
                   >
-                    <option value="All">All Contact Dates</option>
-                    <option value="RedFlag">⚠️ Needs Follow-up (3+ days)</option>
-                    <option value="Recent">🟢 Contacted Recently</option>
+                    <option value="All">{language === 'NL' ? 'Alle Contactdata' : 'All Contact Dates'}</option>
+                    <option value="RedFlag">{language === 'NL' ? '⚠️ Vereist opvolging (3+ dagen)' : '⚠️ Needs Follow-up (3+ days)'}</option>
+                    <option value="Recent">{language === 'NL' ? '🟢 Recent contact gehad' : '🟢 Contacted Recently'}</option>
                   </select>
                 </div>
               </motion.div>

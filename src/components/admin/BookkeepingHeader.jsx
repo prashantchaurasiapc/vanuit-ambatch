@@ -4,43 +4,43 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Receipt, FileText, Users, LandPlot, Building2, PieChart } from 'lucide-react';
 
 export default function BookkeepingHeader({ activeTab = 'quotes' }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const location = useLocation();
 
   const tabs = [
     {
       id: 'quotes',
-      name: t('common.quotes'),
+      name: t('common.quotes') || (language === 'NL' ? 'Offertes' : 'Quotes'),
       path: '/admin/quotes',
       icon: Receipt
     },
     {
       id: 'invoices',
-      name: t('common.invoices'),
+      name: t('common.invoices') || (language === 'NL' ? 'Facturen' : 'Invoices'),
       path: '/admin/invoices',
       icon: FileText
     },
     {
       id: 'customers',
-      name: t('common.customers'),
+      name: t('common.customers') || (language === 'NL' ? 'Klanten' : 'Customers'),
       path: '/admin/customers',
       icon: Users
     },
     {
       id: 'bank',
-      name: t('common.bank'),
+      name: t('common.bank') || 'Bank',
       path: '/admin/bank',
       icon: LandPlot
     },
     {
       id: 'taxes',
-      name: t('common.taxes'),
+      name: t('common.taxes') || (language === 'NL' ? 'Btw & Belasting' : 'Taxes (VAT)'),
       path: '/admin/taxes',
       icon: Building2
     },
     {
       id: 'profit-loss',
-      name: t('common.profitLoss'),
+      name: t('common.profitLoss') || (language === 'NL' ? 'Winst & Verlies' : 'Profit & Loss'),
       path: '/admin/profit-loss',
       icon: PieChart
     }
@@ -52,16 +52,16 @@ export default function BookkeepingHeader({ activeTab = 'quotes' }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6E1D7] pb-3">
         <div>
           <span className="text-[11px] font-mono font-bold text-[#736B5E] uppercase tracking-wider block">
-            ADMIN PORTAL · BOOKKEEPING & FINANCE
+            {language === 'NL' ? 'BEHEERDERSPORTAAL · BOEKHOUDING & FINANCIËN' : 'ADMIN PORTAL · BOOKKEEPING & FINANCE'}
           </span>
           <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#33422C] mt-0.5">
-            {t('finance.title')}
+            {t('finance.title') || (language === 'NL' ? 'Boekhouding & Financiën' : 'Bookkeeping & Finance')}
           </h2>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="px-3 py-1 bg-[#E3EFE3] text-[#1E561E] border border-[#C6E1C4] rounded-full text-xs font-bold font-mono">
-            ✓ Real-time Sync Active
+            {language === 'NL' ? '✓ Real-time Synchronisatie Actief' : '✓ Real-time Sync Active'}
           </span>
         </div>
       </div>

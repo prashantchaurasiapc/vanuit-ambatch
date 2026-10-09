@@ -642,14 +642,25 @@ export default function Quotes() {
   const sentCount = quotes.filter(q => q.status === 'Verzonden' || q.status === 'Sent').length;
   const acceptedCount = quotes.filter(q => q.status === 'Geaccepteerd' || q.status === 'Accepted' || q.status === 'Gecoördineerd').length;
   const getTranslatedStatus = (st) => {
-    if (language !== 'EN') return st;
-    switch (st) {
-      case 'Concept': case 'Draft': return 'Draft';
-      case 'Verzonden': case 'Sent': return 'Sent';
-      case 'Gecoördineerd': case 'Coordinated': return 'Coordinated';
-      case 'Geaccepteerd': case 'Accepted': return 'Accepted';
-      case 'Afgewezen': case 'Rejected': return 'Rejected';
-      default: return st;
+    if (!st) return st;
+    if (language === 'NL') {
+      switch (st) {
+        case 'Draft': return 'Concept';
+        case 'Sent': return 'Verzonden';
+        case 'Coordinated': return 'Gecoördineerd';
+        case 'Accepted': return 'Geaccepteerd';
+        case 'Rejected': return 'Afgewezen';
+        default: return st;
+      }
+    } else {
+      switch (st) {
+        case 'Concept': case 'Draft': return 'Draft';
+        case 'Verzonden': case 'Sent': return 'Sent';
+        case 'Gecoördineerd': case 'Coordinated': return 'Coordinated';
+        case 'Geaccepteerd': case 'Accepted': return 'Accepted';
+        case 'Afgewezen': case 'Rejected': return 'Rejected';
+        default: return st;
+      }
     }
   };
 

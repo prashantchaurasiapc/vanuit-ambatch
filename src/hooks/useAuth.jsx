@@ -21,10 +21,13 @@ export function AuthProvider({ children }) {
         } else {
           // Refresh user data from backend (in case role/name changed)
           const fresh = {
-            id:    res.data.user.id,
-            role:  res.data.user.role,
-            name:  res.data.user.fullName,
-            email: res.data.user.email,
+            id:             res.data.user.id,
+            role:           res.data.user.role,
+            name:           res.data.user.fullName,
+            email:          res.data.user.email,
+            profileId:      res.data.user.profileId,
+            partnerCode:    res.data.user.partnerCode,
+            customerNumber: res.data.user.customerNumber,
           };
           setUser(fresh);
           sessionStorage.setItem('auth_user', JSON.stringify(fresh));
@@ -41,10 +44,13 @@ export function AuthProvider({ children }) {
    */
   const login = (userData) => {
     const normalized = {
-      id:    userData.id,
-      role:  userData.role,
-      name:  userData.fullName || userData.name,
-      email: userData.email,
+      id:             userData.id,
+      role:           userData.role,
+      name:           userData.fullName || userData.name,
+      email:          userData.email,
+      profileId:      userData.profileId,
+      partnerCode:    userData.partnerCode,
+      customerNumber: userData.customerNumber,
     };
     setUser(normalized);
     sessionStorage.setItem('auth_user', JSON.stringify(normalized));

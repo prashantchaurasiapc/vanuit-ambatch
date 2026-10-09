@@ -630,27 +630,27 @@ Kenmerk: EREF-2026-9006`;
   // Bank Transactions Table Columns (Tab 1)
   const columns = [
     { 
-      header: 'Date & Type', 
+      header: language === 'NL' ? 'Datum & Type' : 'Date & Type', 
       style: { minWidth: '110px' },
       render: (row) => (
         <div className="space-y-1 whitespace-nowrap">
           <p className="font-semibold text-xs text-dark tracking-tight">{row.date}</p>
           <span className="text-[9px] font-bold uppercase tracking-wider text-dark/70 bg-[#EDE8DF] px-2 py-0.5 rounded-full border border-[#D6CFC2]/70 inline-block">
-            {row.type || 'Transfer'}
+            {row.type || (language === 'NL' ? 'Overboeking' : 'Transfer')}
           </span>
         </div>
       ) 
     },
     { 
-      header: 'Counterparty / IBAN', 
+      header: language === 'NL' ? 'Tegenpartij / IBAN' : 'Counterparty / IBAN', 
       style: { minWidth: '160px', maxWidth: '220px' },
       render: (row) => {
         const displayName = row.counterName 
           || row.customerName 
           || (row.description && row.description.includes('Factuur Betaling:') ? row.description.replace('Factuur Betaling:', '').split('(')[0].trim() : '') 
-          || 'Direct Settlement';
+          || (language === 'NL' ? 'Directe Afrekening' : 'Direct Settlement');
         const displayIban = row.counterIban 
-          || (row.invoiceRef ? `${row.invoiceRef} · Direct Betaling` : 'NL•• ABNA Direct');
+          || (row.invoiceRef ? `${row.invoiceRef} · ${language === 'NL' ? 'Directe Betaling' : 'Direct Payment'}` : 'NL•• ABNA Direct');
 
         return (
           <div className="min-w-[150px]">
@@ -665,7 +665,7 @@ Kenmerk: EREF-2026-9006`;
       } 
     },
     { 
-      header: 'Description / Reference', 
+      header: language === 'NL' ? 'Omschrijving / Kenmerk' : 'Description / Reference', 
       style: { minWidth: '240px', maxWidth: '340px', whiteSpace: 'normal' },
       render: (row) => (
         <div className="space-y-1">
@@ -688,7 +688,7 @@ Kenmerk: EREF-2026-9006`;
       ) 
     },
     { 
-      header: 'Amount (€)', 
+      header: language === 'NL' ? 'Bedrag (€)' : 'Amount (€)', 
       style: { minWidth: '120px' },
       render: (row) => (
         <div className="tabular-nums font-semibold text-xs whitespace-nowrap">
@@ -705,9 +705,9 @@ Kenmerk: EREF-2026-9006`;
         </div>
       ) 
     },
-    { header: 'Category', style: { minWidth: '180px' }, render: (row) => renderCategoryBadge(row.category) },
+    { header: language === 'NL' ? 'Categorie' : 'Category', style: { minWidth: '180px' }, render: (row) => renderCategoryBadge(row.category) },
     { 
-      header: 'Recognition / Match Reason', 
+      header: language === 'NL' ? 'Herkenning / Match Reden' : 'Recognition / Match Reason', 
       style: { minWidth: '220px' },
       render: (row) => (
         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border inline-block max-w-full text-left leading-tight break-words sm:whitespace-nowrap shadow-2xs ${
@@ -715,12 +715,12 @@ Kenmerk: EREF-2026-9006`;
             ? 'bg-amber-50 text-amber-900 border-amber-300/80'
             : 'bg-[#EDE8DF]/80 text-dark/80 border-[#D6CFC2]'
         }`}>
-          ⚡ {row.matchReason || 'No Matching Rule — Review Required'}
+          ⚡ {row.matchReason || (language === 'NL' ? 'Geen matchingsregel — Beoordeling vereist' : 'No Matching Rule — Review Required')}
         </span>
       )
     },
     { 
-      header: 'Project / Order', 
+      header: language === 'NL' ? 'Project / Bestelling' : 'Project / Order', 
       style: { minWidth: '120px' },
       render: (row) => (
         <span className={`font-mono font-bold text-xs px-2.5 py-1 rounded-lg border whitespace-nowrap shadow-2xs inline-block ${
@@ -734,7 +734,7 @@ Kenmerk: EREF-2026-9006`;
     },
     { header: 'Status', style: { minWidth: '110px' }, render: (row) => renderStatusBadge(row.status) },
     { 
-      header: 'Actions', 
+      header: language === 'NL' ? 'Acties' : 'Actions', 
       style: { minWidth: '130px' },
       render: (row) => (
         <div className="flex items-center justify-end gap-1 whitespace-nowrap">
@@ -743,18 +743,18 @@ Kenmerk: EREF-2026-9006`;
             variant="ghost"
             onClick={() => setReclassifyModalTx(row)}
             className="text-primary hover:bg-[#D6CFC2]/40 text-[10px] py-1 px-2 font-bold rounded-lg"
-            title="Review / Reclassify Category"
+            title={language === 'NL' ? 'Categorie controleren / wijzigen' : 'Review / Reclassify Category'}
           >
-            <Tag className="w-3 h-3 mr-1 text-accent" /> Review
+            <Tag className="w-3 h-3 mr-1 text-accent" /> {language === 'NL' ? 'Beoordelen' : 'Review'}
           </Button>
           <Button
             size="sm"
             variant="ghost"
             onClick={() => { setManualAllocateTx(row); setSelectedTargetOrderId(row.projectRef && row.projectRef !== '-' ? row.projectRef : ''); }}
             className="text-dark/70 hover:bg-[#D6CFC2]/40 text-[10px] py-1 px-1.5 font-bold rounded-lg"
-            title="Link to Project / Order"
+            title={language === 'NL' ? 'Koppelen aan project / order' : 'Link to Project / Order'}
           >
-            <FolderOpen className="w-3.5 h-3.5 mr-1 text-primary" /> Link
+            <FolderOpen className="w-3.5 h-3.5 mr-1 text-primary" /> {language === 'NL' ? 'Koppelen' : 'Link'}
           </Button>
         </div>
       )
@@ -779,8 +779,14 @@ Kenmerk: EREF-2026-9006`;
       {/* Header & Main Tabs */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D6CFC2] pb-4">
         <div>
-          <h2 className="text-2xl font-heading font-bold text-primary">Bank & Statements (ABN AMRO)</h2>
-          <p className="text-dark/60 text-xs mt-0.5">Manage bank transactions, import ABN AMRO statements with balance validation and reclassify review items.</p>
+          <h2 className="text-2xl font-heading font-bold text-primary">
+            {language === 'NL' ? 'Bank & Afschriften (ABN AMRO)' : 'Bank & Statements (ABN AMRO)'}
+          </h2>
+          <p className="text-dark/60 text-xs mt-0.5">
+            {language === 'NL' 
+              ? 'Beheer banktransacties, importeer ABN AMRO-afschriften met saldovalidatie en herclassificeer controle-items.' 
+              : 'Manage bank transactions, import ABN AMRO statements with balance validation and reclassify review items.'}
+          </p>
         </div>
 
         {/* Tab Switcher Buttons */}
@@ -792,7 +798,7 @@ Kenmerk: EREF-2026-9006`;
             }`}
           >
             <Landmark className="w-3.5 h-3.5" />
-            <span>Transactions</span>
+            <span>{language === 'NL' ? 'Transacties' : 'Transactions'}</span>
           </button>
 
           <button
@@ -802,7 +808,7 @@ Kenmerk: EREF-2026-9006`;
             }`}
           >
             <UploadCloud className="w-3.5 h-3.5" />
-            <span>Import Statement</span>
+            <span>{language === 'NL' ? 'Afschrift Importeren' : 'Import Statement'}</span>
           </button>
 
           <button
@@ -812,7 +818,7 @@ Kenmerk: EREF-2026-9006`;
             }`}
           >
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-            <span>Review Items</span>
+            <span>{language === 'NL' ? 'Controle Items' : 'Review Items'}</span>
             {reviewItemsCount > 0 && (
               <span className="ml-1 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
                 {reviewItemsCount}
@@ -826,7 +832,9 @@ Kenmerk: EREF-2026-9006`;
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card noPadding className="p-3.5 bg-[#F8F7F4] border border-[#D6CFC2]/70 rounded-2xl shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-dark/50 uppercase tracking-wider">Total Bank Balance</span>
+            <span className="text-[10px] font-bold text-dark/50 uppercase tracking-wider">
+              {language === 'NL' ? 'Totaal Banksaldo' : 'Total Bank Balance'}
+            </span>
             <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
               <Landmark className="w-3.5 h-3.5 text-primary" />
             </div>
@@ -838,7 +846,9 @@ Kenmerk: EREF-2026-9006`;
 
         <Card noPadding className="p-3.5 bg-[#F8F7F4] border border-[#D6CFC2]/70 rounded-2xl shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-dark/50 uppercase tracking-wider">Total Credits</span>
+            <span className="text-[10px] font-bold text-dark/50 uppercase tracking-wider">
+              {language === 'NL' ? 'Totaal Bijschrijvingen' : 'Total Credits'}
+            </span>
             <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center">
               <ArrowDownRight className="w-3.5 h-3.5 text-emerald-700" />
             </div>
@@ -850,7 +860,9 @@ Kenmerk: EREF-2026-9006`;
 
         <Card noPadding className="p-3.5 bg-[#F8F7F4] border border-[#D6CFC2]/70 rounded-2xl shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-dark/50 uppercase tracking-wider">Total Debits</span>
+            <span className="text-[10px] font-bold text-dark/50 uppercase tracking-wider">
+              {language === 'NL' ? 'Totaal Afschrijvingen' : 'Total Debits'}
+            </span>
             <div className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center">
               <ArrowUpRight className="w-3.5 h-3.5 text-red-600" />
             </div>
@@ -862,13 +874,15 @@ Kenmerk: EREF-2026-9006`;
 
         <Card noPadding className="p-3.5 bg-[#F8F7F4] border border-[#D6CFC2]/70 rounded-2xl shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-dark/50 uppercase tracking-wider">Review Items (Pending)</span>
+            <span className="text-[10px] font-bold text-dark/50 uppercase tracking-wider">
+              {language === 'NL' ? 'Controle Items (Openstaand)' : 'Review Items (Pending)'}
+            </span>
             <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
             </div>
           </div>
           <p className="text-xl font-heading font-bold text-amber-800 mt-1.5 tabular-nums">
-            {reviewItemsCount} <span className="text-xs font-normal text-dark/60 font-body">Transactions</span>
+            {reviewItemsCount} <span className="text-xs font-normal text-dark/60 font-body">{language === 'NL' ? 'Transacties' : 'Transactions'}</span>
           </p>
         </Card>
       </div>
@@ -884,7 +898,7 @@ Kenmerk: EREF-2026-9006`;
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark/40" />
               <input 
                 type="text" 
-                placeholder="Search counterparty, IBAN, description or EREF..."
+                placeholder={language === 'NL' ? 'Zoek tegenpartij, IBAN, omschrijving of EREF...' : 'Search counterparty, IBAN, description or EREF...'}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43] placeholder:text-dark/40"
@@ -898,9 +912,9 @@ Kenmerk: EREF-2026-9006`;
                 onChange={e => setTypeFilter(e.target.value)}
                 className="w-full sm:w-auto px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl font-medium text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
-                <option value="All">All Types (Credit/Debit)</option>
-                <option value="Credit">Credit (+)</option>
-                <option value="Debit">Debit (-)</option>
+                <option value="All">{language === 'NL' ? 'Alle Types (Bij/Af)' : 'All Types (Credit/Debit)'}</option>
+                <option value="Credit">{language === 'NL' ? 'Bijschrijving (+)' : 'Credit (+)'}</option>
+                <option value="Debit">{language === 'NL' ? 'Afschrijving (-)' : 'Debit (-)'}</option>
               </select>
 
               {/* Category Filter */}
@@ -909,7 +923,7 @@ Kenmerk: EREF-2026-9006`;
                 onChange={e => setCategoryFilter(e.target.value)}
                 className="w-full sm:w-auto px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl font-medium text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 max-w-full sm:max-w-[200px] truncate"
               >
-                <option value="All">All Categories</option>
+                <option value="All">{language === 'NL' ? 'Alle Categorieën' : 'All Categories'}</option>
                 {BOOKKEEPING_CATEGORIES.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
@@ -921,19 +935,19 @@ Kenmerk: EREF-2026-9006`;
                 onChange={e => setReviewStatusFilter(e.target.value)}
                 className="w-full sm:w-auto px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl font-medium text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
-                <option value="All">All Statuses</option>
-                <option value="Recognized">Recognized</option>
-                <option value="Internal Transfer">Internal Transfer</option>
-                <option value="Review Needed">Review Needed</option>
-                <option value="Manually Reclassified">Manually Reclassified</option>
+                <option value="All">{language === 'NL' ? 'Alle Statussen' : 'All Statuses'}</option>
+                <option value="Recognized">{language === 'NL' ? 'Herkend' : 'Recognized'}</option>
+                <option value="Internal Transfer">{language === 'NL' ? 'Interne Overboeking' : 'Internal Transfer'}</option>
+                <option value="Review Needed">{language === 'NL' ? 'Controle Nodig' : 'Review Needed'}</option>
+                <option value="Manually Reclassified">{language === 'NL' ? 'Handmatig Geherclassificeerd' : 'Manually Reclassified'}</option>
               </select>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button size="sm" icon={Plus} onClick={() => setModalOpen(true)} className="flex-1 sm:flex-none py-2 px-3 text-xs font-bold justify-center rounded-xl">
-                  Transaction
+                  {language === 'NL' ? 'Transactie' : 'Transaction'}
                 </Button>
                 <Button size="sm" icon={UploadCloud} onClick={() => setImportModalOpen(true)} className="flex-1 sm:flex-none py-2 px-3 text-xs font-bold bg-emerald-800 hover:bg-emerald-900 text-white border-0 justify-center rounded-xl shadow-xs">
-                  Import Statement
+                  {language === 'NL' ? 'Afschrift Importeren' : 'Import Statement'}
                 </Button>
               </div>
             </div>

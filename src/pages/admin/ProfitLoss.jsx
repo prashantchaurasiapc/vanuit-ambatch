@@ -410,17 +410,23 @@ export default function ProfitLoss() {
           </div>
 
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-            {['All', 'Outdoor Kitchens', 'Canopies', 'Bin Storage', 'Terraces'].map((cat) => (
+            {[
+              { key: 'All', label: language === 'EN' ? 'All' : 'Alle' },
+              { key: 'Outdoor Kitchens', label: language === 'EN' ? 'Outdoor Kitchens' : 'Buitenkeukens' },
+              { key: 'Canopies', label: language === 'EN' ? 'Canopies' : 'Overkappingen' },
+              { key: 'Bin Storage', label: language === 'EN' ? 'Bin Storage' : 'Kliko Ombouw' },
+              { key: 'Terraces', label: language === 'EN' ? 'Terraces' : 'Terrassen' }
+            ].map((catItem) => (
               <button
-                key={cat}
-                onClick={() => setCategoryFilter(cat)}
+                key={catItem.key}
+                onClick={() => setCategoryFilter(catItem.key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border whitespace-nowrap ${
-                  categoryFilter === cat
+                  categoryFilter === catItem.key
                     ? 'bg-primary text-cream border-primary shadow-xs'
                     : 'bg-[#F8F7F4] text-dark/70 border-[#D6CFC2] hover:bg-[#EDE8DF]'
                 }`}
               >
-                {cat}
+                {catItem.label}
               </button>
             ))}
           </div>

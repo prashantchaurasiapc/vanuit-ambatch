@@ -901,11 +901,11 @@ export default function AdminDashboard() {
                     <option value="" disabled>
                       {language === 'NL' ? '-- Selecteer een Projecttype --' : '-- Select Project Type --'}
                     </option>
-                    <option value="Bespoke Outdoor Kitchen">Bespoke Outdoor Kitchen</option>
-                    <option value="Bespoke Hiko Surround">Bespoke Bin Enclosure / Surround</option>
-                    <option value="Wood Pergola">Wooden Canopy / Pergola</option>
-                    <option value="Garden Decking">Garden Decking</option>
-                    <option value="Other">Other (Custom Type)...</option>
+                    <option value="Bespoke Outdoor Kitchen">{language === 'NL' ? 'Maatwerk Buitenkeuken' : 'Bespoke Outdoor Kitchen'}</option>
+                    <option value="Bespoke Hiko Surround">{language === 'NL' ? 'Maatwerk Hiko Omkasting' : 'Bespoke Bin Enclosure / Surround'}</option>
+                    <option value="Wood Pergola">{language === 'NL' ? 'Houten Overkapping / Pergola' : 'Wooden Canopy / Pergola'}</option>
+                    <option value="Garden Decking">{language === 'NL' ? 'Vlonderterras' : 'Garden Decking'}</option>
+                    <option value="Other">{language === 'NL' ? 'Overig (Aangepast type)...' : 'Other (Custom Type)...'}</option>
                   </select>
                   
                   {projectSelect === 'Other' && (
@@ -917,7 +917,7 @@ export default function AdminDashboard() {
                       value={quoteForm.project}
                       onChange={e => setQuoteForm(prev => ({ ...prev, project: e.target.value }))}
                       className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
-                      placeholder="Type custom project type..."
+                      placeholder={language === 'NL' ? 'Typ aangepast projecttype...' : 'Type custom project type...'}
                     />
                   )}
                 </div>

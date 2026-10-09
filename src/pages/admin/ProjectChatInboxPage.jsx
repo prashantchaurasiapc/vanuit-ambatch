@@ -5,12 +5,15 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/apiClient';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function ProjectChatInboxPage() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const isEn = language !== 'NL';
 
   // Active filter tab
-  const [activeFilter, setActiveFilter] = useState('Alles');
+  const [activeFilter, setActiveFilter] = useState('all');
 
   // Backend state
   const [conversations, setConversations] = useState([]);
@@ -88,9 +91,9 @@ export default function ProjectChatInboxPage() {
 
   // Filter conversations
   const filteredConversations = conversations.filter(chat => {
-    if (activeFilter === 'Klanten') return chat.channelType === 'customer';
-    if (activeFilter === 'Partners') return chat.channelType === 'partner';
-    if (activeFilter === 'Wacht op antwoord van ons') return (chat.unreadCount || 0) > 0;
+    if (activeFilter === 'customers' || activeFilter === 'Klanten') return chat.channelType === 'customer';
+    if (activeFilter === 'partners' || activeFilter === 'Partners') return chat.channelType === 'partner';
+    if (activeFilter === 'waiting' || activeFilter === 'Wacht op antwoord van ons') return (chat.unreadCount || 0) > 0;
     return true;
   });
 
@@ -156,9 +159,13 @@ export default function ProjectChatInboxPage() {
           >
             ←
           </button>
-          <span className="font-bold text-[#33422C] font-serif text-sm">Project Management</span>
+          <span className="font-bold text-[#33422C] font-serif text-sm">
+            {isEn ? 'Project Management' : 'Projectenbeheer'}
+          </span>
           <span className="text-dark/40">·</span>
-          <span className="text-[#555046] font-mono text-[11px]">admin portal</span>
+          <span className="text-[#555046] font-mono text-[11px]">
+            {isEn ? 'admin portal' : 'adminportaal'}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -170,13 +177,13 @@ export default function ProjectChatInboxPage() {
           </button>
           <span className="px-3 py-1 bg-[#FDF2E3] text-[#B86B14] border border-[#F6DCB8] rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-2xs">
             <span className="w-2 h-2 rounded-full bg-amber-500" />
-            {totalUnread} ongelezen
+            {totalUnread} {isEn ? 'unread' : 'ongelezen'}
           </span>
           <button 
             onClick={() => navigate('/admin/projects')}
             className="px-4 py-1.5 bg-[#33422C] hover:bg-[#283523] text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs transition-all"
           >
-            + Nieuw project
+            {isEn ? '+ New project' : '+ Nieuw project'}
           </button>
         </div>
       </div>
@@ -187,17 +194,17 @@ export default function ProjectChatInboxPage() {
           Inbox
         </h1>
         <p className="text-xs sm:text-sm text-dark/60 font-body">
-          {conversations.length} actieve kanalen · klant- en partnergesprekken gekoppeld aan de database.
+          {conversations.length} {isEn ? 'active channels · customer and partner conversations connected to the database.' : 'actieve kanalen · klant- en partnergesprekken gekoppeld aan de database.'}
         </p>
       </div>
 
       {/* FILTER PILLS ROW */}
       <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar pb-1">
         {[
-          { key: 'Alles', label: `Alles (${conversations.length})` },
-          { key: 'Klanten', label: `Klanten (${conversations.filter(c => c.channelType === 'customer').length})` },
-          { key: 'Partners', label: `Partners (${conversations.filter(c => c.channelType === 'partner').length})` },
-          { key: 'Wacht op antwoord van ons', label: 'Wacht op antwoord van ons' }
+          { key: 'all', label: isEn ? `All (${conversations.length})` : `Alles (${conversations.length})` },
+          { key: 'customers', label: isEn ? `Customers (${conversations.filter(c => c.channelType === 'customer').length})` : `Klanten (${conversations.filter(c => c.channelType === 'customer').length})` },
+          { key: 'partners', label: isEn ? `Partners (${conversations.filter(c => c.channelType === 'partner').length})` : `Partners (${conversations.filter(c => c.channelType === 'partner').length})` },
+          { key: 'waiting', label: isEn ? 'Awaiting response from us' : 'Wacht op antwoord van ons' }
         ].map((f) => {
           const isActive = activeFilter === f.key;
           return (
@@ -224,20 +231,20 @@ export default function ProjectChatInboxPage() {
           {loadingConvs ? (
             <div className="py-12 flex flex-col items-center justify-center text-xs text-dark/50 gap-2">
               <Loader2 className="w-5 h-5 animate-spin text-[#33422C]" />
-              Gesprekken laden...
+              {isEn ? 'Loading conversations...' : 'Gesprekken laden...'}
             </div>
           ) : filteredConversations.length === 0 ? (
             <div className="py-12 text-center text-xs text-dark/40">
-              Geen gesprekken gevonden.
+              {isEn ? 'No conversations found.' : 'Geen gesprekken gevonden.'}
             </div>
           ) : (
             filteredConversations.map((chat) => {
               const isSelected = selectedChatId === chat.id;
-              const counterpartyName = chat.counterparty?.name || chat.title || 'Gesprek';
+              const counterpartyName = chat.counterparty?.name || chat.title || (isEn ? 'Conversation' : 'Gesprek');
               const isKlant = chat.channelType === 'customer';
-              const typeLabel = isKlant ? 'KLANT' : 'PARTNER';
+              const typeLabel = isKlant ? (isEn ? 'CUSTOMER' : 'KLANT') : (isEn ? 'PARTNER' : 'PARTNER');
               const projectCode = chat.project?.projectNumber || chat.conversationNumber;
-              const lastText = chat.lastMessage?.content || 'Nog geen berichten';
+              const lastText = chat.lastMessage?.content || (isEn ? 'No messages yet' : 'Nog geen berichten');
 
               return (
                 <div
@@ -297,7 +304,7 @@ export default function ProjectChatInboxPage() {
                         ? 'bg-[#E3EFE3] text-[#2D6A2D]' 
                         : 'bg-[#FDF2E3] text-[#B86B14]'
                     }`}>
-                      {selectedChat.channelType === 'customer' ? 'KLANT' : 'PARTNER'}
+                      {selectedChat.channelType === 'customer' ? (isEn ? 'CUSTOMER' : 'KLANT') : (isEn ? 'PARTNER' : 'PARTNER')}
                     </span>
                   </div>
                   <p className="text-xs text-dark/60 font-body mt-0.5">
@@ -312,13 +319,13 @@ export default function ProjectChatInboxPage() {
                     onClick={() => navigate('/admin/projects')}
                     className="px-3.5 py-1.5 bg-white hover:bg-[#FAF8F5] text-dark/80 border border-[#D6CFC2] rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1"
                   >
-                    <span>Open project</span>
+                    <span>{isEn ? 'Open project' : 'Open project'}</span>
                   </button>
                   <button
-                    onClick={() => showToast(`Bellen gestart met ${selectedChat.counterparty?.name || 'relatie'}`)}
+                    onClick={() => showToast(isEn ? `Calling initiated with ${selectedChat.counterparty?.name || 'contact'}` : `Bellen gestart met ${selectedChat.counterparty?.name || 'relatie'}`)}
                     className="px-3.5 py-1.5 bg-white hover:bg-[#FAF8F5] text-dark/80 border border-[#D6CFC2] rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
                   >
-                    Bel
+                    {isEn ? 'Call' : 'Bel'}
                   </button>
                 </div>
               </div>
@@ -328,11 +335,11 @@ export default function ProjectChatInboxPage() {
                 {loadingMessages ? (
                   <div className="py-12 flex flex-col items-center justify-center text-xs text-dark/50 gap-2">
                     <Loader2 className="w-5 h-5 animate-spin text-[#33422C]" />
-                    Berichten laden...
+                    {isEn ? 'Loading messages...' : 'Berichten laden...'}
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="py-12 text-center text-xs text-dark/40">
-                    Nog geen berichten in dit kanaal. Typ hieronder om een bericht te sturen.
+                    {isEn ? 'No messages in this channel yet. Type below to send a message.' : 'Nog geen berichten in dit kanaal. Typ hieronder om een bericht te sturen.'}
                   </div>
                 ) : (
                   messages.map((msg) => {
@@ -378,13 +385,13 @@ export default function ProjectChatInboxPage() {
                     type="text"
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder={`Antwoord aan ${(selectedChat.counterparty?.name || 'gesprek').split(' ')[0]}...`}
+                    placeholder={isEn ? `Reply to ${(selectedChat.counterparty?.name || 'conversation').split(' ')[0]}...` : `Antwoord aan ${(selectedChat.counterparty?.name || 'gesprek').split(' ')[0]}...`}
                     className="flex-1 min-w-[120px] px-3 py-1.5 text-xs text-dark font-body focus:outline-none placeholder:text-dark/40"
                   />
 
                   <button
                     type="button"
-                    onClick={() => showToast('Bestand bijvoegen')}
+                    onClick={() => showToast(isEn ? 'Attach file' : 'Bestand bijvoegen')}
                     className="p-2 text-dark/50 hover:text-dark/80 cursor-pointer rounded-lg"
                   >
                     <Paperclip className="w-4 h-4" />
@@ -396,8 +403,8 @@ export default function ProjectChatInboxPage() {
                       onClick={() => setShowQuickReplyMenu(!showQuickReplyMenu)}
                       className="px-2 sm:px-3 py-1.5 bg-white border border-[#D6CFC2] hover:bg-[#FAF8F5] text-dark/80 text-xs font-bold rounded-xl flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
                     >
-                      <span className="hidden sm:inline">Snel antwoord</span>
-                      <span className="sm:hidden">Snel</span>
+                      <span className="hidden sm:inline">{isEn ? 'Quick reply' : 'Snel antwoord'}</span>
+                      <span className="sm:hidden">{isEn ? 'Quick' : 'Snel'}</span>
                       <ChevronDown className="w-3.5 h-3.5 text-dark/50" />
                     </button>
 
@@ -440,7 +447,7 @@ export default function ProjectChatInboxPage() {
                     disabled={sending}
                     className="px-3 sm:px-4 py-2 bg-[#33422C] hover:bg-[#283523] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
                   >
-                    {sending ? 'Versturen...' : 'Versturen'}
+                    {sending ? (isEn ? 'Sending...' : 'Versturen...') : (isEn ? 'Send' : 'Versturen')}
                   </button>
                 </div>
 

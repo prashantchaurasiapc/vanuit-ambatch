@@ -8,6 +8,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import projectImg from '../../assets/outdoor_project_card.png';
 import heroBg from '/dasbordes images.png';
 import api from '../../api/apiClient';
+import PartnerWorkloadAvailabilityCard from '../../components/partner/PartnerWorkloadAvailabilityCard';
 
 export default function PartnerDashboard() {
   const navigate = useNavigate();
@@ -137,6 +138,11 @@ export default function PartnerDashboard() {
             </div>
           </Card>
         ))}
+      </div>
+
+      {/* Partner Workload & Availability Control Card */}
+      <div id="workload-availability-card">
+        <PartnerWorkloadAvailabilityCard onWorkloadChange={() => fetchDashboardData()} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -269,6 +275,16 @@ export default function PartnerDashboard() {
           {/* Quick Actions */}
           <Card title={language === 'NL' ? 'Snelle Acties' : 'Quick Actions'}>
             <div className="space-y-2">
+              <button 
+                onClick={() => {
+                  const el = document.getElementById('workload-availability-card');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="flex items-center gap-3 w-full p-3 rounded-xl bg-white/80 border border-primary/30 hover:border-primary hover:bg-white transition-all text-xs font-body text-primary font-bold shadow-xs"
+              >
+                <Sliders className="w-4 h-4 text-primary" />
+                {language === 'NL' ? 'Werkdruk & Beschikbare Weken' : 'Workload & Available Weeks'}
+              </button>
               <button 
                 onClick={() => navigate('/partner/documents')}
                 className="flex items-center gap-3 w-full p-3 rounded-xl bg-white/60 border border-[#D6CFC2] hover:border-primary hover:bg-white transition-all text-xs font-body text-dark/80 font-medium"

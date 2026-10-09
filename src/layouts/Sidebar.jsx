@@ -320,7 +320,7 @@ export default function Sidebar({ role }) {
           <div className="pt-4 pb-2 mt-2 border-t border-white/10 space-y-0.5">
             {!collapsed && (
               <span className="text-[9px] font-mono font-bold text-white/40 uppercase tracking-widest block px-2.5 mb-1.5">
-                This Mock-up
+                {language === 'NL' ? 'Deze Mock-up' : 'This Mock-up'}
               </span>
             )}
             
@@ -334,10 +334,10 @@ export default function Sidebar({ role }) {
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`
               }
-              title="Inbox messages"
+              title={language === 'NL' ? 'Inbox berichten' : 'Inbox messages'}
             >
               <CornerDownRight className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/admin/projects/inbox') ? 'font-medium' : 'font-normal'}`}>Inbox messages</span>}
+              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/admin/projects/inbox') ? 'font-medium' : 'font-normal'}`}>{language === 'NL' ? 'Inbox berichten' : 'Inbox messages'}</span>}
               {!collapsed && (
                 <span className="ml-auto px-1.5 py-0.2 bg-[#D97706] text-white font-mono text-[9px] font-bold rounded-full">
                   4
@@ -355,10 +355,10 @@ export default function Sidebar({ role }) {
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`
               }
-              title="Outdoor Kitchen Project"
+              title={language === 'NL' ? 'Buitenkeuken project' : 'Outdoor Kitchen Project'}
             >
               <CornerDownRight className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/outdoor-kitchen') ? 'font-medium' : 'font-normal'}`}>Outdoor Kitchen Project</span>}
+              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/outdoor-kitchen') ? 'font-medium' : 'font-normal'}`}>{language === 'NL' ? 'Buitenkeuken project' : 'Outdoor Kitchen Project'}</span>}
             </NavLink>
 
             <NavLink
@@ -371,10 +371,10 @@ export default function Sidebar({ role }) {
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`
               }
-              title="Garden Room Project"
+              title={language === 'NL' ? 'Buitenverblijf project' : 'Garden Room Project'}
             >
               <CornerDownRight className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/garden-room') ? 'font-medium' : 'font-normal'}`}>Garden Room Project</span>}
+              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/garden-room') ? 'font-medium' : 'font-normal'}`}>{language === 'NL' ? 'Buitenverblijf project' : 'Garden Room Project'}</span>}
             </NavLink>
 
             <NavLink
@@ -387,10 +387,10 @@ export default function Sidebar({ role }) {
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`
               }
-              title="Field Mapping"
+              title={language === 'NL' ? 'Veldkoppeling' : 'Field Mapping'}
             >
               <CornerDownRight className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/field-mapping') ? 'font-medium' : 'font-normal'}`}>Field Mapping</span>}
+              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/field-mapping') ? 'font-medium' : 'font-normal'}`}>{language === 'NL' ? 'Veldkoppeling' : 'Field Mapping'}</span>}
             </NavLink>
           </div>
         )}

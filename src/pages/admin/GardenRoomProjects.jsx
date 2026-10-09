@@ -20,15 +20,29 @@ export default function GardenRoomProjects({ onBackToOverview }) {
   const [projectData, setProjectData] = useState(null);
 
   // UI State
-  const [activeStep, setActiveStep] = useState(isEn ? 'Survey (Schouw)' : 'Schouw');
-  const [activeTab, setActiveTab] = useState(isEn ? 'Week Planning & Survey' : 'Weekplanning & schouw');
+  const [activeStep, setActiveStep] = useState('schouw');
+  const [activeTab, setActiveTab] = useState('planning');
   const [toastMsg, setToastMsg] = useState('');
-
 
   // Editable fields for Weekplanning & Schouw
   const [schouwDag, setSchouwDag] = useState(isEn ? 'Thursday August 27' : 'donderdag 27 augustus');
   const [schouwTijd, setSchouwTijd] = useState(isEn ? 'around 10:00 AM' : 'rond 10:00');
   const [schouwUitvoerende, setSchouwUitvoerende] = useState('Partner (Timmerwerken Zuid)');
+
+  useEffect(() => {
+    setSchouwDag(prev => {
+      if (prev === 'Thursday August 27' || prev === 'donderdag 27 augustus') {
+        return isEn ? 'Thursday August 27' : 'donderdag 27 augustus';
+      }
+      return prev;
+    });
+    setSchouwTijd(prev => {
+      if (prev === 'around 10:00 AM' || prev === 'rond 10:00') {
+        return isEn ? 'around 10:00 AM' : 'rond 10:00';
+      }
+      return prev;
+    });
+  }, [isEn]);
 
   // Weekplanning rows
   const [planningRows, setPlanningRows] = useState(isEn ? [
@@ -228,33 +242,24 @@ export default function GardenRoomProjects({ onBackToOverview }) {
     showToast('Bericht verzonden naar klant!');
   };
 
-  const stepsList = isEn ? [
-    { name: 'Agreement & Design', key: 'Agreement & Design' },
-    { name: 'Survey (Schouw)', key: 'Survey (Schouw)' },
-    { name: 'Preparation', key: 'Preparation' },
-    { name: 'Materials', key: 'Materials' },
-    { name: 'Construction', key: 'Construction' },
-    { name: 'Handover', key: 'Handover' },
-    { name: 'Aftercare', key: 'Aftercare' }
-  ] : [
-    { name: 'Akkoord & ontwerp', key: 'Akkoord & ontwerp' },
-    { name: 'Schouw', key: 'Schouw' },
-    { name: 'Voorbereiding', key: 'Voorbereiding' },
-    { name: 'Materialen', key: 'Materialen' },
-    { name: 'De bouw', key: 'De bouw' },
-    { name: 'Oplevering', key: 'Oplevering' },
-    { name: 'Nazorg', key: 'Nazorg' }
+  const stepsList = [
+    { key: 'akkoord', name: isEn ? 'Agreement & Design' : 'Akkoord & ontwerp', aliases: ['Agreement & Design', 'Akkoord & ontwerp'] },
+    { key: 'schouw', name: isEn ? 'Survey (Schouw)' : 'Schouw', aliases: ['Survey (Schouw)', 'Schouw'] },
+    { key: 'voorbereiding', name: isEn ? 'Preparation' : 'Voorbereiding', aliases: ['Preparation', 'Voorbereiding'] },
+    { key: 'materialen', name: isEn ? 'Materials' : 'Materialen', aliases: ['Materials', 'Materialen'] },
+    { key: 'bouw', name: isEn ? 'Construction' : 'De bouw', aliases: ['Construction', 'De bouw'] },
+    { key: 'oplevering', name: isEn ? 'Handover' : 'Oplevering', aliases: ['Handover', 'Oplevering'] },
+    { key: 'nazorg', name: isEn ? 'Aftercare' : 'Nazorg', aliases: ['Aftercare', 'Nazorg'] }
   ];
 
-  const allTabsList = isEn ? [
-    'Week Planning & Survey',
-    '3D Renders',
-    'Payments (40/40/20 Scheme)'
-  ] : [
-    'Weekplanning & schouw',
-    'Renders',
-    'Betalingen (3 termijnen)'
+  const allTabsList = [
+    { id: 'planning', label: isEn ? 'Week Planning & Survey' : 'Weekplanning & schouw', aliases: ['Week Planning & Survey', 'Weekplanning & schouw'] },
+    { id: 'renders', label: isEn ? '3D Renders' : 'Renders', aliases: ['3D Renders', 'Renders'] },
+    { id: 'payments', label: isEn ? 'Payments (40/40/20 Scheme)' : 'Betalingen (3 termijnen)', aliases: ['Payments (40/40/20 Scheme)', 'Betalingen (3 termijnen)'] }
   ];
+
+  const activeStepObj = stepsList.find(s => s.key === activeStep || s.name === activeStep || (s.aliases && s.aliases.includes(activeStep)));
+  const displayActiveStep = activeStepObj ? activeStepObj.name : activeStep;
 
   // Shared Right Rail Cards matching Screenshot 2 100% exact
   const renderRightRail = () => (
@@ -272,7 +277,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
               {isEn ? 'Hi Sander' : 'Hoi Sander'}
             </h4>
             <div className="flex items-center gap-1.5 text-xs text-dark/80 font-sans mt-0.5">
-              <strong className="font-bold text-[#2A2925]">{activeStep}</strong>
+              <strong className="font-bold text-[#2A2925]">{displayActiveStep}</strong>
               <span className="text-dark/40 font-normal">·</span>
               <span className="text-dark/70 font-medium">{isEn ? 'Build week 41-42' : 'bouwweek 41-42'}</span>
               <span className="px-2 py-0.5 bg-[#FDF8EE] border border-dashed border-[#E5C9A3] text-[#B86B14] rounded-md text-[9px] font-mono font-bold">
@@ -473,7 +478,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
       <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
         <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar pb-1">
           {stepsList.map((step) => {
-            const isActive = activeStep === step.key;
+            const isActive = activeStep === step.key || activeStep === step.name || (step.aliases && step.aliases.includes(activeStep));
             return (
               <button
                 key={step.key}
@@ -494,19 +499,19 @@ export default function GardenRoomProjects({ onBackToOverview }) {
       {/* PRIMARY TABS BAR matching Screenshot 2 */}
       <div className="space-y-3 pt-2">
         <div className="flex items-center gap-8 border-b border-[#D6CFC2]/70 pb-0.5 overflow-x-auto no-scrollbar">
-          {allTabsList.map((tabName) => {
-            const isActive = activeTab === tabName;
+          {allTabsList.map((tab) => {
+            const isActive = activeTab === tab.id || activeTab === tab.label || (tab.aliases && tab.aliases.includes(activeTab));
             return (
               <button
-                key={tabName}
-                onClick={() => setActiveTab(tabName)}
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
                 className={`pb-2.5 text-xs sm:text-sm transition-all whitespace-nowrap cursor-pointer focus:outline-none relative ${
                   isActive 
                     ? 'text-[#33422C] font-extrabold font-body' 
                     : 'text-[#736B5E] hover:text-[#33422C] font-medium font-body'
                 }`}
               >
-                {tabName}
+                {tab.label}
                 {isActive && (
                   <motion.div 
                     layoutId="activeTabIndicatorGR2" 
@@ -520,7 +525,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
       </div>
 
       {/* TAB CONTENT: WEEKPLANNING & SCHOUW */}
-      {activeTab === (isEn ? 'Week Planning & Survey' : 'Weekplanning & schouw') && (
+      {(activeTab === 'planning' || activeTab === 'Week Planning & Survey' || activeTab === 'Weekplanning & schouw') && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* LEFT COLUMN: 7 COLUMNS */}
@@ -674,7 +679,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
       )}
 
       {/* TAB CONTENT: RENDERS (100% Exact 1-to-1 Match with Screenshot 2) */}
-      {activeTab === (isEn ? '3D Renders' : 'Renders') && (
+      {(activeTab === 'renders' || activeTab === '3D Renders' || activeTab === 'Renders') && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* LEFT COLUMN: 7 COLUMNS */}
@@ -789,7 +794,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
       )}
 
       {/* BETALINGEN TAB (Chapter 10 Acceptance Test: Handover Gate & Bookkeeping Mirror) */}
-      {activeTab === (isEn ? 'Payments (40/40/20 Scheme)' : 'Betalingen (3 termijnen)') && (
+      {(activeTab === 'payments' || activeTab === 'Payments (40/40/20 Scheme)' || activeTab === 'Betalingen (3 termijnen)') && (
         <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-6 shadow-2xs space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E6E1D7] pb-3">
             <div>
@@ -1162,7 +1167,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
                     {isEn ? 'Current Phase' : 'Huidige Fase'}
                   </label>
                   <div className="px-3 py-2 bg-[#F4F1EA] rounded-xl text-xs font-bold text-[#33422C]">
-                    {activeStep}
+                    {displayActiveStep}
                   </div>
                 </div>
 

@@ -343,7 +343,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
         </div>
 
         <Button icon={Plus} onClick={handleOpenAddModal} className="w-full sm:w-auto">
-          {t('projects.addNewProject')}
+          {language === 'NL' ? 'Nieuw Project' : 'New Project'}
         </Button>
       </div>
 
@@ -561,11 +561,11 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
               <div className="flex items-center justify-between border-b border-[#D6CFC2]/70 pb-3">
                 <div>
                   <p className="text-[10px] font-bold text-dark/40 uppercase tracking-wider font-mono">
-                    PROJECT PHOTO MANAGEMENT
+                    {language === 'NL' ? 'PROJECT FOTO BEHEER' : 'PROJECT PHOTO MANAGEMENT'}
                   </p>
                   <h3 className="text-base font-heading font-bold text-primary flex items-center gap-2 mt-0.5">
                     <Camera className="w-4 h-4 text-primary" />
-                    <span>Upload Project Progress Photos</span>
+                    <span>{language === 'NL' ? "Project Voortgangsfoto's Uploaden" : 'Upload Project Progress Photos'}</span>
                   </h3>
                 </div>
                 <button
@@ -580,7 +580,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
               <div className="bg-white border border-[#D6CFC2] rounded-2xl p-4 space-y-2 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-dark/40 uppercase tracking-wider font-mono">
-                    SELECTED PROJECT
+                    {language === 'NL' ? 'GESELECTEERD PROJECT' : 'SELECTED PROJECT'}
                   </span>
                   <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full font-mono text-[11px] font-bold">
                     {directUploadProject.id}
@@ -590,15 +590,15 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                   {directUploadProject.name} — {directUploadProject.customer}
                 </p>
                 <div className="flex items-center justify-between text-xs text-dark/70 pt-0.5 font-mono">
-                  <span>Customer: <strong className="text-dark font-body">{directUploadProject.customer}</strong></span>
-                  <span>Delivery: <strong>{directUploadProject.deadline || '2026-09-15'}</strong></span>
+                  <span>{language === 'NL' ? 'Klant:' : 'Customer:'} <strong className="text-dark font-body">{directUploadProject.customer}</strong></span>
+                  <span>{language === 'NL' ? 'Oplevering:' : 'Delivery:'} <strong>{directUploadProject.deadline || '2026-09-15'}</strong></span>
                 </div>
               </div>
 
               {/* Drag & Drop File Zone */}
               <div className="space-y-1.5">
                 <label className="block text-[11px] font-bold text-dark/60 uppercase tracking-wider">
-                  SELECT PHOTO FILES (DRAG & DROP OR BROWSE) *
+                  {language === 'NL' ? 'SELECTEER FOTOBESTANDEN (SLEEP OF BLADER) *' : 'SELECT PHOTO FILES (DRAG & DROP OR BROWSE) *'}
                 </label>
                 <div
                   onClick={() => directFileInputRef.current && directFileInputRef.current.click()}
@@ -606,10 +606,10 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                 >
                   <Camera className="w-8 h-8 text-primary mx-auto opacity-70" />
                   <p className="font-bold text-dark text-xs">
-                    Click or drag & drop multiple photo files here
+                    {language === 'NL' ? 'Klik of sleep meerdere fotobestanden hierheen' : 'Click or drag & drop multiple photo files here'}
                   </p>
                   <p className="text-[10px] text-dark/50 font-body">
-                    PNG, JPG, WEBP · Multiple files supported
+                    {language === 'NL' ? 'PNG, JPG, WEBP · Meerdere bestanden ondersteund' : 'PNG, JPG, WEBP · Multiple files supported'}
                   </p>
                   <input
                     type="file"
@@ -625,7 +625,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
               {/* Previews if any */}
               {selectedUploadFiles.length > 0 && (
                 <div className="space-y-1.5 bg-white p-3 rounded-2xl border border-[#D6CFC2]">
-                  <p className="font-bold text-dark text-xs">Selected Photos ({selectedUploadFiles.length}):</p>
+                  <p className="font-bold text-dark text-xs">{language === 'NL' ? "Geselecteerde Foto's" : 'Selected Photos'} ({selectedUploadFiles.length}):</p>
                   <div className="flex gap-2 overflow-x-auto py-1">
                     {selectedUploadFiles.map((item, idx) => (
                       <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border border-[#D6CFC2] flex-shrink-0 group">
@@ -650,23 +650,23 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-dark/60 mb-1 uppercase tracking-wider">
-                    PROGRESS CATEGORY / PHASE
+                    {language === 'NL' ? 'VOORTGANGSCATEGORIE / FASE' : 'PROGRESS CATEGORY / PHASE'}
                   </label>
                   <select
                     value={uploadForm.captionCategory}
                     onChange={e => setUploadForm(prev => ({ ...prev, captionCategory: e.target.value }))}
                     className="w-full px-3 py-2.5 bg-white border border-[#D6CFC2] rounded-xl text-xs font-semibold text-dark focus:outline-none focus:ring-1 focus:ring-primary shadow-2xs"
                   >
-                    <option value="Initial Construction">🔨 1. Initial Construction (Houtbewerking)</option>
-                    <option value="Frame & Cabinets">🪚 2. Frame & Cabinets (Kasten / Frame)</option>
-                    <option value="Countertop Installation">🏗️ 3. Countertop Installation (Werkblad)</option>
-                    <option value="Finishing & Inspection">✨ 4. Finishing & Inspection (Afwerking)</option>
+                    <option value="Initial Construction">{language === 'NL' ? '🔨 1. Constructie & Houtbewerking' : '🔨 1. Initial Construction (Houtbewerking)'}</option>
+                    <option value="Frame & Cabinets">{language === 'NL' ? '🪚 2. Kasten & Frame' : '🪚 2. Frame & Cabinets (Kasten / Frame)'}</option>
+                    <option value="Countertop Installation">{language === 'NL' ? '🏗️ 3. Werkblad Montage' : '🏗️ 3. Countertop Installation (Werkblad)'}</option>
+                    <option value="Finishing & Inspection">{language === 'NL' ? '✨ 4. Afwerking & Inspectie' : '✨ 4. Finishing & Inspection (Afwerking)'}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-dark/60 mb-1 uppercase tracking-wider">
-                    PHOTO TITLE / CAPTION
+                    {language === 'NL' ? 'FOTOTITEL / BESCHRIJVING' : 'PHOTO TITLE / CAPTION'}
                   </label>
                   <input
                     type="text"
@@ -681,13 +681,13 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
               {/* Description & Notes */}
               <div>
                 <label className="block text-[11px] font-bold text-dark/60 mb-1 uppercase tracking-wider">
-                  DESCRIPTION & NOTES FOR CUSTOMER
+                  {language === 'NL' ? 'OMSCHRIJVING & NOTITIES VOOR KLANT' : 'DESCRIPTION & NOTES FOR CUSTOMER'}
                 </label>
                 <textarea
                   rows={2}
                   value={uploadForm.desc}
                   onChange={e => setUploadForm(prev => ({ ...prev, desc: e.target.value }))}
-                  placeholder="e.g. Solid teak frame assembled and ready for countertop polishing..."
+                  placeholder={language === 'NL' ? 'bijv. Massief teakhouten frame geassembleerd en klaar voor werkblad...' : 'e.g. Solid teak frame assembled and ready for countertop polishing...'}
                   className="w-full px-3 py-2.5 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none focus:ring-1 focus:ring-primary shadow-2xs resize-none"
                 />
               </div>
@@ -695,7 +695,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
               {/* Customer Portal Share Card */}
               <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-3 flex items-center justify-between shadow-2xs">
                 <span className="text-xs font-bold text-emerald-950">
-                  Share in Customer Portal Immediately
+                  {language === 'NL' ? 'Direct zichtbaar in Klantportaal' : 'Share in Customer Portal Immediately'}
                 </span>
                 <input
                   type="checkbox"
@@ -713,7 +713,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                   onClick={() => setDirectUploadProject(null)}
                   className="px-4 py-2 bg-white border border-[#D6CFC2] hover:bg-[#EDE8DF] text-xs font-semibold text-dark/80 rounded-xl transition-colors cursor-pointer"
                 >
-                  Cancel
+                  {language === 'NL' ? 'Annuleren' : 'Cancel'}
                 </button>
                 <button
                   type="button"
@@ -721,7 +721,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                   disabled={!selectedUploadFiles.length}
                   className="px-5 py-2 bg-[#6B7E62] hover:bg-[#57684E] disabled:bg-gray-400 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
                 >
-                  <span>Publish Photos</span>
+                  <span>{language === 'NL' ? "Foto's Publiceren" : 'Publish Photos'}</span>
                 </button>
               </div>
             </motion.div>
@@ -741,7 +741,9 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
             >
               <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
                 <h3 className="text-base font-heading font-bold text-primary">
-                  {selectedProject ? 'Edit Project' : 'Create New Project'}
+                  {selectedProject
+                    ? (language === 'NL' ? 'Project Bewerken' : 'Edit Project')
+                    : (language === 'NL' ? 'Nieuw Project Aanmaken' : 'Create New Project')}
                 </h3>
                 <button onClick={() => setModalOpen(false)} className="p-1 text-dark/40 hover:text-dark">
                   <X className="w-5 h-5" />
@@ -750,38 +752,44 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div>
-                  <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">Project Name *</label>
+                  <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">
+                    {language === 'NL' ? 'Projectnaam *' : 'Project Name *'}
+                  </label>
                   <input
                     type="text"
                     required
                     value={form.name}
                     onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g. Luxury Teak Outdoor Kitchen 4m"
+                    placeholder={language === 'NL' ? 'bijv. Luxe Teak Buitenkeuken 4m' : 'e.g. Luxury Teak Outdoor Kitchen 4m'}
                     className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-dark"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">Customer Name *</label>
+                    <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">
+                      {language === 'NL' ? 'Klantnaam *' : 'Customer Name *'}
+                    </label>
                     <input
                       type="text"
                       required
                       value={form.customer}
                       onChange={e => setForm(prev => ({ ...prev, customer: e.target.value }))}
-                      placeholder="e.g. John Miller"
+                      placeholder={language === 'NL' ? 'bijv. Jan Jansen' : 'e.g. John Miller'}
                       className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">Assigned Partner</label>
+                    <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">
+                      {language === 'NL' ? 'Toegewezen Partner' : 'Assigned Partner'}
+                    </label>
                     <select
                       value={partnerSelect}
                       onChange={e => setPartnerSelect(e.target.value)}
                       className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold text-dark"
                     >
-                      <option value="Unassigned">Unassigned</option>
+                      <option value="Unassigned">{language === 'NL' ? 'Niet toegewezen' : 'Unassigned'}</option>
                       {partnersList.map((p, idx) => (
                         <option key={idx} value={p.name}>{p.name}</option>
                       ))}
@@ -791,7 +799,9 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">Completion Deadline</label>
+                    <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">
+                      {language === 'NL' ? 'Opleverdatum' : 'Completion Deadline'}
+                    </label>
                     <input
                       type="date"
                       value={form.deadline}
@@ -801,21 +811,29 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">Status</label>
+                    <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">
+                      {language === 'NL' ? 'Status' : 'Status'}
+                    </label>
                     <select
                       value={form.status}
                       onChange={e => setForm(prev => ({ ...prev, status: e.target.value }))}
                       className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold text-dark"
                     >
-                      <option value="In Progress">In Progress</option>
-                      <option value="Completed">Completed</option>
+                      <option value="In Progress">{language === 'NL' ? 'In uitvoering' : 'In Progress'}</option>
+                      <option value="Completed">{language === 'NL' ? 'Voltooid' : 'Completed'}</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
-                  <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
-                  <Button type="submit">{selectedProject ? 'Save Changes' : 'Create Project'}</Button>
+                  <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
+                    {language === 'NL' ? 'Annuleren' : 'Cancel'}
+                  </Button>
+                  <Button type="submit">
+                    {selectedProject
+                      ? (language === 'NL' ? 'Wijzigingen Opslaan' : 'Save Changes')
+                      : (language === 'NL' ? 'Project Aanmaken' : 'Create Project')}
+                  </Button>
                 </div>
               </form>
             </motion.div>

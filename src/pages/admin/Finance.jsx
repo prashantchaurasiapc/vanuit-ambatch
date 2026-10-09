@@ -3,9 +3,11 @@ import Card from '../../components/Card';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
 import { TrendingUp, DollarSign, Clock, CheckCircle, Download } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import api from '../../api/apiClient';
 
 export default function Finance() {
+  const { t, language, tStatus } = useLanguage();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -55,7 +57,9 @@ export default function Finance() {
     } catch (e) {}
     
     // Create CSV headers and rows
-    const headers = ['Invoice ID', 'Customer', 'Project', 'Amount', 'Status', 'Date'];
+    const headers = language === 'NL' 
+      ? ['Factuurnummer', 'Klant', 'Project', 'Bedrag', 'Status', 'Datum']
+      : ['Invoice ID', 'Customer', 'Project', 'Amount', 'Status', 'Date'];
     const rows = currentInvoices.map(q => [
       q.id || q.invoiceNumber,
       `"${(q.customer || q.customerName || '').replace(/"/g, '""')}"`,
@@ -82,42 +86,48 @@ export default function Finance() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-heading font-bold text-primary">Finance</h2>
-          <p className="text-dark/60 text-sm">Track revenue, invoices and payments.</p>
+          <h2 className="text-2xl font-heading font-bold text-primary">
+            {t('finance.title') || (language === 'NL' ? 'Financiën' : 'Finance')}
+          </h2>
+          <p className="text-dark/60 text-sm">
+            {language === 'NL' ? 'Volg omzet, facturen en betalingen.' : 'Track revenue, invoices and payments.'}
+          </p>
         </div>
-        <Button icon={Download} variant="outline" onClick={handleExportCSV}>Export CSV</Button>
+        <Button icon={Download} variant="outline" onClick={handleExportCSV}>
+          {language === 'NL' ? 'CSV Exporteren' : 'Export CSV'}
+        </Button>
       </div>
 
       {/* Finance KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           { 
-            label: 'Total Revenue', 
+            label: language === 'NL' ? 'Totale Omzet' : 'Total Revenue', 
             value: `€ ${(stats.totalRevenue || 0).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
             icon: TrendingUp, 
             color: 'bg-green-50 text-green-600', 
-            sub: 'All paid revenue' 
+            sub: language === 'NL' ? 'Alle betaalde omzet' : 'All paid revenue' 
           },
           { 
-            label: 'This Month', 
+            label: language === 'NL' ? 'Deze Maand' : 'This Month', 
             value: `€ ${(stats.thisMonth || 0).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
             icon: DollarSign, 
             color: 'bg-primary/10 text-primary', 
-            sub: 'Current calendar month' 
+            sub: language === 'NL' ? 'Huidige kalendermaand' : 'Current calendar month' 
           },
           { 
-            label: 'Outstanding', 
+            label: language === 'NL' ? 'Openstaand' : 'Outstanding', 
             value: `€ ${(stats.outstanding || 0).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
             icon: Clock, 
             color: 'bg-yellow-50 text-yellow-600', 
-            sub: `${stats.pendingInvoicesCount || 0} invoices pending` 
+            sub: language === 'NL' ? `${stats.pendingInvoicesCount || 0} facturen in behandeling` : `${stats.pendingInvoicesCount || 0} invoices pending` 
           },
           { 
-            label: 'Paid (Ytd)', 
+            label: language === 'NL' ? 'Betaald (YTD)' : 'Paid (Ytd)', 
             value: `€ ${(stats.paidYtd || 0).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
             icon: CheckCircle, 
             color: 'bg-blue-50 text-blue-600', 
-            sub: `${stats.collectionRatePct || 0}% collection rate` 
+            sub: language === 'NL' ? `${stats.collectionRatePct || 0}% inningspercentage` : `${stats.collectionRatePct || 0}% collection rate` 
           },
         ].map((stat, i) => (
           <Card key={i}>
@@ -136,7 +146,7 @@ export default function Finance() {
       </div>
 
       {/* Revenue by Month */}
-      <Card title="Revenue Overview (2026)">
+      <Card title={language === 'NL' ? 'Omzetoverzicht (2026)' : 'Revenue Overview (2026)'}>
         <div className="flex items-end gap-2 h-32">
           {[30, 45, 38, 55, 42, 65, 52, 70, 58, 80, 68, 90].map((val, i) => (
             <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -150,22 +160,24 @@ export default function Finance() {
       </Card>
 
       {/* Invoice Table */}
-      <Card title="Invoices">
+      <Card title={t('common.invoices') || (language === 'NL' ? 'Facturen' : 'Invoices')}>
         <div className="space-y-3">
           {loading ? (
-            <p className="text-sm text-dark/50 py-6 text-center">Loading invoices...</p>
+            <p className="text-sm text-dark/50 py-6 text-center">
+              {language === 'NL' ? 'Facturen laden...' : 'Loading invoices...'}
+            </p>
           ) : invoices.length === 0 ? (
             <div className="py-8 text-center text-dark/50 text-sm">
-              No invoices found in database.
+              {language === 'NL' ? 'Geen facturen gevonden in database.' : 'No invoices found in database.'}
             </div>
           ) : (
             invoices.map(inv => {
               const invNum = inv.invoiceNumber || inv.id;
-              const custName = inv.customerName || inv.customer?.name || inv.customer || 'Customer';
-              const projName = inv.projectName || inv.project?.name || inv.project || 'Project';
+              const custName = inv.customerName || inv.customer?.name || inv.customer || (language === 'NL' ? 'Klant' : 'Customer');
+              const projName = inv.projectName || inv.project?.name || inv.project || (language === 'NL' ? 'Project' : 'Project');
               const amt = Number(inv.totalInclVat || inv.amount || inv.totalAmount || 0);
               const status = inv.status || 'draft';
-              const dateStr = inv.issueDate || inv.date || (inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('nl-NL') : '');
+              const dateStr = inv.issueDate || inv.date || (inv.createdAt ? new Date(inv.createdAt).toLocaleDateString(language === 'NL' ? 'nl-NL' : 'en-US') : '');
               const isPaid = status.toLowerCase() === 'paid';
               const isPartiallyPaid = status.toLowerCase() === 'partially_paid';
 
@@ -180,7 +192,7 @@ export default function Finance() {
                       € {amt.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                     <Badge variant={isPaid ? 'success' : isPartiallyPaid ? 'accent' : 'default'}>
-                      {status}
+                      {tStatus(status)}
                     </Badge>
                     <span className="text-xs text-dark/40">{dateStr}</span>
                   </div>

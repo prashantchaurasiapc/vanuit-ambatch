@@ -10,9 +10,12 @@ import {
 import { useNavigate } from 'react-router-dom';
 import ProjectChatDrawer from '../../components/common/ProjectChatDrawer';
 import api from '../../api/apiClient';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function OutdoorKitchenProjects({ onBackToOverview }) {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const isEn = language !== 'NL';
 
   // Live project from backend
   const [projectId, setProjectId] = useState(null);
@@ -560,22 +563,25 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
   };
 
   const stepsList = [
-    { name: 'Agreement & Design', key: 'Agreement & Design' },
-    { name: 'In the workshop', key: 'In the workshop' },
-    { name: 'Ready for delivery', key: 'Ready for delivery' },
-    { name: 'Delivered', key: 'Delivered' },
-    { name: 'Aftercare', key: 'Aftercare' }
+    { name: isEn ? 'Agreement & Design' : 'Akkoord & Ontwerp', key: 'Agreement & Design', aliases: ['Agreement & Design', 'Akkoord & Ontwerp', 'akkoord'] },
+    { name: isEn ? 'In the workshop' : 'In de werkplaats', key: 'In the workshop', aliases: ['In the workshop', 'In de werkplaats', 'werkplaats'] },
+    { name: isEn ? 'Ready for delivery' : 'Gereed voor levering', key: 'Ready for delivery', aliases: ['Ready for delivery', 'Gereed voor levering', 'levering'] },
+    { name: isEn ? 'Delivered' : 'Geleverd', key: 'Delivered', aliases: ['Delivered', 'Geleverd', 'geleverd'] },
+    { name: isEn ? 'Aftercare' : 'Nazorg', key: 'Aftercare', aliases: ['Aftercare', 'Nazorg', 'nazorg'] }
   ];
 
   const allTabsList = [
-    'Status & Texts',
-    'Customer Actions',
-    'Delivery',
-    'Media & Documents',
-    'Payments',
-    'Messages',
-    'Partner'
+    { id: 'Status & Texts', label: isEn ? 'Status & Texts' : 'Status & Teksten', aliases: ['Status & Texts', 'Status & Teksten'] },
+    { id: 'Customer Actions', label: isEn ? 'Customer Actions' : 'Klantacties', aliases: ['Customer Actions', 'Klantacties'] },
+    { id: 'Delivery', label: isEn ? 'Delivery' : 'Levering', aliases: ['Delivery', 'Levering'] },
+    { id: 'Media & Documents', label: isEn ? 'Media & Documents' : 'Media & Documenten', aliases: ['Media & Documents', 'Media & Documenten'] },
+    { id: 'Payments', label: isEn ? 'Payments' : 'Betalingen', aliases: ['Payments', 'Betalingen'] },
+    { id: 'Messages', label: isEn ? 'Messages' : 'Berichten', aliases: ['Messages', 'Berichten'] },
+    { id: 'Partner', label: isEn ? 'Partner' : 'Partner', aliases: ['Partner'] }
   ];
+
+  const currentStepObj = stepsList.find(s => s.key === activeStep || s.name === activeStep || (s.aliases && s.aliases.includes(activeStep)));
+  const displayActiveStep = currentStepObj ? currentStepObj.name : activeStep;
 
   // Common Right Rail Component matching Screenshots (with High Contrast, Crisp Typography)
   const renderRightRail = () => (
@@ -585,7 +591,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider block">
-            LIVE — WHAT THE CUSTOMER SEES NOW
+            {isEn ? 'LIVE — WHAT THE CUSTOMER SEES NOW' : 'LIVE — WAT DE KLANT NU ZIET'}
           </span>
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Live Synced" />
         </div>
@@ -593,12 +599,12 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
         <div className="bg-white border border-[#D6CFC2] rounded-xl p-4 space-y-3 shadow-2xs">
           <div>
             <h4 className="font-bold text-sm text-[#1C1C1A]">
-              Hi Sander
+              {isEn ? 'Hi Sander' : 'Hoi Sander'}
             </h4>
             <div className="flex items-center gap-1.5 text-xs font-bold text-[#2E2B25] mt-0.5">
-              <span>{activeStep}</span>
+              <span>{displayActiveStep}</span>
               <span>·</span>
-              <span className="text-[#555046] font-normal">delivery week 38</span>
+              <span className="text-[#555046] font-normal">{isEn ? 'delivery week 38' : 'leverweek 38'}</span>
             </div>
           </div>
 
@@ -833,7 +839,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       <div className="bg-[#FAF8F5] border border-[#E6E1D7] rounded-2xl p-4 sm:p-5 shadow-2xs">
         <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar">
           {stepsList.map((step) => {
-            const isActive = activeStep === step.key;
+            const isActive = activeStep === step.key || activeStep === step.name || (step.aliases && step.aliases.includes(activeStep));
             return (
               <button
                 key={step.key}
@@ -854,19 +860,19 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       {/* PRIMARY TABS BAR matching Screenshot 2 */}
       <div className="space-y-3 pt-2">
         <div className="flex items-center gap-8 border-b border-[#D6CFC2]/70 pb-0.5 overflow-x-auto no-scrollbar">
-          {allTabsList.map((tabName) => {
-            const isActive = activeTab === tabName;
+          {allTabsList.map((tab) => {
+            const isActive = activeTab === tab.id || activeTab === tab.label || (tab.aliases && tab.aliases.includes(activeTab));
             return (
               <button
-                key={tabName}
-                onClick={() => setActiveTab(tabName)}
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
                 className={`pb-2.5 text-xs sm:text-sm transition-all whitespace-nowrap cursor-pointer focus:outline-none relative ${
                   isActive 
                     ? 'text-[#33422C] font-extrabold font-body' 
                     : 'text-[#736B5E] hover:text-[#33422C] font-medium font-body'
                 }`}
               >
-                {tabName}
+                {tab.label}
                 {isActive && (
                   <motion.div 
                     layoutId="activeTabIndicator" 
@@ -880,7 +886,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       </div>
 
       {/* TAB 1: STATUS & TEXTS */}
-      {activeTab === 'Status & Texts' && (
+      {(activeTab === 'Status & Texts' || activeTab === 'Status & Teksten') && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
           {/* LEFT COLUMN: 7 COLUMNS */}
@@ -1026,7 +1032,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       )}
 
       {/* TAB 2: CUSTOMER ACTIONS (EXACT MATCH TO SCREENSHOT 2) */}
-      {activeTab === 'Customer Actions' && (
+      {(activeTab === 'Customer Actions' || activeTab === 'Klantacties') && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
           {/* LEFT COLUMN: 7 COLUMNS */}
@@ -1197,7 +1203,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       )}
 
       {/* TAB 3: DELIVERY (EXACT MATCH TO CLIENT LEVERING SCREENSHOT) */}
-      {activeTab === 'Delivery' && (
+      {(activeTab === 'Delivery' || activeTab === 'Levering') && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
           {/* LEFT COLUMN: 7 COLUMNS */}
@@ -1351,7 +1357,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       )}
 
       {/* TAB 4: MEDIA & DOCUMENTS (EXACT MATCH TO CLIENT SCREENSHOT) */}
-      {activeTab === 'Media & Documents' && (
+      {(activeTab === 'Media & Documents' || activeTab === 'Media & Documenten') && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
           {/* LEFT COLUMN: 7 COLUMNS */}
@@ -1542,7 +1548,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       )}
 
       {/* TAB 5: PAYMENTS (Exact Match to Client Requirements: Sent Date, Paid Date, Direct Send Action) */}
-      {activeTab === 'Payments' && (
+      {(activeTab === 'Payments' || activeTab === 'Betalingen') && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           <div className="lg:col-span-7 space-y-5">
             {/* Header Box with Routing Scope */}
@@ -1689,7 +1695,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       )}
 
       {/* TAB 6: MESSAGES (TWO STRICTLY SEPARATED CHANNELS - EXACT MATCH TO CLIENT SCREENSHOT) */}
-      {activeTab === 'Messages' && (
+      {(activeTab === 'Messages' || activeTab === 'Berichten') && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
           {/* LEFT 7 COLUMNS: TWO CHAT CHANNELS SIDE BY SIDE */}
@@ -2342,7 +2348,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
             >
               <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
                 <h3 className="font-bold text-base text-[#1C1C1A]">
-                  Update Project Phase
+                  {isEn ? 'Update Project Phase' : 'Projectfase Bijwerken'}
                 </h3>
                 <button onClick={() => setPhaseModal(false)} className="text-[#615C52] hover:text-[#1C1C1A] cursor-pointer">
                   <X className="w-5 h-5" />
@@ -2361,22 +2367,22 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
                     text: `Phase updated to "${selectedNewPhase}" — Admin`
                   };
                   setLogbook([newLog, ...logbook]);
-                  showToast(`✓ Project phase updated to: "${selectedNewPhase}"`);
+                  showToast(isEn ? `✓ Project phase updated to: "${selectedNewPhase}"` : `✓ Projectfase bijgewerkt naar: "${selectedNewPhase}"`);
                 }} 
                 className="space-y-4 text-xs"
               >
                 <div>
                   <label className="block text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider mb-1.5">
-                    Current Phase
+                    {isEn ? 'Current Phase' : 'Huidige Fase'}
                   </label>
                   <div className="px-3 py-2 bg-[#F4F1EA] rounded-xl text-xs font-bold text-[#1C1C1A]">
-                    {activeStep}
+                    {displayActiveStep}
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-mono font-bold text-[#555046] uppercase tracking-wider mb-1.5">
-                    Select New Phase *
+                    {isEn ? 'Select New Phase *' : 'Selecteer Nieuwe Fase *'}
                   </label>
                   <select
                     value={selectedNewPhase}
@@ -2385,16 +2391,16 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
                   >
                     {stepsList.map((st) => (
                       <option key={st.key} value={st.key}>
-                        {st.name} {st.key === activeStep ? '(Current)' : ''}
+                        {st.name} {st.key === activeStep ? (isEn ? '(Current)' : '(Huidig)') : ''}
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div className="p-3 bg-[#FAF8F5] rounded-xl border border-[#E6E1D7] text-xs text-[#4F4B44] space-y-1">
-                  <p className="font-bold text-[#1C1C1A]">Automatic actions on phase transition:</p>
-                  <p>• Notification sent immediately to customer and partner.</p>
-                  <p>• Progress bar is synchronized in both portals.</p>
+                  <p className="font-bold text-[#1C1C1A]">{isEn ? 'Automatic actions on phase transition:' : 'Automatische acties bij faseovergang:'}</p>
+                  <p>• {isEn ? 'Notification sent immediately to customer and partner.' : 'Notificatie direct verzonden naar klant en partner.'}</p>
+                  <p>• {isEn ? 'Progress bar is synchronized in both portals.' : 'Voortgangsbalk gesynchroniseerd in beide portalen.'}</p>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2 border-t border-[#D6CFC2]">
@@ -2403,13 +2409,13 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
                     onClick={() => setPhaseModal(false)}
                     className="px-4 py-2 bg-white border border-[#D6CFC2] text-[#4F4B44] rounded-xl text-xs font-bold hover:bg-[#FAF8F5] cursor-pointer"
                   >
-                    Cancel
+                    {isEn ? 'Cancel' : 'Annuleren'}
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 bg-[#283523] text-white font-bold rounded-xl text-xs hover:bg-[#1E291B] cursor-pointer"
                   >
-                    Confirm Phase
+                    {isEn ? 'Confirm Phase' : 'Fase Bevestigen'}
                   </button>
                 </div>
               </form>

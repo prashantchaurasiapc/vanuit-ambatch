@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Paperclip, Send, Check, Image as ImageIcon, FileText } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function ProjectChatDrawer({
   isOpen,
@@ -11,6 +12,9 @@ export default function ProjectChatDrawer({
   partnerName = 'Sven',
   onShowToast
 }) {
+  const { language } = useLanguage();
+  const isEn = language !== 'NL';
+
   // Active channel: 'klant' | 'partner'
   const [activeChannel, setActiveChannel] = useState('klant');
 
@@ -205,10 +209,12 @@ export default function ProjectChatDrawer({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-base sm:text-lg font-serif font-bold text-[#1C1C1A] tracking-tight">
-                    Projectchat · {projectCode}
+                    {isEn ? 'Project Chat' : 'Projectchat'} · {projectCode}
                   </h2>
                   <p className="text-[11px] text-[#736B5E] font-medium leading-tight mt-0.5">
-                    Beschikbaar op elk tabblad — zelfde threads als de Berichten-tab en de Inbox.
+                    {isEn 
+                      ? 'Available on every tab — same threads as Messages tab and Inbox.' 
+                      : 'Beschikbaar op elk tabblad — zelfde threads als de Berichten-tab en de Inbox.'}
                   </p>
                 </div>
 
@@ -236,7 +242,7 @@ export default function ProjectChatDrawer({
                   }`}
                 >
                   <span className="w-2 h-2 rounded-full bg-[#2E7D32]" />
-                  <span>Klant · {clientName}</span>
+                  <span>{isEn ? 'Customer' : 'Klant'} · {clientName}</span>
                   {klantUnread > 0 && (
                     <span className="ml-0.5 text-[10px] font-mono font-extrabold text-[#1E561E] bg-[#E3EFE3] px-1.5 py-0.2 rounded-full">
                       {klantUnread}
@@ -257,7 +263,7 @@ export default function ProjectChatDrawer({
                   }`}
                 >
                   <span className="w-2 h-2 rounded-full bg-[#B47B36]" />
-                  <span>Partner · {partnerName}</span>
+                  <span>{isEn ? 'Partner' : 'Partner'} · {partnerName}</span>
                   {partnerUnread > 0 && (
                     <span className="ml-0.5 text-[10px] font-mono font-extrabold text-[#9E5507] bg-[#FDF2E3] px-1.5 py-0.2 rounded-full">
                       {partnerUnread}
@@ -271,17 +277,19 @@ export default function ProjectChatDrawer({
             <div className="px-4 py-2.5 flex-shrink-0">
               {activeChannel === 'klant' ? (
                 <div className="bg-[#E8F2E6] border border-[#C6E1C4] rounded-xl p-3 text-xs leading-snug">
-                  <strong className="font-bold text-[#1E561E]">Kanaal: klant</strong>{' '}
+                  <strong className="font-bold text-[#1E561E]">{isEn ? 'Channel: Customer' : 'Kanaal: klant'}</strong>{' '}
                   <span className="text-[#2D4A2D]">
-                    — dit gesprek is zichtbaar in het klantportaal en spiegelt naar WhatsApp/mail.
+                    {isEn 
+                      ? '— this conversation is visible in customer portal and mirrors to WhatsApp/email.' 
+                      : '— dit gesprek is zichtbaar in het klantportaal en spiegelt naar WhatsApp/mail.'}
                   </span>
                 </div>
               ) : (
                 <div className="bg-[#F7EBD9] border border-[#EAD3B9] rounded-xl p-3 text-xs leading-snug">
-                  <strong className="font-bold text-[#9E5507]">Kanaal: partner</strong>{' '}
+                  <strong className="font-bold text-[#9E5507]">{isEn ? 'Channel: Partner' : 'Kanaal: partner'}</strong>{' '}
                   <span className="text-[#693902]">
-                    — alleen zichtbaar voor de partner, met WhatsApp-spiegel.{' '}
-                    <strong className="font-bold text-[#8C2703]">Nooit voor de klant.</strong>
+                    {isEn ? '— visible only to the partner, with WhatsApp mirror. ' : '— alleen zichtbaar voor de partner, met WhatsApp-spiegel. '}
+                    <strong className="font-bold text-[#8C2703]">{isEn ? 'Never to customer.' : 'Nooit voor de klant.'}</strong>
                   </span>
                 </div>
               )}
@@ -395,7 +403,9 @@ export default function ProjectChatDrawer({
                         : setInputPartnerMsg(e.target.value)
                     }
                     placeholder={
-                      activeChannel === 'klant' ? 'Bericht aan de klant...' : 'Bericht aan de partner...'
+                      activeChannel === 'klant' 
+                        ? (isEn ? 'Message to customer...' : 'Bericht aan de klant...') 
+                        : (isEn ? 'Message to partner...' : 'Bericht aan de partner...')
                     }
                     className="w-full text-xs font-semibold text-[#1C1C1A] placeholder-[#8A8478] focus:outline-none bg-transparent py-1"
                   />
@@ -404,7 +414,7 @@ export default function ProjectChatDrawer({
                     type="button"
                     onClick={handlePaperclipClick}
                     className="p-1.5 text-[#736B5E] hover:text-[#1C1C1A] cursor-pointer rounded-lg hover:bg-[#FAF8F5] transition-colors"
-                    title="Bijlage toevoegen"
+                    title={isEn ? "Attach file" : "Bijlage toevoegen"}
                   >
                     <Paperclip className="w-4.5 h-4.5" />
                   </button>
@@ -419,13 +429,15 @@ export default function ProjectChatDrawer({
                       : 'bg-[#B47B36] hover:bg-[#966327]'
                   }`}
                 >
-                  <span>Versturen</span>
+                  <span>{isEn ? 'Send' : 'Versturen'}</span>
                 </button>
               </form>
 
               {/* SUBTEXT FOOTER NOTE */}
               <p className="text-[11px] text-[#736B5E] font-medium leading-tight text-center pt-0.5">
-                Kleur en label wisselen mee met het kanaal — verkeerd kanaal kiezen kan visueel niet ongemerkt.
+                {isEn 
+                  ? 'Color and label switch with the channel — selecting the wrong channel is visually impossible.' 
+                  : 'Kleur en label wisselen mee met het kanaal — verkeerd kanaal kiezen kan visueel niet ongemerkt.'}
               </p>
             </div>
           </motion.div>
