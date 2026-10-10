@@ -19,12 +19,12 @@ import { downloadQuotePdf, generateFull6PagePdf } from '../utils/pdfGenerator';
 import { compressImage } from '../utils/storageHelper';
 
 const STEPS = [
-  { id: 1, number: 1, title: 'Customer & details', desc: 'customer, address, date & validity' },
-  { id: 2, number: 2, title: 'Cover', desc: 'title, subtitle & 3 cover photos' },
-  { id: 3, number: 3, title: 'Configuration', desc: 'tiles, specs & layout diagram' },
-  { id: 4, number: 4, title: 'Investment', desc: 'line items, totals & 2 termijnen' },
-  { id: 5, number: 5, title: 'Letter & process', desc: 'intro letter & 5 process steps' },
-  { id: 6, number: 6, title: 'Review & send', desc: 'completeness check & approval link' }
+  { id: 1, number: 1, title: 'Customer & details', titleNl: 'Klant & gegevens', desc: 'customer, address, date & validity', descNl: 'klant, adres, datum & geldigheid' },
+  { id: 2, number: 2, title: 'Cover', titleNl: 'Omslag', desc: 'title, subtitle & 3 cover photos', descNl: 'titel, subtitel & 3 omslagfoto\'s' },
+  { id: 3, number: 3, title: 'Configuration', titleNl: 'Configuratie', desc: 'tiles, specs & layout diagram', descNl: 'tegels, specificaties & schema' },
+  { id: 4, number: 4, title: 'Investment', titleNl: 'Investering', desc: 'line items, totals & 2 termijnen', descNl: 'offerteposten, totalen & termijnen' },
+  { id: 5, number: 5, title: 'Letter & process', titleNl: 'Brief & proces', desc: 'intro letter & 5 process steps', descNl: 'inleidende brief & 5 processtappen' },
+  { id: 6, number: 6, title: 'Review & send', titleNl: 'Controleren & verzenden', desc: 'completeness check & approval link', descNl: 'volledigheidscontrole & akkoordlink' }
 ];
 
 // Dynamic Responsive PDF Preview Scaler that fits 100% full-width in Zone 3 card
@@ -609,6 +609,16 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
   const totalSpecLines = (quote.configuration?.specifications || []).reduce((acc, s) => acc + (s.lines || []).length, 0);
 
   const getStepNextTitle = (stepId) => {
+    if (language === 'NL') {
+      switch (stepId) {
+        case 1: return 'Omslag';
+        case 2: return 'Configuratie';
+        case 3: return 'Investering';
+        case 4: return 'Brief & proces';
+        case 5: return 'Controleren & verzenden';
+        default: return 'Afronden';
+      }
+    }
     switch (stepId) {
       case 1: return 'Cover';
       case 2: return 'Configuration';
@@ -639,12 +649,12 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
             className="px-3 py-1.5 bg-white hover:bg-[#EDE8DF] text-primary border border-[#D6CFC2] rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer flex-shrink-0 shadow-2xs"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Back to Quotes</span>
-            <span className="inline sm:hidden">Back</span>
+            <span className="hidden sm:inline">{language === 'NL' ? 'Terug naar offertes' : 'Back to Quotes'}</span>
+            <span className="inline sm:hidden">{language === 'NL' ? 'Terug' : 'Back'}</span>
           </button>
           <div className="h-5 w-[1px] bg-[#D6CFC2] hidden sm:block flex-shrink-0"></div>
           <div className="flex items-center gap-2 min-w-0">
-            <span className="font-sans font-semibold text-xs sm:text-sm text-dark truncate">Quote Editor</span>
+            <span className="font-sans font-semibold text-xs sm:text-sm text-dark truncate">{language === 'NL' ? 'Offerte-editor' : 'Quote Editor'}</span>
             <span className="font-mono text-[10px] sm:text-xs text-[#D97706] bg-[#FEF3C7] border border-[#FDE68A] px-2 py-0.5 rounded-lg font-bold flex-shrink-0 tracking-wide">{quote.id}</span>
             <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg flex-shrink-0 border ${
               quote.status === 'Approved' || quote.status === 'Geaccepteerd'
@@ -652,14 +662,20 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                 : quote.status === 'Sent' || quote.status === 'Verzonden'
                   ? 'bg-blue-100 text-blue-800 border-blue-200'
                   : 'bg-[#F8F7F4] text-dark/60 border-[#D6CFC2]'
-            }`}>{quote.status || 'Draft'}</span>
+            }`}>
+              {quote.status === 'Approved' || quote.status === 'Geaccepteerd'
+                ? (language === 'NL' ? 'Goedgekeurd' : 'Approved')
+                : quote.status === 'Sent' || quote.status === 'Verzonden'
+                  ? (language === 'NL' ? 'Verzonden' : 'Sent')
+                  : (language === 'NL' ? 'Concept' : 'Draft')}
+            </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex items-center gap-1.5 text-[11px] font-mono text-dark/60 bg-[#F8F7F4] px-3 py-1.5 rounded-xl border border-[#D6CFC2] whitespace-nowrap">
             <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></span>
-            <span>Draft · {lastSavedTime}</span>
+            <span>{language === 'NL' ? 'Concept' : 'Draft'} · {lastSavedTime}</span>
           </div>
         </div>
       </div>
@@ -673,7 +689,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
         <div className="w-[180px] flex-shrink-0 overflow-y-auto max-h-[calc(100vh-175px)] no-scrollbar space-y-3">
           <div className="bg-white rounded-2xl p-2.5 border border-[#D6CFC2] shadow-xs space-y-1.5">
             <div className="flex items-baseline justify-between">
-              <h3 className="font-sans font-bold text-sm text-dark tracking-tight">Quote {quote.id}</h3>
+              <h3 className="font-sans font-bold text-sm text-dark tracking-tight">{language === 'NL' ? 'Offerte' : 'Quote'} {quote.id}</h3>
             </div>
 
             <nav className="space-y-0.5">
@@ -682,7 +698,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                 const isCompleted = activeStep > step.id;
                 const dynamicSub = step.id === 1
                   ? `${quote.customer?.name || 'Bjorn Valk'} · ${quote.customer?.city || 'Dongen'}`
-                  : step.desc;
+                  : (language === 'NL' ? (step.descNl || step.desc) : step.desc);
 
                 return (
                   <button
@@ -706,7 +722,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     <div className="min-w-0 flex-1">
                       <p className={`text-xs font-semibold leading-tight ${
                         isActive ? 'text-white' : isCompleted ? 'text-dark' : 'text-dark/80'
-                      }`}>{step.title}</p>
+                      }`}>{language === 'NL' ? (step.titleNl || step.title) : step.title}</p>
                       <p className={`text-[10px] truncate mt-0.5 leading-tight ${
                         isActive ? 'text-white/70' : 'text-dark/45'
                       }`}>{dynamicSub}</p>
@@ -718,7 +734,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
 
             <div className="pt-1.5 border-t border-[#E8E3DB] text-[10px] font-mono text-dark/50 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span>Auto-saved as draft · {lastSavedTime}</span>
+              <span>{language === 'NL' ? 'Automatisch opgeslagen als concept' : 'Auto-saved as draft'} · {lastSavedTime}</span>
             </div>
           </div>
         </div>
@@ -731,9 +747,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
           {/* Main Title & Subtitle (Only on Step 1) */}
           {activeStep === 1 && (
             <div className="space-y-1 mb-4">
-              <h2 className="font-serif font-bold text-3xl text-primary">{STEPS[activeStep - 1].title}</h2>
+              <h2 className="font-serif font-bold text-3xl text-primary">{language === 'NL' ? (STEPS[activeStep - 1]?.titleNl || STEPS[activeStep - 1]?.title) : STEPS[activeStep - 1]?.title}</h2>
               <p className="text-xs text-dark/60 font-body">
-                Everything here returns automatically on every page of the quote — choose once, never retype.
+                {language === 'NL' ? 'Alles hier komt automatisch terug op elke pagina van de offerte — kies eenmalig, typ nooit opnieuw.' : 'Everything here returns automatically on every page of the quote — choose once, never retype.'}
               </p>
             </div>
           )}
@@ -745,15 +761,15 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
               {/* CARD 1: CUSTOMER */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">CUSTOMER DETAILS</span>
-                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">{language === 'NL' ? 'KLANTGEGEVENS' : 'CUSTOMER DETAILS'}</span>
+                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">{language === 'NL' ? 'BEWERKBAAR' : 'EDITABLE'}</span>
                 </div>
 
                 {/* Pre-fill from Leads Selector */}
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">QUICK SELECT FROM LEADS</label>
-                    <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">OPTIONAL PRE-FILL</span>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">{language === 'NL' ? 'SNEL SELECTEREN UIT LEADS' : 'QUICK SELECT FROM LEADS'}</label>
+                    <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">{language === 'NL' ? 'OPTIONEEL VOORAF INVULLEN' : 'OPTIONAL PRE-FILL'}</span>
                   </div>
                   <select
                     value={quote.customer?.name || ''}
@@ -789,7 +805,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     }}
                     className="w-full px-3.5 py-2.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-primary cursor-pointer"
                   >
-                    <option value="">-- Choose lead or enter details below --</option>
+                    <option value="">{language === 'NL' ? '-- Kies lead of vul hieronder gegevens in --' : '-- Choose lead or enter details below --'}</option>
                     {quote.customer?.name && !(leadsList || []).some(l => l.name === quote.customer.name) && (
                       <option value={quote.customer.name}>{quote.customer.name} (Lead)</option>
                     )}
@@ -797,13 +813,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       <option key={idx} value={lead.name}>{lead.name} (Lead)</option>
                     ))}
                   </select>
-                  <p className="text-[11px] text-dark/50 italic mt-1 font-body">Selecting a lead pre-fills the fields below; all fields remain freely editable</p>
+                  <p className="text-[11px] text-dark/50 italic mt-1 font-body">{language === 'NL' ? 'Het selecteren van een lead vult onderstaande velden vooraf in; alle velden blijven vrij bewerkbaar' : 'Selecting a lead pre-fills the fields below; all fields remain freely editable'}</p>
                 </div>
 
                 {/* Direct Editable Customer Fields Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1 border-t border-[#D6CFC2]/60">
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">CUSTOMER NAME (FULL)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">{language === 'NL' ? 'KLANTNAAM (VOLLEDIG)' : 'CUSTOMER NAME (FULL)'}</label>
                     <input
                       type="text"
                       value={quote.customer?.name || ''}
@@ -821,62 +837,62 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                           }
                         }));
                       }}
-                      placeholder="e.g. Bjorn Valk"
+                      placeholder={language === 'NL' ? 'bijv. Bjorn Valk' : 'e.g. Bjorn Valk'}
                       className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">FIRST NAME (FOR SALUTATION)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">{language === 'NL' ? 'VOORNAAM (VOOR AANHEF)' : 'FIRST NAME (FOR SALUTATION)'}</label>
                     <input
                       type="text"
                       value={quote.customer?.firstName || ''}
                       onChange={(e) => updateCustomerField('firstName', e.target.value)}
-                      placeholder="e.g. Bjorn"
+                      placeholder={language === 'NL' ? 'bijv. Bjorn' : 'e.g. Bjorn'}
                       className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">ADDRESS / STREET</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">{language === 'NL' ? 'ADRES / STRAAT' : 'ADDRESS / STREET'}</label>
                     <input
                       type="text"
                       value={quote.customer?.address || ''}
                       onChange={(e) => updateCustomerField('address', e.target.value)}
-                      placeholder="e.g. Dongeheuvel 3, 5101 WE"
+                      placeholder={language === 'NL' ? 'bijv. Dongeheuvel 3, 5101 WE' : 'e.g. Dongeheuvel 3, 5101 WE'}
                       className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-dark text-xs focus:outline-none focus:border-primary font-medium"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">CITY / DELIVERY LOCATION</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">{language === 'NL' ? 'PLAATS / LEVERLOCATIE' : 'CITY / DELIVERY LOCATION'}</label>
                     <input
                       type="text"
                       value={quote.customer?.city || ''}
                       onChange={(e) => updateCustomerField('city', e.target.value)}
-                      placeholder="e.g. Dongen"
+                      placeholder={language === 'NL' ? 'bijv. Dongen' : 'e.g. Dongen'}
                       className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">PHONE NUMBER</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">{language === 'NL' ? 'TELEFOONNUMMER' : 'PHONE NUMBER'}</label>
                     <input
                       type="text"
                       value={quote.customer?.phone || ''}
                       onChange={(e) => updateCustomerField('phone', e.target.value)}
-                      placeholder="e.g. +31 6 53562542"
+                      placeholder={language === 'NL' ? 'bijv. +31 6 53562542' : 'e.g. +31 6 53562542'}
                       className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-dark text-xs focus:outline-none focus:border-primary font-medium"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">EMAIL ADDRESS</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">{language === 'NL' ? 'E-MAILADRES' : 'EMAIL ADDRESS'}</label>
                     <input
                       type="email"
                       value={quote.customer?.email || ''}
                       onChange={(e) => updateCustomerField('email', e.target.value)}
-                      placeholder="e.g. bjorn@mail.nl"
+                      placeholder={language === 'NL' ? 'bijv. bjorn@mail.nl' : 'e.g. bjorn@mail.nl'}
                       className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-dark text-xs focus:outline-none focus:border-primary font-medium"
                     />
                   </div>
@@ -885,14 +901,14 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
 
               {/* CARD 2: QUOTE */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
-                <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">QUOTE METADATA</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">{language === 'NL' ? 'OFFERTE METADATA' : 'QUOTE METADATA'}</span>
 
                 {/* Row 1: Quote Number & Project Name */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">QUOTE NUMBER</label>
-                      <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE</span>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">{language === 'NL' ? 'OFFERTENUMMER' : 'QUOTE NUMBER'}</label>
+                      <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">{language === 'NL' ? 'BEWERKBAAR' : 'EDITABLE'}</span>
                     </div>
                     <input
                       type="text"
@@ -900,22 +916,22 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       onChange={(e) => setQuote(prev => ({ ...prev, id: e.target.value }))}
                       className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl font-bold font-mono text-dark text-xs focus:outline-none focus:border-primary"
                     />
-                    <p className="text-[10px] text-dark/50 mt-1 font-body">Quote reference code shown on all pages of the proposal</p>
+                    <p className="text-[10px] text-dark/50 mt-1 font-body">{language === 'NL' ? 'Offerte referentiecode zichtbaar op alle pagina\'s van het voorstel' : 'Quote reference code shown on all pages of the proposal'}</p>
                   </div>
 
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">PROJECT TITLE</label>
-                      <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE</span>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">{language === 'NL' ? 'PROJECTTITEL' : 'PROJECT TITLE'}</label>
+                      <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">{language === 'NL' ? 'BEWERKBAAR' : 'EDITABLE'}</span>
                     </div>
                     <input
                       type="text"
                       value={quote.project || ''}
                       onChange={(e) => setQuote(prev => ({ ...prev, project: e.target.value }))}
-                      placeholder="e.g. Maatwerk Buitenkeuken Thermo Fraké"
+                      placeholder={language === 'NL' ? 'bijv. Maatwerk Buitenkeuken Thermo Fraké' : 'e.g. Custom Outdoor Kitchen Thermo Fraké'}
                       className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary"
                     />
-                    <p className="text-[10px] text-dark/50 mt-1 font-body">Internal project name shown in the quotes table and dashboard</p>
+                    <p className="text-[10px] text-dark/50 mt-1 font-body">{language === 'NL' ? 'Interne projectnaam getoond in de offertetabel en op het dashboard' : 'Internal project name shown in the quotes table and dashboard'}</p>
                   </div>
                 </div>
 
@@ -923,8 +939,8 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
                   <div>
                     <div className="flex items-center gap-1.5 mb-1">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">QUOTE DATE</label>
-                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">EDITABLE</span>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">{language === 'NL' ? 'OFFERTEDATUM' : 'QUOTE DATE'}</label>
+                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">{language === 'NL' ? 'BEWERKBAAR' : 'EDITABLE'}</span>
                     </div>
                     <input
                       type="date"
@@ -934,13 +950,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       onChange={(e) => setQuote(prev => ({ ...prev, date: e.target.value }))}
                       className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark"
                     />
-                    <p className="text-[10px] text-dark/50 mt-1 font-body">Default today</p>
+                    <p className="text-[10px] text-dark/50 mt-1 font-body">{language === 'NL' ? 'Standaard vandaag' : 'Default today'}</p>
                   </div>
 
                   <div>
                     <div className="flex items-center gap-1.5 mb-1">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">VALID UNTIL</label>
-                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">EDITABLE</span>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">{language === 'NL' ? 'GELDIG TOT' : 'VALID UNTIL'}</label>
+                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">{language === 'NL' ? 'BEWERKBAAR' : 'EDITABLE'}</span>
                     </div>
                     <input
                       type="date"
@@ -950,13 +966,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       onChange={(e) => setQuote(prev => ({ ...prev, validUntil: e.target.value }))}
                       className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark"
                     />
-                    <p className="text-[10px] text-dark/50 mt-1 font-body">Default +30 days</p>
+                    <p className="text-[10px] text-dark/50 mt-1 font-body">{language === 'NL' ? 'Standaard +30 dagen' : 'Default +30 days'}</p>
                   </div>
 
                   <div>
                     <div className="flex items-center gap-1.5 mb-1">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">PRODUCT TYPE</label>
-                      <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">SELECT</span>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">{language === 'NL' ? 'PRODUCTTYPE' : 'PRODUCT TYPE'}</label>
+                      <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono">{language === 'NL' ? 'SELECTEER' : 'SELECT'}</span>
                     </div>
                     <select
                       value={quote.productType || 'Outdoor kitchen'}
@@ -965,12 +981,12 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       onChange={(e) => handleProductTypeChange(e.target.value)}
                       className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark"
                     >
-                      <option value="Outdoor kitchen">Outdoor kitchen</option>
-                      <option value="Garden room">Garden room</option>
-                      <option value="Veranda">Veranda</option>
-                      <option value="Poolhouse">Poolhouse</option>
+                      <option value="Outdoor kitchen">{language === 'NL' ? 'Buitenkeuken' : 'Outdoor kitchen'}</option>
+                      <option value="Garden room">{language === 'NL' ? 'Buitenverblijf' : 'Garden room'}</option>
+                      <option value="Veranda">{language === 'NL' ? 'Veranda' : 'Veranda'}</option>
+                      <option value="Poolhouse">{language === 'NL' ? 'Poolhouse' : 'Poolhouse'}</option>
                     </select>
-                    <p className="text-[10px] text-dark/50 mt-1 font-body">Selects template + default texts</p>
+                    <p className="text-[10px] text-dark/50 mt-1 font-body">{language === 'NL' ? 'Selecteert sjabloon + standaardteksten' : 'Selects template + default texts'}</p>
                   </div>
                 </div>
 
@@ -1006,7 +1022,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       ) : (
                         <div className="w-full px-4 py-3.5 bg-[#F8F7F4] border border-[#E2DDD3] rounded-xl flex items-center justify-between">
                           <span className="font-mono font-bold text-dark text-xs">{autoSubString}</span>
-                          <span className="text-[11px] text-dark/50 italic font-body">Follows Step 3</span>
+                          <span className="text-[11px] text-dark/50 italic font-body">
+                            {language === 'NL' ? 'Volgt stap 3' : 'Follows Step 3'}
+                          </span>
                         </div>
                       )}
                       
@@ -1023,7 +1041,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                           }}
                           className="w-4 h-4 rounded border-[#D6CFC2] text-primary focus:ring-primary cursor-pointer"
                         />
-                        <span className="text-[13px] text-dark/70 font-body">Enable Custom Subtitle Override (manual text entry)</span>
+                        <span className="text-[13px] text-dark/70 font-body">
+                          {language === 'NL' ? 'Aangepaste ondertitel overschrijven inschakelen (handmatige invoer)' : 'Enable Custom Subtitle Override (manual text entry)'}
+                        </span>
                       </label>
                     </>
                   );
@@ -1034,8 +1054,12 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">COVER PHOTOS (3 SLOTS)</span>
-                    <p className="text-[11px] text-dark/50 font-body">Select or upload 3 high-resolution photos for the Cover Page footer strip</p>
+                    <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">
+                      {language === 'NL' ? "OMSLAGFOTO'S (3 SLOTS)" : 'COVER PHOTOS (3 SLOTS)'}
+                    </span>
+                    <p className="text-[11px] text-dark/50 font-body">
+                      {language === 'NL' ? "Selecteer of upload 3 hoge-resolutie foto's voor de omslagstrook" : 'Select or upload 3 high-resolution photos for the Cover Page footer strip'}
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -1046,19 +1070,19 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       updateCoverField('subtitleOverrideEnabled', false);
                       updateCoverField('customSubtitle', '');
                       setPhotoWarnings({});
-                      showToast('✓ Cover defaults restored!');
+                      showToast(language === 'NL' ? '✓ Omslag hersteld naar standaard!' : '✓ Cover defaults restored!');
                     }}
                     className="px-3 py-1.5 bg-[#EFECE6] hover:bg-[#E5DFD5] border border-[#D6CFC2] text-dark/80 font-mono text-[10px] font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1"
                   >
-                    <span>↺ Restore Cover Defaults</span>
+                    <span>↺ {language === 'NL' ? 'Omslag herstellen' : 'Restore Cover Defaults'}</span>
                   </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {[
-                    { slot: 0, label: 'Hero Photo (Left)', defaultImg: '/cover_img1.png' },
-                    { slot: 1, label: 'Project Photo (Center)', defaultImg: '/cover_img2.png' },
-                    { slot: 2, label: 'Detail Photo (Right)', defaultImg: '/cover_img3.png' }
+                    { slot: 0, label: language === 'NL' ? 'Hero foto (links)' : 'Hero Photo (Left)', defaultImg: '/cover_img1.png' },
+                    { slot: 1, label: language === 'NL' ? 'Projectfoto (midden)' : 'Project Photo (Center)', defaultImg: '/cover_img2.png' },
+                    { slot: 2, label: language === 'NL' ? 'Detailfoto (rechts)' : 'Detail Photo (Right)', defaultImg: '/cover_img3.png' }
                   ].map(({ slot, label, defaultImg }) => {
                     const photosArr = (Array.isArray(quote.cover?.photos) && quote.cover.photos.length === 3)
                       ? quote.cover.photos
@@ -1097,7 +1121,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                               htmlFor={`cover-photo-input-${slot}`}
                               className="px-2.5 py-1 bg-white text-dark text-[10px] font-bold font-mono rounded shadow-xs cursor-pointer hover:bg-cream"
                             >
-                              Replace
+                              {language === 'NL' ? 'Vervangen' : 'Replace'}
                             </label>
                           </div>
                         </div>
@@ -1106,7 +1130,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                         {warning && (
                           <div className="bg-amber-50 border border-amber-300 text-amber-900 p-1.5 rounded-md text-[10px] font-body flex items-center gap-1">
                             <span className="text-amber-600 font-bold">⚠️</span>
-                            <span>Low resolution ({warning.width}×{warning.height}px)</span>
+                            <span>{language === 'NL' ? 'Lage resolutie' : 'Low resolution'} ({warning.width}×{warning.height}px)</span>
                           </div>
                         )}
 
@@ -1153,7 +1177,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
 
                         <div className="flex items-center justify-between text-[10px] pt-0.5">
                           <label htmlFor={`cover-photo-input-${slot}`} className="text-primary font-bold hover:underline cursor-pointer">
-                            📁 Upload Photo
+                            📁 {language === 'NL' ? 'Foto uploaden' : 'Upload Photo'}
                           </label>
                           <button
                             type="button"
@@ -1169,11 +1193,11 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                                 delete next[slot];
                                 return next;
                               });
-                              showToast(`Photo ${slot + 1} reset to default`);
+                              showToast(language === 'NL' ? `Foto ${slot + 1} hersteld` : `Photo ${slot + 1} reset to default`);
                             }}
                             className="text-dark/50 hover:text-dark underline"
                           >
-                            Reset
+                            {language === 'NL' ? 'Herstellen' : 'Reset'}
                           </button>
                         </div>
                       </div>
@@ -1191,40 +1215,50 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
 
               {/* CARD 1: STAT TILES (ALWAYS 4) */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
-                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-dark/60 font-mono block">STAT TILES (ALWAYS 4)</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-dark/60 font-mono block">
+                  {language === 'NL' ? 'STATISTIEK TEGELS (ALTIJD 4)' : 'STAT TILES (ALWAYS 4)'}
+                </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
 
                   {/* Tile 1: Dimensions */}
                   <div className="p-4 bg-[#F8F7F4] rounded-2xl border border-[#E2DDD3] space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-dark/55 font-mono">DIMENSIONS</label>
-                      <span className="bg-[#FEF3C7] text-[#92400E] text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border border-[#FDE68A]">MANUAL</span>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-dark/55 font-mono">
+                        {language === 'NL' ? 'AFMETINGEN' : 'DIMENSIONS'}
+                      </label>
+                      <span className="bg-[#FEF3C7] text-[#92400E] text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border border-[#FDE68A]">
+                        {language === 'NL' ? 'HANDMATIG' : 'MANUAL'}
+                      </span>
                     </div>
                     <input
                       type="text"
                       value={quote.configuration?.dimensions || '240 × 80'}
                       onChange={(e) => updateConfigField('dimensions', e.target.value)}
                       className="w-full px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      placeholder="e.g. 4x1.2m"
+                      placeholder={language === 'NL' ? 'bijv. 4x1.2m' : 'e.g. 4x1.2m'}
                     />
                     <input
                       type="text"
                       value={quote.configuration?.dimensionsUnit || 'centimeter'}
                       onChange={(e) => updateConfigField('dimensionsUnit', e.target.value)}
                       className="w-full px-3 py-1.5 bg-[#EFECE8] border border-[#D6CFC2] rounded-lg text-xs font-medium text-dark/70"
-                      placeholder="e.g. centimeter"
+                      placeholder={language === 'NL' ? 'bijv. centimeter' : 'e.g. centimeter'}
                     />
                     <p className="text-[10px] text-dark/40 font-body italic">
-                      value: {(quote.configuration?.dimensions || '240 × 80').length}/{16} chars
+                      {language === 'NL' ? 'waarde' : 'value'}: {(quote.configuration?.dimensions || '240 × 80').length}/{16} {language === 'NL' ? 'tekens' : 'chars'}
                     </p>
                   </div>
 
                   {/* Tile 2: Wood Type */}
                   <div className="p-4 bg-[#F8F7F4] rounded-2xl border border-[#E2DDD3] space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-dark/55 font-mono">WOOD TYPE</label>
-                      <span className="bg-[#EFF6FF] text-[#1E40AF] text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border border-[#BFDBFE]">LIBRARY OR FREE TEXT</span>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-dark/55 font-mono">
+                        {language === 'NL' ? 'HOUTSOORT' : 'WOOD TYPE'}
+                      </label>
+                      <span className="bg-[#EFF6FF] text-[#1E40AF] text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border border-[#BFDBFE]">
+                        {language === 'NL' ? 'BIBLIOTHEEK OF VRIJE TEKST' : 'LIBRARY OR FREE TEXT'}
+                      </span>
                     </div>
                     <select
                       value={WOOD_LIBRARY.some(w => w.name === (quote.configuration?.woodType || 'Thermo Fraké')) ? (quote.configuration?.woodType || 'Thermo Fraké') : 'custom'}
@@ -1238,17 +1272,19 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       {WOOD_LIBRARY.map((w) => (
                         <option key={w.id} value={w.name}>{w.name}</option>
                       ))}
-                      <option value="custom">Aangepaste houtsoort (vrije tekst)</option>
+                      <option value="custom">{language === 'NL' ? 'Aangepaste houtsoort (vrije tekst)' : 'Custom wood type (free text)'}</option>
                     </select>
                     <input
                       type="text"
                       value={quote.configuration?.woodLifespan !== undefined ? quote.configuration.woodLifespan : (language === 'EN' ? '20 to 25 years' : '20 tot 25 jaar')}
                       onChange={(e) => updateConfigField('woodLifespan', e.target.value)}
-                      placeholder="lifespan e.g. 20 to 25 years"
+                      placeholder={language === 'NL' ? 'levensduur bijv. 20 tot 25 jaar' : 'lifespan e.g. 20 to 25 years'}
                       className="w-full px-3 py-1.5 bg-[#EFECE8] border border-[#D6CFC2] rounded-lg text-xs font-medium text-dark/70"
                     />
                     <p className="text-[10px] text-dark/40 font-body italic">
-                      a library choice fills the infobox + subtitle + line item automatically · custom wood type can be filled manually
+                      {language === 'NL'
+                        ? 'een keuze uit bibliotheek vult infobox + ondertitel + offertepost automatisch · vrije tekst kan handmatig'
+                        : 'a library choice fills the infobox + subtitle + line item automatically · custom wood type can be filled manually'}
                     </p>
                   </div>
 
@@ -1259,7 +1295,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                         {isGardenRoom ? (language === 'EN' ? 'ROOF & WALLS' : 'DAK & WANDEN') : (language === 'EN' ? 'CUTOUT' : 'UITSPARING')}
                       </label>
                       <span className="bg-[#F0FDF4] text-[#166534] text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border border-[#BBF7D0]">
-                        {isGardenRoom ? 'GARDEN ROOM' : 'FOLLOWS OPTIONS'}
+                        {isGardenRoom ? (language === 'NL' ? 'BUITENVERBLIJF' : 'GARDEN ROOM') : (language === 'NL' ? 'VOLGT OPTIES' : 'FOLLOWS OPTIONS')}
                       </span>
                     </div>
                     <input
@@ -1267,27 +1303,31 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       value={quote.configuration?.optionsTitle || (isGardenRoom ? 'Plat dak met EPDM' : 'Big Green Egg')}
                       onChange={(e) => updateConfigField('optionsTitle', e.target.value)}
                       className="w-full px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      placeholder={isGardenRoom ? 'e.g. Plat dak met EPDM' : 'e.g. Big Green Egg'}
+                      placeholder={isGardenRoom ? (language === 'NL' ? 'bijv. Plat dak met EPDM' : 'e.g. Flat roof with EPDM') : (language === 'NL' ? 'bijv. Big Green Egg' : 'e.g. Big Green Egg')}
                     />
                     <input
                       type="text"
                       value={quote.configuration?.optionsSubtext !== undefined ? quote.configuration.optionsSubtext : (isGardenRoom ? 'Glazen schuifwand 4-rail' : (language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden'))}
                       onChange={(e) => updateConfigField('optionsSubtext', e.target.value)}
-                      placeholder={isGardenRoom ? 'e.g. Glazen schuifwand 4-rail' : 'e.g. Large, right of center'}
+                      placeholder={isGardenRoom ? (language === 'NL' ? 'bijv. Glazen schuifwand 4-rail' : 'e.g. Glass sliding wall 4-track') : (language === 'NL' ? 'bijv. Large, rechts van het midden' : 'e.g. Large, right of center')}
                       className="w-full px-3 py-1.5 bg-[#EFECE8] border border-[#D6CFC2] rounded-lg text-xs font-medium text-dark/70"
                     />
                     <p className="text-[10px] text-dark/40 font-body italic">
                       {isGardenRoom 
-                        ? 'dakconstructie & wanden van het buitenverblijf · vult automatisch de ondertitel' 
-                        : 'filled from the "Options & features" block below · freely editable afterwards'}
+                        ? (language === 'NL' ? 'dakconstructie & wanden van het buitenverblijf · vult automatisch de ondertitel' : 'roof construction & walls of garden room · fills subtitle automatically')
+                        : (language === 'NL' ? 'gevuld vanuit "Opties & kenmerken" hieronder · daarna vrij bewerkbaar' : 'filled from the "Options & features" block below · freely editable afterwards')}
                     </p>
                   </div>
 
                   {/* Tile 4: Delivery Time */}
                   <div className="p-4 bg-[#F8F7F4] rounded-2xl border border-[#E2DDD3] space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-dark/55 font-mono">DELIVERY TIME</label>
-                      <span className="bg-[#FEF3C7] text-[#92400E] text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border border-[#FDE68A]">MANUAL</span>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-dark/55 font-mono">
+                        {language === 'NL' ? 'LEVERTIJD' : 'DELIVERY TIME'}
+                      </label>
+                      <span className="bg-[#FEF3C7] text-[#92400E] text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase border border-[#FDE68A]">
+                        {language === 'NL' ? 'HANDMATIG' : 'MANUAL'}
+                      </span>
                     </div>
                     <input
                       type="text"
@@ -1299,11 +1339,11 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       type="text"
                       value={quote.configuration?.deliverySubtext !== undefined ? quote.configuration.deliverySubtext : (language === 'EN' ? 'upon drawing approval' : 'na akkoord op tekening')}
                       onChange={(e) => updateConfigField('deliverySubtext', e.target.value)}
-                      placeholder="e.g. upon drawing approval"
+                      placeholder={language === 'NL' ? 'bijv. na akkoord op tekening' : 'e.g. upon drawing approval'}
                       className="w-full px-3 py-1.5 bg-[#EFECE8] border border-[#D6CFC2] rounded-lg text-xs font-medium text-dark/70"
                     />
                     <p className="text-[10px] text-dark/40 font-body italic">
-                      also appears as the badge at process step "Production" (p6)
+                      {language === 'NL' ? 'verschijnt ook als badge bij processtap "Productie" (p6)' : 'also appears as the badge at process step "Production" (p6)'}
                     </p>
                   </div>
 
@@ -1318,17 +1358,25 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
                         {language === 'EN' ? 'GARDEN ROOM SPECIFICS (ROOF, WALLS, FLOOR & FOUNDATION)' : 'BUITENVERBLIJF KENMERKEN (DAK, WANDEN, VLOER & FUNDERING)'}
                       </span>
-                      <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">GARDEN ROOM</span>
+                      <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                        {language === 'NL' ? 'BUITENVERBLIJF' : 'GARDEN ROOM'}
+                      </span>
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">CONFIGURATIE</span>
+                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">
+                      {language === 'NL' ? 'CONFIGURATIE' : 'CONFIGURATION'}
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     {/* Dak (Roof) */}
                     <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2">
                       <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">1. DAKCONSTRUCTIE (ROOF)</label>
-                        <span className="text-[9px] font-mono text-primary font-bold">EPDM / PANNEN</span>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">
+                          {language === 'NL' ? '1. DAKCONSTRUCTIE' : '1. ROOF CONSTRUCTION'}
+                        </label>
+                        <span className="text-[9px] font-mono text-primary font-bold">
+                          {language === 'NL' ? 'EPDM / PANNEN' : 'EPDM / TILES'}
+                        </span>
                       </div>
                       <select
                         value={quote.configuration?.roofType || 'Plat dak met EPDM'}
@@ -1339,17 +1387,17 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                         }}
                         className="w-full px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-xs"
                       >
-                        <option value="Plat dak met EPDM">Plat dak met EPDM & aluminium daktrim</option>
-                        <option value="Zadeldak met dakpannen">Zadeldak met keramische pannen</option>
-                        <option value="Kapschuur model">Kapschuur model (asymmetrisch dak)</option>
-                        <option value="Lessenaarsdak met EPDM">Lessenaarsdak met EPDM</option>
-                        <option value="Glazen dakconstructie">Glazen overkapping / veranda dak</option>
+                        <option value="Plat dak met EPDM">{language === 'NL' ? 'Plat dak met EPDM & aluminium daktrim' : 'Flat roof with EPDM & aluminum roof trim'}</option>
+                        <option value="Zadeldak met dakpannen">{language === 'NL' ? 'Zadeldak met keramische pannen' : 'Gabled roof with ceramic tiles'}</option>
+                        <option value="Kapschuur model">{language === 'NL' ? 'Kapschuur model (asymmetrisch dak)' : 'Barn model (asymmetric roof)'}</option>
+                        <option value="Lessenaarsdak met EPDM">{language === 'NL' ? 'Lessenaarsdak met EPDM' : 'Pent roof with EPDM'}</option>
+                        <option value="Glazen dakconstructie">{language === 'NL' ? 'Glazen overkapping / veranda dak' : 'Glass canopy / veranda roof'}</option>
                       </select>
                       <input
                         type="text"
                         value={quote.configuration?.roofSubtext !== undefined ? quote.configuration.roofSubtext : 'Inclusief aluminium daktrim en hemelwaterafvoer'}
                         onChange={(e) => updateConfigField('roofSubtext', e.target.value)}
-                        placeholder="Dak details e.g. Daktrim & HWA"
+                        placeholder={language === 'NL' ? 'Dakdetails bijv. Daktrim & HWA' : 'Roof details e.g. Roof trim & drainage'}
                         className="w-full px-2.5 py-1 bg-white border border-[#D6CFC2] rounded-md text-[11px]"
                       />
                     </div>
@@ -1357,8 +1405,12 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     {/* Wanden & Glas (Walls & Glass) */}
                     <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2">
                       <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">2. WANDEN & GLAS (WALLS)</label>
-                        <span className="text-[9px] font-mono text-primary font-bold">SCHUIFWANDEN</span>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">
+                          {language === 'NL' ? '2. WANDEN & GLAS' : '2. WALLS & GLASS'}
+                        </label>
+                        <span className="text-[9px] font-mono text-primary font-bold">
+                          {language === 'NL' ? 'SCHUIFWANDEN' : 'SLIDING WALLS'}
+                        </span>
                       </div>
                       <select
                         value={quote.configuration?.wallType || 'Glazen schuifwanden (4-rail)'}
@@ -1369,17 +1421,17 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                         }}
                         className="w-full px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-xs"
                       >
-                        <option value="Glazen schuifwanden (4-rail)">Glazen schuifwanden (4-rail gehard glas)</option>
-                        <option value="Glazen schuifwanden (5-rail)">Glazen schuifwanden (5-rail gehard glas)</option>
-                        <option value="Zweeds rabat zwarte wanden">Zweeds rabat zwarte achter- en zijwanden</option>
-                        <option value="Gesloten houten wanden">Volledig gesloten houten wanden</option>
-                        <option value="Open constructie (geen wanden)">Open overkapping (geen wanden)</option>
+                        <option value="Glazen schuifwanden (4-rail)">{language === 'NL' ? 'Glazen schuifwanden (4-rail gehard glas)' : 'Glass sliding walls (4-track tempered glass)'}</option>
+                        <option value="Glazen schuifwanden (5-rail)">{language === 'NL' ? 'Glazen schuifwanden (5-rail gehard glas)' : 'Glass sliding walls (5-track tempered glass)'}</option>
+                        <option value="Zweeds rabat zwarte wanden">{language === 'NL' ? 'Zweeds rabat zwarte achter- en zijwanden' : 'Swedish rebate black back & side walls'}</option>
+                        <option value="Gesloten houten wanden">{language === 'NL' ? 'Volledig gesloten houten wanden' : 'Fully closed wooden walls'}</option>
+                        <option value="Open constructie (geen wanden)">{language === 'NL' ? 'Open overkapping (geen wanden)' : 'Open canopy (no walls)'}</option>
                       </select>
                       <input
                         type="text"
                         value={quote.configuration?.wallSubtext !== undefined ? quote.configuration.wallSubtext : '10mm gehard veiligheidsglas met tochtborstels'}
                         onChange={(e) => updateConfigField('wallSubtext', e.target.value)}
-                        placeholder="Wand details e.g. Tochtborstels & handgrepen"
+                        placeholder={language === 'NL' ? 'Wanddetails bijv. Tochtborstels & handgrepen' : 'Wall details e.g. Draft brushes & handles'}
                         className="w-full px-2.5 py-1 bg-white border border-[#D6CFC2] rounded-md text-[11px]"
                       />
                     </div>
@@ -1387,24 +1439,28 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     {/* Vloer (Flooring) */}
                     <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2">
                       <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">3. VLOER (FLOORING)</label>
-                        <span className="text-[9px] font-mono text-primary font-bold">TERRAS</span>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">
+                          {language === 'NL' ? '3. VLOER' : '3. FLOORING'}
+                        </label>
+                        <span className="text-[9px] font-mono text-primary font-bold">
+                          {language === 'NL' ? 'TERRAS' : 'TERRACE'}
+                        </span>
                       </div>
                       <select
                         value={quote.configuration?.floorType || 'Geen vloer (op terras)'}
                         onChange={(e) => updateConfigField('floorType', e.target.value)}
                         className="w-full px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-xs"
                       >
-                        <option value="Geen vloer (op terras)">Geen vloer (plaatsing op bestaande verharding)</option>
-                        <option value="Douglas vlonderterras">Douglas vlonderterras (28mm geschaafd)</option>
-                        <option value="Hardhouten vlonder">Hardhouten terras (Bangkirai)</option>
-                        <option value="Keramische buitentegels">Keramische buitentegels</option>
+                        <option value="Geen vloer (op terras)">{language === 'NL' ? 'Geen vloer (plaatsing op bestaande verharding)' : 'No floor (placement on existing pavement)'}</option>
+                        <option value="Douglas vlonderterras">{language === 'NL' ? 'Douglas vlonderterras (28mm geschaafd)' : 'Douglas decking (28mm planed)'}</option>
+                        <option value="Hardhouten vlonder">{language === 'NL' ? 'Hardhouten terras (Bangkirai)' : 'Hardwood decking (Bangkirai)'}</option>
+                        <option value="Keramische buitentegels">{language === 'NL' ? 'Keramische buitentegels' : 'Ceramic outdoor tiles'}</option>
                       </select>
                       <input
                         type="text"
                         value={quote.configuration?.floorSubtext !== undefined ? quote.configuration.floorSubtext : 'Onderbalken en rvs schroeven'}
                         onChange={(e) => updateConfigField('floorSubtext', e.target.value)}
-                        placeholder="Vloer details"
+                        placeholder={language === 'NL' ? 'Vloerdetails' : 'Floor details'}
                         className="w-full px-2.5 py-1 bg-white border border-[#D6CFC2] rounded-md text-[11px]"
                       />
                     </div>
@@ -1412,24 +1468,28 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     {/* Fundering (Foundation) */}
                     <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2">
                       <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">4. FUNDERING (FOUNDATION)</label>
-                        <span className="text-[9px] font-mono text-primary font-bold">BETONPOEREN</span>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">
+                          {language === 'NL' ? '4. FUNDERING' : '4. FOUNDATION'}
+                        </label>
+                        <span className="text-[9px] font-mono text-primary font-bold">
+                          {language === 'NL' ? 'BETONPOEREN' : 'CONCRETE PIERS'}
+                        </span>
                       </div>
                       <select
                         value={quote.configuration?.foundationType || 'Betonpoeren met stelplaat'}
                         onChange={(e) => updateConfigField('foundationType', e.target.value)}
                         className="w-full px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-xs"
                       >
-                        <option value="Betonpoeren met stelplaat">Betonpoeren antraciet met verstelbare rvs stelplaat</option>
-                        <option value="Schroeffundering">Schroeffundatie (zonder graafwerk)</option>
-                        <option value="Gewapende betonvloer">Volledig gewapende betonplaat vorstrand</option>
-                        <option value="Bestaande fundering">Bestaande fundering / terras</option>
+                        <option value="Betonpoeren met stelplaat">{language === 'NL' ? 'Betonpoeren antraciet met verstelbare rvs stelplaat' : 'Concrete piers anthracite with adjustable stainless steel plate'}</option>
+                        <option value="Schroeffundering">{language === 'NL' ? 'Schroeffundatie (zonder graafwerk)' : 'Screw foundation (without excavation)'}</option>
+                        <option value="Gewapende betonvloer">{language === 'NL' ? 'Volledig gewapende betonplaat vorstrand' : 'Fully reinforced concrete slab frost edge'}</option>
+                        <option value="Bestaande fundering">{language === 'NL' ? 'Bestaande fundering / terras' : 'Existing foundation / terrace'}</option>
                       </select>
                       <input
                         type="text"
                         value={quote.configuration?.foundationSubtext !== undefined ? quote.configuration.foundationSubtext : 'Vorstvrij verankerd incl. snelbeton'}
                         onChange={(e) => updateConfigField('foundationSubtext', e.target.value)}
-                        placeholder="Fundering details"
+                        placeholder={language === 'NL' ? 'Funderingsdetails' : 'Foundation details'}
                         className="w-full px-2.5 py-1 bg-white border border-[#D6CFC2] rounded-md text-[11px]"
                       />
                     </div>
@@ -1439,10 +1499,16 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                 <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-3.5">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">OPTIONS & FEATURES</span>
-                      <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">MANUAL</span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                        {language === 'NL' ? 'OPTIES & KENMERKEN' : 'OPTIONS & FEATURES'}
+                      </span>
+                      <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                        {language === 'NL' ? 'HANDMATIG' : 'MANUAL'}
+                      </span>
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">ON/OFF PER QUOTE</span>
+                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">
+                      {language === 'NL' ? 'AAN/UIT PER OFFERTE' : 'ON/OFF PER QUOTE'}
+                    </span>
                   </div>
 
                   <div className="space-y-2.5 text-xs">
@@ -1455,7 +1521,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                           onChange={(e) => handleOptionToggle('bbqCutout', e.target.checked)}
                           className="w-4 h-4 text-primary rounded border-[#D6CFC2]"
                         />
-                        <span>BBQ Cutout</span>
+                        <span>{language === 'NL' ? 'BBQ Uitsparing' : 'BBQ Cutout'}</span>
                       </label>
                       <div className="flex flex-wrap items-center gap-2">
                         <select
@@ -1500,8 +1566,16 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
 
                     {/* Additional Data-Driven Options */}
                     {[
-                      { key: 'fridge', label: 'Fridge (built-in)', hint: '→ specification line + optional line item + diagram segment' },
-                      { key: 'sink', label: 'Sink with tap', hint: '→ specification line + optional line item + diagram segment' }
+                      {
+                        key: 'fridge',
+                        label: language === 'NL' ? 'Koelkast (inbouw)' : 'Fridge (built-in)',
+                        hint: language === 'NL' ? '→ specificatieregel + optionele post + diagram' : '→ specification line + optional line item + diagram segment'
+                      },
+                      {
+                        key: 'sink',
+                        label: language === 'NL' ? 'Spoelbak met kraan' : 'Sink with tap',
+                        hint: language === 'NL' ? '→ specificatieregel + optionele post + diagram' : '→ specification line + optional line item + diagram segment'
+                      }
                     ].map((optItem) => (
                       <div key={optItem.key} className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 flex flex-wrap items-center justify-between gap-2">
                         <label className="flex items-center gap-2 font-bold text-dark cursor-pointer">
@@ -1519,7 +1593,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                   </div>
 
                   <p className="text-[11px] text-dark/60 font-body">
-                    Every enabled option automatically lands in: stat tile 3 · cover subtitle · a specification line (p3). Off = removed everywhere. An option is priced via a line item in step 4 (library).
+                    {language === 'NL'
+                      ? 'Elke ingeschakelde optie komt automatisch in: stat-tegel 3 · omslag ondertitel · specificatieregel (p3). Uit = overal verwijderd. Prijs via stap 4 (bibliotheek).'
+                      : 'Every enabled option automatically lands in: stat tile 3 · cover subtitle · a specification line (p3). Off = removed everywhere. An option is priced via a line item in step 4 (library).'}
                   </p>
                 </div>
               )}
@@ -1527,21 +1603,23 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
               {/* CARD 3: SPECIFICATIONS */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">SPECIFICATIONS</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                    {language === 'NL' ? 'SPECIFICATIES' : 'SPECIFICATIONS'}
+                  </span>
                   <div className="flex items-center gap-2.5">
                     <span className={`text-[10px] font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded ${totalSpecLines > 12 ? 'bg-red-100 text-red-800 border border-red-300' : 'text-dark/50'
                       }`}>
-                      {totalSpecLines} / 12 LINES {totalSpecLines > 12 ? '⚠️ OVERFLOW' : ''}
+                      {totalSpecLines} / 12 {language === 'NL' ? 'REGELS' : 'LINES'} {totalSpecLines > 12 ? (language === 'NL' ? '⚠️ OVERLOOP' : '⚠️ OVERFLOW') : ''}
                     </span>
                     <button
                       type="button"
                       onClick={() => {
                         handleAddSpecLine(0);
-                        showToast('New specification line added!');
+                        showToast(language === 'NL' ? 'Nieuwe specificatieregel toegevoegd!' : 'New specification line added!');
                       }}
                       className="px-3 py-1 bg-[#33422C] text-white text-xs font-bold rounded-lg font-mono hover:bg-[#283523] cursor-pointer shadow-2xs"
                     >
-                      + line
+                      + {language === 'NL' ? 'regel' : 'line'}
                     </button>
                     <button
                       type="button"
@@ -1549,15 +1627,15 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                         const specs = [...(quote.configuration?.specifications || [])];
                         specs.push({
                           id: `sec-${Date.now()}`,
-                          title: 'NIEUWE SECTIE',
-                          lines: [{ id: `l-${Date.now()}`, text: 'Nieuwe specificatie regel' }]
+                          title: language === 'NL' ? 'NIEUWE SECTIE' : 'NEW SECTION',
+                          lines: [{ id: `l-${Date.now()}`, text: language === 'NL' ? 'Nieuwe specificatie regel' : 'New specification line' }]
                         });
                         updateConfigField('specifications', specs);
-                        showToast('New section added!');
+                        showToast(language === 'NL' ? 'Nieuwe sectie toegevoegd!' : 'New section added!');
                       }}
                       className="px-3 py-1 bg-white border border-[#33422C] text-dark text-xs font-bold rounded-lg font-mono hover:bg-[#EDE8DF] cursor-pointer shadow-2xs"
                     >
-                      + section
+                      + {language === 'NL' ? 'sectie' : 'section'}
                     </button>
                   </div>
                 </div>
@@ -1565,7 +1643,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                 {totalSpecLines > 12 && (
                   <div className="bg-amber-50 border border-amber-300 text-amber-900 p-2.5 rounded-xl text-xs flex items-center gap-2 font-body font-medium">
                     <span className="text-amber-600 font-bold text-sm">⚠️</span>
-                    <span>Warning: {totalSpecLines} lines configured. Page 3 proposal template fits max 12 lines — content will overflow!</span>
+                    <span>{language === 'NL' ? `Let op: ${totalSpecLines} regels geconfigureerd. Pagina 3 past maximaal 12 regels — inhoud zal overlopen!` : `Warning: ${totalSpecLines} lines configured. Page 3 proposal template fits max 12 lines — content will overflow!`}</span>
                   </div>
                 )}
 
@@ -1579,10 +1657,12 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                             value={sec.title}
                             onChange={(e) => handleSpecSectionTitleChange(secIdx, e.target.value)}
                             className="font-bold text-xs text-dark/80 font-mono uppercase tracking-wider bg-transparent border-b border-transparent hover:border-[#D6CFC2] focus:border-primary focus:outline-none px-1 py-0.5"
-                            placeholder="SECTION TITLE"
+                            placeholder={language === 'NL' ? 'SECTIETITEL' : 'SECTION TITLE'}
                           />
                           {sec.title === 'BEZORGING' && (
-                            <span className="bg-[#EFECE6] text-dark/70 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">DEFAULT</span>
+                            <span className="bg-[#EFECE6] text-dark/70 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                              {language === 'NL' ? 'STANDAARD' : 'DEFAULT'}
+                            </span>
                           )}
                         </div>
                         {(quote.configuration?.specifications || []).length > 1 && (
@@ -1591,10 +1671,10 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                             onClick={() => {
                               const specs = [...(quote.configuration?.specifications || [])].filter((_, idx) => idx !== secIdx);
                               updateConfigField('specifications', specs);
-                              showToast('Sectie verwijderd');
+                              showToast(language === 'NL' ? 'Sectie verwijderd' : 'Section removed');
                             }}
                             className="p-1 text-dark/30 hover:text-red-600 transition-colors"
-                            title="Sectie verwijderen"
+                            title={language === 'NL' ? 'Sectie verwijderen' : 'Delete section'}
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -1613,16 +1693,20 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                               className="flex-1 bg-transparent border-none focus:outline-none text-xs text-dark font-body font-medium"
                             />
                             {line.isOption && (
-                              <span className="text-[10px] font-mono text-dark/40 italic flex-shrink-0">← option</span>
+                              <span className="text-[10px] font-mono text-dark/40 italic flex-shrink-0">
+                                {language === 'NL' ? '← optie' : '← option'}
+                              </span>
                             )}
                             {sec.title === 'BEZORGING' && (
-                              <span className="text-[10px] font-mono text-dark/50 flex-shrink-0">{`{city} automatic`}</span>
+                              <span className="text-[10px] font-mono text-dark/50 flex-shrink-0">
+                                {language === 'NL' ? '{stad} automatisch' : '{city} automatic'}
+                              </span>
                             )}
                             <button
                               type="button"
                               onClick={() => {
                                 handleRemoveSpecLine(secIdx, lineIdx);
-                                showToast('Specification line deleted');
+                                showToast(language === 'NL' ? 'Specificatieregel verwijderd' : 'Specification line deleted');
                               }}
                               className="p-1 text-dark/40 hover:text-red-600 font-bold transition-colors flex-shrink-0"
                             >
@@ -1643,9 +1727,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono whitespace-nowrap">
                       {language === 'EN' ? 'CONFIGURATION PHOTO (PAGE 3)' : 'CONFIGURATIE FOTO (PAGINA 3)'}
                     </span>
-                    <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase whitespace-nowrap">CUSTOM PHOTO</span>
+                    <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase whitespace-nowrap">
+                      {language === 'NL' ? 'EIGEN FOTO' : 'CUSTOM PHOTO'}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-mono font-bold text-dark/50 uppercase whitespace-nowrap">APPEARS ON PROPOSAL PAGE 3</span>
+                  <span className="text-[10px] font-mono font-bold text-dark/50 uppercase whitespace-nowrap">
+                    {language === 'NL' ? 'VERSCHIJNT OP OFFERTE PAGINA 3' : 'APPEARS ON PROPOSAL PAGE 3'}
+                  </span>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4 bg-[#F8F7F4] p-4 rounded-xl border border-[#D6CFC2]/70">
@@ -1678,13 +1766,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                           const file = e.target.files[0];
                           if (file) {
                             try {
-                              showToast('⏳ Uploading & optimizing configuration photo...');
+                              showToast(language === 'NL' ? '⏳ Configuratie foto uploaden & optimaliseren...' : '⏳ Uploading & optimizing configuration photo...');
                               const compressedDataUrl = await compressImage(file, 1200, 0.85);
                               updateConfigField('configPhoto', compressedDataUrl);
-                              showToast('✓ Configuration photo updated & optimized!');
+                              showToast(language === 'NL' ? '✓ Configuratie foto bijgewerkt!' : '✓ Configuration photo updated & optimized!');
                             } catch (err) {
                               console.error('Error uploading configuration photo:', err);
-                              showToast('⚠️ Photo upload error');
+                              showToast(language === 'NL' ? '⚠️ Fout bij uploaden foto' : '⚠️ Photo upload error');
                             }
                           }
                         }}
@@ -1701,7 +1789,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                           type="button"
                           onClick={() => {
                             updateConfigField('configPhoto', null);
-                            showToast('Configuration photo reset to default');
+                            showToast(language === 'NL' ? 'Configuratie foto hersteld naar standaard' : 'Configuration photo reset to default');
                           }}
                           className="px-3 py-1.5 bg-white border border-[#D6CFC2] text-dark/70 font-bold rounded-lg font-mono text-xs hover:bg-gray-100 cursor-pointer"
                         >
@@ -1729,39 +1817,39 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       }}
                       className="w-3.5 h-3.5 rounded text-primary border-[#D6CFC2]"
                     />
-                    <span>show on quote</span>
+                    <span>{language === 'NL' ? 'toon op offerte' : 'show on quote'}</span>
                   </label>
                 </div>
 
                 {isGardenRoom ? (
                   <div className="p-4 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2] space-y-3 font-body">
                     <div className="flex justify-between items-center text-xs font-mono font-bold text-dark/70">
-                      <span>ARCHITECTONISCHE OPZET ({quote.configuration?.dimensions || '600 × 350'} CM)</span>
+                      <span>{language === 'NL' ? 'ARCHITECTONISCHE OPZET' : 'ARCHITECTURAL LAYOUT'} ({quote.configuration?.dimensions || '600 × 350'} CM)</span>
                       <span className="text-primary font-bold">{quote.configuration?.roofType || 'Plat dak met EPDM'}</span>
                     </div>
 
                     <div className="w-full bg-[#2C3827] rounded-xl p-4 text-white flex flex-col justify-between border border-[#45543D] shadow-inner font-mono text-[11px] space-y-3">
                       <div className="flex justify-between items-center text-[#D6CFC2] border-b border-[#45543D] pb-1.5">
-                        <span>◀── {quote.configuration?.dimensions ? quote.configuration.dimensions.split('×')[0]?.trim() : '600'} cm (Breedte) ──▶</span>
+                        <span>◀── {quote.configuration?.dimensions ? quote.configuration.dimensions.split('×')[0]?.trim() : '600'} cm ({language === 'NL' ? 'Breedte' : 'Width'}) ──▶</span>
                         <span className="bg-[#45543D] px-2.5 py-0.5 rounded text-white font-bold">{quote.configuration?.woodType || 'Douglas'}</span>
                       </div>
                       <div className="border border-dashed border-[#7E9672]/70 h-20 rounded-lg flex items-center justify-around px-3 text-[#E8E4DC]">
                         <div className="border border-[#7E9672] px-2 py-1 bg-[#3A4A33] rounded text-center">
-                          <span className="block text-[9px] text-[#A8B4A2]">Staander</span>
+                          <span className="block text-[9px] text-[#A8B4A2]">{language === 'NL' ? 'Staander' : 'Post'}</span>
                           150×150 mm
                         </div>
                         <div className="text-center font-sans italic text-xs text-[#C4A47C] font-semibold px-4">
                           {quote.configuration?.wallType || 'Glazen schuifwand (4-rail gehard glas)'}
                         </div>
                         <div className="border border-[#7E9672] px-2 py-1 bg-[#3A4A33] rounded text-center">
-                          <span className="block text-[9px] text-[#A8B4A2]">Staander</span>
+                          <span className="block text-[9px] text-[#A8B4A2]">{language === 'NL' ? 'Staander' : 'Post'}</span>
                           150×150 mm
                         </div>
                       </div>
                       <div className="flex justify-between items-center text-[#D6CFC2] text-[10px] pt-1 border-t border-[#45543D]">
-                        <span>Diepte: {quote.configuration?.dimensions && quote.configuration.dimensions.includes('×') ? quote.configuration.dimensions.split('×')[1]?.trim() : '350'} cm</span>
-                        <span>Hoogte: 260 cm (Doorloop: 230 cm)</span>
-                        <span>Fundering: {quote.configuration?.foundationType || 'Betonpoeren'}</span>
+                        <span>{language === 'NL' ? 'Diepte' : 'Depth'}: {quote.configuration?.dimensions && quote.configuration.dimensions.includes('×') ? quote.configuration.dimensions.split('×')[1]?.trim() : '350'} cm</span>
+                        <span>{language === 'NL' ? 'Hoogte: 260 cm (Doorloop: 230 cm)' : 'Height: 260 cm (Clearance: 230 cm)'}</span>
+                        <span>{language === 'NL' ? 'Fundering' : 'Foundation'}: {quote.configuration?.foundationType || (language === 'NL' ? 'Betonpoeren' : 'Concrete piers')}</span>
                       </div>
                     </div>
                   </div>
@@ -1776,7 +1864,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
               {/* CARD 5: INFOBOX */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
                 <div className="flex justify-between items-center border-b border-[#D6CFC2]/60 pb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">INFOBOX</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                    {language === 'NL' ? 'INFOBOX' : 'INFOBOX'}
+                  </span>
                   <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-primary">
                     <input
                       type="checkbox"
@@ -1787,15 +1877,19 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       }}
                       className="w-3.5 h-3.5 rounded text-primary border-[#D6CFC2]"
                     />
-                    <span>show on quote</span>
+                    <span>{language === 'NL' ? 'toon op offerte' : 'show on quote'}</span>
                   </label>
                 </div>
 
                 <div className="space-y-3 text-xs">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">TITLE</label>
-                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">FOLLOWS WOOD TYPE</span>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">
+                        {language === 'NL' ? 'TITEL' : 'TITLE'}
+                      </label>
+                      <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                        {language === 'NL' ? 'VOLGT HOUTSOORT' : 'FOLLOWS WOOD TYPE'}
+                      </span>
                     </div>
                     <input
                       type="text"
@@ -1808,8 +1902,12 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <div className="flex items-center gap-2">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">TEXT</label>
-                        <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">FOLLOWS WOOD TYPE</span>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">
+                          {language === 'NL' ? 'TEKST' : 'TEXT'}
+                        </label>
+                        <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                          {language === 'NL' ? 'VOLGT HOUTSOORT' : 'FOLLOWS WOOD TYPE'}
+                        </span>
                       </div>
                       <span className="text-[10px] font-mono text-dark/50">{(quote.configuration?.infobox?.text || '').length}/220</span>
                     </div>
@@ -1833,24 +1931,26 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
               {/* CARD 1: LINE ITEMS */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">LINE ITEMS</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                    {language === 'NL' ? 'OFFERTEPOSTEN' : 'LINE ITEMS'}
+                  </span>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => {
                         handleAddLineItem();
-                        showToast('New line item added!');
+                        showToast(language === 'NL' ? 'Nieuwe offertepost toegevoegd!' : 'New line item added!');
                       }}
                       className="px-3 py-1 bg-[#33422C] text-white text-xs font-bold rounded-lg font-mono hover:bg-[#283523] cursor-pointer shadow-2xs"
                     >
-                      + line
+                      + {language === 'NL' ? 'regel' : 'line'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowLibraryModal(true)}
                       className="px-3 py-1 bg-white border border-[#33422C] text-dark text-xs font-bold rounded-lg font-mono hover:bg-[#EDE8DF] cursor-pointer shadow-2xs flex items-center gap-1"
                     >
-                      <span>+ from library</span>
+                      <span>+ {language === 'NL' ? 'uit bibliotheek' : 'from library'}</span>
                       <span className="text-[10px]">▼</span>
                     </button>
                   </div>
@@ -1865,7 +1965,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                           type="text"
                           value={item.title || ''}
                           onChange={(e) => handleLineItemChange(idx, 'title', e.target.value)}
-                          placeholder="Line item title"
+                          placeholder={language === 'NL' ? 'Titel offertepost' : 'Line item title'}
                           className="w-full xl:flex-1 px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary min-w-[200px]"
                         />
 
@@ -1907,7 +2007,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                             onChange={(e) => handleLineItemChange(idx, 'isIncluded', e.target.checked)}
                             className="w-4 h-4 text-primary rounded border-[#D6CFC2]"
                           />
-                          <span>included</span>
+                          <span>{language === 'NL' ? 'inbegrepen' : 'included'}</span>
                         </label>
 
                         <button
@@ -1915,7 +2015,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                           disabled={(quote.investment?.lineItems || []).length <= 1}
                           onClick={() => {
                             handleRemoveLineItem(idx);
-                            showToast('Line item removed');
+                            showToast(language === 'NL' ? 'Offertepost verwijderd' : 'Line item removed');
                           }}
                           className="p-1.5 text-dark/40 hover:text-red-600 font-bold transition-colors disabled:opacity-20 ml-auto"
                         >
@@ -1926,15 +2026,15 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       {/* Row 2: Description with live char counter */}
                       <div className="space-y-1">
                         <div className="flex justify-between items-center text-[10px] text-dark/50 font-mono">
-                          <span>DESCRIPTION</span>
-                          <span>{(item.description || '').length} / 220 chars</span>
+                          <span>{language === 'NL' ? 'OMSCHRIJVING' : 'DESCRIPTION'}</span>
+                          <span>{(item.description || '').length} / 220 {language === 'NL' ? 'tekens' : 'chars'}</span>
                         </div>
                         <input
                           type="text"
                           maxLength={220}
                           value={item.description || ''}
                           onChange={(e) => handleLineItemChange(idx, 'description', e.target.value)}
-                          placeholder="Description text"
+                          placeholder={language === 'NL' ? 'Omschrijvingstekst' : 'Description text'}
                           className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark/80 focus:outline-none font-body"
                         />
                       </div>
@@ -1942,11 +2042,11 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       {(item.isIncluded || item.priceInclVat === 0) && (
                         <div className="space-y-1 pt-1">
                           <span className="inline-block bg-emerald-100 text-emerald-900 font-bold text-[10px] px-2.5 py-0.5 rounded-md font-mono uppercase">
-                            Inbegrepen
+                            {language === 'NL' ? 'Inbegrepen' : 'Included'}
                           </span>
                           {item.title?.includes('Bezorging') && (
                             <p className="text-[11px] text-dark/60 font-body">
-                              title = "Bezorging &#123;city&#125;" automatic · price € 0 → label "Inbegrepen" on p4 plus GRATIS badge on p3/p6. Try setting the price to 150 and watch the right side.
+                              title = "Bezorging &#123;city&#125;" automatic · price € 0 → label "Inbegrepen" on p4 plus GRATIS badge on p3/p6.
                             </p>
                           )}
                         </div>
@@ -1959,8 +2059,12 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
               {/* CARD: STELPOST & ASTERISK DISCLAIMER */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-3">
                 <div className="flex flex-wrap justify-between items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">ASTERISK / STELPOST DISCLAIMER NOTE</span>
-                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE IN PDF P4</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                    {language === 'NL' ? 'STELPOST & ASTERISK TOELICHTING' : 'ASTERISK / STELPOST DISCLAIMER NOTE'}
+                  </span>
+                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                    {language === 'NL' ? 'BEWERKBAAR IN PDF P4' : 'EDITABLE IN PDF P4'}
+                  </span>
                 </div>
                 <textarea
                   rows={2}
@@ -1968,18 +2072,26 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                   onChange={(e) => updateInvestmentField('stelpostDisclaimer', e.target.value)}
                   disabled={isApproved}
                   className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none focus:border-primary disabled:opacity-60"
-                  placeholder="* Stelpost toelichting..."
+                  placeholder={language === 'NL' ? '* Stelpost toelichting...' : '* Provisional sum explanation...'}
                 />
-                <p className="text-[10px] text-dark/50 font-body">Verschijnt direct onder de specificatietabel op pagina 4 van de offerte.</p>
+                <p className="text-[10px] text-dark/50 font-body">
+                  {language === 'NL' ? 'Verschijnt direct onder de specificatietabel op pagina 4 van de offerte.' : 'Appears directly below the specification table on page 4 of the proposal.'}
+                </p>
               </div>
 
               {/* CARD 2: FINISH / TREATMENT */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-3">
                 <div className="flex flex-wrap justify-between items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">FINISH / TREATMENT</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                    {language === 'NL' ? 'AFWERKING / BEHANDELING' : 'FINISH / TREATMENT'}
+                  </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">FREE TEXT FIELD — BECOMES A CHECKLIST LINE</span>
-                    <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">MANUAL</span>
+                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">
+                      {language === 'NL' ? 'VRIJ TEKSTVELD — WORDT EEN CHECKLIST-REGEL' : 'FREE TEXT FIELD — BECOMES A CHECKLIST LINE'}
+                    </span>
+                    <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                      {language === 'NL' ? 'HANDMATIG' : 'MANUAL'}
+                    </span>
                   </div>
                 </div>
 
@@ -1989,15 +2101,21 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                   onChange={(e) => updateInvestmentField('finishTreatment', e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-primary"
                 />
-                <p className="text-[10px] text-dark/50 font-body">leave empty = the line disappears from the checklist</p>
+                <p className="text-[10px] text-dark/50 font-body">
+                  {language === 'NL' ? 'leeg laten = regel verdwijnt uit de checklist' : 'leave empty = the line disappears from the checklist'}
+                </p>
               </div>
 
               {/* CARD 3: CHECKLIST INBEGREPEN — FULLY EDITABLE */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
                 <div className="flex flex-wrap justify-between items-center gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">CHECKLIST "INBEGREPEN BIJ JOUW INVESTERING"</span>
-                    <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                      {language === 'NL' ? 'CHECKLIST "INBEGREPEN BIJ JOUW INVESTERING"' : 'CHECKLIST "INCLUDED WITH YOUR INVESTMENT"'}
+                    </span>
+                    <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                      {language === 'NL' ? 'BEWERKBAAR' : 'EDITABLE'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -2014,21 +2132,23 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       disabled={isApproved}
                       className="px-3 py-1 bg-white border border-[#D6CFC2] text-dark/70 text-xs font-bold rounded-lg font-mono hover:bg-[#EFECE6] cursor-pointer disabled:opacity-40"
                     >
-                      ↺ Reset
+                      ↺ {language === 'NL' ? 'Herstellen' : 'Reset'}
                     </button>
                   </div>
                 </div>
 
                 {/* Editable checklist title */}
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">SECTION HEADING (in PDF)</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">
+                    {language === 'NL' ? 'SECTIEKOP (in PDF)' : 'SECTION HEADING (in PDF)'}
+                  </label>
                   <input
                     type="text"
                     value={quote.investment?.checklistTitle || 'Inbegrepen bij jouw investering'}
                     onChange={(e) => updateInvestmentField('checklistTitle', e.target.value)}
                     disabled={isApproved}
                     className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-primary disabled:opacity-60"
-                    placeholder="Inbegrepen bij jouw investering"
+                    placeholder={language === 'NL' ? 'Inbegrepen bij jouw investering' : 'Included in your investment'}
                   />
                 </div>
 
@@ -2047,7 +2167,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                         onChange={(e) => handleChecklistChange(cIdx, e.target.value)}
                         disabled={isApproved}
                         className="flex-1 bg-transparent border-none focus:outline-none text-xs text-dark font-body font-medium disabled:opacity-70"
-                        placeholder="Checklist item..."
+                        placeholder={language === 'NL' ? 'Checklist item...' : 'Checklist item...'}
                       />
                       {String(cLine).includes('{city}') && (
                         <span className="text-[9px] font-mono text-dark/40 italic flex-shrink-0">{'{city} token'}</span>
@@ -2064,30 +2184,42 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                   ))}
                 </div>
                 <p className="text-[10px] text-dark/50 font-body">
-                  Use <code className="bg-[#EFECE6] px-1 rounded">{'{city}'}</code> and <code className="bg-[#EFECE6] px-1 rounded">{'{finish}'}</code> tokens — they are replaced automatically in the PDF.
+                  {language === 'NL'
+                    ? <>Gebruik <code className="bg-[#EFECE6] px-1 rounded">{'{city}'}</code> en <code className="bg-[#EFECE6] px-1 rounded">{'{finish}'}</code> tokens — deze worden automatisch vervangen in de PDF.</>
+                    : <>Use <code className="bg-[#EFECE6] px-1 rounded">{'{city}'}</code> and <code className="bg-[#EFECE6] px-1 rounded">{'{finish}'}</code> tokens — they are replaced automatically in the PDF.</>}
                 </p>
               </div>
 
               {/* CARD 4: TOTALS */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">TOTALS</span>
-                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">CALCULATED — NO INPUT</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                    {language === 'NL' ? 'TOTALEN' : 'TOTALS'}
+                  </span>
+                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                    {language === 'NL' ? 'BEREKEND — GEEN INVOER' : 'CALCULATED — NO INPUT'}
+                  </span>
                 </div>
 
                 <div className="bg-[#33422C] text-[#FDFBF7] p-5 rounded-2xl space-y-3 font-mono border border-[#283523] shadow-md">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="font-semibold text-[#FDFBF7]/80">Subtotal excl. VAT</span>
+                    <span className="font-semibold text-[#FDFBF7]/80">
+                      {language === 'NL' ? 'Subtotaal excl. btw' : 'Subtotal excl. VAT'}
+                    </span>
                     <span className="font-bold">€ {totals.subtotalExclVat.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
                   </div>
 
                   <div className="flex justify-between items-center text-xs">
-                    <span className="font-semibold text-[#FDFBF7]/80">VAT 21%</span>
+                    <span className="font-semibold text-[#FDFBF7]/80">
+                      {language === 'NL' ? 'Btw 21%' : 'VAT 21%'}
+                    </span>
                     <span className="font-bold">€ {totals.vatAmount.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
                   </div>
 
                   <div className="border-t border-[#46573e] pt-3 flex justify-between items-center">
-                    <span className="font-serif font-bold text-base text-[#FDFBF7]">Total incl. VAT</span>
+                    <span className="font-serif font-bold text-base text-[#FDFBF7]">
+                      {language === 'NL' ? 'Totaal incl. btw' : 'Total incl. VAT'}
+                    </span>
                     <span className="font-serif font-bold text-xl text-[#FDFBF7]">€ {totals.totalInclVat.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
@@ -2095,33 +2227,43 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
 
               {/* CARD: GELDIGHEID & BTW FOOTNOTE */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
-                <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">GELDIGHEID & BTW FOOTNOTE</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                  {language === 'NL' ? 'GELDIGHEID & BTW VOETNOOT' : 'VALIDITY & VAT FOOTNOTE'}
+                </span>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block">Geldigheidstermijn tekst (in PDF)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block">
+                      {language === 'NL' ? 'Geldigheidstermijn tekst (in PDF)' : 'Validity period text (in PDF)'}
+                    </label>
                     <input
                       type="text"
                       value={quote.investment?.validityText !== undefined ? quote.investment.validityText : 'Deze offerte is geldig tot en met {date}'}
                       onChange={(e) => updateInvestmentField('validityText', e.target.value)}
                       disabled={isApproved}
                       className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none focus:border-primary disabled:opacity-60 font-body"
-                      placeholder="Deze offerte is geldig tot en met {date}"
+                      placeholder={language === 'NL' ? 'Deze offerte is geldig tot en met {date}' : 'This quote is valid until {date}'}
                     />
-                    <p className="text-[10px] text-dark/50 font-body">Gebruik <code className="bg-[#EFECE6] px-1 rounded">{'{date}'}</code> om de dynamische datum in te vullen.</p>
+                    <p className="text-[10px] text-dark/50 font-body">
+                      {language === 'NL' ? <>Gebruik <code className="bg-[#EFECE6] px-1 rounded">{'{date}'}</code> om de dynamische datum in te vullen.</> : <>Use <code className="bg-[#EFECE6] px-1 rounded">{'{date}'}</code> to fill in dynamic date.</>}
+                    </p>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block">Btw toelichting (in groen totaalblok)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block">
+                      {language === 'NL' ? 'Btw toelichting (in groen totaalblok)' : 'VAT explanation (in green total block)'}
+                    </label>
                     <input
                       type="text"
                       value={quote.investment?.vatDisclaimer !== undefined ? quote.investment.vatDisclaimer : 'Alle bedragen inclusief btw'}
                       onChange={(e) => updateInvestmentField('vatDisclaimer', e.target.value)}
                       disabled={isApproved}
                       className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none focus:border-primary disabled:opacity-60 font-body"
-                      placeholder="Alle bedragen inclusief btw"
+                      placeholder={language === 'NL' ? 'Alle bedragen inclusief btw' : 'All amounts including VAT'}
                     />
-                    <p className="text-[10px] text-dark/50 font-body">Verschijnt in het donkergroene totaalblok op pagina 4.</p>
+                    <p className="text-[10px] text-dark/50 font-body">
+                      {language === 'NL' ? 'Verschijnt in het donkergroene totaalblok op pagina 4.' : 'Appears in the dark green total block on page 4.'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -2151,7 +2293,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                   <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
                     <div className="flex flex-col gap-2">
                       <div className="flex flex-wrap items-center gap-4">
-                        <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">PAYMENT INSTALMENTS</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                          {language === 'NL' ? 'BETALINGSTERMIJNEN' : 'PAYMENT INSTALMENTS'}
+                        </span>
                         <div className="flex items-center gap-2 font-mono text-xs">
                           <button
                             type="button"
@@ -2159,7 +2303,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                             className={`px-3 py-1.5 rounded-md font-bold transition-all cursor-pointer ${count === 2 ? 'bg-[#33422C] text-white' : 'bg-[#EFECE6] text-dark/70 hover:bg-[#E2DDD3]'
                               }`}
                           >
-                            2 Instalments (50/50)
+                            {language === 'NL' ? '2 Termijnen (50/50)' : '2 Instalments (50/50)'}
                           </button>
                           <button
                             type="button"
@@ -2167,7 +2311,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                             className={`px-3 py-1.5 rounded-md font-bold transition-all cursor-pointer ${count === 3 ? 'bg-[#33422C] text-white' : 'bg-[#EFECE6] text-dark/70 hover:bg-[#E2DDD3]'
                               }`}
                           >
-                            3 Instalments (30/40/30)
+                            {language === 'NL' ? '3 Termijnen (30/40/30)' : '3 Instalments (30/40/30)'}
                           </button>
                         </div>
                       </div>
@@ -2175,7 +2319,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       <div>
                         <span className={`inline-block text-xs font-mono font-bold px-2.5 py-1 rounded-md ${isSumValid ? 'text-emerald-800 bg-emerald-100' : 'text-red-800 bg-red-100'
                           }`}>
-                          SUM = {pSum}% {isSumValid ? '✓' : '⚠️ Must equal 100%'}
+                          {language === 'NL' ? `SOM = ${pSum}% ${isSumValid ? '✓' : '⚠️ Moet 100% zijn'}` : `SUM = ${pSum}% ${isSumValid ? '✓' : '⚠️ Must equal 100%'}`}
                         </span>
                       </div>
                     </div>
@@ -2194,31 +2338,35 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                         return (
                           <div key={idx} className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-3 shadow-2xs">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-dark/70 font-mono block">
-                              INSTALMENT {idx + 1}
+                              {language === 'NL' ? `TERMIJN ${idx + 1}` : `INSTALMENT ${idx + 1}`}
                             </span>
                             {/* Editable label */}
                             <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-dark/60 font-mono block">LABEL</label>
+                              <label className="text-[10px] font-bold text-dark/60 font-mono block">
+                                {language === 'NL' ? 'LABEL' : 'LABEL'}
+                              </label>
                               <input
                                 type="text"
                                 value={currentLabel}
                                 onChange={(e) => handleUpdateInstalmentLabel(idx, e.target.value)}
                                 disabled={isApproved}
                                 className="w-full px-2.5 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-bold text-dark focus:outline-none focus:border-primary disabled:opacity-60"
-                                placeholder={idx === 0 ? 'Bij akkoord' : idx === 1 && count === 3 ? 'Bij start bouw' : 'Bij levering'}
+                                placeholder={idx === 0 ? (language === 'NL' ? 'Bij akkoord' : 'Upon approval') : idx === 1 && count === 3 ? (language === 'NL' ? 'Bij start bouw' : 'At start of construction') : (language === 'NL' ? 'Bij levering' : 'Upon delivery')}
                               />
                             </div>
 
                             {/* Editable subtext */}
                             <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-dark/60 font-mono block">TOELICHTING / SUBTEXT</label>
+                              <label className="text-[10px] font-bold text-dark/60 font-mono block">
+                                {language === 'NL' ? 'TOELICHTING / SUBTEKST' : 'EXPLANATION / SUBTEXT'}
+                              </label>
                               <input
                                 type="text"
                                 value={currentSubtext}
                                 onChange={(e) => handleUpdateInstalmentSubtext(idx, e.target.value)}
                                 disabled={isApproved}
                                 className="w-full px-2.5 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs text-dark/80 focus:outline-none focus:border-primary disabled:opacity-60"
-                                placeholder={defaultSubtexts[idx] || 'Toelichting termijn...'}
+                                placeholder={defaultSubtexts[idx] || (language === 'NL' ? 'Toelichting termijn...' : 'Installment explanation...')}
                               />
                             </div>
 
@@ -2242,7 +2390,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     </div>
 
                     <p className="text-[11px] text-dark/60 font-body">
-                      percentages adjustable · amounts recalculate automatically · last instalment = remainder (exact to the cent)
+                      {language === 'NL'
+                        ? 'percentages aanpasbaar · bedragen herberekenen automatisch · laatste termijn = restant (exact op de cent)'
+                        : 'percentages adjustable · amounts recalculate automatically · last instalment = remainder (exact to the cent)'}
                     </p>
                   </div>
                 );
@@ -2257,13 +2407,19 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
 
               {/* CARD 1: PERSONAL LETTER (P2) */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
-                <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">PERSONAL LETTER (P2)</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">
+                  {language === 'NL' ? 'PERSOONLIJKE BRIEF (P2)' : 'PERSONAL LETTER (P2)'}
+                </span>
 
                 {/* SALUTATION */}
                 <div>
                   <div className="flex items-center gap-2 mb-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">SALUTATION</label>
-                    <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">AUTOMATIC</span>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono">
+                      {language === 'NL' ? 'AANHEF' : 'SALUTATION'}
+                    </label>
+                    <span className="bg-blue-100 text-blue-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                      {language === 'NL' ? 'AUTOMATISCH' : 'AUTOMATIC'}
+                    </span>
                   </div>
                   <input
                     type="text"
@@ -2281,15 +2437,21 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                   >
                     <div className="flex items-center gap-2.5">
                       <span className={`text-xs text-dark transition-transform duration-200 inline-block ${letterExpanded ? 'rotate-90' : ''}`}>▶</span>
-                      <span className="font-bold text-xs text-dark">Letter text (4 paragraphs) — default, click to edit</span>
+                      <span className="font-bold text-xs text-dark">
+                        {language === 'NL' ? "Brieftekst (4 alinea's) — standaard, klik om te bewerken" : 'Letter text (4 paragraphs) — default, click to edit'}
+                      </span>
                     </div>
-                    <span className="bg-gray-200 text-gray-700 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">DEFAULT</span>
+                    <span className="bg-gray-200 text-gray-700 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                      {language === 'NL' ? 'STANDAARD' : 'DEFAULT'}
+                    </span>
                   </div>
 
                   {letterExpanded && (
                     <div className="p-4 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl space-y-3 text-xs">
                       <div className="flex justify-between items-center pb-1 border-b border-[#D6CFC2]/60">
-                        <span className="font-bold text-dark font-mono text-[11px] uppercase">LETTER PARAGRAPHS</span>
+                        <span className="font-bold text-dark font-mono text-[11px] uppercase">
+                          {language === 'NL' ? "BRIEF ALINEA'S" : 'LETTER PARAGRAPHS'}
+                        </span>
                         <button
                           type="button"
                           onClick={() => {
@@ -2300,11 +2462,11 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                               'Heb je vragen of wens je nog aanpassingen? Wij denken graag met je mee!'
                             ];
                             updateLetterField('letterParagraphs', [...pDefaults]);
-                            showToast('Letter text defaults restored!');
+                            showToast(language === 'NL' ? 'Brieftekst hersteld naar standaard!' : 'Letter text defaults restored!');
                           }}
                           className="text-[10px] font-mono font-bold text-dark/60 hover:text-dark underline cursor-pointer"
                         >
-                          restore defaults
+                          {language === 'NL' ? 'standaard herstellen' : 'restore defaults'}
                         </button>
                       </div>
 
@@ -2315,7 +2477,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                         'Heb je vragen of wens je nog aanpassingen? Wij denken graag met je mee!'
                       ]).map((para, pIdx) => (
                         <div key={pIdx} className="space-y-1">
-                          <label className="text-[10px] font-bold text-dark/60 font-mono">PARAGRAPH {pIdx + 1}</label>
+                          <label className="text-[10px] font-bold text-dark/60 font-mono">
+                            {language === 'NL' ? `ALINEA ${pIdx + 1}` : `PARAGRAPH ${pIdx + 1}`}
+                          </label>
                           <textarea
                             rows={2}
                             value={para}
@@ -2340,15 +2504,21 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                   >
                     <div className="flex items-center gap-2.5">
                       <span className={`text-xs text-dark transition-transform duration-200 inline-block ${uspExpanded ? 'rotate-90' : ''}`}>▶</span>
-                      <span className="font-bold text-xs text-dark">USP cards (4) — only change when the proposition changes</span>
+                      <span className="font-bold text-xs text-dark">
+                        {language === 'NL' ? 'USP-kaarten (4) — alleen wijzigen bij andere propositie' : 'USP cards (4) — only change when the proposition changes'}
+                      </span>
                     </div>
-                    <span className="bg-gray-200 text-gray-700 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">DEFAULT</span>
+                    <span className="bg-gray-200 text-gray-700 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                      {language === 'NL' ? 'STANDAARD' : 'DEFAULT'}
+                    </span>
                   </div>
 
                   {uspExpanded && (
                     <div className="p-4 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl space-y-3 text-xs">
                       <div className="flex justify-between items-center pb-1 border-b border-[#D6CFC2]/60">
-                        <span className="font-bold text-dark font-mono text-[11px] uppercase">USP CARDS</span>
+                        <span className="font-bold text-dark font-mono text-[11px] uppercase">
+                          {language === 'NL' ? 'USP KAARTEN' : 'USP CARDS'}
+                        </span>
                         <button
                           type="button"
                           onClick={() => {
@@ -2359,11 +2529,11 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                               { id: 4, title: 'Eerlijke prijs, bewust online', desc: 'Geen showroom is een bewuste keuze. Zo betaal je voor vakwerk en materiaal, niet voor overhead.' }
                             ];
                             updateLetterField('uspCards', defaultUsps);
-                            showToast('USP defaults restored!');
+                            showToast(language === 'NL' ? 'USP standaardwaarden hersteld!' : 'USP defaults restored!');
                           }}
                           className="text-[10px] font-mono font-bold text-dark/60 hover:text-dark underline cursor-pointer"
                         >
-                          restore defaults
+                          {language === 'NL' ? 'standaard herstellen' : 'restore defaults'}
                         </button>
                       </div>
 
@@ -2384,7 +2554,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                                 updateLetterField('uspCards', newUsps);
                               }}
                               className="w-full px-2.5 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-bold text-xs text-dark"
-                              placeholder="USP Title"
+                              placeholder={language === 'NL' ? 'USP Titel' : 'USP Title'}
                             />
                             <textarea
                               rows={2}
@@ -2395,7 +2565,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                                 updateLetterField('uspCards', newUsps);
                               }}
                               className="w-full px-2.5 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs text-dark/80"
-                              placeholder="USP Description"
+                              placeholder={language === 'NL' ? 'USP Omschrijving' : 'USP Description'}
                             />
                           </div>
                         ))}
@@ -2410,8 +2580,12 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-3.5">
                 <div className="flex flex-wrap justify-between items-center gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">PROCESS STEPS (P6, 4-6 STEPS)</span>
-                    <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                      {language === 'NL' ? 'PROCESSTAPPEN (P6, 4-6 STAPPEN)' : 'PROCESS STEPS (P6, 4-6 STEPS)'}
+                    </span>
+                    <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                      {language === 'NL' ? 'BEWERKBAAR' : 'EDITABLE'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -2420,7 +2594,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       disabled={isApproved}
                       className="px-3 py-1 bg-[#33422C] text-white text-xs font-bold rounded-lg font-mono hover:bg-[#283523] cursor-pointer shadow-2xs disabled:opacity-40"
                     >
-                      + step
+                      + {language === 'NL' ? 'stap' : 'step'}
                     </button>
                     <button
                       type="button"
@@ -2428,7 +2602,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       disabled={isApproved}
                       className="px-3 py-1 bg-white border border-[#D6CFC2] text-dark/70 text-xs font-bold rounded-lg font-mono hover:bg-[#EFECE6] cursor-pointer disabled:opacity-40"
                     >
-                      ↺ Reset
+                      ↺ {language === 'NL' ? 'Herstellen' : 'Reset'}
                     </button>
                   </div>
                 </div>
@@ -2450,7 +2624,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                             value={ps.title}
                             onChange={(e) => handleProcessStepChange(psIdx, 'title', e.target.value)}
                             disabled={isApproved}
-                            placeholder="Step title"
+                            placeholder={language === 'NL' ? 'Staptitel' : 'Step title'}
                             className="flex-1 px-2 py-1 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-dark focus:outline-none focus:border-primary disabled:opacity-60"
                           />
                         </div>
@@ -2469,7 +2643,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                           value={ps.desc}
                           onChange={(e) => handleProcessStepChange(psIdx, 'desc', e.target.value)}
                           disabled={isApproved}
-                          placeholder="Step description..."
+                          placeholder={language === 'NL' ? 'Stapomschrijving...' : 'Step description...'}
                           className="flex-1 px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark focus:outline-none font-body disabled:opacity-60"
                         />
                         <input
@@ -2477,63 +2651,77 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                           value={ps.badge}
                           onChange={(e) => handleProcessStepChange(psIdx, 'badge', e.target.value)}
                           disabled={isApproved}
-                          placeholder="Badge (optional)"
+                          placeholder={language === 'NL' ? 'Badge (optioneel)' : 'Badge (optional)'}
                           className="w-28 px-2 py-1 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-dark uppercase focus:outline-none disabled:opacity-60"
                         />
                       </div>
                     </div>
                   ))}
                 </div>
-                <p className="text-[10px] text-dark/50 font-body">Title, description, and badge are all editable. Leave badge empty to hide it.</p>
+                <p className="text-[10px] text-dark/50 font-body">
+                  {language === 'NL' ? 'Titel, omschrijving en badge zijn bewerkbaar. Laat badge leeg om te verbergen.' : 'Title, description, and badge are all editable. Leave badge empty to hide it.'}
+                </p>
               </div>
 
               {/* CARD 3: APPROVAL PAGE (P5) */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">APPROVAL PAGE (P5)</span>
-                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                    {language === 'NL' ? 'AKKOORDPAGINA (P5)' : 'APPROVAL PAGE (P5)'}
+                  </span>
+                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                    {language === 'NL' ? 'BEWERKBAAR' : 'EDITABLE'}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">APPROVAL TITLE</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">
+                      {language === 'NL' ? 'AKKOORD TITEL' : 'APPROVAL TITLE'}
+                    </label>
                     <input
                       type="text"
                       value={quote.letterAndProcess?.approvalTitle || 'Akkoord op de offerte'}
                       onChange={(e) => updateLetterField('approvalTitle', e.target.value)}
                       disabled={isApproved}
                       className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary disabled:opacity-60"
-                      placeholder="Akkoord op de offerte"
+                      placeholder={language === 'NL' ? 'Akkoord op de offerte' : 'Approval on quote'}
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">APPROVAL SUBHEADING</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">
+                      {language === 'NL' ? 'AKKOORD SUBKOP' : 'APPROVAL SUBHEADING'}
+                    </label>
                     <input
                       type="text"
                       value={quote.letterAndProcess?.approvalSubheading || 'Zo geeft u akkoord'}
                       onChange={(e) => updateLetterField('approvalSubheading', e.target.value)}
                       disabled={isApproved}
                       className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary disabled:opacity-60"
-                      placeholder="Zo geeft u akkoord"
+                      placeholder={language === 'NL' ? 'Zo geeft u akkoord' : 'How to give approval'}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">APPROVAL TEXT</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">
+                    {language === 'NL' ? 'AKKOORD TEKST' : 'APPROVAL TEXT'}
+                  </label>
                   <textarea
                     rows={3}
                     value={quote.letterAndProcess?.approvalText || 'Geef akkoord via de handtekeningpagina, per e-mail, of via WhatsApp. Na uw bevestiging nemen wij het volledig over.'}
                     onChange={(e) => updateLetterField('approvalText', e.target.value)}
                     disabled={isApproved}
                     className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none font-body disabled:opacity-60"
-                    placeholder="Approval text..."
+                    placeholder={language === 'NL' ? 'Akkoordtekst...' : 'Approval text...'}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-1 border-t border-[#D6CFC2]/60">
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">SIGN-OFF NAME</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">
+                      {language === 'NL' ? 'ONDERTEKENING NAAM' : 'SIGN-OFF NAME'}
+                    </label>
                     <input
                       type="text"
                       value={quote.letterAndProcess?.signoffName || 'Tim & Bram'}
@@ -2544,7 +2732,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">SIGN-OFF ROLE</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">
+                      {language === 'NL' ? 'ONDERTEKENING ROL' : 'SIGN-OFF ROLE'}
+                    </label>
                     <input
                       type="text"
                       value={quote.letterAndProcess?.signoffRole || 'Vanuit Ambacht'}
@@ -2560,22 +2750,30 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
               {/* CARD 4: CLOSING QUOTE (P6 BOTTOM) */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">CLOSING QUOTE (P6 BOTTOM)</span>
-                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">EDITABLE</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                    {language === 'NL' ? 'AFSLUITEND CITAAT (P6 ONDERAAN)' : 'CLOSING QUOTE (P6 BOTTOM)'}
+                  </span>
+                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                    {language === 'NL' ? 'BEWERKBAAR' : 'EDITABLE'}
+                  </span>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">QUOTE TEXT</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">
+                    {language === 'NL' ? 'CITAAT TEKST' : 'QUOTE TEXT'}
+                  </label>
                   <textarea
                     rows={2}
                     value={quote.letterAndProcess?.closingQuote || '"Wij bouwen niet alleen buitenkeukens. Wij bouwen ervaringen."'}
                     onChange={(e) => updateLetterField('closingQuote', e.target.value)}
                     disabled={isApproved}
                     className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none font-body disabled:opacity-60"
-                    placeholder='"Wij bouwen niet alleen buitenkeukens..."'
+                    placeholder={language === 'NL' ? '"Wij bouwen niet alleen buitenkeukens..."' : '"We do not just build outdoor kitchens..."'}
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">QUOTE AUTHOR</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-dark/60 font-mono block mb-1">
+                    {language === 'NL' ? 'AUTEUR CITAAT' : 'QUOTE AUTHOR'}
+                  </label>
                   <input
                     type="text"
                     value={quote.letterAndProcess?.closingAuthor || '— Tim & Bram, Vanuit Ambacht'}
@@ -2597,14 +2795,20 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
               {/* SUMMARY REVIEW CARDS */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
                 <div className="flex justify-between items-center border-b border-[#D6CFC2]/60 pb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">QUOTE OVERVIEW & SUMMARY</span>
-                  <span className="bg-[#EFECE6] text-dark/70 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">FINAL REVIEW</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                    {language === 'NL' ? 'OFFERTE OVERZICHT & SAMENVATTING' : 'QUOTE OVERVIEW & SUMMARY'}
+                  </span>
+                  <span className="bg-[#EFECE6] text-dark/70 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                    {language === 'NL' ? 'EINDBEOORDELING' : 'FINAL REVIEW'}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   {/* Customer Card */}
                   <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-1">
-                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">CUSTOMER</span>
+                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">
+                      {language === 'NL' ? 'KLANT' : 'CUSTOMER'}
+                    </span>
                     <p className="font-bold text-dark">{quote.customer?.name || '—'}</p>
                     <p className="text-dark/70">{quote.customer?.address || '—'}, {quote.customer?.city || '—'}</p>
                     <p className="text-dark/70 font-mono">{quote.customer?.email || '—'} · {quote.customer?.phone || '—'}</p>
@@ -2612,26 +2816,51 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
 
                   {/* Quote Metadata */}
                   <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-1">
-                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">QUOTE DETAILS</span>
+                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">
+                      {language === 'NL' ? 'OFFERTE DETAILS' : 'QUOTE DETAILS'}
+                    </span>
                     <p className="font-bold text-primary font-mono">{quote.id} · {quote.productType || 'Outdoor kitchen'}</p>
-                    <p className="text-dark/70">Date: {quote.date} · Valid: {quote.validUntil}</p>
-                    <p className="text-dark/70 font-mono">Status: <strong className="text-[#D97706] uppercase">{quote.status || 'Draft'}</strong></p>
+                    <p className="text-dark/70">
+                      {language === 'NL' ? `Datum: ${quote.date} · Geldig: ${quote.validUntil}` : `Date: ${quote.date} · Valid: ${quote.validUntil}`}
+                    </p>
+                    <p className="text-dark/70 font-mono">
+                      {language === 'NL' ? 'Status: ' : 'Status: '}
+                      <strong className="text-[#D97706] uppercase">{quote.status || 'Draft'}</strong>
+                    </p>
                   </div>
 
                   {/* Configuration Summary */}
                   <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-1">
-                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">CONFIGURATION</span>
+                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">
+                      {language === 'NL' ? 'CONFIGURATIE' : 'CONFIGURATION'}
+                    </span>
                     <p className="font-bold text-dark">{quote.configuration?.woodType || 'Thermo Fraké'} · {quote.configuration?.dimensions || '240 × 80'} cm</p>
-                    <p className="text-dark/70">Cutout: {quote.configuration?.optionsTitle || 'Big Green Egg Large'}</p>
-                    <p className="text-dark/70 font-mono">Delivery Time: {quote.configuration?.deliveryTime || '3 tot 5 weken'}</p>
+                    <p className="text-dark/70">
+                      {language === 'NL' ? `Uitsparing: ${quote.configuration?.optionsTitle || 'Big Green Egg Large'}` : `Cutout: ${quote.configuration?.optionsTitle || 'Big Green Egg Large'}`}
+                    </p>
+                    <p className="text-dark/70 font-mono">
+                      {language === 'NL' ? `Levertijd: ${quote.configuration?.deliveryTime || '3 tot 5 weken'}` : `Delivery Time: ${quote.configuration?.deliveryTime || '3 to 5 weeks'}`}
+                    </p>
                   </div>
 
                   {/* Investment Summary */}
                   <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-1">
-                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">INVESTMENT</span>
-                    <p className="font-bold text-primary text-sm font-mono">€ {totals.totalInclVat.toLocaleString('nl-NL', { minimumFractionDigits: 2 })} (incl. VAT)</p>
-                    <p className="text-dark/70 font-mono">Excl. VAT: € {totals.subtotalExclVat.toLocaleString('nl-NL', { minimumFractionDigits: 2 })} · VAT: € {totals.vatAmount.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</p>
-                    <p className="text-dark/70 font-mono">Installments: {quote.investment?.instalments?.count || 2} termijnen ({(quote.investment?.instalments?.percentages || [50, 50]).join('/')}%)</p>
+                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">
+                      {language === 'NL' ? 'INVESTERING' : 'INVESTMENT'}
+                    </span>
+                    <p className="font-bold text-primary text-sm font-mono">
+                      € {totals.totalInclVat.toLocaleString('nl-NL', { minimumFractionDigits: 2 })} {language === 'NL' ? '(incl. btw)' : '(incl. VAT)'}
+                    </p>
+                    <p className="text-dark/70 font-mono">
+                      {language === 'NL'
+                        ? `Excl. btw: € ${totals.subtotalExclVat.toLocaleString('nl-NL', { minimumFractionDigits: 2 })} · Btw: € ${totals.vatAmount.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`
+                        : `Excl. VAT: € ${totals.subtotalExclVat.toLocaleString('nl-NL', { minimumFractionDigits: 2 })} · VAT: € ${totals.vatAmount.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`}
+                    </p>
+                    <p className="text-dark/70 font-mono">
+                      {language === 'NL'
+                        ? `Termijnen: ${quote.investment?.instalments?.count || 2} termijnen (${(quote.investment?.instalments?.percentages || [50, 50]).join('/')}%)`
+                        : `Installments: ${quote.investment?.instalments?.count || 2} termijnen (${(quote.investment?.instalments?.percentages || [50, 50]).join('/')}%)`}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -2639,10 +2868,12 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
               {/* CARD 2: COMPLETENESS VALIDATION CHECKLIST */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-3.5">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">COMPLETENESS & VALIDATION CHECKLIST</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                    {language === 'NL' ? 'VOLLEDIGHEIDS- EN VALIDATIECHECKLIST' : 'COMPLETENESS & VALIDATION CHECKLIST'}
+                  </span>
                   <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded uppercase ${validation.errors.length === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                     }`}>
-                    {validation.errors.length === 0 ? '✓ Ready to Send' : '⚠️ Validation Warnings'}
+                    {validation.errors.length === 0 ? (language === 'NL' ? '✓ Klaar om te verzenden' : '✓ Ready to Send') : (language === 'NL' ? '⚠️ Validatiewaarschuwingen' : '⚠️ Validation Warnings')}
                   </span>
                 </div>
 
@@ -2653,7 +2884,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       <span className={`font-bold font-mono ${quote.customer?.name && quote.customer?.city ? 'text-[#33422C]' : 'text-amber-600'}`}>
                         {quote.customer?.name && quote.customer?.city ? '✓' : '⚠️'}
                       </span>
-                      <span className="font-medium text-dark">Customer name and city defined</span>
+                      <span className="font-medium text-dark">
+                        {language === 'NL' ? 'Klantnaam en woonplaats ingevuld' : 'Customer name and city defined'}
+                      </span>
                     </div>
                     <span className="font-mono text-dark/50">{quote.customer?.name} ({quote.customer?.city})</span>
                   </div>
@@ -2664,9 +2897,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       <span className={`font-bold font-mono ${quote.customer?.email ? 'text-[#33422C]' : 'text-red-600'}`}>
                         {quote.customer?.email ? '✓' : '✗'}
                       </span>
-                      <span className="font-medium text-dark">Customer email address for approval link</span>
+                      <span className="font-medium text-dark">
+                        {language === 'NL' ? 'E-mailadres klant voor akkoordlink' : 'Customer email address for approval link'}
+                      </span>
                     </div>
-                    <span className="font-mono text-dark/50">{quote.customer?.email || 'Missing email!'}</span>
+                    <span className="font-mono text-dark/50">
+                      {quote.customer?.email || (language === 'NL' ? 'E-mailadres ontbreekt!' : 'Missing email!')}
+                    </span>
                   </div>
 
                   {/* Check 3: Line Items */}
@@ -2675,9 +2912,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       <span className={`font-bold font-mono ${(quote.investment?.lineItems || []).length > 0 ? 'text-[#33422C]' : 'text-red-600'}`}>
                         {(quote.investment?.lineItems || []).length > 0 ? '✓' : '✗'}
                       </span>
-                      <span className="font-medium text-dark">Investment line items & calculations</span>
+                      <span className="font-medium text-dark">
+                        {language === 'NL' ? 'Offerteposten & berekeningen' : 'Investment line items & calculations'}
+                      </span>
                     </div>
-                    <span className="font-mono text-dark/50">{(quote.investment?.lineItems || []).length} items</span>
+                    <span className="font-mono text-dark/50">
+                      {(quote.investment?.lineItems || []).length} {language === 'NL' ? 'posten' : 'items'}
+                    </span>
                   </div>
 
                   {/* Check 4: Installments Sum */}
@@ -2692,7 +2933,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                           <span className={`font-bold font-mono ${isSum100 ? 'text-[#33422C]' : 'text-red-600'}`}>
                             {isSum100 ? '✓' : '✗'}
                           </span>
-                          <span className="font-medium text-dark">Payment installments sum equals 100%</span>
+                          <span className="font-medium text-dark">
+                            {language === 'NL' ? 'Betalingstermijnen tellen op tot 100%' : 'Payment installments sum equals 100%'}
+                          </span>
                         </div>
                         <span className={`font-mono font-bold ${isSum100 ? 'text-emerald-800' : 'text-red-800'}`}>{instSum}%</span>
                       </div>
@@ -2705,16 +2948,22 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       <span className={`font-bold font-mono ${totalSpecLines <= 12 ? 'text-[#33422C]' : 'text-amber-600'}`}>
                         {totalSpecLines <= 12 ? '✓' : '⚠️'}
                       </span>
-                      <span className="font-medium text-dark">Specifications fit Page 3 (max 12 lines)</span>
+                      <span className="font-medium text-dark">
+                        {language === 'NL' ? 'Specificaties passen op Pagina 3 (max 12 regels)' : 'Specifications fit Page 3 (max 12 lines)'}
+                      </span>
                     </div>
-                    <span className="font-mono text-dark/50">{totalSpecLines} / 12 lines</span>
+                    <span className="font-mono text-dark/50">
+                      {totalSpecLines} / 12 {language === 'NL' ? 'regels' : 'lines'}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* CARD 3: SEND & EXPORT ACTIONS */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
-                <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">SEND & EXPORT ACTIONS</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono block">
+                  {language === 'NL' ? 'VERZEND- & EXPORTACTIES' : 'SEND & EXPORT ACTIONS'}
+                </span>
 
                 {/* Row 1: Action buttons */}
                 <div className="flex flex-wrap items-center gap-3">
@@ -2733,7 +2982,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     }}
                     className="px-4 py-2.5 bg-[#33422C] text-[#FDFBF7] font-bold text-xs rounded-xl shadow-xs hover:bg-[#283523] transition-all cursor-pointer font-mono flex items-center gap-2"
                   >
-                    <span>↓ Download PDF Proposal</span>
+                    <span>{language === 'NL' ? '↓ Download PDF Offerte' : '↓ Download PDF Proposal'}</span>
                   </button>
 
                   <button
@@ -2747,7 +2996,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                         : 'bg-[#33422C] text-[#FDFBF7] hover:bg-[#283523] cursor-pointer'
                       }`}
                   >
-                    <span>{quote?.status === 'Verzonden' ? '✅ Sent' : quote?.status === 'Approved' || quote?.status === 'Geaccepteerd' ? '✅ Approved' : '✈ Confirm & Send Quote'}</span>
+                    <span>
+                      {quote?.status === 'Verzonden' 
+                        ? (language === 'NL' ? '✅ Verzonden' : '✅ Sent') 
+                        : (quote?.status === 'Approved' || quote?.status === 'Geaccepteerd')
+                          ? (language === 'NL' ? '✅ Goedgekeurd' : '✅ Approved')
+                          : (language === 'NL' ? '✈ Bevestig & verstuur offerte' : '✈ Confirm & Send Quote')}
+                    </span>
                   </button>
 
                   <button
@@ -2767,16 +3022,18 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     }`}
                     title={(quote?.status === 'Draft' || quote?.status === 'Concept' || quote?.status === 'DRAFT')
                       ? (language === 'EN' ? 'Draft quote — Approve quote internally to enable send buttons' : 'Concept offerte — Keur offerte intern goed om verzendopties te ontgrendelen')
-                      : 'Copy Public Digital Approval Link'}
+                      : (language === 'NL' ? 'Kopieer publieke digitale akkoord-link' : 'Copy Public Digital Approval Link')}
                   >
                     <span className="text-emerald-700">🔗</span>
-                    <span>Copy approval link</span>
+                    <span>{language === 'NL' ? 'Kopieer akkoord-link' : 'Copy approval link'}</span>
                   </button>
                 </div>
 
                 {(quote?.status === 'Draft' || quote?.status === 'Concept' || quote?.status === 'DRAFT') && (
                   <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl text-xs flex items-center gap-2 font-body">
-                    <span className="font-bold font-mono text-[10px] bg-amber-200 px-2 py-0.5 rounded text-amber-900">🔒 DRAFT GATED</span>
+                    <span className="font-bold font-mono text-[10px] bg-amber-200 px-2 py-0.5 rounded text-amber-900">
+                      {language === 'NL' ? '🔒 CONCEPT VERGRENDELD' : '🔒 DRAFT GATED'}
+                    </span>
                     <span>
                       {language === 'EN'
                         ? 'Draft quote — WhatsApp & E-mail send channels are disabled until quote is approved internally.'
@@ -2787,7 +3044,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
 
                 {validation.errors.length > 0 && (
                   <div className="p-3 bg-red-50 border border-red-300 text-red-800 rounded-xl text-xs space-y-1 font-body">
-                    <p className="font-bold font-mono uppercase text-[10px]">⚠️ Cannot Send Quote Yet:</p>
+                    <p className="font-bold font-mono uppercase text-[10px]">
+                      {language === 'NL' ? '⚠️ Kan offerte nog niet verzenden:' : '⚠️ Cannot Send Quote Yet:'}
+                    </p>
                     <ul className="list-disc list-inside space-y-0.5">
                       {validation.errors.map((err, errIdx) => (
                         <li key={errIdx}>{err}</li>
@@ -2810,13 +3069,14 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     className="px-4 py-2 bg-white border border-[#D6CFC2] text-dark font-bold text-xs rounded-xl shadow-xs hover:bg-[#EDE8DF] transition-all cursor-pointer font-mono flex items-center gap-2"
                   >
                     <span className="text-dark/70">❐</span>
-                    <span>Duplicate Quote</span>
+                    <span>{language === 'NL' ? 'Offerte kopiëren' : 'Duplicate Quote'}</span>
                   </button>
                 </div>
 
                 {/* Filename & notice */}
                 <p className="text-xs text-dark/70 font-body pt-1">
-                  Filename: <strong className="font-bold text-dark">Quote-{quote.id} {typeof quote.customer === 'object' ? (quote.customer?.name || 'Jan de Vries') : (quote.customer || 'Jan de Vries')}.pdf</strong> · draft saving is non-blocking
+                  {language === 'NL' ? 'Bestandsnaam: ' : 'Filename: '}
+                  <strong className="font-bold text-dark">Quote-{quote.id} {typeof quote.customer === 'object' ? (quote.customer?.name || 'Jan de Vries') : (quote.customer || 'Jan de Vries')}.pdf</strong> · {language === 'NL' ? 'concept opslaan gebeurt automatisch' : 'draft saving is non-blocking'}
                 </p>
               </div>
             </div>
@@ -2829,7 +3089,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                 onClick={() => setActiveStep(prev => Math.max(1, prev - 1))}
                 className="px-4 py-2 bg-white border border-[#D6CFC2] text-dark font-bold text-xs rounded-xl shadow-xs hover:bg-[#EDE8DF] transition-all cursor-pointer font-mono"
               >
-                ← Back
+                {language === 'NL' ? '← Terug' : '← Back'}
               </button>
             ) : <div></div>}
 
@@ -2838,7 +3098,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                 onClick={() => setActiveStep(prev => Math.min(6, prev + 1))}
                 className="px-6 py-2.5 bg-[#33422C] hover:bg-[#283523] text-[#FDFBF7] font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 font-mono cursor-pointer"
               >
-                <span>Next: {getStepNextTitle(activeStep)} →</span>
+                <span>{language === 'NL' ? `Volgende: ${getStepNextTitle(activeStep)} →` : `Next: ${getStepNextTitle(activeStep)} →`}</span>
               </button>
             )}
           </div>
@@ -2852,9 +3112,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
           <div className="bg-white rounded-2xl p-3 border border-[#D6CFC2] shadow-xs space-y-2 font-body relative">
             {/* Live Preview Header */}
             <div className="flex justify-between items-center border-b border-[#D6CFC2]/80 pb-2.5">
-              <span className="text-xs font-mono font-bold tracking-wider text-dark/80 uppercase">LIVE PREVIEW</span>
+              <span className="text-xs font-mono font-bold tracking-wider text-dark/80 uppercase">{language === 'NL' ? 'LIVE VOORBEELD' : 'LIVE PREVIEW'}</span>
               <div className="text-xs font-mono font-bold text-dark/70 bg-[#F8F7F4] px-2.5 py-1 rounded-md border border-[#E2DDD3]">
-                PAGE <span className="text-[#33422C] font-extrabold">{previewPage}</span> / 6
+                {language === 'NL' ? 'PAGINA' : 'PAGE'} <span className="text-[#33422C] font-extrabold">{previewPage}</span> / 6
               </div>
             </div>
 
@@ -2878,8 +3138,12 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
               {/* Header */}
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-serif font-bold text-lg text-primary">Send Quotation</h3>
-                  <p className="text-xs text-dark/60 font-body mt-0.5">Confirm before sending</p>
+                  <h3 className="font-serif font-bold text-lg text-primary">
+                    {language === 'NL' ? 'Offerte Verzenden' : 'Send Quotation'}
+                  </h3>
+                  <p className="text-xs text-dark/60 font-body mt-0.5">
+                    {language === 'NL' ? 'Bevestig voor verzenden' : 'Confirm before sending'}
+                  </p>
                 </div>
                 <button onClick={() => setShowSendModal(false)} className="text-dark/40 hover:text-dark cursor-pointer"><X className="w-5 h-5" /></button>
               </div>
@@ -2887,26 +3151,36 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
               {/* Quote Summary */}
               <div className="bg-white rounded-xl border border-[#D6CFC2] p-4 space-y-2.5 text-xs font-body">
                 <div className="flex justify-between items-center">
-                  <span className="text-dark/60 font-mono uppercase text-[10px] font-bold">Quote ID</span>
+                  <span className="text-dark/60 font-mono uppercase text-[10px] font-bold">
+                    {language === 'NL' ? 'Offerte ID' : 'Quote ID'}
+                  </span>
                   <span className="font-bold text-primary font-mono">{quote.id}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-dark/60 font-mono uppercase text-[10px] font-bold">Client</span>
+                  <span className="text-dark/60 font-mono uppercase text-[10px] font-bold">
+                    {language === 'NL' ? 'Klant' : 'Client'}
+                  </span>
                   <span className="font-bold text-dark">{quote.customer?.name || 'Bjorn Valk'}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-dark/60 font-mono uppercase text-[10px] font-bold">E-mail</span>
+                  <span className="text-dark/60 font-mono uppercase text-[10px] font-bold">
+                    {language === 'NL' ? 'E-mail' : 'E-mail'}
+                  </span>
                   <span className="font-bold text-dark">{quote.customer?.email || '—'}</span>
                 </div>
                 <div className="flex justify-between items-center border-t border-[#D6CFC2] pt-2 mt-1">
-                  <span className="text-dark/60 font-mono uppercase text-[10px] font-bold">Total incl. VAT</span>
+                  <span className="text-dark/60 font-mono uppercase text-[10px] font-bold">
+                    {language === 'NL' ? 'Totaal incl. btw' : 'Total incl. VAT'}
+                  </span>
                   <span className="font-bold text-primary text-sm">€ {calculateTotals(quote?.investment?.lineItems || []).totalInclVat.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
                 </div>
               </div>
 
               {/* Approval link preview */}
               <div className="bg-[#F8F7F4] rounded-xl border border-[#D6CFC2] p-3.5 space-y-1.5">
-                <span className="text-[10px] font-mono font-bold text-dark/60 uppercase tracking-wider block">Approval Link (for client)</span>
+                <span className="text-[10px] font-mono font-bold text-dark/60 uppercase tracking-wider block">
+                  {language === 'NL' ? 'Akkoordlink (voor klant)' : 'Approval Link (for client)'}
+                </span>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-primary truncate flex-1 bg-white border border-[#D6CFC2] rounded-lg px-2.5 py-1.5">
                     {window.location.origin}/offerte/{quote.publicToken || quote.id}
@@ -2916,23 +3190,25 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     onClick={() => {
                       const shareToken = quote.publicToken || quote.id;
                       navigator.clipboard.writeText(`${window.location.origin}/offerte/${shareToken}`);
-                      showToast('Link copied!');
+                      showToast(language === 'NL' ? 'Link gekopieerd!' : 'Link copied!');
                     }}
                     className="px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-dark hover:bg-[#EDE8DF] cursor-pointer font-mono"
                   >
-                    📋 Copy
+                    📋 {language === 'NL' ? 'Kopiëren' : 'Copy'}
                   </button>
                 </div>
               </div>
 
               {/* What happens info */}
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 text-xs text-emerald-900 space-y-1 font-body">
-                <p className="font-bold">✅ What happens after confirming:</p>
+                <p className="font-bold">
+                  {language === 'NL' ? '✅ Wat gebeurt er na bevestigen:' : '✅ What happens after confirming:'}
+                </p>
                 <ul className="space-y-0.5 text-emerald-800">
-                  <li>• Status changes from <strong>Draft → Sent</strong></li>
-                  <li>• Quote is saved in the system</li>
-                  <li>• Client can view the proposal via the approval link</li>
-                  <li>• Quote is locked after client approval</li>
+                  <li>{language === 'NL' ? <>• Status verandert van <strong>Concept → Verzonden</strong></> : <>• Status changes from <strong>Draft → Sent</strong></>}</li>
+                  <li>{language === 'NL' ? '• Offerte wordt opgeslagen in het systeem' : '• Quote is saved in the system'}</li>
+                  <li>{language === 'NL' ? '• Klant kan het voorstel bekijken via de akkoordlink' : '• Client can view the proposal via the approval link'}</li>
+                  <li>{language === 'NL' ? '• Offerte wordt vergrendeld na akkoord van de klant' : '• Quote is locked after client approval'}</li>
                 </ul>
               </div>
 
@@ -2943,7 +3219,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                   onClick={() => setShowSendModal(false)}
                   className="flex-1 px-4 py-2.5 bg-white border border-[#D6CFC2] text-dark font-bold text-xs rounded-xl hover:bg-[#EDE8DF] cursor-pointer font-mono"
                 >
-                  Cancel
+                  {language === 'NL' ? 'Annuleren' : 'Cancel'}
                 </button>
                 <button
                   type="button"
@@ -2956,11 +3232,11 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       onSaveQuote(updatedQuote, true);
                     }
                     setShowSendModal(false);
-                    showToast(`✅ Quote ${quote.id} sent to ${quote.customer?.name || 'client'}!`);
+                    showToast(language === 'NL' ? `✅ Offerte ${quote.id} verzonden naar ${quote.customer?.name || 'klant'}!` : `✅ Quote ${quote.id} sent to ${quote.customer?.name || 'client'}!`);
                   }}
                   className="flex-1 px-4 py-2.5 bg-[#33422C] text-[#FDFBF7] font-bold text-xs rounded-xl hover:bg-[#283523] cursor-pointer font-mono flex items-center justify-center gap-2"
                 >
-                  <span>✈ Confirm & Send</span>
+                  <span>{language === 'NL' ? '✈ Bevestigen & Verzenden' : '✈ Confirm & Send'}</span>
                 </button>
               </div>
             </motion.div>
@@ -2974,7 +3250,9 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
           <div className="fixed inset-0 z-[999999] bg-dark/60 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 w-full max-w-lg space-y-4 shadow-2xl">
               <div className="flex justify-between items-center border-b border-[#D6CFC2] pb-2">
-                <h3 className="font-heading font-bold text-base text-primary">Product Library</h3>
+                <h3 className="font-heading font-bold text-base text-primary">
+                  {language === 'NL' ? 'Productbibliotheek' : 'Product Library'}
+                </h3>
                 <button onClick={() => setShowLibraryModal(false)} className="text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
               </div>
 
@@ -2987,7 +3265,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       <span className="font-mono text-xs font-bold text-amber-700">€ {item.priceInclVat.toFixed(2)}</span>
                     </div>
                     <Button size="sm" onClick={() => handleAddFromLibrary(item)} className="text-xs">
-                      + Insert
+                      {language === 'NL' ? '+ Invoegen' : '+ Insert'}
                     </Button>
                   </div>
                 ))}

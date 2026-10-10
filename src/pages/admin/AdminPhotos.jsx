@@ -23,6 +23,7 @@ export default function AdminPhotos() {
 
   const [photosList, setPhotosList] = useState([]);
   const [projectsList, setProjectsList] = useState([]);
+  const [customersList, setCustomersList] = useState([]);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState(location?.state?.projectId || 'All');
@@ -120,8 +121,11 @@ export default function AdminPhotos() {
 
     // Load projects for dropdowns
     const projRes = await api.get('/projects?limit=100');
-    if (projRes.success && Array.isArray(projRes.data)) {
-      setProjectsList(projRes.data);
+    const pArr = projRes.success ? (Array.isArray(projRes.data) ? projRes.data : (projRes.data?.items || [])) : [];
+    if (pArr.length > 0) {
+      setProjectsList(pArr);
+      const uniqueCust = Array.from(new Set(pArr.map(p => p.customerName || p.customer).filter(Boolean)));
+      setCustomersList(uniqueCust);
     }
   };
 
@@ -718,7 +722,7 @@ export default function AdminPhotos() {
                     onChange={e => setEditForm(prev => ({ ...prev, customer: e.target.value }))}
                     className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
                   >
-                    {customersList.map((c, idx) => (
+                    {(customersList.length > 0 ? customersList : (editForm.customer ? [editForm.customer] : ['Client'])).map((c, idx) => (
                       <option key={idx} value={c}>{c}</option>
                     ))}
                   </select>

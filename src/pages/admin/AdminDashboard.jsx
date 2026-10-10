@@ -456,7 +456,9 @@ export default function AdminDashboard() {
               </div>
             </div>
             <p className="text-xl font-heading font-extrabold text-dark">
-              {totalLeads > 0 ? `${Math.round((activeQuotes / totalLeads) * 100)}%` : '—'}
+              {funnelData?.offerte?.percentage != null
+                ? `${funnelData.offerte.percentage}%`
+                : (totalLeads > 0 ? `${Math.min(100, Math.round((activeQuotes / totalLeads) * 100))}%` : '—')}
             </p>
             <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'van totaal leads' : 'of total leads'}</p>
           </div>
@@ -470,7 +472,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <p className="text-xl font-heading font-extrabold text-dark">
-              {latestQuotes.filter(q => q.status === 'accepted' || q.status === 'goedgekeurd').length}
+              {latestQuotes.filter(q => q.status === 'accepted' || q.status === 'goedgekeurd' || q.status === 'approved').length}
             </p>
             <p className="text-[10px] font-body text-emerald-700 font-semibold truncate">{language === 'NL' ? 'geaccepteerd' : 'accepted'}</p>
           </div>
@@ -485,8 +487,8 @@ export default function AdminDashboard() {
             </div>
             <p className="text-xl font-heading font-extrabold text-dark">
               {(() => {
-                const won = latestQuotes.filter(q => q.status === 'accepted' || q.status === 'goedgekeurd').length;
-                return totalLeads > 0 ? `${Math.round((won / totalLeads) * 100)}%` : '—';
+                const won = latestQuotes.filter(q => q.status === 'accepted' || q.status === 'goedgekeurd' || q.status === 'approved').length;
+                return totalLeads > 0 ? `${Math.min(100, Math.round((won / totalLeads) * 100))}%` : '—';
               })()}
             </p>
             <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'lead → order' : 'lead → order'}</p>

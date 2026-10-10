@@ -21,14 +21,14 @@ import { createDefaultQuote } from '../utils/quoteSchema';
 import api from '../api/apiClient';
 
 export const WORKFLOW_STEPS = [
-  { id: 1, name: 'New lead', desc: 'Contact & first intake', icon: UserPlus, statusKey: 'new', color: 'blue' },
-  { id: 2, name: 'Partner price request', desc: 'Specs + choose partner', icon: MessageSquare, statusKey: 'inConversation', color: 'amber' },
-  { id: 3, name: 'Partner price received', desc: 'Record cost price', icon: FileText, statusKey: 'priceReceived', color: 'emerald' },
-  { id: 4, name: 'Build the quote', desc: 'Margin + line items', icon: CheckCircle2, statusKey: 'quoteSent', color: 'green' },
-  { id: 5, name: 'Review & send', desc: 'Preview & send PDF', icon: Send, statusKey: 'quoteSent', color: 'blue' },
-  { id: 6, name: 'Customer approval', desc: 'Deposit & confirmed', icon: UserCheck, statusKey: 'won', color: 'purple' },
-  { id: 7, name: 'Create project', desc: 'Work order setup', icon: Briefcase, statusKey: 'won', color: 'cyan' },
-  { id: 8, name: 'Planning & delivery', desc: 'Site schedule & completion', icon: Calendar, statusKey: 'won', color: 'emerald' }
+  { id: 1, name: 'New lead', nameNl: 'Nieuwe lead', desc: 'Contact & first intake', descNl: 'Contact & eerste intake', icon: UserPlus, statusKey: 'new', color: 'blue' },
+  { id: 2, name: 'Partner price request', nameNl: 'Prijsaanvraag partner', desc: 'Specs + choose partner', descNl: 'Specificaties + kies partner', icon: MessageSquare, statusKey: 'inConversation', color: 'amber' },
+  { id: 3, name: 'Partner price received', nameNl: 'Partnerprijs ontvangen', desc: 'Record cost price', descNl: 'Kostprijs registreren', icon: FileText, statusKey: 'priceReceived', color: 'emerald' },
+  { id: 4, name: 'Build the quote', nameNl: 'Offerte opstellen', desc: 'Margin + line items', descNl: 'Marge + offerteposten', icon: CheckCircle2, statusKey: 'quoteSent', color: 'green' },
+  { id: 5, name: 'Review & send', nameNl: 'Controleren & verzenden', desc: 'Preview & send PDF', descNl: 'Voorbeeld & PDF verzenden', icon: Send, statusKey: 'quoteSent', color: 'blue' },
+  { id: 6, name: 'Customer approval', nameNl: 'Goedkeuring klant', desc: 'Deposit & confirmed', descNl: 'Aanbetaling & bevestigd', icon: UserCheck, statusKey: 'won', color: 'purple' },
+  { id: 7, name: 'Create project', nameNl: 'Project aanmaken', desc: 'Work order setup', descNl: 'Werkbon opstellen', icon: Briefcase, statusKey: 'won', color: 'cyan' },
+  { id: 8, name: 'Planning & delivery', nameNl: 'Planning & oplevering', desc: 'Site schedule & completion', descNl: 'Planning & oplevering', icon: Calendar, statusKey: 'won', color: 'emerald' }
 ];
 
 export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenPartnerWizard, leadsList = [] }) {
@@ -1802,7 +1802,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                     if (lead) lead.workflowStep = step.id;
                     if (onUpdateStatus) onUpdateStatus(lead?.id, step.id);
                   }}
-                  title={`Step ${step.id}: ${step.name}`}
+                  title={language === 'NL' ? `Stap ${step.id}: ${step.nameNl || step.name}` : `Step ${step.id}: ${step.name}`}
                   className="flex flex-col items-center group relative z-10 focus:outline-none cursor-pointer"
                 >
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
@@ -1826,7 +1826,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       ? 'text-emerald-700 font-semibold'
                       : 'text-dark/40'
                   }`}>
-                    {step.name}
+                    {language === 'NL' ? (step.nameNl || step.name) : step.name}
                   </span>
                 </button>
               );
@@ -1849,32 +1849,32 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                   {language === 'NL' ? 'Huidige Fase Details' : 'Current Stage Details'}
                 </span>
                 <h3 className="text-xl font-heading font-bold text-primary flex items-center gap-2">
-                  <span>Step {currentStep}: {WORKFLOW_STEPS[currentStep - 1].name}</span>
+                  <span>{language === 'NL' ? `Stap ${currentStep}: ${WORKFLOW_STEPS[currentStep - 1]?.nameNl || WORKFLOW_STEPS[currentStep - 1]?.name}` : `Step ${currentStep}: ${WORKFLOW_STEPS[currentStep - 1]?.name}`}</span>
                 </h3>
               </div>
               {currentStep === 8 ? (
                 <span className="bg-[#DCFCE7] text-[#15803D] font-bold text-xs px-3 py-1 rounded-full border border-emerald-200/60 shadow-2xs">
-                  Completed
+                  {language === 'NL' ? 'Afgerond' : 'Completed'}
                 </span>
               ) : currentStep === 7 ? (
                 <span className="bg-[#FEF9C3] text-[#713F12] font-semibold text-xs px-3 py-1 rounded-full border border-amber-200/60 shadow-2xs">
-                  In Progress
+                  {language === 'NL' ? 'In uitvoering' : 'In Progress'}
                 </span>
               ) : currentStep === 4 ? (
                 <span className="bg-[#FEF3C7] text-[#92400E] font-semibold text-xs px-3 py-1 rounded-full border border-amber-200/60 shadow-2xs">
-                  Draft — Not Sent
+                  {language === 'NL' ? 'Concept — Niet verzonden' : 'Draft — Not Sent'}
                 </span>
               ) : currentStep === 3 ? (
                 <span className="bg-[#DCFCE7] text-[#15803D] font-bold text-xs px-3 py-1 rounded-full border border-emerald-200/60 shadow-2xs">
-                  ✓ Partner Price Received
+                  {language === 'NL' ? '✓ Partnerprijs ontvangen' : '✓ Partner Price Received'}
                 </span>
               ) : currentStep === 2 ? (
                 <span className="bg-[#FEF3C7] text-[#92400E] font-semibold text-xs px-3 py-1 rounded-full border border-amber-200/60 shadow-2xs">
-                  In Conversation
+                  {language === 'NL' ? 'In gesprek' : 'In Conversation'}
                 </span>
               ) : (
                 <span className="text-xs text-dark/60 font-body font-medium">
-                  {currentStep === 5 ? 'Active' : (currentStep === 6 ? 'In Progress' : currentBadge.label)}
+                  {currentStep === 5 ? (language === 'NL' ? 'Actief' : 'Active') : (currentStep === 6 ? (language === 'NL' ? 'In uitvoering' : 'In Progress') : currentBadge.label)}
                 </span>
               )}
             </div>
@@ -2995,19 +2995,21 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       </div>
                       <div>
                         <h4 className="font-heading font-bold text-emerald-950 text-sm flex items-center gap-2">
-                          <span>Build the Quote</span>
+                          <span>{language === 'NL' ? 'Offerte opstellen' : 'Build the Quote'}</span>
                           <span className="text-[10px] font-mono bg-emerald-200 text-emerald-900 font-bold px-2 py-0.5 rounded-full uppercase">
-                            DRAFT MODE ONLY
+                            {language === 'NL' ? 'ALLEEN CONCEPTMODUS' : 'DRAFT MODE ONLY'}
                           </span>
                         </h4>
                         <p className="text-[11px] text-emerald-900/80 mt-0.5">
-                          Build customer quotation from approved internal pricing. Nothing is sent to customer or partner from this step.
+                          {language === 'NL'
+                            ? 'Klantofferte opstellen op basis van goedgekeurde interne prijzen. Er wordt vanuit deze stap niets naar de klant of partner verzonden.'
+                            : 'Build customer quotation from approved internal pricing. Nothing is sent to customer or partner from this step.'}
                         </p>
                       </div>
                     </div>
                     {quoteSavedAsDraft && (
                       <span className="text-xs font-bold text-emerald-800 bg-white border border-emerald-300 px-3 py-1.5 rounded-xl shadow-2xs flex items-center gap-1.5 whitespace-nowrap">
-                        ✓ Saved as Draft
+                        {language === 'NL' ? '✓ Opgeslagen als concept' : '✓ Saved as Draft'}
                       </span>
                     )}
                   </div>
@@ -3020,7 +3022,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         {language === 'EN' ? 'Internal Pricing Input' : 'Interne Prijs Invoer'}
                       </h4>
                       <span className="text-[10px] font-mono font-bold text-red-700 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full uppercase">
-                        🔒 INTERNAL ONLY
+                        {language === 'NL' ? '🔒 ALLEEN INTERN' : '🔒 INTERNAL ONLY'}
                       </span>
                     </div>
 
@@ -3028,7 +3030,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                     <div className="p-3.5 bg-amber-50/80 border border-amber-200/80 rounded-xl flex items-center justify-between">
                       <div>
                         <span className="text-[10px] font-bold text-amber-900/70 uppercase block mb-0.5">
-                          🔒 Internal Partner Cost (Auto Carried from Step 3)
+                          {language === 'NL' ? '🔒 Interne partnerkosten (automatisch overgenomen uit stap 3)' : '🔒 Internal Partner Cost (Auto Carried from Step 3)'}
                         </span>
                         <span className="text-xs text-amber-950 font-medium">
                           Partner: {partnerForm?.partnerName || lead?.partner || '—'}
@@ -3036,7 +3038,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       </div>
                       <div className="text-right">
                         <span className="text-base font-black text-amber-900">€ {effectivePartnerCost.toLocaleString('nl-NL')}</span>
-                        <span className="text-[9px] text-red-700 font-bold block">Never shown to customer</span>
+                        <span className="text-[9px] text-red-700 font-bold block">
+                          {language === 'NL' ? 'Nooit zichtbaar voor klant' : 'Never shown to customer'}
+                        </span>
                       </div>
                     </div>
 
@@ -3044,10 +3048,10 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                     <div className="p-4 bg-white rounded-xl border border-[#D6CFC2]/80 space-y-3">
                       <div className="flex items-center justify-between border-b border-[#D6CFC2]/50 pb-2">
                         <span className="text-xs font-bold text-dark flex items-center gap-1.5">
-                          <span>🔄 Two-Way Synchronized Margin Calculation</span>
+                          <span>{language === 'NL' ? '🔄 Tweeweg gesynchroniseerde margeberekening' : '🔄 Two-Way Synchronized Margin Calculation'}</span>
                         </span>
                         <span className="text-[10px] text-dark/50 italic">
-                          Change % or € — both stay synchronized
+                          {language === 'NL' ? 'Wijzig % of € — beide blijven gesynchroniseerd' : 'Change % or € — both stay synchronized'}
                         </span>
                       </div>
 
@@ -3055,7 +3059,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         {/* Method A: Margin Percentage */}
                         <div>
                           <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
-                            Margin % (Percentage)
+                            {language === 'NL' ? 'Marge % (Percentage)' : 'Margin % (Percentage)'}
                           </label>
                           <div className="relative">
                             <input
@@ -3069,13 +3073,15 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-dark/50">%</span>
                           </div>
-                          <span className="text-[9px] text-dark/50 block mt-1">Updates Margin Amount automatically</span>
+                          <span className="text-[9px] text-dark/50 block mt-1">
+                            {language === 'NL' ? 'Werkt margebedrag automatisch bij' : 'Updates Margin Amount automatically'}
+                          </span>
                         </div>
 
                         {/* Method B: Margin Amount € */}
                         <div>
                           <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
-                            Margin Amount € (Fixed Amount)
+                            {language === 'NL' ? 'Margebedrag € (Vast bedrag)' : 'Margin Amount € (Fixed Amount)'}
                           </label>
                           <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-dark/50">€</span>
@@ -3088,7 +3094,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                               className="w-full pl-7 pr-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl text-sm font-bold text-primary focus:ring-2 focus:ring-primary/20"
                             />
                           </div>
-                          <span className="text-[9px] text-dark/50 block mt-1">Updates Margin Percentage automatically</span>
+                          <span className="text-[9px] text-dark/50 block mt-1">
+                            {language === 'NL' ? 'Werkt margepercentage automatisch bij' : 'Updates Margin Percentage automatically'}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -3098,24 +3106,30 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                   <div className="p-5 bg-white rounded-2xl border border-[#D6CFC2]/80 space-y-4 shadow-2xs">
                     <div className="flex items-center justify-between border-b border-[#D6CFC2]/60 pb-3">
                       <h4 className="font-bold text-dark text-sm font-heading flex items-center gap-2">
-                        <span>📊 Internal Quote Calculation Summary</span>
+                        <span>{language === 'NL' ? '📊 Samenvatting interne offerteberekening' : '📊 Internal Quote Calculation Summary'}</span>
                       </h4>
-                      <span className="text-[10px] font-bold text-dark/50 uppercase">Calculated Breakdown</span>
+                      <span className="text-[10px] font-bold text-dark/50 uppercase">
+                        {language === 'NL' ? 'Berekende specificatie' : 'Calculated Breakdown'}
+                      </span>
                     </div>
 
                     <div className="space-y-2 text-xs font-body">
                       {/* Partner Cost */}
                       <div className="flex justify-between items-center p-2.5 bg-red-50/50 rounded-xl border border-red-100">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-red-900">Partner Cost</span>
-                          <span className="text-[9px] bg-red-700 text-white px-1.5 py-0.2 rounded font-bold uppercase">🔒 Internal</span>
+                          <span className="font-bold text-red-900">{language === 'NL' ? 'Partnerkosten' : 'Partner Cost'}</span>
+                          <span className="text-[9px] bg-red-700 text-white px-1.5 py-0.2 rounded font-bold uppercase">
+                            {language === 'NL' ? '🔒 Intern' : '🔒 Internal'}
+                          </span>
                         </div>
                         <span className="font-black text-red-900 text-sm">€ {effectivePartnerCost.toLocaleString('nl-NL')}</span>
                       </div>
 
                       {/* Margin */}
                       <div className="flex justify-between items-center p-2.5 bg-amber-50/50 rounded-xl border border-amber-100">
-                        <span className="font-bold text-amber-900">Gross Margin ({step4MarginPercent}%)</span>
+                        <span className="font-bold text-amber-900">
+                          {language === 'NL' ? `Brutomarge (${step4MarginPercent}%)` : `Gross Margin (${step4MarginPercent}%)`}
+                        </span>
                         <span className="font-black text-amber-900 text-sm">+ € {step4MarginAmount.toLocaleString('nl-NL')}</span>
                       </div>
 
@@ -3123,22 +3137,22 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
 
                       {/* Customer Price Excl VAT (Read-Only) */}
                       <div className="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-200">
-                        <span className="font-bold text-dark">Customer Price excl. VAT</span>
+                        <span className="font-bold text-dark">{language === 'NL' ? 'Klantprijs excl. btw' : 'Customer Price excl. VAT'}</span>
                         <span className="font-black text-primary text-base">€ {step4CustomerPriceExclVat.toLocaleString('nl-NL')}</span>
                       </div>
 
                       {/* VAT 21% */}
                       <div className="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-200">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-dark">VAT ({step4VatRate}%)</span>
+                          <span className="font-bold text-dark">{language === 'NL' ? `Btw (${step4VatRate}%)` : `VAT (${step4VatRate}%)`}</span>
                           <select
                             value={step4VatRate}
                             onChange={(e) => setStep4VatRate(Number(e.target.value))}
                             className="text-[10px] bg-white border border-[#D6CFC2] rounded px-1.5 py-0.5 font-bold cursor-pointer"
                           >
-                            <option value={21}>21% (Standard)</option>
-                            <option value={9}>9% (Reduced)</option>
-                            <option value={0}>0% (Exempt)</option>
+                            <option value={21}>{language === 'NL' ? '21% (Standaard)' : '21% (Standard)'}</option>
+                            <option value={9}>{language === 'NL' ? '9% (Verlaagd)' : '9% (Reduced)'}</option>
+                            <option value={0}>{language === 'NL' ? '0% (Vrijgesteld)' : '0% (Exempt)'}</option>
                           </select>
                         </div>
                         <span className="font-bold text-dark">+ € {step4VatAmount.toLocaleString('nl-NL')}</span>
@@ -3147,8 +3161,12 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       {/* TOTAL INCL VAT (Prominent & Read-Only) */}
                       <div className="flex justify-between items-center p-4 bg-[#3E4E36] text-white rounded-xl shadow-md">
                         <div>
-                          <span className="text-[10px] uppercase font-bold text-emerald-200 block tracking-wider">TOTAL INCL. VAT (CALCULATED)</span>
-                          <span className="text-xs text-white/80">Read-only total for customer quotation</span>
+                          <span className="text-[10px] uppercase font-bold text-emerald-200 block tracking-wider">
+                            {language === 'NL' ? 'TOTAAL INCL. BTW (BEREKEND)' : 'TOTAL INCL. VAT (CALCULATED)'}
+                          </span>
+                          <span className="text-xs text-white/80">
+                            {language === 'NL' ? 'Alleen-lezen totaal voor klantofferte' : 'Read-only total for customer quotation'}
+                          </span>
                         </div>
                         <span className="text-2xl font-black text-white">€ {step4TotalInclVat.toLocaleString('nl-NL')}</span>
                       </div>
@@ -3159,25 +3177,31 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                   <div className="p-5 bg-[#F6F4EE] rounded-2xl border border-[#D6CFC2] space-y-3 shadow-2xs">
                     <div className="flex items-center justify-between border-b border-[#D6CFC2]/70 pb-2">
                       <div className="flex items-center gap-2">
-                        <span className="bg-[#3E4E36] text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase">PREVIEW</span>
-                        <h4 className="font-bold text-dark text-xs font-heading">Customer Quote Preview</h4>
+                        <span className="bg-[#3E4E36] text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase">
+                          {language === 'NL' ? 'VOORBEELD' : 'PREVIEW'}
+                        </span>
+                        <h4 className="font-bold text-dark text-xs font-heading">
+                          {language === 'NL' ? 'Voorbeeld klantofferte' : 'Customer Quote Preview'}
+                        </h4>
                       </div>
                       <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                        🔒 Partner cost & margin hidden
+                        {language === 'NL' ? '🔒 Partnerkosten & marge verborgen' : '🔒 Partner cost & margin hidden'}
                       </span>
                     </div>
 
                     <div className="p-4 bg-white rounded-xl border border-[#D6CFC2]/80 space-y-2 text-xs font-body shadow-2xs">
                       <div className="flex justify-between items-center">
-                        <span className="text-dark/70">Bespoke {lead?.productType || customerCategory} Quotation</span>
+                        <span className="text-dark/70">
+                          {language === 'NL' ? `Maatwerk ${lead?.productType || customerCategory} Offerte` : `Bespoke ${lead?.productType || customerCategory} Quotation`}
+                        </span>
                         <span className="font-semibold text-dark">€ {step4CustomerPriceExclVat.toLocaleString('nl-NL')}</span>
                       </div>
                       <div className="flex justify-between items-center text-dark/70">
-                        <span>VAT ({step4VatRate}%)</span>
+                        <span>{language === 'NL' ? `Btw (${step4VatRate}%)` : `VAT (${step4VatRate}%)`}</span>
                         <span>€ {step4VatAmount.toLocaleString('nl-NL')}</span>
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-[#D6CFC2] font-bold text-primary text-sm">
-                        <span>Total (incl. VAT)</span>
+                        <span>{language === 'NL' ? 'Totaal (incl. btw)' : 'Total (incl. VAT)'}</span>
                         <span className="text-base text-primary">€ {step4TotalInclVat.toLocaleString('nl-NL')}</span>
                       </div>
                     </div>
@@ -3186,9 +3210,15 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                   {/* Step 4 Main Action Bar (STRICTLY NOTHING SENT — Save as Draft) */}
                   <div className="p-4 bg-[#EDE8DF] border border-[#D6CFC2] rounded-2xl flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
                     <div className="flex-1 min-w-[280px]">
-                      <span className="text-[10px] font-mono font-bold text-accent uppercase tracking-wider block">RECOMMENDED NEXT ACTION</span>
-                      <span className="text-xs font-bold text-primary block">Save quote draft — no messages or emails will be sent</span>
-                      <span className="text-[10px] text-dark/60 block font-medium">Continue to Step 5 for review. Nothing is sent from Step 4.</span>
+                      <span className="text-[10px] font-mono font-bold text-accent uppercase tracking-wider block">
+                        {language === 'NL' ? 'AANBEVOLEN VOLGENDE ACTIE' : 'RECOMMENDED NEXT ACTION'}
+                      </span>
+                      <span className="text-xs font-bold text-primary block">
+                        {language === 'NL' ? 'Offerteconcept opslaan — er worden geen berichten of e-mails verzonden' : 'Save quote draft — no messages or emails will be sent'}
+                      </span>
+                      <span className="text-[10px] text-dark/60 block font-medium">
+                        {language === 'NL' ? 'Ga door naar stap 5 voor controle. Er wordt vanuit stap 4 niets verzonden.' : 'Continue to Step 5 for review. Nothing is sent from Step 4.'}
+                      </span>
                     </div>
 
                     <div className="flex items-start gap-2.5 flex-wrap">
@@ -3198,7 +3228,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           onClick={handleSaveDraftStep4}
                           className="px-4 py-2.5 bg-white hover:bg-slate-50 text-dark border border-[#D6CFC2] font-bold text-xs rounded-xl shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 transition-all"
                         >
-                          <span>💾 Save as Draft</span>
+                          <span>{language === 'NL' ? '💾 Opslaan als concept' : '💾 Save as Draft'}</span>
                         </button>
                       </div>
 
@@ -3223,9 +3253,11 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           className="px-5 py-2.5 bg-[#3E4E36] hover:bg-[#2F3C29] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-2 whitespace-nowrap border-2 border-emerald-400/50"
                         >
                           <FileText className="w-4 h-4" />
-                          <span>Open Quote Editor & Build PDF →</span>
+                          <span>{language === 'NL' ? 'Offerte-editor openen & PDF maken →' : 'Open Quote Editor & Build PDF →'}</span>
                         </button>
-                        <span className="text-[9px] text-dark/50 italic text-right">Opens Quote Editor on this page — no redirect</span>
+                        <span className="text-[9px] text-dark/50 italic text-right">
+                          {language === 'NL' ? 'Opent offerte-editor op deze pagina — geen omleiding' : 'Opens Quote Editor on this page — no redirect'}
+                        </span>
                       </div>
                     </div>
                   </div>
