@@ -354,6 +354,16 @@ export default function Settings() {
     }
   };
 
+  const saveAllQuoteTemplateFields = async () => {
+    try {
+      await api.patch('/settings/config/quote-template', quoteTemplateConfig);
+      window.dispatchEvent(new Event('app_data_changed'));
+      showToast(language === 'EN' ? 'Quote template fields saved successfully!' : 'Offerte sjabloon velden succesvol opgeslagen!');
+    } catch (err) {
+      showToast(language === 'EN' ? 'Failed to save quote template fields.' : 'Opslaan offerte sjabloon velden mislukt.');
+    }
+  };
+
   const savePlConfig = async () => {
     try {
       await api.patch('/settings/config/pl-targets', plConfig);
@@ -1235,11 +1245,6 @@ export default function Settings() {
           <Card 
             title={language === 'EN' ? 'Quote Proposal Dynamic Field Defaults' : 'Offerte Sjabloon Dynamische Velden & Standaardwaarden'} 
             icon={FileText}
-            topRightAction={{
-              label: language === 'EN' ? '+ Add Presets' : '+ Standaardopties Beheren',
-              icon: Plus,
-              onClick: () => showToast(language === 'EN' ? 'Template presets saved automatically!' : 'Sjabloon opties automatisch opgeslagen!')
-            }}
           >
             <div className="space-y-6 text-xs text-dark">
               <p className="text-dark/60">
@@ -1325,6 +1330,12 @@ export default function Settings() {
                   </select>
                   <p className="text-[10px] text-dark/50">Bepaalt de termijnkaartjes op pagina 4 van de offerte.</p>
                 </div>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-[#D6CFC2]/60 mt-4">
+                <Button icon={Save} onClick={saveAllQuoteTemplateFields}>
+                  {language === 'EN' ? 'Save Quote Template Fields' : 'Offerte Sjabloon Velden Opslaan'}
+                </Button>
               </div>
             </div>
           </Card>

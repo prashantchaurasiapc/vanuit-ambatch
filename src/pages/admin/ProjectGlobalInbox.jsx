@@ -22,6 +22,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
   const directFileInputRef = useRef(null);
   const [projects, setProjects] = useState([]);
   const [leadsList, setLeadsList] = useState([]);
+  const [customersList, setCustomersList] = useState([]);
   const [partnersList, setPartnersList] = useState([]);
 
   // Direct Upload Popup Modal State
@@ -66,14 +67,19 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
     try {
       const res = await api.get('/projects?limit=50');
       const localProjects = JSON.parse(localStorage.getItem('app_projects_v2') || '[]');
-      if (res.success && Array.isArray(res.data)) {
+      const projectsArr = res.success
+        ? (Array.isArray(res.data) ? res.data : (res.data?.items || res.data?.projects || []))
+        : [];
+      if (projectsArr.length > 0) {
         const merged = [
-          ...res.data,
-          ...localProjects.filter(lp => !res.data.some(bp => bp.id === lp.id || bp.projectNumber === lp.projectNumber || (lp.quoteId && bp.quoteId === lp.quoteId)))
+          ...projectsArr,
+          ...localProjects.filter(lp => !projectsArr.some(bp => bp.id === lp.id || bp.projectNumber === lp.projectNumber || (lp.quoteId && bp.quoteId === lp.quoteId)))
         ];
         setProjects(merged);
       } else if (localProjects.length > 0) {
         setProjects(localProjects);
+      } else if (res.success && Array.isArray(projectsArr)) {
+        setProjects([]);
       }
     } catch {
       const localProjects = JSON.parse(localStorage.getItem('app_projects_v2') || '[]');
@@ -91,12 +97,23 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
         const items = res.data?.items || (Array.isArray(res.data) ? res.data : []);
         setLeadsList(items);
       }
-    });
+    }).catch(() => {});
 
-    // Partners list for dropdowns
+    // Customers list for customer matching
+    api.get('/customers?limit=100').then(res => {
+      if (res.success) {
+        const items = res.data?.items || (Array.isArray(res.data) ? res.data : []);
+        setCustomersList(items);
+      }
+    }).catch(() => {});
+
+    // Partners list for dropdowns (handles { items: [...] }, { partners: [...] }, or flat array)
     api.get('/partners?limit=100').then(res => {
-      if (res.success && Array.isArray(res.data)) setPartnersList(res.data);
-    });
+      if (res.success) {
+        const items = res.data?.items || res.data?.partners || (Array.isArray(res.data) ? res.data : []);
+        setPartnersList(items);
+      }
+    }).catch(err => console.error('Failed to load partners:', err));
 
     return () => {
       window.removeEventListener('app_data_changed', loadProjectsData);
@@ -110,11 +127,21 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
   // Inline partner re-assignment in table
   const handleInlinePartnerChange = async (projectId, newPartner) => {
-    const partner = partnersList.find(p => p.name === newPartner || p.id === newPartner);
+    const partner = partnersList.find(p =>
+      p.id === newPartner ||
+      (p.companyName && p.companyName === newPartner) ||
+      (p.contactPerson && p.contactPerson === newPartner) ||
+      (p.name && p.name === newPartner)
+    );
     if (!partner) {
-      // Optimistic local update only
-      setProjects(prev => prev.map(p => p.id === projectId ? { ...p, partner: newPartner } : p));
-      showToast(`Partner updated to "${newPartner}" for project ${projectId}!`);
+      if (newPartner === 'Unassigned') {
+        await api.put(`/projects/${projectId}`, { partnerId: null });
+        await loadProjectsData();
+        showToast('Partner unassigned.');
+      } else {
+        setProjects(prev => prev.map(p => p.id === projectId ? { ...p, partner: newPartner, partnerName: newPartner } : p));
+        showToast(`Partner updated to "${newPartner}" for project ${projectId}!`);
+      }
       return;
     }
     const res = await api.patch(`/projects/${projectId}/assign-partner`, {
@@ -122,8 +149,8 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       agreedBuildPrice: 0
     });
     if (res.success) {
-      setProjects(prev => prev.map(p => p.id === projectId ? { ...p, ...res.data, partner: newPartner } : p));
-      showToast(`Partner updated to "${newPartner}" for project ${projectId}!`);
+      await loadProjectsData();
+      showToast(`Partner updated to "${partner.companyName || partner.contactPerson}"!`);
     } else {
       showToast(`⚠ Failed to update partner: ${res.error?.message || 'Unknown error'}`);
     }
@@ -164,32 +191,45 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
   const handleOpenAddModal = () => {
     setSelectedProject(null);
-    const defaultCust = leadsList[0]?.name || 'Other';
-    const defaultPart = partnersList[0]?.name || 'Unassigned';
+    const defaultCust = leadsList[0]?.name || '';
 
     setForm({
       name: '',
-      customer: defaultCust === 'Other' ? '' : defaultCust,
-      partner: defaultPart,
+      customer: defaultCust,
+      partner: 'Unassigned',
       progress: 10,
       deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       status: 'In Progress'
     });
-    setCustomerSelect(defaultCust);
-    setPartnerSelect(defaultPart);
+    setCustomerSelect(defaultCust || 'Other');
+    setPartnerSelect('Unassigned');
     setModalOpen(true);
   };
 
   const handleOpenEditModal = (proj) => {
     setSelectedProject(proj);
-    setCustomerSelect(proj.customer || 'Other');
-    setPartnerSelect(proj.partner || 'Unassigned');
+    const cust = proj.customerName || (typeof proj.customer === 'string' ? proj.customer : proj.customer?.name) || 'Other';
+    setCustomerSelect(cust);
+
+    let partnerVal = 'Unassigned';
+    if (proj.partnerId) {
+      partnerVal = proj.partnerId;
+    } else if (proj.partnerName || proj.partner) {
+      const pName = (proj.partnerName || proj.partner || '').toLowerCase();
+      const matched = partnersList.find(p =>
+        (p.companyName && p.companyName.toLowerCase() === pName) ||
+        (p.contactPerson && p.contactPerson.toLowerCase() === pName) ||
+        (p.name && p.name.toLowerCase() === pName)
+      );
+      if (matched) partnerVal = matched.id;
+    }
+    setPartnerSelect(partnerVal);
 
     setForm({
-      name: proj.name,
-      customer: proj.customer,
-      partner: proj.partner || 'Unassigned',
-      progress: proj.progress || 0,
+      name: proj.name || '',
+      customer: cust,
+      partner: partnerVal,
+      progress: proj.progress || proj.progressPercentage || 0,
       deadline: proj.deadline || '',
       status: proj.status || 'In Progress'
     });
@@ -208,12 +248,24 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const finalCustomer = customerSelect === 'Other' ? form.customer : customerSelect;
+    const finalCustomer = (customerSelect === 'Other' || !customerSelect ? form.customer : customerSelect).trim();
     const finalPartner = partnerSelect;
 
-    if (!form.name.trim() || !finalCustomer.trim()) {
+    if (!form.name.trim() || !finalCustomer) {
       showToast("Please enter valid Project and Customer names.");
       return;
+    }
+
+    // Resolve partnerId (UUID or null)
+    let partnerId = null;
+    if (finalPartner && finalPartner !== 'Unassigned') {
+      const matchedPartner = partnersList.find(p =>
+        p.id === finalPartner ||
+        (p.companyName && p.companyName.toLowerCase() === finalPartner.toLowerCase()) ||
+        (p.contactPerson && p.contactPerson.toLowerCase() === finalPartner.toLowerCase()) ||
+        (p.name && p.name.toLowerCase() === finalPartner.toLowerCase())
+      );
+      partnerId = matchedPartner ? matchedPartner.id : (finalPartner.length === 36 ? finalPartner : null);
     }
 
     if (selectedProject) {
@@ -222,6 +274,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
         name: form.name,
         progressPercentage: parseInt(form.progress) || 0,
         orderStatus: form.status === 'Completed' ? 'voltooid' : 'in_voorbereiding',
+        partnerId: partnerId,
       };
       const res = await api.put(`/projects/${selectedProject.id}`, body);
       if (res.success) {
@@ -232,18 +285,70 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       }
     } else {
       // Create new project — POST /api/projects
-      // Requires customerId from leads list
-      const matchedLead = leadsList.find(l => l.name === finalCustomer || l.fullName === finalCustomer);
-      if (!matchedLead) {
-        showToast('⚠ Customer not found in leads list. Please create a lead for this customer first.');
+      // Resolve customerId
+      let customerId = null;
+      let deliveryAddress = 'Address not set';
+      let city = 'Amsterdam';
+
+      // 1. Try matching from leadsList
+      const matchedLead = leadsList.find(l =>
+        (l.name && l.name.toLowerCase() === finalCustomer.toLowerCase()) ||
+        (l.fullName && l.fullName.toLowerCase() === finalCustomer.toLowerCase())
+      );
+      if (matchedLead) {
+        customerId = matchedLead.customerId || matchedLead.id;
+        if (matchedLead.address) deliveryAddress = matchedLead.address;
+        if (matchedLead.city) city = matchedLead.city;
+      }
+
+      // 2. Try matching from customersList
+      if (!customerId) {
+        const matchedCust = customersList.find(c => {
+          const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim();
+          return (
+            (c.companyName && c.companyName.toLowerCase() === finalCustomer.toLowerCase()) ||
+            (fullName && fullName.toLowerCase() === finalCustomer.toLowerCase()) ||
+            (c.name && c.name.toLowerCase() === finalCustomer.toLowerCase())
+          );
+        });
+        if (matchedCust) {
+          customerId = matchedCust.id;
+          if (matchedCust.streetAddress) deliveryAddress = matchedCust.streetAddress;
+          if (matchedCust.city) city = matchedCust.city;
+        }
+      }
+
+      // 3. If still no customer found, auto-create customer in DB
+      if (!customerId) {
+        const parts = finalCustomer.split(/\s+/);
+        const firstName = parts[0] || 'Klant';
+        const lastName = parts.slice(1).join(' ') || (parts[0] ? 'Klant' : 'Onbekend');
+        const cleanName = finalCustomer.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const newCustRes = await api.post('/customers', {
+          firstName,
+          lastName,
+          email: `${cleanName || 'klant'}@vanuitambacht.nl`,
+          phone: '+31 6 12345678',
+          city: 'Amsterdam',
+          streetAddress: deliveryAddress
+        });
+        if (newCustRes.success && newCustRes.data?.id) {
+          customerId = newCustRes.data.id;
+        }
+      }
+
+      if (!customerId) {
+        showToast('⚠ Kon klant niet koppelen of aanmaken.');
         return;
       }
+
       const body = {
         name: form.name,
         projectType: 'outdoor_kitchen',
-        customerId: matchedLead.id,
-        deliveryAddress: matchedLead.address || 'Address not set',
-        city: matchedLead.city || 'City not set',
+        customerId,
+        partnerId,
+        deliveryAddress,
+        city,
         orderStatus: 'in_voorbereiding',
       };
       const res = await api.post('/projects', body);
@@ -312,11 +417,18 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
   // Process & Filter Projects
   const filteredProjects = projects.filter(p => {
     const query = searchQuery.toLowerCase();
+    const resolvedPartnerName =
+      p.partnerName ||
+      (p.partner && p.partner !== 'Unassigned' ? p.partner : '') ||
+      (p.partnerId && partnersList.find(pt => pt.id === p.partnerId)?.companyName) ||
+      '';
+
     const matchesSearch =
       (p.name || '').toLowerCase().includes(query) ||
-      (p.customer || '').toLowerCase().includes(query) ||
+      (p.customerName || (typeof p.customer === 'string' ? p.customer : p.customer?.name) || '').toLowerCase().includes(query) ||
       (p.id || '').toLowerCase().includes(query) ||
-      (p.partner || '').toLowerCase().includes(query);
+      (p.projectNumber || '').toLowerCase().includes(query) ||
+      resolvedPartnerName.toLowerCase().includes(query);
 
     const matchesStatus = statusFilter === 'All' || p.status === statusFilter;
 
@@ -554,7 +666,12 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                       {/* 6. Partner */}
                       <td className="py-3 px-3 rounded-r-xl border-y border-r border-[#E2DDD3] text-[11px]">
                         <div className="flex flex-col">
-                          <span className="font-bold text-dark">{row.partner && row.partner !== 'Unassigned' ? row.partner : t('projects.unassigned')}</span>
+                          <span className="font-bold text-dark">
+                            {row.partnerName ||
+                             (row.partner && row.partner !== 'Unassigned' ? row.partner : null) ||
+                             (row.partnerId && (partnersList.find(p => p.id === row.partnerId)?.companyName || partnersList.find(p => p.id === row.partnerId)?.contactPerson)) ||
+                             t('projects.unassigned')}
+                          </span>
                           <span className="text-[9px] text-dark/50">{t('projects.inProgress')}</span>
                         </div>
                       </td>
@@ -810,9 +927,15 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                       className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold text-dark"
                     >
                       <option value="Unassigned">{language === 'NL' ? 'Niet toegewezen' : 'Unassigned'}</option>
-                      {partnersList.map((p, idx) => (
-                        <option key={idx} value={p.name}>{p.name}</option>
-                      ))}
+                      {partnersList.map((p, idx) => {
+                        const displayName = p.companyName || p.contactPerson || p.name || `Partner ${idx + 1}`;
+                        const contact = p.contactPerson && p.contactPerson !== p.companyName ? ` (${p.contactPerson})` : '';
+                        return (
+                          <option key={p.id || idx} value={p.id}>
+                            {displayName}{contact}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                 </div>
