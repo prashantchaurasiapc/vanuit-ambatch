@@ -23,10 +23,10 @@ export default function CustomerQuotes() {
   const navigate = useNavigate();
 
   const [activeProject, setActiveProject] = useState({
-    id: 'PRJ-2026-014',
-    name: 'Outdoor Kitchen Thermo Fraké · 240 × 80 cm',
-    customer: 'Sander de Vries',
-    city: 'Oisterwijk',
+    id: '',
+    name: '',
+    customer: '',
+    city: '',
     projectType: 'outdoor_kitchen'
   });
 

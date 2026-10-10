@@ -16,7 +16,7 @@ import timberSlatRender from '../../assets/wood_texture.png';
 export default function OutdoorKitchenMobileView({ project = null }) {
   const [feedbackToast, setFeedbackToast] = useState('');
 
-  const projectCode = project?.id && project.id !== 'PRJ-853' ? project.id : '2026-014';
+  const projectCode = project?.projectNumber || project?.id || '';
 
   return (
     <div className="space-y-3.5 font-body text-[#4A4A43] w-full">

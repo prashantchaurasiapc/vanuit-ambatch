@@ -46,12 +46,12 @@ export default function CustomerPhotos() {
   const projectForChild = activeProject 
     ? { 
         ...activeProject, 
-        id: activeProject.id || (isGardenRoom ? '2026-021' : '2026-014'),
+        id: activeProject.id || '',
         type: activeType, 
         projectType: activeType 
       }
     : { 
-        id: isGardenRoom ? '2026-021' : '2026-014', 
+        id: '', 
         type: activeType, 
         projectType: activeType 
       };

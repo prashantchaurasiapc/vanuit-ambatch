@@ -38,13 +38,13 @@ export default function GardenRoomPlanningView({ project = null }) {
     }
   }, [project?.technicalSpecs]);
 
-  const projectCode = project?.projectNumber || project?.id || '2026-021';
+  const projectCode = project?.projectNumber || project?.id || '';
 
   const toggleCheck = async (key) => {
     const nextVal = !checklist[key];
     setChecklist(prev => ({ ...prev, [key]: nextVal }));
     const pid = project?.id;
-    if (pid && pid !== '2026-021' && pid !== 'P-2001') {
+    if (pid) {
       try {
         await api.patch(`/customer/projects/${pid}/checklist/${key}`, { completed: nextVal });
       } catch (err) {
@@ -59,18 +59,20 @@ export default function GardenRoomPlanningView({ project = null }) {
     setIsApproving(true);
     setSchouwApproved(true);
     const pid = project?.id;
-    if (pid && pid !== '2026-021' && pid !== 'P-2001') {
+    if (pid) {
       try {
+        const surveyDate = project?.technicalSpecs?.schouw?.surveyDate || new Date().toISOString().split('T')[0];
+        const timeSlot = project?.technicalSpecs?.schouw?.timeSlot || '09:00 - 11:00';
         await api.post(`/customer/projects/${pid}/schouw/confirm`, {
-          surveyDate: '2026-08-27',
-          timeSlot: '09:00 - 11:00'
+          surveyDate,
+          timeSlot
         });
         window.dispatchEvent(new Event('app_data_changed'));
       } catch (e) {
         console.warn('API schouw confirm:', e);
       }
     }
-    setFeedbackToast('Site survey appointment approved for Thursday 27 August 2026!');
+    setFeedbackToast('Site survey appointment approved!');
     setIsApproving(false);
     setTimeout(() => setFeedbackToast(''), 4000);
   };
@@ -82,7 +84,7 @@ export default function GardenRoomPlanningView({ project = null }) {
       return;
     }
     const pid = project?.id;
-    if (pid && pid !== '2026-021' && pid !== 'P-2001') {
+    if (pid) {
       try {
         await api.post(`/conversations/${pid}/messages`, {
           content: `Preferred site survey date request: ${customDateNote.trim()}`

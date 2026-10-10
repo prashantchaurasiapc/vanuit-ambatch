@@ -704,7 +704,7 @@ export default function PartnerProjects() {
                     Chat with Vanuit Ambacht (Tim & Bram)
                   </h3>
                   <p className="text-xs text-[#555046]">
-                    Project 2026-014 · Thermo Fraké 240 cm · Sven Hoek (Hoek Bouw)
+                    {selectedProject ? `${selectedProject.projectNumber || selectedProject.id} · ${selectedProject.title || selectedProject.name || ''}` : 'Direct Partner Channel'}
                   </p>
                 </div>
                 <button onClick={() => setPartnerChatOpen(false)} className="text-[#555046] hover:text-[#1C1C1A] p-1 cursor-pointer">

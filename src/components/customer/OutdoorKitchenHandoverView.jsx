@@ -25,7 +25,7 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
   const [springReminder, setSpringReminder] = useState(true);
 
   // Use 2026-014 to match Client PDF Page 20 1-to-1
-  const projectCode = project?.id && project.id !== 'PRJ-853' ? project.id : '2026-014';
+  const projectCode = project?.projectNumber || project?.id || '';
 
   const toggleCheck = (key) => {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));

@@ -26,7 +26,7 @@ export default function GardenRoomHandoverView({ project = null }) {
   const [seasonalReminder, setSeasonalReminder] = useState(true);
 
   // Use 2026-021 to match Client PDF Page 14 1-to-1
-  const projectCode = project?.id && project.id !== 'PRJ-853' ? project.id : '2026-021';
+  const projectCode = project?.projectNumber || project?.id || '';
 
   const toggleCheck = (key) => {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));

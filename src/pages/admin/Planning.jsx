@@ -5,11 +5,11 @@ import api from '../../api/apiClient';
 import { useLanguage } from '../../context/LanguageContext';
 
 const typeColors = {
-  'Site Visit': { text: '#46607C', fill: '#EAF0F6', border: '#C3D2E2', short: 'SITE VISIT' },
-  'Canopy Build': { text: '#3E6468', fill: '#E3EEEE', border: '#B3CCCB', short: 'BUILD' },
-  'Kitchen Delivery': { text: '#9A5530', fill: '#F8E9DE', border: '#E3C1A8', short: 'DELIVERY' },
-  'Handover': { text: '#4F6A45', fill: '#E8F0E2', border: '#C3D5B8', short: 'HANDOVER' },
-  'Service': { text: '#6E5580', fill: '#F0EAF4', border: '#D5C8E0', short: 'SERVICE' }
+  'Site Visit': { text: '#46607C', fill: '#EAF0F6', border: '#C3D2E2', dot: '#46607C', short: 'SITE VISIT' },
+  'Canopy Build': { text: '#3E6468', fill: '#E3EEEE', border: '#B3CCCB', dot: '#3E6468', short: 'BUILD' },
+  'Kitchen Delivery': { text: '#9A5530', fill: '#F8E9DE', border: '#E3C1A8', dot: '#9A5530', short: 'DELIVERY' },
+  'Handover': { text: '#4F6A45', fill: '#E8F0E2', border: '#C3D5B8', dot: '#4F6A45', short: 'HANDOVER' },
+  'Service': { text: '#6E5580', fill: '#F0EAF4', border: '#D5C8E0', dot: '#6E5580', short: 'SERVICE' }
 };
 
 function mapBackendEventType(eventType) {
@@ -60,7 +60,14 @@ export default function Planning() {
   const [partnerFilter, setPartnerFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeView, setActiveView] = useState('Week');
+  const [activeView, setActiveView] = useState(() => {
+    return localStorage.getItem('admin_planning_view') || 'Week';
+  });
+
+  const handleViewChange = (view) => {
+    setActiveView(view);
+    localStorage.setItem('admin_planning_view', view);
+  };
 
   // Dynamic Date state (defaulting to current date / today)
   const [currentDate, setCurrentDate] = useState(() => new Date());
@@ -91,14 +98,73 @@ export default function Planning() {
   sunday.setDate(monday.getDate() + 6);
   sunday.setHours(23, 59, 59, 999);
 
+  // Month bounds & data
+  const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1, 0, 0, 0, 0);
+  const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59, 999);
+  const daysInCurrentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+
+  // First day of month in Euro calendar (Monday = 0, Sunday = 6)
+  const firstDayOfMonthEuro = (monthStart.getDay() + 6) % 7;
+  const prevMonthLastDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate();
+
+  const monthGridDays = [];
+  // Previous month trailing days
+  for (let i = firstDayOfMonthEuro - 1; i >= 0; i--) {
+    const dNum = prevMonthLastDate - i;
+    const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, dNum);
+    monthGridDays.push({
+      date: d,
+      dayNum: dNum,
+      isCurrentMonth: false,
+      isToday: d.toDateString() === new Date().toDateString(),
+      midnight: new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, dNum, 0, 0, 0, 0).getTime(),
+    });
+  }
+  // Current month days
+  for (let dNum = 1; dNum <= daysInCurrentMonth; dNum++) {
+    const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), dNum);
+    monthGridDays.push({
+      date: d,
+      dayNum: dNum,
+      isCurrentMonth: true,
+      isToday: d.toDateString() === new Date().toDateString(),
+      midnight: new Date(currentDate.getFullYear(), currentDate.getMonth(), dNum, 0, 0, 0, 0).getTime(),
+    });
+  }
+  // Next month leading days (fill up to 35 or 42)
+  const totalMonthCells = monthGridDays.length <= 35 ? 35 : 42;
+  const trailingNeeded = totalMonthCells - monthGridDays.length;
+  for (let dNum = 1; dNum <= trailingNeeded; dNum++) {
+    const d = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, dNum);
+    monthGridDays.push({
+      date: d,
+      dayNum: dNum,
+      isCurrentMonth: false,
+      isToday: d.toDateString() === new Date().toDateString(),
+      midnight: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, dNum, 0, 0, 0, 0).getTime(),
+    });
+  }
+
   const isoWeek = getISOWeekNumber(currentDate);
 
-  const handlePrevWeek = () => {
-    setCurrentDate((prev) => new Date(prev.getTime() - 7 * 86400000));
+  const handlePrev = () => {
+    if (activeView === 'Day') {
+      setCurrentDate((prev) => new Date(prev.getTime() - 86400000));
+    } else if (activeView === 'Month' || activeView === 'Timeline') {
+      setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    } else {
+      setCurrentDate((prev) => new Date(prev.getTime() - 7 * 86400000));
+    }
   };
 
-  const handleNextWeek = () => {
-    setCurrentDate((prev) => new Date(prev.getTime() + 7 * 86400000));
+  const handleNext = () => {
+    if (activeView === 'Day') {
+      setCurrentDate((prev) => new Date(prev.getTime() + 86400000));
+    } else if (activeView === 'Month' || activeView === 'Timeline') {
+      setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    } else {
+      setCurrentDate((prev) => new Date(prev.getTime() + 7 * 86400000));
+    }
   };
 
   const handleToday = () => {
@@ -108,30 +174,94 @@ export default function Planning() {
 
   const monthNamesNL = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
   const monthNamesEN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const fullMonthNamesNL = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'];
+  const fullMonthNamesEN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const mNames = language === 'NL' ? monthNamesNL : monthNamesEN;
+  const fullMNames = language === 'NL' ? fullMonthNamesNL : fullMonthNamesEN;
 
-  const weekRangeLabel = `${monday.getDate()} ${mNames[monday.getMonth()]} – ${sunday.getDate()} ${mNames[sunday.getMonth()]}`;
+  const dayNamesFullNL = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
+  const dayNamesFullEN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayNameStr = (language === 'NL' ? dayNamesFullNL : dayNamesFullEN)[currentDate.getDay()];
 
-  const daysData = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    const dayNames = [
-      t('planning.mo') || (language === 'NL' ? 'Ma' : 'Mon'),
-      t('planning.tu') || (language === 'NL' ? 'Di' : 'Tue'),
-      t('planning.we') || (language === 'NL' ? 'Wo' : 'Wed'),
-      t('planning.th') || (language === 'NL' ? 'Do' : 'Thu'),
-      t('planning.fr') || (language === 'NL' ? 'Vr' : 'Fri'),
-      t('planning.sa') || (language === 'NL' ? 'Za' : 'Sat'),
-      t('planning.su') || (language === 'NL' ? 'Zo' : 'Sun'),
-    ];
-    return {
-      name: dayNames[i],
-      num: d.getDate().toString(),
-      month: mNames[d.getMonth()],
-      fullDate: d,
-      isToday: d.toDateString() === new Date().toDateString(),
-    };
-  });
+  const dateRangeLabel = activeView === 'Day'
+    ? `${dayNameStr}, ${currentDate.getDate()} ${mNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
+    : (activeView === 'Month' || activeView === 'Timeline')
+    ? `${fullMNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
+    : `${monday.getDate()} ${mNames[monday.getMonth()]} – ${sunday.getDate()} ${mNames[sunday.getMonth()]}`;
+
+  const timelineLanes = [
+    {
+      id: 'bouw',
+      name: language === 'NL' ? 'Bouw & Montage' : 'Construction & Montage',
+      sub: language === 'NL' ? 'Overkappingen & Buitenverblijven' : 'Canopies & Outdoor builds',
+      typeMatch: ['Canopy Build'],
+      color: '#3E6468',
+      fill: '#E3EEEE'
+    },
+    {
+      id: 'levering',
+      name: language === 'NL' ? 'Levering & Transport' : 'Delivery & Logistics',
+      sub: language === 'NL' ? 'Keukens & Maatwerk Interieur' : 'Kitchens & Custom interior',
+      typeMatch: ['Kitchen Delivery'],
+      color: '#9A5530',
+      fill: '#F8E9DE'
+    },
+    {
+      id: 'inmeting',
+      name: language === 'NL' ? 'Inmeting & Inspectie' : 'Site Surveys & Inspect',
+      sub: language === 'NL' ? 'Locatiebezoeken & Technische check' : 'Site visits & Technical check',
+      typeMatch: ['Site Visit'],
+      color: '#46607C',
+      fill: '#EAF0F6'
+    },
+    {
+      id: 'oplevering',
+      name: language === 'NL' ? 'Oplevering & Werkplaats' : 'Handover & Workshop',
+      sub: language === 'NL' ? 'Eindopleveringen & Werkplaatsklaar' : 'Final handover & Workshop ready',
+      typeMatch: ['Handover'],
+      color: '#4F6A45',
+      fill: '#E8F0E2'
+    },
+    {
+      id: 'service',
+      name: language === 'NL' ? 'Service & Onderhoud' : 'Service & Maintenance',
+      sub: language === 'NL' ? 'Nazorg, Reparaties & Garantie' : 'Aftercare, repairs & warranty',
+      typeMatch: ['Service'],
+      color: '#6E5580',
+      fill: '#F0EAF4'
+    }
+  ];
+
+  const daysData = activeView === 'Day'
+    ? [{
+        name: (language === 'NL'
+          ? ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za']
+          : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])[currentDate.getDay()],
+        num: currentDate.getDate().toString(),
+        month: mNames[currentDate.getMonth()],
+        fullDate: currentDate,
+        isToday: currentDate.toDateString() === new Date().toDateString(),
+      }]
+    : Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        const dayNames = [
+          t('planning.mo') || (language === 'NL' ? 'Ma' : 'Mon'),
+          t('planning.tu') || (language === 'NL' ? 'Di' : 'Tue'),
+          t('planning.we') || (language === 'NL' ? 'Wo' : 'Wed'),
+          t('planning.th') || (language === 'NL' ? 'Do' : 'Thu'),
+          t('planning.fr') || (language === 'NL' ? 'Vr' : 'Fri'),
+          t('planning.sa') || (language === 'NL' ? 'Za' : 'Sat'),
+          t('planning.su') || (language === 'NL' ? 'Zo' : 'Sun'),
+        ];
+        return {
+          name: dayNames[i],
+          num: d.getDate().toString(),
+          month: mNames[d.getMonth()],
+          fullDate: d,
+          isToday: d.toDateString() === new Date().toDateString(),
+        };
+      });
 
   // Load planning events, tasks, projects, partners with robust extraction
   const loadData = async () => {
@@ -203,16 +333,43 @@ export default function Planning() {
 
     const isMultiDay = evt.eventType === 'multi_day_bouw' || (evt.calendarLane === 'bouw_lane' && duration > 8);
 
-    // Check if event belongs to currently viewed week
+    // Current viewed day bounds (for Day view)
+    const currentDayMidnight = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()).getTime();
+    const currentDayEnd = currentDayMidnight + 86400000 - 1;
+
+    // Check if event belongs to currently viewed range
     const isInCurrentWeek = isMultiDay
       ? (startDate.getTime() <= sunday.getTime() && endDate.getTime() >= monday.getTime())
       : (dayIndex >= 0 && dayIndex < 7);
 
+    const isInCurrentDay = isMultiDay
+      ? (startDate.getTime() <= currentDayEnd && endDate.getTime() >= currentDayMidnight)
+      : (startMidnight === currentDayMidnight);
+
+    const gridStartMidnight = monthGridDays[0]?.midnight || monthStart.getTime();
+    const gridEndMidnight = (monthGridDays[monthGridDays.length - 1]?.midnight || monthEnd.getTime()) + 86399999;
+    const isInCurrentMonthGrid = (startDate.getTime() <= gridEndMidnight && endDate.getTime() >= gridStartMidnight);
+    const isInCurrentMonth = isMultiDay
+      ? (startDate.getTime() <= monthEnd.getTime() && endDate.getTime() >= monthStart.getTime())
+      : (startDate.getFullYear() === currentDate.getFullYear() && startDate.getMonth() === currentDate.getMonth());
+
+    const isInView = activeView === 'Day'
+      ? isInCurrentDay
+      : activeView === 'Month'
+      ? isInCurrentMonthGrid
+      : activeView === 'Timeline'
+      ? isInCurrentMonth
+      : isInCurrentWeek;
+
     const startOffsetDays = Math.max(0, Math.min(6, Math.round((startMidnight - mondayMidnight) / 86400000)));
     const endMidnight = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).getTime();
     const endOffsetDays = Math.max(startOffsetDays, Math.min(6, Math.round((endMidnight - mondayMidnight) / 86400000)));
-    const multiDayLeft = `calc(${startOffsetDays} * (100% / 7) + 2px)`;
-    const multiDayWidth = `calc(${(endOffsetDays - startOffsetDays + 1)} * (100% / 7) - 4px)`;
+
+    const multiDayLeft = activeView === 'Day' ? '4px' : `calc(${startOffsetDays} * (100% / 7) + 2px)`;
+    const multiDayWidth = activeView === 'Day' ? 'calc(100% - 8px)' : `calc(${(endOffsetDays - startOffsetDays + 1)} * (100% / 7) - 4px)`;
+
+    const left = activeView === 'Day' ? '6px' : `calc(${dayIndex} * (100% / 7) + 4px)`;
+    const width = activeView === 'Day' ? 'calc(100% - 12px)' : `calc(100% / 7 - 8px)`;
 
     return {
       id: evt.id,
@@ -231,8 +388,10 @@ export default function Planning() {
       endTime: `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`,
       dayIndex,
       isInCurrentWeek,
-      left: `calc(${dayIndex} * (100% / 7) + 4px)`,
-      width: `calc(100% / 7 - 8px)`,
+      isInCurrentDay,
+      isInView,
+      left,
+      width,
       multiDayLeft,
       multiDayWidth,
       top: `${Math.max(0, topPx)}px`,
@@ -249,9 +408,9 @@ export default function Planning() {
     };
   });
 
-  // Filter events (must be in currently viewed week)
+  // Filter events (must be in currently viewed range: Day or Week)
   const filteredEvents = formattedEvents.filter((appt) => {
-    if (!appt.isInCurrentWeek) return false;
+    if (!appt.isInView) return false;
     if (activeFilter !== 'All' && appt.type !== activeFilter) return false;
     if (partnerFilter !== 'All' && appt.partnerId !== partnerFilter) return false;
     if (statusFilter !== 'All' && appt.status.toLowerCase() !== statusFilter.toLowerCase()) return false;
@@ -405,8 +564,14 @@ export default function Planning() {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <button 
-                    onClick={handlePrevWeek}
-                    title={language === 'NL' ? 'Vorige week' : 'Previous week'}
+                    onClick={handlePrev}
+                    title={
+                      activeView === 'Day'
+                        ? (language === 'NL' ? 'Vorige dag' : 'Previous day')
+                        : (activeView === 'Month' || activeView === 'Timeline')
+                        ? (language === 'NL' ? 'Vorige maand' : 'Previous month')
+                        : (language === 'NL' ? 'Vorige week' : 'Previous week')
+                    }
                     className="px-3 py-1.5 bg-transparent border border-[#E6E0D4] rounded-xl hover:bg-white text-[#2A2925] transition-colors cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -418,18 +583,36 @@ export default function Planning() {
                     {t('planning.today') || (language === 'NL' ? 'Vandaag' : 'Today')}
                   </button>
                   <button 
-                    onClick={handleNextWeek}
-                    title={language === 'NL' ? 'Volgende week' : 'Next week'}
+                    onClick={handleNext}
+                    title={
+                      activeView === 'Day'
+                        ? (language === 'NL' ? 'Volgende dag' : 'Next day')
+                        : (activeView === 'Month' || activeView === 'Timeline')
+                        ? (language === 'NL' ? 'Volgende maand' : 'Next month')
+                        : (language === 'NL' ? 'Volgende week' : 'Next week')
+                    }
                     className="px-3 py-1.5 bg-transparent border border-[#E6E0D4] rounded-xl hover:bg-white text-[#2A2925] transition-colors cursor-pointer"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="text-[22px] font-heading font-medium text-[#2A2925] flex items-center gap-3 whitespace-nowrap">
-                  {weekRangeLabel}
-                  <span className="text-[10px] font-body bg-transparent border border-[#E6E0D4] text-[#736E64] px-1.5 py-0.5 rounded uppercase font-bold font-mono">
-                    WEEK {isoWeek}
-                  </span>
+                  {dateRangeLabel}
+                  {activeView === 'Week' && (
+                    <span className="text-[10px] font-body bg-transparent border border-[#E6E0D4] text-[#736E64] px-1.5 py-0.5 rounded uppercase font-bold font-mono">
+                      WEEK {isoWeek}
+                    </span>
+                  )}
+                  {activeView === 'Month' && (
+                    <span className="text-[10px] font-body bg-transparent border border-[#E6E0D4] text-[#736E64] px-1.5 py-0.5 rounded uppercase font-bold font-mono">
+                      {language === 'NL' ? 'MAAND' : 'MONTH'}
+                    </span>
+                  )}
+                  {activeView === 'Timeline' && (
+                    <span className="text-[10px] font-body bg-transparent border border-[#E6E0D4] text-[#736E64] px-1.5 py-0.5 rounded uppercase font-bold font-mono">
+                      TIMELINE
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-wrap">
@@ -466,10 +649,10 @@ export default function Planning() {
                   <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-[#736E64] pointer-events-none" />
                 </div>
                 <div className="flex bg-[#EBE7DF] border border-[#E6E0D4] rounded-xl p-1 text-[13px] font-bold">
-                  <button onClick={() => setActiveView('Day')} className={`px-4 py-1 rounded-lg transition-colors cursor-pointer ${activeView === 'Day' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>{t('planning.day')}</button>
-                  <button onClick={() => setActiveView('Week')} className={`px-4 py-1 rounded-lg transition-colors cursor-pointer ${activeView === 'Week' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>{t('planning.week')}</button>
-                  <button onClick={() => setActiveView('Month')} className={`px-4 py-1 rounded-lg transition-colors cursor-pointer ${activeView === 'Month' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>{t('planning.month')}</button>
-                  <button onClick={() => setActiveView('Timeline')} className={`px-4 py-1 rounded-lg transition-colors cursor-pointer ${activeView === 'Timeline' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>{t('planning.timeline')}</button>
+                  <button onClick={() => handleViewChange('Day')} className={`px-4 py-1 rounded-lg transition-colors cursor-pointer ${activeView === 'Day' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>{t('planning.day')}</button>
+                  <button onClick={() => handleViewChange('Week')} className={`px-4 py-1 rounded-lg transition-colors cursor-pointer ${activeView === 'Week' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>{t('planning.week')}</button>
+                  <button onClick={() => handleViewChange('Month')} className={`px-4 py-1 rounded-lg transition-colors cursor-pointer ${activeView === 'Month' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>{t('planning.month')}</button>
+                  <button onClick={() => handleViewChange('Timeline')} className={`px-4 py-1 rounded-lg transition-colors cursor-pointer ${activeView === 'Timeline' ? 'bg-white text-[#2A2925] shadow-sm border border-[#E6E0D4]' : 'text-[#736E64] hover:text-[#2A2925]'}`}>{t('planning.timeline')}</button>
                 </div>
               </div>
             </div>
@@ -534,129 +717,415 @@ export default function Planning() {
             <div className="flex gap-4 w-full mb-8 relative items-stretch">
               {/* Calendar Card */}
               <div className="flex-1 min-w-0 bg-[#F9F8F6] border border-[#E6E0D4] rounded-xl overflow-hidden shadow-sm flex flex-col">
-                {/* Header row with Days */}
-                <div className="flex border-b border-[#E6E0D4] bg-[#F9F8F6] shrink-0">
-                  <div className="w-16 shrink-0 border-r border-[#E6E0D4]"></div>
-                  {daysData.map((d, i) => (
-                    <div
-                      key={i}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 border-r border-[#E6E0D4] last:border-0 relative ${
-                        d.isToday ? 'bg-white' : ''
-                      }`}
-                    >
-                      {d.isToday && <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3E4A3D]"></div>}
-                      <span className={`text-[10px] font-bold ${d.isToday ? 'text-[#2A2925]' : 'text-[#736E64]'}`}>{d.name}</span>
-                      <span className="text-[24px] font-heading leading-none text-[#2A2925]">{d.num}</span>
-                      <span className="text-[11px] font-heading font-medium text-[#736E64]">{d.month}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Multi-day Builds Lane */}
-                <div className="flex border-b border-[#E6E0D4] bg-[#F9F8F6] shrink-0">
-                  <div className="w-16 shrink-0 flex items-center justify-center leading-none z-10">
-                    <span className="text-[9px] uppercase font-bold text-[#736E64] text-center">
-                      BUILD<br />
-                      <span className="text-[8px] font-normal normal-case">ongoing</span>
-                    </span>
-                  </div>
-
-                  <div className="flex-1 relative p-1.5 min-h-[50px] flex items-center">
-                    {ongoingBuilds.length === 0 ? (
-                      <span className="text-[11px] text-[#8C877D] italic pl-3">{language === 'NL' ? 'Geen meerdaagse bouw deze week ingepland' : 'No multi-day builds scheduled this week'}</span>
-                    ) : (
-                      ongoingBuilds.map((b) => (
+                {/* 1. Day / Week View */}
+                {(activeView === 'Day' || activeView === 'Week') && (
+                  <>
+                    {/* Header row with Days */}
+                    <div className="flex border-b border-[#E6E0D4] bg-[#F9F8F6] shrink-0">
+                      <div className="w-16 shrink-0 border-r border-[#E6E0D4]"></div>
+                      {daysData.map((d, i) => (
                         <div
-                          key={b.id}
-                          onClick={() => setSelectedAppointment(b)}
-                          style={{ left: b.multiDayLeft, width: b.multiDayWidth }}
-                          className={`absolute top-1.5 h-[26px] rounded bg-[#E3EEEE] border border-[#B3CCCB] flex justify-between items-center px-2 cursor-pointer shadow-sm hover:brightness-95 transition-all ${
-                            selectedAppointment?.id === b.id ? 'ring-2 ring-[#3E4A3D] ring-offset-[1.5px] z-30' : 'z-10'
+                          key={i}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 border-r border-[#E6E0D4] last:border-0 relative ${
+                            d.isToday ? 'bg-white' : ''
                           }`}
                         >
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9.5px] font-bold text-[#3E6468]">BUILD</span>
-                            <span className="text-[11px] font-bold text-[#2A2925]">{b.customer}</span>
-                            <span className="text-[11px] text-[#58534A] truncate">{b.product}</span>
-                          </div>
-                          <span className="text-[10px] text-[#58534A]">{b.partner}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Time Grid with relative height */}
-                <div className="w-full relative min-h-[648px] flex-1">
-                  {/* Background Grid Lines */}
-                  <div className="flex w-full h-full absolute inset-0 pointer-events-none">
-                    <div className="w-16 shrink-0 border-r border-[#E6E0D4] bg-[#FFFEFB] z-10">
-                      {hours.map((h) => (
-                        <div key={h} className="h-[54px] flex items-start justify-center pt-1.5 relative border-b border-transparent">
-                          <span className="text-[10px] font-body text-[#736E64]">{h.toString().padStart(2, '0')}:00</span>
+                          {d.isToday && <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3E4A3D]"></div>}
+                          <span className={`text-[10px] font-bold ${d.isToday ? 'text-[#2A2925]' : 'text-[#736E64]'}`}>{d.name}</span>
+                          <span className="text-[24px] font-heading leading-none text-[#2A2925]">{d.num}</span>
+                          <span className="text-[11px] font-heading font-medium text-[#736E64]">{d.month}</span>
                         </div>
                       ))}
                     </div>
-                    {/* Vertical & Horizontal lines for days */}
-                    <div className="flex-1 flex">
-                      {daysData.map((d, i) => (
-                        <div key={i} className={`flex-1 border-r border-[#E6E0D4] last:border-0 relative ${d.isToday ? 'bg-white' : ''}`}>
+
+                    {/* Multi-day Builds Lane */}
+                    <div className="flex border-b border-[#E6E0D4] bg-[#F9F8F6] shrink-0">
+                      <div className="w-16 shrink-0 flex items-center justify-center leading-none z-10">
+                        <span className="text-[9px] uppercase font-bold text-[#736E64] text-center">
+                          BUILD<br />
+                          <span className="text-[8px] font-normal normal-case">ongoing</span>
+                        </span>
+                      </div>
+
+                      <div className="flex-1 relative p-1.5 min-h-[50px] flex items-center">
+                        {ongoingBuilds.length === 0 ? (
+                          <span className="text-[11px] text-[#8C877D] italic pl-3">
+                            {activeView === 'Day'
+                              ? (language === 'NL' ? 'Geen meerdaagse bouw voor deze dag ingepland' : 'No multi-day builds scheduled for this day')
+                              : (language === 'NL' ? 'Geen meerdaagse bouw deze week ingepland' : 'No multi-day builds scheduled this week')}
+                          </span>
+                        ) : (
+                          ongoingBuilds.map((b) => (
+                            <div
+                              key={b.id}
+                              onClick={() => setSelectedAppointment(b)}
+                              style={{ left: b.multiDayLeft, width: b.multiDayWidth }}
+                              className={`absolute top-1.5 h-[26px] rounded bg-[#E3EEEE] border border-[#B3CCCB] flex justify-between items-center px-2 cursor-pointer shadow-sm hover:brightness-95 transition-all ${
+                                selectedAppointment?.id === b.id ? 'ring-2 ring-[#3E4A3D] ring-offset-[1.5px] z-30' : 'z-10'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9.5px] font-bold text-[#3E6468]">BUILD</span>
+                                <span className="text-[11px] font-bold text-[#2A2925]">{b.customer}</span>
+                                <span className="text-[11px] text-[#58534A] truncate">{b.product}</span>
+                              </div>
+                              <span className="text-[10px] text-[#58534A]">{b.partner}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Time Grid with relative height */}
+                    <div className="w-full relative min-h-[648px] flex-1">
+                      {/* Background Grid Lines */}
+                      <div className="flex w-full h-full absolute inset-0 pointer-events-none">
+                        <div className="w-16 shrink-0 border-r border-[#E6E0D4] bg-[#FFFEFB] z-10">
                           {hours.map((h) => (
-                            <div key={h} className="h-[54px] border-b border-[#E6E0D4] opacity-50"></div>
+                            <div key={h} className="h-[54px] flex items-start justify-center pt-1.5 relative border-b border-transparent">
+                              <span className="text-[10px] font-body text-[#736E64]">{h.toString().padStart(2, '0')}:00</span>
+                            </div>
                           ))}
                         </div>
+                        {/* Vertical & Horizontal lines for days */}
+                        <div className="flex-1 flex">
+                          {daysData.map((d, i) => (
+                            <div key={i} className={`flex-1 border-r border-[#E6E0D4] last:border-0 relative ${d.isToday ? 'bg-white' : ''}`}>
+                              {hours.map((h) => (
+                                <div key={h} className="h-[54px] border-b border-[#E6E0D4] opacity-50"></div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Appointments Overlay */}
+                      <div className="absolute inset-0 z-20 flex">
+                        <div className="w-16 shrink-0 pointer-events-none"></div>
+                        <div className="flex-1 flex relative">
+                          {gridAppointments.map((appt) => {
+                            const styleConfig = typeColors[appt.type] || typeColors['Site Visit'];
+                            const isSelected = selectedAppointment?.id === appt.id;
+
+                            return (
+                              <div
+                                key={appt.id}
+                                onClick={() => setSelectedAppointment(appt)}
+                                className={`absolute rounded-lg p-2.5 cursor-pointer shadow-sm flex flex-col overflow-hidden hover:brightness-95 transition-all ${
+                                  isSelected ? 'ring-2 ring-[#3E4A3D] ring-offset-[1.5px] ring-offset-[#FFFEFB] z-30' : 'z-10'
+                                }`}
+                                style={{
+                                  left: appt.left,
+                                  width: appt.width,
+                                  top: appt.top,
+                                  height: appt.height,
+                                  backgroundColor: styleConfig.fill,
+                                  border: `1px solid ${styleConfig.border}`
+                                }}
+                              >
+                                <div className="flex justify-between items-start mb-1">
+                                  <span
+                                    className="text-[9.5px] font-bold uppercase tracking-wider"
+                                    style={{ color: styleConfig.text }}
+                                  >
+                                    {styleConfig.short}
+                                  </span>
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-[#4B7355] shrink-0" />
+                                </div>
+                                <span className="text-[12px] font-bold text-[#2A2925] leading-snug mb-0.5 truncate">
+                                  {appt.customer}
+                                </span>
+                                <span className="text-[10px] text-[#736E64] leading-tight truncate mb-0.5">
+                                  {appt.product}
+                                </span>
+                                <span className="text-[9.5px] text-[#736E64] font-medium mt-auto">
+                                  {appt.startTime}–{appt.endTime} · {appt.partner}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* 2. Month View */}
+                {activeView === 'Month' && (
+                  <div className="w-full flex-1 flex flex-col">
+                    {/* Month Days Header */}
+                    <div className="grid grid-cols-7 border-b border-[#E6E0D4] bg-[#F9F8F6] shrink-0 text-center">
+                      {(language === 'NL' ? ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']).map((dayName, idx) => (
+                        <div key={idx} className="py-2.5 border-r border-[#E6E0D4] last:border-0 font-bold text-[11px] text-[#736E64]">
+                          {dayName}
+                        </div>
                       ))}
                     </div>
-                  </div>
 
-                  {/* Appointments Overlay */}
-                  <div className="absolute inset-0 z-20 flex">
-                    <div className="w-16 shrink-0 pointer-events-none"></div>
-                    <div className="flex-1 flex relative">
-                      {gridAppointments.map((appt) => {
-                        const styleConfig = typeColors[appt.type] || typeColors['Site Visit'];
-                        const isSelected = selectedAppointment?.id === appt.id;
+                    {/* Month Grid */}
+                    <div className="grid grid-cols-7 bg-[#E6E0D4] gap-[1px] flex-1 min-h-[640px]">
+                      {monthGridDays.map((c, i) => {
+                        const cellMid = c.midnight;
+                        const cellEnd = cellMid + 86399999;
+                        const cellEvents = filteredEvents.filter((appt) => {
+                          const sTime = new Date(appt.raw.startTime).getTime();
+                          const eTime = new Date(appt.raw.endTime || appt.raw.startTime).getTime();
+                          return (sTime <= cellEnd && eTime >= cellMid);
+                        });
 
                         return (
                           <div
-                            key={appt.id}
-                            onClick={() => setSelectedAppointment(appt)}
-                            className={`absolute rounded-lg p-2.5 cursor-pointer shadow-sm flex flex-col overflow-hidden hover:brightness-95 transition-all ${
-                              isSelected ? 'ring-2 ring-[#3E4A3D] ring-offset-[1.5px] ring-offset-[#FFFEFB] z-30' : 'z-10'
-                            }`}
-                            style={{
-                              left: appt.left,
-                              width: appt.width,
-                              top: appt.top,
-                              height: appt.height,
-                              backgroundColor: styleConfig.fill,
-                              border: `1px solid ${styleConfig.border}`
+                            key={i}
+                            onClick={() => {
+                              setNewApptData((prev) => ({
+                                ...prev,
+                                date: c.date.toISOString().split('T')[0]
+                              }));
+                              setIsModalOpen(true);
                             }}
+                            className={`p-2 flex flex-col min-h-[118px] transition-colors relative cursor-pointer group ${
+                              c.isCurrentMonth
+                                ? (c.isToday ? 'bg-[#FFFEFB]' : 'bg-[#FDFCFA] hover:bg-white')
+                                : 'bg-[#F5F2EB]/70 text-[#9E988D]'
+                            }`}
                           >
-                            <div className="flex justify-between items-start mb-1">
+                            {c.isToday && (
+                              <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3E4A3D]"></div>
+                            )}
+                            <div className="flex items-center justify-between mb-1.5">
                               <span
-                                className="text-[9.5px] font-bold uppercase tracking-wider"
-                                style={{ color: styleConfig.text }}
+                                className={`text-[12px] font-heading font-bold rounded-full flex items-center justify-center ${
+                                  c.isToday
+                                    ? 'w-6 h-6 bg-[#3E4A3D] text-white'
+                                    : c.isCurrentMonth
+                                    ? 'text-[#2A2925]'
+                                    : 'text-[#9E988D]'
+                                }`}
                               >
-                                {styleConfig.short}
+                                {c.dayNum}
                               </span>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-[#4B7355] shrink-0" />
+                              {cellEvents.length > 0 && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#EBE7DF] text-[#736E64]">
+                                  {cellEvents.length}
+                                </span>
+                              )}
                             </div>
-                            <span className="text-[12px] font-bold text-[#2A2925] leading-snug mb-0.5 truncate">
-                              {appt.customer}
-                            </span>
-                            <span className="text-[10px] text-[#736E64] leading-tight truncate mb-0.5">
-                              {appt.product}
-                            </span>
-                            <span className="text-[9.5px] text-[#736E64] font-medium mt-auto">
-                              {appt.startTime}–{appt.endTime} · {appt.partner}
-                            </span>
+
+                            <div className="flex-1 flex flex-col gap-1 overflow-hidden">
+                              {cellEvents.slice(0, 3).map((appt) => {
+                                const styleConfig = typeColors[appt.type] || typeColors['Site Visit'];
+                                const isSelected = selectedAppointment?.id === appt.id;
+
+                                return (
+                                  <div
+                                    key={appt.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedAppointment(appt);
+                                    }}
+                                    style={{
+                                      backgroundColor: styleConfig.fill,
+                                      border: `1px solid ${styleConfig.border}`
+                                    }}
+                                    className={`px-2 py-1 rounded text-[11px] truncate cursor-pointer transition-all flex items-center justify-between gap-1 shadow-xs hover:brightness-95 ${
+                                      isSelected ? 'ring-2 ring-[#3E4A3D] ring-offset-1 z-10' : ''
+                                    }`}
+                                    title={`${appt.startTime}–${appt.endTime} · ${appt.customer} (${appt.type})`}
+                                  >
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <span
+                                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                                        style={{ backgroundColor: styleConfig.dot }}
+                                      />
+                                      <span className="font-bold text-[#2A2925] truncate text-[11px]">
+                                        {appt.customer}
+                                      </span>
+                                    </div>
+                                    <span className="text-[9.5px] text-[#736E64] font-medium shrink-0">
+                                      {appt.startTime}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                              {cellEvents.length > 3 && (
+                                <span className="text-[10px] text-[#736E64] font-medium pl-1">
+                                  +{cellEvents.length - 3} {language === 'NL' ? 'meer' : 'more'}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* 3. Timeline Gantt View */}
+                {activeView === 'Timeline' && (
+                  <div className="w-full flex-1 flex flex-col overflow-x-auto min-h-[640px]">
+                    <div className="min-w-[1100px] flex flex-col flex-1">
+                      {/* Timeline Header Row */}
+                      <div className="flex border-b border-[#E6E0D4] bg-[#F9F8F6] shrink-0 sticky top-0 z-20">
+                        <div className="w-56 shrink-0 border-r border-[#E6E0D4] px-4 py-2.5 flex items-center justify-between">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-[#736E64]">
+                            {language === 'NL' ? 'Projectdiscipline' : 'Discipline / Lane'}
+                          </span>
+                          <span className="text-[10px] text-[#A09A8F] font-mono">
+                            {daysInCurrentMonth}d
+                          </span>
+                        </div>
+                        <div className="flex-1 flex">
+                          {Array.from({ length: daysInCurrentMonth }, (_, idx) => {
+                            const dayNum = idx + 1;
+                            const dObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayNum);
+                            const isToday = dObj.toDateString() === new Date().toDateString();
+                            const isWeekend = dObj.getDay() === 0 || dObj.getDay() === 6;
+                            const dayNameShort = (language === 'NL'
+                              ? ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za']
+                              : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])[dObj.getDay()];
+
+                            return (
+                              <div
+                                key={dayNum}
+                                className={`flex-1 min-w-[34px] flex flex-col items-center justify-center py-2 border-r border-[#E6E0D4] last:border-0 relative ${
+                                  isToday ? 'bg-white' : isWeekend ? 'bg-[#F5F2EB]/50' : ''
+                                }`}
+                              >
+                                {isToday && (
+                                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3E4A3D]"></div>
+                                )}
+                                <span className={`text-[9.5px] font-bold ${isToday ? 'text-[#3E4A3D]' : 'text-[#736E64]'}`}>
+                                  {dayNameShort}
+                                </span>
+                                <span className={`text-[12px] font-heading font-bold ${isToday ? 'text-[#3E4A3D]' : 'text-[#2A2925]'}`}>
+                                  {dayNum}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Timeline Lanes Body */}
+                      <div className="flex-1 flex flex-col divide-y divide-[#E6E0D4] bg-[#FFFEFB]">
+                        {timelineLanes.map((lane) => {
+                          const laneEvents = filteredEvents.filter((appt) => lane.typeMatch.includes(appt.type));
+
+                          return (
+                            <div key={lane.id} className="flex min-h-[105px] relative group hover:bg-[#FAF9F5] transition-colors">
+                              {/* Lane Info Column */}
+                              <div className="w-56 shrink-0 border-r border-[#E6E0D4] p-3.5 flex flex-col justify-between bg-[#FDFCFA]">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="w-2.5 h-2.5 rounded-[3px]" style={{ backgroundColor: lane.color }}></span>
+                                    <span className="text-[12.5px] font-bold text-[#2A2925]">{lane.name}</span>
+                                  </div>
+                                  <span className="text-[10px] text-[#736E64] block leading-tight">{lane.sub}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-[10px] text-[#8C877D] mt-2">
+                                  <span>{laneEvents.length} {language === 'NL' ? 'afspraken' : 'events'}</span>
+                                  <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-[#EBE7DF] text-[#58534A] font-bold">
+                                    {lane.id}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Lane Timeline Track */}
+                              <div className="flex-1 relative flex">
+                                {/* Background Day Columns */}
+                                {Array.from({ length: daysInCurrentMonth }, (_, idx) => {
+                                  const dayNum = idx + 1;
+                                  const dObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayNum);
+                                  const isToday = dObj.toDateString() === new Date().toDateString();
+                                  const isWeekend = dObj.getDay() === 0 || dObj.getDay() === 6;
+
+                                  return (
+                                    <div
+                                      key={dayNum}
+                                      className={`flex-1 min-w-[34px] border-r border-[#E6E0D4] last:border-0 pointer-events-none ${
+                                        isToday ? 'bg-[#3E4A3D]/5' : isWeekend ? 'bg-[#F7F5EE]/40' : ''
+                                      }`}
+                                    />
+                                  );
+                                })}
+
+                                {/* Timeline Event Bars */}
+                                {laneEvents.length === 0 ? (
+                                  <div className="absolute inset-0 flex items-center pl-4 pointer-events-none">
+                                    <span className="text-[11px] text-[#A09A8F] italic">
+                                      {language === 'NL' ? 'Geen afspraken in deze track voor deze maand' : 'No events in this track for this month'}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="absolute inset-0 p-2 pointer-events-auto">
+                                    {laneEvents.map((appt, evtIdx) => {
+                                      const startObj = new Date(appt.raw.startTime);
+                                      const endObj = new Date(appt.raw.endTime || appt.raw.startTime);
+
+                                      let startDay = 1;
+                                      if (startObj.getFullYear() === currentDate.getFullYear() && startObj.getMonth() === currentDate.getMonth()) {
+                                        startDay = startObj.getDate();
+                                      } else if (startObj < monthStart) {
+                                        startDay = 1;
+                                      }
+
+                                      let endDay = daysInCurrentMonth;
+                                      if (endObj.getFullYear() === currentDate.getFullYear() && endObj.getMonth() === currentDate.getMonth()) {
+                                        endDay = endObj.getDate();
+                                      } else if (endObj > monthEnd) {
+                                        endDay = daysInCurrentMonth;
+                                      }
+
+                                      const durationDays = Math.max(1, endDay - startDay + 1);
+                                      const leftPercent = ((startDay - 1) / daysInCurrentMonth) * 100;
+                                      const widthPercent = (durationDays / daysInCurrentMonth) * 100;
+                                      const styleConfig = typeColors[appt.type] || typeColors['Site Visit'];
+                                      const isSelected = selectedAppointment?.id === appt.id;
+
+                                      // Stagger vertical placement if multiple events in lane
+                                      const topOffset = 8 + (evtIdx % 2) * 38;
+
+                                      return (
+                                        <div
+                                          key={appt.id}
+                                          onClick={() => setSelectedAppointment(appt)}
+                                          style={{
+                                            left: `${leftPercent}%`,
+                                            width: `${Math.max(widthPercent, 3.5)}%`,
+                                            top: `${topOffset}px`,
+                                            backgroundColor: styleConfig.fill,
+                                            border: `1.5px solid ${styleConfig.border}`
+                                          }}
+                                          className={`absolute h-[32px] rounded-lg px-2.5 flex items-center justify-between cursor-pointer shadow-sm hover:brightness-95 hover:z-30 transition-all ${
+                                            isSelected ? 'ring-2 ring-[#3E4A3D] ring-offset-1 z-30' : 'z-10'
+                                          }`}
+                                          title={`${appt.date} (${appt.startTime}–${appt.endTime}) · ${appt.customer} - ${appt.product} (${appt.partner})`}
+                                        >
+                                          <div className="flex items-center gap-2 min-w-0">
+                                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: styleConfig.dot }} />
+                                            <span className="text-[11.5px] font-bold text-[#2A2925] truncate">
+                                              {appt.customer}
+                                            </span>
+                                            <span className="text-[10px] text-[#58534A] truncate hidden sm:inline">
+                                              {appt.product}
+                                            </span>
+                                          </div>
+                                          <span className="text-[10px] font-bold text-[#736E64] shrink-0 ml-1">
+                                            {appt.partner}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Card Footer Legend */}
                 <div className="border-t border-[#E6E0D4] bg-[#FFFEFB] py-2.5 px-4 flex justify-between items-center text-[10.5px] text-[#736E64] shrink-0">

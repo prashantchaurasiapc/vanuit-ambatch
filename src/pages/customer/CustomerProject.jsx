@@ -47,14 +47,14 @@ export default function CustomerProject() {
 
   const [activeProject, setActiveProject] = useState(() => {
     const rawDefault = {
-      id: 'P-2001',
-      name: language === 'EN' ? 'Luxury Outdoor Kitchen Amsterdam' : 'Luxe Teak Buitenkeuken Amsterdam',
-      division: language === 'EN' ? 'Custom Outdoor Kitchens' : 'Buitenkeukens op maat',
-      customer: user?.name || (language === 'EN' ? 'John Miller' : 'Jan de Vries'),
-      address: 'Keizersgracht 420, 1016 GC Amsterdam',
-      expectedDelivery: '15 November 2026',
-      craftsman: 'Sven Hoek (Hoek Bouw)',
-      progress: 45,
+      id: '',
+      name: user?.name ? `${user.name} - Project` : '',
+      division: '',
+      customer: user?.name || '',
+      address: '',
+      expectedDelivery: '',
+      craftsman: '',
+      progress: 0,
       status: 'In Progress'
     };
     return normalizeProjectData(rawDefault);

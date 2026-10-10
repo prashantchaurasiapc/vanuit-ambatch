@@ -38,13 +38,13 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
     }
   }, [project?.technicalSpecs]);
 
-  const projectCode = project?.projectNumber || project?.id || '2026-014';
+  const projectCode = project?.projectNumber || project?.id || '';
 
   const toggleCheck = async (key) => {
     const nextVal = !checklist[key];
     setChecklist(prev => ({ ...prev, [key]: nextVal }));
     const pid = project?.id;
-    if (pid && pid !== '2026-014' && pid !== 'P-2001') {
+    if (pid) {
       try {
         await api.patch(`/customer/projects/${pid}/checklist/${key}`, { completed: nextVal });
       } catch (err) {
@@ -59,18 +59,20 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
     setIsApproving(true);
     setDeliveryApproved(true);
     const pid = project?.id;
-    if (pid && pid !== '2026-014' && pid !== 'P-2001') {
+    if (pid) {
       try {
+        const slotDate = project?.deliverySlot?.proposedDate || new Date().toISOString().split('T')[0];
+        const slotTime = project?.deliverySlot?.timeWindow || '13:00 - 16:00';
         await api.post(`/customer/projects/${pid}/delivery-slot/confirm`, {
-          proposedDate: '2026-09-15',
-          proposedTimeSlot: '13:00 - 16:00'
+          proposedDate: slotDate,
+          proposedTimeSlot: slotTime
         });
         window.dispatchEvent(new Event('app_data_changed'));
       } catch (e) {
         console.warn('API delivery slot confirm:', e);
       }
     }
-    setFeedbackToast('Delivery appointment approved for Tuesday 15 September 2026!');
+    setFeedbackToast('Delivery appointment approved!');
     setIsApproving(false);
     setTimeout(() => setFeedbackToast(''), 4000);
   };
@@ -82,7 +84,7 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
       return;
     }
     const pid = project?.id;
-    if (pid && pid !== '2026-014' && pid !== 'P-2001') {
+    if (pid) {
       try {
         await api.post(`/conversations/${pid}/messages`, {
           content: `Preferred delivery date request: ${customDateNote.trim()}`

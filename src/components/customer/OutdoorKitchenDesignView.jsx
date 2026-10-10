@@ -16,7 +16,7 @@ import timberSlatRender from '../../assets/wood_texture.png';
 export default function OutdoorKitchenDesignView({ project = null }) {
   const [feedbackToast, setFeedbackToast] = useState('');
 
-  const projectCode = project?.id && project.id !== 'PRJ-853' ? project.id : '2026-014';
+  const projectCode = project?.projectNumber || project?.id || '';
 
   const handleDownloadDrawing = () => {
     downloadDirectPdfFile('working-drawing');

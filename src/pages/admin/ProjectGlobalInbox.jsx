@@ -511,7 +511,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                         title="Click to open project overview & tabs"
                       >
                         <span className="inline-flex items-center gap-1 bg-[#EAE4D9] group-hover:bg-[#33422C] group-hover:text-white text-[#33422C] px-2 py-1 rounded text-[11px] font-bold transition-all shadow-2xs">
-                          {row.projectNumber || (row.id?.startsWith('PRJ') ? row.id : 'PRJ-2026-001')}
+                          {row.projectNumber || row.id || '–'}
                         </span>
                       </td>
 
@@ -521,8 +521,8 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                         className="py-3 px-3 border-y border-[#E2DDD3] text-dark text-[11px] font-bold"
                       >
                         <div className="flex flex-col">
-                          <span>{row.customerName || (typeof row.customer === 'string' ? row.customer : row.customer?.name) || 'Bjorn Valk'}</span>
-                          <span className="text-[9px] text-dark/60 font-medium leading-tight">{row.city || 'Den Haag'}</span>
+                          <span>{row.customerName || (typeof row.customer === 'string' ? row.customer : row.customer?.name) || '–'}</span>
+                          <span className="text-[9px] text-dark/60 font-medium leading-tight">{row.city || row.deliveryAddress || '–'}</span>
                         </div>
                       </td>
 
@@ -548,7 +548,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
                       {/* 5. Next Milestone */}
                       <td className="py-3 px-3 border-y border-[#E2DDD3] text-dark/70 text-[11px] font-mono">
-                        {row.deadline || '2026-09-15'}
+                        {row.deadline || row.deliverySlot?.proposedDate || '–'}
                       </td>
 
                       {/* 6. Partner */}
@@ -611,7 +611,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                 </p>
                 <div className="flex items-center justify-between text-xs text-dark/70 pt-0.5 font-mono">
                   <span>{language === 'NL' ? 'Klant:' : 'Customer:'} <strong className="text-dark font-body">{directUploadProject.customer}</strong></span>
-                  <span>{language === 'NL' ? 'Oplevering:' : 'Delivery:'} <strong>{directUploadProject.deadline || '2026-09-15'}</strong></span>
+                  <span>{language === 'NL' ? 'Oplevering:' : 'Delivery:'} <strong>{directUploadProject.deadline || directUploadProject.deliverySlot?.proposedDate || '–'}</strong></span>
                 </div>
               </div>
 
