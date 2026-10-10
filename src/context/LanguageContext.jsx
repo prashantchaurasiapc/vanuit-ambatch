@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import en from '../i18n/en.json';
 import nl from '../i18n/nl.json';
 
-const LanguageContext = createContext();
+export const LanguageContext = createContext();
 
 export const DICTIONARY = {
   EN: en,

@@ -166,13 +166,50 @@ export default function Quotes() {
         api.get('/customers?limit=100'),
       ]);
 
+      let backendRows = [];
       if (quotesRes.success && quotesRes.data) {
-        const rows = (quotesRes.data.items || []).map(mapBackendQuoteToRow);
-        setQuotes(rows);
+        backendRows = (quotesRes.data.items || []).map(mapBackendQuoteToRow);
         if (quotesRes.data.counters) {
           setBackendCounters(quotesRes.data.counters);
         }
-      } else {
+      }
+
+      // Merge local drafts if any exist that aren't already returned by backend
+      const localQuotes = JSON.parse(localStorage.getItem('app_quotes_v2') || '[]');
+      const localRows = localQuotes
+        .filter(lq => !backendRows.some(br => br.id === lq.id || br.backendId === lq.backendId || (lq.quoteNumber && br.quoteNumber === lq.quoteNumber)))
+        .map(lq => {
+          const tot = lq.investment?.totalInclVat ? Number(lq.investment.totalInclVat) : (lq.numericAmount || 0);
+          return {
+            id: lq.quoteNumber || lq.id,
+            backendId: lq.backendId || null,
+            quoteNumber: lq.quoteNumber || lq.id,
+            publicToken: lq.publicToken || lq.id,
+            publicUrl: lq.publicToken ? `/offerte/${lq.publicToken}` : `/offerte/${lq.id}`,
+            customer: typeof lq.customer === 'object' ? (lq.customer?.name || 'Klant') : (lq.customer || 'Klant'),
+            customerEmail: typeof lq.customer === 'object' ? lq.customer?.email : '',
+            customerCity: typeof lq.customer === 'object' ? lq.customer?.city : '',
+            customerPhone: typeof lq.customer === 'object' ? lq.customer?.phone : '',
+            customerAddress: typeof lq.customer === 'object' ? lq.customer?.address : '',
+            project: lq.cover?.titleLine1 || lq.project || 'Maatwerk Meubel',
+            amount: `€ ${Math.round(tot).toLocaleString('nl-NL')}`,
+            numericAmount: tot,
+            status: lq.status === 'approved' ? 'Geaccepteerd' : (lq.status === 'sent' ? 'Verzonden' : 'Concept'),
+            rawStatus: lq.status || 'draft',
+            date: lq.date || new Date().toISOString().split('T')[0],
+            validUntil: lq.validUntil || '',
+            discountPercent: 0,
+            productType: lq.productType || 'outdoor_kitchen',
+            items: lq.investment?.lineItems || [],
+            activeVersion: lq,
+            rawQuote: lq
+          };
+        });
+
+      const combinedRows = [...backendRows, ...localRows];
+      setQuotes(combinedRows);
+
+      if (!quotesRes.success && combinedRows.length === 0) {
         setError(quotesRes.error?.message || 'Failed to load quotes from server');
       }
 
@@ -192,6 +229,8 @@ export default function Quotes() {
 
   useEffect(() => {
     fetchQuotes();
+    window.addEventListener('app_data_changed', fetchQuotes);
+    return () => window.removeEventListener('app_data_changed', fetchQuotes);
   }, []);
 
   const [customerSelect, setCustomerSelect] = useState('Other');

@@ -969,6 +969,7 @@ export default function Leads() {
       {activeWorkflowLead ? (
         <WorkflowTracker
           lead={activeWorkflowLead}
+          leadsList={leads}
           onClose={() => {
             setActiveWorkflowLead(null);
             fetchLeads();
