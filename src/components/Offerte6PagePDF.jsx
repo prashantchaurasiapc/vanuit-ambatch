@@ -40,8 +40,8 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   const compIban = companyInfo.iban || 'NL27 ABNA 0132 2698 56';
   const compWebsite = companyInfo.website || 'vanuitambacht.nl';
 
-  // Language resolution: prop -> quote.language -> langCtx -> localStorage -> 'EN' default
-  let currentLang = propLanguage || quote?.language || langCtx?.language;
+  // Language resolution: prop -> langCtx -> quote.language -> localStorage -> 'EN' default
+  let currentLang = propLanguage || langCtx?.language || quote?.language;
   if (!currentLang) {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -105,7 +105,8 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
         : (language === 'EN' ? 'outdoor kitchen' : 'buitenkeuken');
 
   const optionsTitle = config.optionsTitle || quote?.optionsTitle || 'Big Green Egg Large';
-  const deliveryTime = config.deliveryTime || quote?.deliveryTime || (language === 'EN' ? '5 to 10 weeks' : '3 tot 5 weken');
+  const rawDeliveryTime = config.deliveryTime || quote?.deliveryTime || (language === 'EN' ? (isGardenRoom ? '6 to 8 weeks' : '3 to 5 weeks') : (isGardenRoom ? '6 tot 8 weken' : '3 tot 5 weken'));
+  const deliveryTime = language === 'EN' && (rawDeliveryTime === '3 tot 5 weken' || rawDeliveryTime === '3-5 weken') ? '3 to 5 weeks' : rawDeliveryTime;
   const woodLifespan = config.woodLifespan || (language === 'EN' ? '20 to 25 years' : '20 tot 25 jaar');
 
   const optionsObj = config.options || {};
@@ -569,7 +570,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   {language === 'EN' ? 'DIMENSIONS' : 'AFMETING'}
                 </span>
                 <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{cleanDimensions}</p>
-                <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">{config.dimensionsUnit || (language === 'EN' ? 'centimeters' : 'centimeter')}</span>
+                <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
+                  {language === 'EN'
+                    ? ((config.dimensionsUnit === 'centimeter' || !config.dimensionsUnit) ? 'centimeters' : (config.dimensionsUnit === 'centimeter (LxB)' ? 'centimeters (LxW)' : config.dimensionsUnit))
+                    : (config.dimensionsUnit || 'centimeter')}
+                </span>
               </div>
 
               <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
@@ -577,7 +582,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   {language === 'EN' ? 'WOOD TYPE' : 'HOUTSOORT'}
                 </span>
                 <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{woodType}</p>
-                <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">{config.woodLifespan || woodLifespan}</span>
+                <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
+                  {language === 'EN'
+                    ? ((config.woodLifespan === '20 tot 25 jaar' || !config.woodLifespan) ? '20 to 25 years' : (config.woodLifespan === '10 tot 15 jaar' ? '10 to 15 years' : config.woodLifespan))
+                    : (config.woodLifespan || woodLifespan)}
+                </span>
               </div>
 
               <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
@@ -586,7 +595,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 </span>
                 <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal truncate" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{tile3Value}</p>
                 <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
-                  {config.optionsSubtext || tile3Subtext}
+                  {language === 'EN'
+                    ? ((config.optionsSubtext === 'Large, rechts van het midden' || !config.optionsSubtext) ? 'Large, right of center' : config.optionsSubtext)
+                    : (config.optionsSubtext || tile3Subtext)}
                 </span>
               </div>
 
@@ -596,7 +607,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 </span>
                 <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{deliveryTime}</p>
                 <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
-                  {config.deliverySubtext || (language === 'EN' ? 'upon drawing approval' : 'na akkoord op tekening')}
+                  {language === 'EN'
+                    ? ((config.deliverySubtext === 'na akkoord op tekening' || !config.deliverySubtext) ? 'upon drawing approval' : config.deliverySubtext)
+                    : (config.deliverySubtext || 'na akkoord op tekening')}
                 </span>
               </div>
             </div>

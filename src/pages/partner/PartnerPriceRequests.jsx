@@ -9,7 +9,7 @@ import {
   XCircle, Download, Paperclip
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../../api/apiClient';
+import api, { BASE_URL } from '../../api/apiClient';
 
 export default function PartnerPriceRequests() {
   const { language } = useLanguage();
@@ -480,7 +480,7 @@ export default function PartnerPriceRequests() {
                                     return (
                                       <a
                                         key={docId || idx}
-                                        href={`/api/documents/${docId}/download`}
+                                        href={`${BASE_URL}/documents/${docId}/download`}
                                         target="_blank"
                                         rel="noreferrer"
                                         className="inline-flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors border border-primary/20 shadow-2xs"

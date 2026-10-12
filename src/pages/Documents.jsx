@@ -8,7 +8,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
 import { useLanguage } from '../context/LanguageContext';
-import api from '../api/apiClient';
+import api, { BASE_URL } from '../api/apiClient';
 
 export default function Documents({ role }) {
   const { language } = useLanguage();
@@ -180,7 +180,7 @@ export default function Documents({ role }) {
 
   // Direct backend download (GET /api/documents/:id/download)
   const handleDownload = (doc) => {
-    const downloadUrl = `/api/documents/${doc.id}/download`;
+    const downloadUrl = `${BASE_URL}/documents/${doc.id}/download`;
     const link = document.createElement('a');
     link.href = downloadUrl;
     link.setAttribute('download', doc.fileName || 'document.pdf');
