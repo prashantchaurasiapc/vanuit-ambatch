@@ -177,7 +177,16 @@ export default function Quotes() {
       // Merge local drafts if any exist that aren't already returned by backend
       const localQuotes = JSON.parse(localStorage.getItem('app_quotes_v2') || '[]');
       const localRows = localQuotes
-        .filter(lq => !backendRows.some(br => br.id === lq.id || br.backendId === lq.backendId || (lq.quoteNumber && br.quoteNumber === lq.quoteNumber)))
+        .filter(lq => {
+          if (!lq || !lq.id) return false;
+          const alreadyInBackend = backendRows.some(br => 
+            br.id === lq.id || 
+            (lq.backendId && br.backendId === lq.backendId) || 
+            (lq.quoteNumber && br.quoteNumber === lq.quoteNumber) ||
+            (lq.leadId && br.leadId === lq.leadId)
+          );
+          return !alreadyInBackend;
+        })
         .map(lq => {
           const tot = lq.investment?.totalInclVat ? Number(lq.investment.totalInclVat) : (lq.numericAmount || 0);
           return {
@@ -240,7 +249,33 @@ export default function Quotes() {
 
   // Handle autosave or manual save of 6-step proposal draft to backend
   const handleSaveEditorQuote = async (updatedQuote, showToastFlag = false) => {
-    const targetId = updatedQuote.backendId || updatedQuote.id;
+    let targetId = updatedQuote.backendId;
+
+    // Create quote on the backend on first save if not yet created
+    if (!targetId) {
+      try {
+        const pType = (updatedQuote.productType || 'outdoor_kitchen').toLowerCase().includes('garden')
+          ? 'garden_room'
+          : 'outdoor_kitchen';
+        const isUuidLead = updatedQuote.customer?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(updatedQuote.customer.id));
+        const createRes = await api.post('/quotes', {
+          leadId: isUuidLead ? updatedQuote.customer.id : undefined,
+          productType: pType
+        });
+        if (createRes.success && createRes.data) {
+          targetId = createRes.data.id;
+          updatedQuote.backendId = createRes.data.id;
+          updatedQuote.publicToken = createRes.data.publicToken;
+          updatedQuote.id = createRes.data.quoteNumber || updatedQuote.id;
+          setActiveEditorQuote({ ...updatedQuote });
+          fetchQuotes();
+        }
+      } catch (err) {
+        console.error('Error creating backend quote on first save:', err);
+      }
+    }
+
+    targetId = targetId || updatedQuote.id;
     if (!targetId) return;
 
     try {
@@ -354,32 +389,16 @@ export default function Quotes() {
     }
   };
 
-  const handleOpenAddModal = async () => {
-    try {
-      const defaultLead = leadsList[0] || null;
-      const res = await api.post('/quotes', {
-        leadId: defaultLead?.id || undefined,
-        productType: 'outdoor_kitchen'
-      });
-      if (res.success && res.data) {
-        const createdQuote = res.data;
-        const newQuoteModel = createDefaultQuote(defaultLead, {
-          ...createdQuote,
-          id: createdQuote.quoteNumber,
-          backendId: createdQuote.id,
-          publicToken: createdQuote.publicToken,
-          customer: defaultLead ? { name: defaultLead.name, email: defaultLead.email, phone: defaultLead.phone, city: defaultLead.city } : 'Nieuwe Klant',
-        });
-        newQuoteModel.backendId = createdQuote.id;
-        newQuoteModel.publicToken = createdQuote.publicToken;
-        setActiveEditorQuote(newQuoteModel);
-        await fetchQuotes();
-      } else {
-        showToast(res.error?.message || 'Failed to create quote draft');
-      }
-    } catch (err) {
-      showToast(err.message || 'Error creating quote');
-    }
+  const handleOpenAddModal = () => {
+    const defaultLead = leadsList[0] || null;
+    const newQuoteModel = createDefaultQuote(defaultLead, {
+      id: `OF-${new Date().getFullYear()}-${String(quotes.length + 1).padStart(3, '0')}`,
+      backendId: null,
+      customer: defaultLead ? { name: defaultLead.name, email: defaultLead.email, phone: defaultLead.phone, city: defaultLead.city } : 'Nieuwe Klant',
+      productType: 'outdoor_kitchen',
+      status: 'Concept'
+    });
+    setActiveEditorQuote(newQuoteModel);
   };
 
   const handleOpenEditModal = async (quoteRow) => {

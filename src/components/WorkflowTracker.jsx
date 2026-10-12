@@ -796,9 +796,17 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
 
   useEffect(() => {
     if (lead) {
-      setLeadQuote(getLeadQuote());
+      setLeadQuote(prev => {
+        const fresh = getLeadQuote();
+        return {
+          ...fresh,
+          backendId: prev?.backendId || fresh.backendId,
+          publicToken: prev?.publicToken || fresh.publicToken,
+          id: prev?.backendId ? (prev.id || fresh.id) : fresh.id
+        };
+      });
     }
-  }, [lead?.id, lead?.name, lead?.customer]);
+  }, [lead?.id]);
 
   // Synchronize Step 5 message with language and customer details
   useEffect(() => {
@@ -858,6 +866,24 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
       let targetBackendId = savedQuote.backendId;
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(lead?.id));
 
+      // Before creating, check if an existing quote draft already exists in DB for this lead!
+      if (!targetBackendId && isUuid) {
+        try {
+          const existingRes = await api.get(`/quotes?leadId=${lead.id}&limit=1`);
+          if (existingRes.success && existingRes.data?.items?.length > 0) {
+            const existingQ = existingRes.data.items[0];
+            targetBackendId = existingQ.id;
+            savedQuote.backendId = existingQ.id;
+            savedQuote.publicToken = existingQ.publicToken;
+            savedQuote.id = existingQ.quoteNumber || savedQuote.id;
+            setLeadQuote({ ...savedQuote });
+          }
+        } catch (e) {
+          console.warn('Error checking existing quote for lead:', e);
+        }
+      }
+
+      // Only create a brand-new quote if no existing quote exists for this lead!
       if (!targetBackendId) {
         const pType = (step2ProductType || lead?.productType || customerCategory || 'outdoor_kitchen').toLowerCase().includes('garden')
           ? 'garden_room'

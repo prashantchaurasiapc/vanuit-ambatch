@@ -28,7 +28,7 @@ const STEPS = [
 ];
 
 // Dynamic Responsive PDF Preview Scaler that fits 100% full-width in Zone 3 card
-function ScaledPDFPreview({ quote, activePage, highlightField }) {
+function ScaledPDFPreview({ quote, activePage, highlightField, language }) {
   const containerRef = React.useRef(null);
   const [scale, setScale] = useState(0.40);
 
@@ -71,7 +71,7 @@ function ScaledPDFPreview({ quote, activePage, highlightField }) {
         }}
         className="shadow-md rounded-lg overflow-hidden bg-white"
       >
-        <Offerte6PagePDF quote={quote} activePage={activePage} highlightField={highlightField} />
+        <Offerte6PagePDF quote={quote} activePage={activePage} highlightField={highlightField} language={language} />
       </div>
     </div>
   );
@@ -129,6 +129,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
   const [highlightField, setHighlightField] = useState(null);
   const [showFieldLabels, setShowFieldLabels] = useState(true);
   const [photoWarnings, setPhotoWarnings] = useState({});
+  const [isCustomWoodMode, setIsCustomWoodMode] = useState(false);
 
   const stepFormRef = useRef(null);
 
@@ -208,9 +209,10 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
           const wood = field === 'woodType' ? val : (nextConfig.woodType || 'Thermo Fraké');
           const dim = field === 'dimensions' ? val : (nextConfig.dimensions || '240 × 80');
           const cleanDim = String(dim).replace(/\s*cm$/i, '').trim();
+          const prefix = language === 'EN' ? 'Outdoor Kitchen' : 'Buitenkeuken';
           lineItems[0] = {
             ...item1,
-            title: `Buitenkeuken ${wood} · ${cleanDim} cm`
+            title: `${prefix} ${wood} · ${cleanDim} cm`
           };
           nextInvestment.lineItems = lineItems;
         }
@@ -240,29 +242,96 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
     }));
   };
 
+  // Accent-insensitive wood name normalizer
+  const normalizeWood = (str) =>
+    String(str || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+
+  // Language-aware display helpers for Dutch defaults
+  const getDisplayDimensionsUnit = (val) => {
+    if (!val) return language === 'EN' ? 'centimeters' : 'centimeter';
+    if (language === 'EN') {
+      if (val === 'centimeter') return 'centimeters';
+      if (val === 'centimeter (LxB)') return 'centimeters (LxW)';
+      if (val === 'meter (LxB)') return 'meters (LxW)';
+      if (val === 'meter') return 'meters';
+    } else {
+      if (val === 'centimeters') return 'centimeter';
+      if (val === 'centimeters (LxW)') return 'centimeter (LxB)';
+      if (val === 'meters (LxW)') return 'meter (LxB)';
+      if (val === 'meters') return 'meter';
+    }
+    return val;
+  };
+
+  const getDisplayDeliveryTime = (val) => {
+    if (!val) return language === 'EN' ? '3 to 5 weeks' : '3 tot 5 weken';
+    if (language === 'EN' && (val === '3 tot 5 weken' || val === '3-5 weken')) return '3 to 5 weeks';
+    if (language === 'NL' && (val === '3 to 5 weeks' || val === '3-5 weeks')) return '3 tot 5 weken';
+    return val;
+  };
+
+  const getDisplayDeliverySubtext = (val) => {
+    if (!val) return language === 'EN' ? 'upon drawing approval' : 'na akkoord op tekening';
+    if (language === 'EN' && (val === 'na akkoord op tekening' || val === 'na technisch akkoord')) return 'upon drawing approval';
+    if (language === 'NL' && (val === 'upon drawing approval' || val === 'after technical agreement')) return 'na akkoord op tekening';
+    return val;
+  };
+
+  const getDisplayOptionsSubtext = (val) => {
+    if (!val) return isGardenRoom ? (language === 'EN' ? 'Glass sliding wall 4-track' : 'Glazen schuifwand 4-rail') : (language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden');
+    if (language === 'EN' && (val === 'Large, rechts van het midden' || val === 'Rechts van het midden')) return 'Large, right of center';
+    if (language === 'NL' && val === 'Large, right of center') return 'Large, rechts van het midden';
+    return val;
+  };
+
+  const getDisplayLifespan = (val) => {
+    if (!val) return language === 'EN' ? '20 to 25 years' : '20 tot 25 jaar';
+    if (language === 'EN' && val === '20 tot 25 jaar') return '20 to 25 years';
+    if (language === 'NL' && val === '20 to 25 years') return '20 tot 25 jaar';
+    return val;
+  };
+
   // Wood Type Selection Propagation
   const handleWoodTypeSelect = (woodName) => {
     if (isApproved) return;
-    const woodObj = WOOD_LIBRARY.find(w => w.name === woodName);
+    setIsCustomWoodMode(false);
+    const woodObj = WOOD_LIBRARY.find(w => normalizeWood(w.name) === normalizeWood(woodName));
     if (woodObj) {
       setQuote(prev => {
         const nextItems = [...(prev.investment?.lineItems || [])];
         if (nextItems.length > 0) {
-          nextItems[0] = {
-            ...nextItems[0],
-            title: `Buitenkeuken ${woodObj.name} · ${prev.configuration?.dimensions || '240 × 80 cm'}`
-          };
+          const item1 = nextItems[0];
+          if (!item1.isCustomTitle) {
+            const dim = prev.configuration?.dimensions || '240 × 80';
+            const cleanDim = String(dim).replace(/\s*cm$/i, '').trim();
+            const prefix = language === 'EN' ? 'Outdoor Kitchen' : 'Buitenkeuken';
+            nextItems[0] = {
+              ...item1,
+              title: `${prefix} ${woodObj.name} · ${cleanDim} cm`
+            };
+          }
         }
         return {
           ...prev,
           configuration: {
             ...prev.configuration,
             woodType: woodObj.name,
-            woodLifespan: woodObj.lifespan,
+            woodLifespan: language === 'EN' ? (woodObj.name === 'Douglas' ? '10 to 15 years' : '20 to 25 years') : woodObj.lifespan,
             infobox: {
-              ...prev.configuration.infobox,
-              title: woodObj.infoboxTitle,
-              text: woodObj.infoboxText
+              ...prev.configuration?.infobox,
+              show: true,
+              title: language === 'EN' ? `About ${woodObj.name}` : woodObj.infoboxTitle,
+              text: language === 'EN'
+                ? (woodObj.name === 'Thermo Fraké'
+                    ? 'Thermally treated Fraké: dimensionally stable, durable, with a warm, deep color. Lasts 20 to 25 years and ages gracefully into silver-grey.'
+                    : woodObj.name === 'Padouk'
+                    ? 'Padouk is one of the most stable timber species globally. Coral red when processed, rapidly weathering to a warm silver-grey.'
+                    : 'Douglas wood offers a warm and authentic aesthetic, ideal for sheltered outdoor installations.')
+                : woodObj.infoboxText
             }
           },
           investment: {
@@ -274,6 +343,48 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
     } else {
       updateConfigField('woodType', woodName);
     }
+  };
+
+  // Custom Wood Type Free-Text Propagation
+  const handleCustomWoodChange = (customWoodName) => {
+    if (isApproved) return;
+    setIsCustomWoodMode(true);
+    setQuote(prev => {
+      const nextConfig = {
+        ...prev.configuration,
+        woodType: customWoodName,
+        infobox: {
+          show: true,
+          title: language === 'EN' ? `About ${customWoodName || 'Wood Type'}` : `Over ${customWoodName || 'Houtsoort'}`,
+          text: language === 'EN'
+            ? `${customWoodName || 'This custom timber'} is durable and dimensionally stable, handcrafted specifically for this installation.`
+            : `${customWoodName || 'Deze houtsoort'} is duurzaam en vormstabiel, geschikt voor hoogwaardige buitenkeukens.`
+        }
+      };
+
+      const nextInvestment = { ...(prev.investment || {}) };
+      const lineItems = [...(nextInvestment.lineItems || [])];
+      if (lineItems.length > 0) {
+        const item1 = lineItems[0];
+        if (!item1.isCustomTitle && (item1.title.startsWith('Buitenkeuken') || item1.title.startsWith('Outdoor Kitchen') || item1.title.startsWith('Maatwerk'))) {
+          const dim = nextConfig.dimensions || '240 × 80';
+          const cleanDim = String(dim).replace(/\s*cm$/i, '').trim();
+          const displayName = customWoodName.trim() || (language === 'EN' ? 'Custom' : 'Maatwerk');
+          const prefix = language === 'EN' ? 'Outdoor Kitchen' : 'Buitenkeuken';
+          lineItems[0] = {
+            ...item1,
+            title: `${prefix} ${displayName} · ${cleanDim} cm`
+          };
+          nextInvestment.lineItems = lineItems;
+        }
+      }
+
+      return {
+        ...prev,
+        configuration: nextConfig,
+        investment: nextInvestment
+      };
+    });
   };
 
   // Options & Features On/Off Propagation Handler
@@ -1240,10 +1351,10 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     />
                     <input
                       type="text"
-                      value={quote.configuration?.dimensionsUnit || 'centimeter'}
+                      value={getDisplayDimensionsUnit(quote.configuration?.dimensionsUnit)}
                       onChange={(e) => updateConfigField('dimensionsUnit', e.target.value)}
                       className="w-full px-3 py-1.5 bg-[#EFECE8] border border-[#D6CFC2] rounded-lg text-xs font-medium text-dark/70"
-                      placeholder={language === 'NL' ? 'bijv. centimeter' : 'e.g. centimeter'}
+                      placeholder={language === 'NL' ? 'bijv. centimeter' : 'e.g. centimeters'}
                     />
                     <p className="text-[10px] text-dark/40 font-body italic">
                       {language === 'NL' ? 'waarde' : 'value'}: {(quote.configuration?.dimensions || '240 × 80').length}/{16} {language === 'NL' ? 'tekens' : 'chars'}
@@ -1260,23 +1371,61 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                         {language === 'NL' ? 'BIBLIOTHEEK OF VRIJE TEKST' : 'LIBRARY OR FREE TEXT'}
                       </span>
                     </div>
-                    <select
-                      value={WOOD_LIBRARY.some(w => w.name === (quote.configuration?.woodType || 'Thermo Fraké')) ? (quote.configuration?.woodType || 'Thermo Fraké') : 'custom'}
-                      onChange={(e) => {
-                        if (e.target.value !== 'custom') {
-                          handleWoodTypeSelect(e.target.value);
-                        }
-                      }}
-                      className="w-full px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    >
-                      {WOOD_LIBRARY.map((w) => (
-                        <option key={w.id} value={w.name}>{w.name}</option>
-                      ))}
-                      <option value="custom">{language === 'NL' ? 'Aangepaste houtsoort (vrije tekst)' : 'Custom wood type (free text)'}</option>
-                    </select>
+                    {(() => {
+                      const matchedWood = WOOD_LIBRARY.find(w => normalizeWood(w.name) === normalizeWood(quote.configuration?.woodType));
+                      const isCustomWood = isCustomWoodMode || Boolean(
+                        quote.configuration?.woodType && !matchedWood
+                      );
+                      const selectVal = isCustomWood
+                        ? 'custom'
+                        : (matchedWood ? matchedWood.name : 'Thermo Fraké');
+
+                      return (
+                        <>
+                          <select
+                            value={selectVal}
+                            onChange={(e) => {
+                              if (e.target.value === 'custom') {
+                                setIsCustomWoodMode(true);
+                                const currentMatched = WOOD_LIBRARY.find(w => normalizeWood(w.name) === normalizeWood(quote.configuration?.woodType));
+                                if (currentMatched) {
+                                  handleCustomWoodChange('');
+                                }
+                              } else {
+                                setIsCustomWoodMode(false);
+                                handleWoodTypeSelect(e.target.value);
+                              }
+                            }}
+                            className="w-full px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          >
+                            {WOOD_LIBRARY.map((w) => (
+                              <option key={w.id} value={w.name}>{w.name}</option>
+                            ))}
+                            <option value="custom">{language === 'NL' ? 'Aangepaste houtsoort (vrije tekst)' : 'Custom wood type (free text)'}</option>
+                          </select>
+
+                          {/* Free-text input field when Custom is selected or active */}
+                          {isCustomWood && (
+                            <div className="space-y-1 pt-0.5">
+                              <label className="text-[9px] font-bold uppercase tracking-wider text-primary font-mono block">
+                                {language === 'NL' ? 'Vrije tekst houtsoort (bijv. Douglas, Accoya):' : 'Custom wood type name (e.g. Douglas, Accoya):'}
+                              </label>
+                              <input
+                                type="text"
+                                value={quote.configuration?.woodType || ''}
+                                onChange={(e) => handleCustomWoodChange(e.target.value)}
+                                placeholder={language === 'NL' ? 'bijv. Douglas geschaafd, Accoya, Eikenhout' : 'e.g. Douglas planed, Accoya, Oak'}
+                                className="w-full px-3 py-1.5 bg-white border-2 border-primary/60 focus:border-primary rounded-lg text-xs font-bold text-dark focus:outline-none shadow-xs"
+                                autoFocus={isCustomWoodMode && !quote.configuration?.woodType}
+                              />
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                     <input
                       type="text"
-                      value={quote.configuration?.woodLifespan !== undefined ? quote.configuration.woodLifespan : (language === 'EN' ? '20 to 25 years' : '20 tot 25 jaar')}
+                      value={getDisplayLifespan(quote.configuration?.woodLifespan)}
                       onChange={(e) => updateConfigField('woodLifespan', e.target.value)}
                       placeholder={language === 'NL' ? 'levensduur bijv. 20 tot 25 jaar' : 'lifespan e.g. 20 to 25 years'}
                       className="w-full px-3 py-1.5 bg-[#EFECE8] border border-[#D6CFC2] rounded-lg text-xs font-medium text-dark/70"
@@ -1300,14 +1449,14 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     </div>
                     <input
                       type="text"
-                      value={quote.configuration?.optionsTitle || (isGardenRoom ? 'Plat dak met EPDM' : 'Big Green Egg')}
+                      value={quote.configuration?.optionsTitle || (isGardenRoom ? (language === 'EN' ? 'Flat roof with EPDM' : 'Plat dak met EPDM') : 'Big Green Egg')}
                       onChange={(e) => updateConfigField('optionsTitle', e.target.value)}
                       className="w-full px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
                       placeholder={isGardenRoom ? (language === 'NL' ? 'bijv. Plat dak met EPDM' : 'e.g. Flat roof with EPDM') : (language === 'NL' ? 'bijv. Big Green Egg' : 'e.g. Big Green Egg')}
                     />
                     <input
                       type="text"
-                      value={quote.configuration?.optionsSubtext !== undefined ? quote.configuration.optionsSubtext : (isGardenRoom ? 'Glazen schuifwand 4-rail' : (language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden'))}
+                      value={getDisplayOptionsSubtext(quote.configuration?.optionsSubtext)}
                       onChange={(e) => updateConfigField('optionsSubtext', e.target.value)}
                       placeholder={isGardenRoom ? (language === 'NL' ? 'bijv. Glazen schuifwand 4-rail' : 'e.g. Glass sliding wall 4-track') : (language === 'NL' ? 'bijv. Large, rechts van het midden' : 'e.g. Large, right of center')}
                       className="w-full px-3 py-1.5 bg-[#EFECE8] border border-[#D6CFC2] rounded-lg text-xs font-medium text-dark/70"
@@ -1331,13 +1480,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     </div>
                     <input
                       type="text"
-                      value={quote.configuration?.deliveryTime || (language === 'EN' ? '3 to 5 weeks' : '3 tot 5 weken')}
+                      value={getDisplayDeliveryTime(quote.configuration?.deliveryTime)}
                       onChange={(e) => updateConfigField('deliveryTime', e.target.value)}
                       className="w-full px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                     <input
                       type="text"
-                      value={quote.configuration?.deliverySubtext !== undefined ? quote.configuration.deliverySubtext : (language === 'EN' ? 'upon drawing approval' : 'na akkoord op tekening')}
+                      value={getDisplayDeliverySubtext(quote.configuration?.deliverySubtext)}
                       onChange={(e) => updateConfigField('deliverySubtext', e.target.value)}
                       placeholder={language === 'NL' ? 'bijv. na akkoord op tekening' : 'e.g. upon drawing approval'}
                       className="w-full px-3 py-1.5 bg-[#EFECE8] border border-[#D6CFC2] rounded-lg text-xs font-medium text-dark/70"
@@ -3119,7 +3268,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
             </div>
 
             {/* Scaled Full-Width Responsive PDF Preview */}
-            <ScaledPDFPreview quote={quote} activePage={previewPage} highlightField={highlightField} />
+            <ScaledPDFPreview quote={quote} activePage={previewPage} highlightField={highlightField} language={language} />
           </div>
         </div>
 
