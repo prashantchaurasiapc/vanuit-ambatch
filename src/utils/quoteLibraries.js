@@ -100,30 +100,30 @@ export const PRESET_PRODUCT_LIBRARY = [
   }
 ];
 
-// Default Template Configurations per Product Type
-export const PRODUCT_TYPE_DEFAULTS = {
+// Default Template Configurations per Product Type (Language-Aware)
+export const PRODUCT_TYPE_DEFAULTS_NL = {
   'Outdoor kitchen': {
-    titleLine1: 'Your outdoor kitchen,',
-    titleLine2: 'custom crafted.',
+    titleLine1: 'Uw buitenkeuken,',
+    titleLine2: 'op maat gemaakt.',
     letterParagraphs: [
-      'Thank you very much for your inquiry and pleasant consultation. We are delighted to present this personalized proposal for your custom outdoor kitchen.',
-      'At Vanuit Ambacht, we believe in sustainable materials, artisan craftsmanship, and meticulous attention to detail. We handcraft all our outdoor kitchens in our workshop.',
-      'In this document, you will find a comprehensive overview of your chosen configuration, including specifications, front-view diagram, and transparent investment.',
-      'Should you have any questions or wish to make adjustments, we are delighted to assist you!'
+      'Hartelijk dank voor je aanvraag en het prettige gesprek. Met veel plezier presenteren wij deze persoonlijke offerte voor jouw maatwerk buitenkeuken.',
+      'Bij Vanuit Ambacht geloven we in duurzame materialen, ambachtelijke afwerking en oog voor detail. Wij maken al onze buitenkeukens met de hand in onze werkplaats.',
+      'In dit document vind je het volledige overzicht van jouw gekozen configuratie, inclusief specificaties, vooraanzicht tekening en transparante investering.',
+      'Heb je vragen of wens je nog aanpassingen? Wij denken graag met je mee!'
     ],
     checklist: [
-      'Fully custom build, crafted by a certified specialist craftsman',
-      'Digital CAD drawing prior to approval',
+      'Volledig maatwerk, vervaardigd door een gecertificeerd meubelmaker',
+      'Digitale CAD-tekening vooraf ter goedkeuring',
       '{finish}',
-      'Free delivery in {city}',
-      'Full warranty and aftercare upon delivery'
+      'Gratis bezorging in {city}',
+      'Volledige garantie en nazorg na oplevering'
     ],
     processSteps: [
-      { stepNumber: 1, title: 'Proposal Approval', badgeText: '', isGratisBadge: false },
-      { stepNumber: 2, title: 'Digital Drawing Confirmation', badgeText: '', isGratisBadge: false },
-      { stepNumber: 3, title: 'Craftsman Production', badgeText: '{deliveryTime}', isGratisBadge: false },
-      { stepNumber: 4, title: 'Delivery & Installation in {city}', badgeText: 'FREE', isGratisBadge: true },
-      { stepNumber: 5, title: 'Warranty & Service', badgeText: '', isGratisBadge: false }
+      { stepNumber: 1, title: 'Akkoord op offerte', badgeText: '', isGratisBadge: false },
+      { stepNumber: 2, title: 'Bevestiging technische tekening', badgeText: '', isGratisBadge: false },
+      { stepNumber: 3, title: 'Ambachtelijke productie werkplaats', badgeText: '{deliveryTime}', isGratisBadge: false },
+      { stepNumber: 4, title: 'Bezorging & montage in {city}', badgeText: 'GRATIS', isGratisBadge: true },
+      { stepNumber: 5, title: 'Garantie & nazorg', badgeText: '', isGratisBadge: false }
     ],
     configuration: {
       dimensions: '240 × 80',
@@ -200,27 +200,27 @@ export const PRODUCT_TYPE_DEFAULTS = {
     ]
   },
   'Garden room': {
-    titleLine1: 'Your garden room,',
-    titleLine2: 'exclusively designed.',
+    titleLine1: 'Uw exclusief buitenverblijf,',
+    titleLine2: 'exclusief ontworpen.',
     letterParagraphs: [
-      'Thank you very much for your inquiry regarding a custom garden room.',
-      'Our garden rooms are handcrafted from the finest quality timber species.',
-      'Review the exact dimensions, sliding glass doors, and investment details in this overview.',
-      'Please feel free to contact us for any questions or custom adjustments.'
+      'Hartelijk dank voor je aanvraag voor een exclusief maatwerk buitenverblijf.',
+      'Onze buitenverblijven worden met de hand gebouwd van hoogwaardige houtsoorten en materialen.',
+      'In deze offerte vind je de exacte specificaties, afmetingen en investering voor jouw tuinkamer.',
+      'Aarzel niet om contact op te nemen voor aanvullende wensen of aanpassingen.'
     ],
     checklist: [
-      'Fully custom timber construction',
-      'Architectural blueprint beforehand',
+      'Volledig maatwerk houtconstructie',
+      'Bouwkundige tekening vooraf ter goedkeuring',
       'Hoogwaardige EPDM dakbedekking',
-      'Free delivery & assembly in {city}',
-      '10-year warranty on timber structure'
+      'Gratis bezorging & montage in {city}',
+      '10 jaar garantie op de houtconstructie'
     ],
     processSteps: [
-      { stepNumber: 1, title: 'Proposal Approval', badgeText: '', isGratisBadge: false },
-      { stepNumber: 2, title: 'Blueprint & Permit Check', badgeText: '', isGratisBadge: false },
-      { stepNumber: 3, title: 'Prefab Production in Workshop', badgeText: '{deliveryTime}', isGratisBadge: false },
-      { stepNumber: 4, title: 'Assembly in {city}', badgeText: 'FREE', isGratisBadge: true },
-      { stepNumber: 5, title: 'Completion & Warranty', badgeText: '', isGratisBadge: false }
+      { stepNumber: 1, title: 'Akkoord op offerte', badgeText: '', isGratisBadge: false },
+      { stepNumber: 2, title: 'Bouwtekening & vergunningscheck', badgeText: '', isGratisBadge: false },
+      { stepNumber: 3, title: 'Prefab productie in werkplaats', badgeText: '{deliveryTime}', isGratisBadge: false },
+      { stepNumber: 4, title: 'Bezorging & montage in {city}', badgeText: 'GRATIS', isGratisBadge: true },
+      { stepNumber: 5, title: 'Oplevering & garantie', badgeText: '', isGratisBadge: false }
     ],
     configuration: {
       dimensions: '600 × 350',
@@ -306,6 +306,260 @@ export const PRODUCT_TYPE_DEFAULTS = {
     ]
   },
   'Veranda': {
+    titleLine1: 'Uw houten veranda,',
+    titleLine2: 'perfect afgewerkt.',
+    letterParagraphs: [
+      'Bijgaand ontvangt u het maatwerk voorstel voor uw houten veranda.',
+      'Duurzaam gebouwd om in alle seizoenen van uw tuin te kunnen genieten.',
+      'Alle materialen en investeringsdetails staan vermeld op de volgende pagina’s.',
+      'Wij zien uit naar een prettige samenwerking.'
+    ],
+    checklist: [
+      'Robuuste houtconstructie & veilige verankering',
+      'Gedetailleerde werktekening ter goedkeuring',
+      '{finish}',
+      'Gratis bezorging in {city}',
+      'Garantie op constructie en dak'
+    ],
+    processSteps: [
+      { stepNumber: 1, title: 'Akkoord op offerte', badgeText: '', isGratisBadge: false },
+      { stepNumber: 2, title: 'Technische tekening controle', badgeText: '', isGratisBadge: false },
+      { stepNumber: 3, title: 'Houtbewerking & voorbereiding', badgeText: '{deliveryTime}', isGratisBadge: false },
+      { stepNumber: 4, title: 'Bezorging & montage in {city}', badgeText: 'GRATIS', isGratisBadge: true },
+      { stepNumber: 5, title: 'Garantie & nazorg', badgeText: '', isGratisBadge: false }
+    ]
+  },
+  'Poolhouse': {
+    titleLine1: 'Uw luxe poolhouse,',
+    titleLine2: 'ambachtelijk gerealiseerd.',
+    letterParagraphs: [
+      'Met trots presenteren wij het ontwerp en voorstel voor uw maatwerk poolhouse.',
+      'Gecombineerd met berging, kleedruimte en overdekt terras.',
+      'In deze offerte vindt u alle specificaties en opleveringsplanning.',
+      'Vragen? Wij staan direct tot uw dienst.'
+    ],
+    checklist: [
+      'Exclusief ontwerp met geïntegreerde berging',
+      'Digitale CAD constructietekening',
+      '{finish}',
+      'Gratis bezorging in {city}',
+      'Volledige nazorg en service'
+    ],
+    processSteps: [
+      { stepNumber: 1, title: 'Akkoord op offerte', badgeText: '', isGratisBadge: false },
+      { stepNumber: 2, title: 'Goedkeuring CAD-tekening', badgeText: '', isGratisBadge: false },
+      { stepNumber: 3, title: 'Ambachtelijke werkplaatsproductie', badgeText: '{deliveryTime}', isGratisBadge: false },
+      { stepNumber: 4, title: 'Bezorging & montage in {city}', badgeText: 'GRATIS', isGratisBadge: true },
+      { stepNumber: 5, title: 'Oplevering & garantie', badgeText: '', isGratisBadge: false }
+    ]
+  }
+};
+
+export const PRODUCT_TYPE_DEFAULTS_EN = {
+  'Outdoor kitchen': {
+    titleLine1: 'Your outdoor kitchen,',
+    titleLine2: 'custom crafted.',
+    letterParagraphs: [
+      'Thank you very much for your inquiry and pleasant consultation. We are delighted to present this personalized proposal for your custom outdoor kitchen.',
+      'At Vanuit Ambacht, we believe in sustainable materials, artisan craftsmanship, and meticulous attention to detail. We handcraft all our outdoor kitchens in our workshop.',
+      'In this document, you will find a comprehensive overview of your chosen configuration, including specifications, front-view diagram, and transparent investment.',
+      'Should you have any questions or wish to make adjustments, we are delighted to assist you!'
+    ],
+    checklist: [
+      'Fully custom build, crafted by a certified specialist craftsman',
+      'Digital CAD drawing prior to approval',
+      '{finish}',
+      'Free delivery in {city}',
+      'Full warranty and aftercare upon delivery'
+    ],
+    processSteps: [
+      { stepNumber: 1, title: 'Proposal Approval', badgeText: '', isGratisBadge: false },
+      { stepNumber: 2, title: 'Digital Drawing Confirmation', badgeText: '', isGratisBadge: false },
+      { stepNumber: 3, title: 'Craftsman Production', badgeText: '{deliveryTime}', isGratisBadge: false },
+      { stepNumber: 4, title: 'Delivery & Installation in {city}', badgeText: 'FREE', isGratisBadge: true },
+      { stepNumber: 5, title: 'Warranty & Service', badgeText: '', isGratisBadge: false }
+    ],
+    configuration: {
+      dimensions: '240 × 80',
+      dimensionsUnit: 'centimeters',
+      woodType: 'Thermo Fraké',
+      woodLifespan: '20 to 25 years',
+      optionsTitle: 'Big Green Egg Large',
+      optionsSubtext: 'Large, right of center',
+      deliveryTime: '3 to 5 weeks',
+      deliverySubtext: 'upon drawing approval',
+      options: {
+        bbqCutout: { enabled: true, type: 'Big Green Egg' },
+        fridge: { enabled: false },
+        sink: { enabled: false }
+      },
+      infobox: {
+        show: true,
+        title: 'About Thermo Fraké',
+        text: 'Thermally treated Fraké: dimensionally stable, durable, with a warm, deep color. Lasts 20 to 25 years and ages gracefully into silver-grey.'
+      },
+      specifications: [
+        {
+          id: 'sec-1',
+          title: 'WORKTOP',
+          lines: [
+            { id: 'l1', text: 'Ceramic stones in worktop – heat-resistant and low maintenance' },
+            { id: 'l2', text: 'Custom cutout engineered for Big Green Egg Large' }
+          ]
+        },
+        {
+          id: 'sec-2',
+          title: 'LAYOUT & STORAGE',
+          lines: [
+            { id: 'l3', text: 'Two spacious storage compartments with doors and soft-close hinges' },
+            { id: 'l4', text: 'Open shelf for wood storage' }
+          ]
+        },
+        {
+          id: 'sec-3',
+          title: 'FINISH & MOBILITY',
+          lines: [
+            { id: 'l5', text: 'Two-layer protective oil finish (natural)' },
+            { id: 'l6', text: 'Hidden heavy-duty swivel castors for easy mobility' }
+          ]
+        },
+        {
+          id: 'sec-4',
+          title: 'DELIVERY',
+          lines: [
+            { id: 'l7', text: 'Free delivery scheduled at your convenience' }
+          ]
+        }
+      ]
+    },
+    lineItems: [
+      {
+        id: 'ok-1',
+        title: 'Outdoor Kitchen Thermo Fraké · 240 × 80 cm',
+        description: 'Wooden worktop with ceramic stones and cutout for Big Green Egg Large, finished with two layers of natural oil',
+        priceInclVat: 3495,
+        vatRate: 21,
+        isIncluded: false,
+        quantity: 1
+      },
+      {
+        id: 'ok-2',
+        title: 'Delivery and Placement on Location',
+        description: 'Delivered and professionally set up on your terrace',
+        priceInclVat: 0,
+        vatRate: 21,
+        isIncluded: true,
+        quantity: 1
+      }
+    ]
+  },
+  'Garden room': {
+    titleLine1: 'Your garden room,',
+    titleLine2: 'exclusively designed.',
+    letterParagraphs: [
+      'Thank you very much for your inquiry regarding a custom garden room.',
+      'Our garden rooms are handcrafted from the finest quality timber species.',
+      'Review the exact dimensions, sliding glass doors, and investment details in this overview.',
+      'Please feel free to contact us for any questions or custom adjustments.'
+    ],
+    checklist: [
+      'Fully custom timber construction',
+      'Architectural blueprint beforehand',
+      'High-grade EPDM roof covering',
+      'Free delivery & assembly in {city}',
+      '10-year warranty on timber structure'
+    ],
+    processSteps: [
+      { stepNumber: 1, title: 'Proposal Approval', badgeText: '', isGratisBadge: false },
+      { stepNumber: 2, title: 'Blueprint & Permit Check', badgeText: '', isGratisBadge: false },
+      { stepNumber: 3, title: 'Prefab Production in Workshop', badgeText: '{deliveryTime}', isGratisBadge: false },
+      { stepNumber: 4, title: 'Assembly in {city}', badgeText: 'FREE', isGratisBadge: true },
+      { stepNumber: 5, title: 'Completion & Warranty', badgeText: '', isGratisBadge: false }
+    ],
+    configuration: {
+      dimensions: '600 × 350',
+      dimensionsUnit: 'centimeters (LxW)',
+      woodType: 'Planed Douglas',
+      woodLifespan: '15 to 20 years',
+      optionsTitle: 'Glass sliding wall & EPDM',
+      optionsSubtext: '4-track tempered safety glass',
+      deliveryTime: '6 to 8 weeks',
+      deliverySubtext: 'upon blueprint approval',
+      roofType: 'Flat roof with EPDM',
+      roofSubtext: 'Includes aluminum roof trim & drainage',
+      wallType: 'Glass sliding walls (4-track)',
+      floorType: 'No floor (on terrace)',
+      foundationType: 'Concrete piers with leveling plate',
+      infobox: {
+        show: true,
+        title: 'About Douglas Wood',
+        text: 'Douglas wood is one of the hardest and most durable European softwoods. Untreated it has a lifespan of 10 to 15 years, treated more than 20 years.'
+      },
+      specifications: [
+        {
+          id: 'sec-1',
+          title: 'ROOF CONSTRUCTION',
+          lines: [
+            { id: 'l1', text: 'Flat roof equipped with high-grade EPDM roofing and aluminum roof trim' },
+            { id: 'l2', text: 'Heavy Douglas beam layer (75 × 200 mm) and tongue-and-groove roof boarding' }
+          ]
+        },
+        {
+          id: 'sec-2',
+          title: 'CONSTRUCTION & WALLS',
+          lines: [
+            { id: 'l3', text: 'Robust 150 × 150 mm planed Douglas posts' },
+            { id: 'l4', text: 'Swedish rebate black back and side walls for optimal privacy' }
+          ]
+        },
+        {
+          id: 'sec-3',
+          title: 'GLASS WALLS & FINISH',
+          lines: [
+            { id: 'l5', text: 'Luxury 4-track glass sliding wall system with 10 mm tempered safety glass' },
+            { id: 'l6', text: 'Concrete piers with leveling plate for solid frost-free foundation' }
+          ]
+        },
+        {
+          id: 'sec-4',
+          title: 'DELIVERY & INSTALLATION',
+          lines: [
+            { id: 'l7', text: 'Prefab preparation in workshop and professional on-site installation' }
+          ]
+        }
+      ]
+    },
+    lineItems: [
+      {
+        id: 'gr-1',
+        title: 'Custom Garden Room 600 × 350 cm',
+        description: 'Robust Douglas posts (150x150mm), EPDM roofing with roof trim and black rebate walls',
+        priceInclVat: 8950,
+        vatRate: 21,
+        isIncluded: false,
+        quantity: 1
+      },
+      {
+        id: 'gr-2',
+        title: 'Glass Sliding Wall System (4-track)',
+        description: '10mm tempered safety glass incl. draft brushes and aluminum guide profiles',
+        priceInclVat: 1950,
+        vatRate: 21,
+        isIncluded: false,
+        quantity: 1
+      },
+      {
+        id: 'gr-3',
+        title: 'Delivery and Professional Installation on Location',
+        description: 'Including concrete piers, professional installation and level delivery',
+        priceInclVat: 0,
+        vatRate: 21,
+        isIncluded: true,
+        quantity: 1
+      }
+    ]
+  },
+  'Veranda': {
     titleLine1: 'Your wooden veranda,',
     titleLine2: 'perfectly finished.',
     letterParagraphs: [
@@ -354,3 +608,14 @@ export const PRODUCT_TYPE_DEFAULTS = {
     ]
   }
 };
+
+// Default export uses English or Dutch based on helper
+export function getProductTypeDefaults(productType, language = 'NL') {
+  const lang = String(language).toUpperCase();
+  const dict = lang === 'EN' ? PRODUCT_TYPE_DEFAULTS_EN : PRODUCT_TYPE_DEFAULTS_NL;
+  return dict[productType] || dict['Outdoor kitchen'];
+}
+
+// Backwards compatibility default export
+export const PRODUCT_TYPE_DEFAULTS = PRODUCT_TYPE_DEFAULTS_NL;
+

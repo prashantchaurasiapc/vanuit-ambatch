@@ -3,16 +3,35 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Check, AlertTriangle, ArrowLeft, ArrowRight, Download, Share2, Copy, Send,
-  Plus, Trash2, RotateCcw, Upload, FileText, CheckCircle, Eye, HelpCircle, Layout, Sparkles, User, Briefcase
+  Plus, Trash2, RotateCcw, Upload, FileText, CheckCircle, Eye, HelpCircle, Layout, Sparkles, User, Briefcase,
+  GripVertical, ChevronUp, ChevronDown
 } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Badge from './Badge';
 import DiagramBuilder from './DiagramBuilder';
 import Offerte6PagePDF from './Offerte6PagePDF';
-import { WOOD_LIBRARY, PRESET_PRODUCT_LIBRARY, PRODUCT_TYPE_DEFAULTS } from '../utils/quoteLibraries';
+import { WOOD_LIBRARY, PRESET_PRODUCT_LIBRARY, PRODUCT_TYPE_DEFAULTS, getProductTypeDefaults } from '../utils/quoteLibraries';
 import { calculateTotals, calculateInstalments, validateQuoteForSend, createDefaultQuote } from '../utils/quoteSchema';
 import { useLanguage } from '../context/LanguageContext';
+import {
+  getDisplayWoodType,
+  getDisplayOptionsTitle,
+  getDisplayOptionsSubtext as tGetDisplayOptionsSubtext,
+  getDisplayDeliveryTime as tGetDisplayDeliveryTime,
+  getDisplayDeliverySubtext as tGetDisplayDeliverySubtext,
+  getDisplayDimensionsUnit as tGetDisplayDimensionsUnit,
+  getDisplayLifespan as tGetDisplayLifespan,
+  getDisplayCoverTitle,
+  getDisplayCoverSubtitle,
+  getDisplaySpecTitle,
+  getDisplaySpecText,
+  getDisplayInfoboxTitle,
+  getDisplayInfoboxText,
+  getDisplayLineItemTitle,
+  getDisplayLineItemDesc,
+  getDisplaySalutation
+} from '../utils/translator';
 import projectImg from '../assets/outdoor_project_card.png';
 import heroImg from '/dasbordes images.png';
 import { downloadQuotePdf, generateFull6PagePdf } from '../utils/pdfGenerator';
@@ -77,25 +96,60 @@ function ScaledPDFPreview({ quote, activePage, highlightField, language }) {
   );
 }
 
-export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublishQuote, onDuplicateQuote, leadsList = [] }) {
+export default function QuoteEditor({
+  quoteData,
+  initialStep = 1,
+  onStepChange,
+  onClose,
+  onSaveQuote,
+  onPublishQuote,
+  onDuplicateQuote,
+  leadsList = []
+}) {
   const { language } = useLanguage();
-  const [activeStep, setActiveStep] = useState(1);
+  const [activeStep, setActiveStep] = useState(initialStep || 1);
   const [quote, setQuote] = useState(() => {
     if (quoteData && quoteData.investment && quoteData.configuration && Array.isArray(quoteData.investment.lineItems) && quoteData.investment.lineItems.length > 0) {
       return quoteData;
     }
-    return createDefaultQuote(quoteData?.customer || quoteData, quoteData);
+    return createDefaultQuote(quoteData?.customer || quoteData, quoteData, language);
   });
+
+  useEffect(() => {
+    if (initialStep && initialStep !== activeStep) {
+      setActiveStep(initialStep);
+    }
+  }, [initialStep]);
+
+  useEffect(() => {
+    onStepChange?.(activeStep);
+  }, [activeStep]);
+
+  // Auto-cache local draft in localStorage so refresh never loses in-progress data
+  useEffect(() => {
+    if (quote) {
+      const qKey = quote.backendId || quote.id || 'draft';
+      try {
+        localStorage.setItem(`quote_editor_draft_${qKey}`, JSON.stringify(quote));
+        localStorage.setItem('vanuit_active_quote_session', JSON.stringify({
+          quoteId: quote.backendId || quote.id,
+          step: activeStep
+        }));
+      } catch (e) {
+        // Safe quota catch
+      }
+    }
+  }, [quote, activeStep]);
 
   useEffect(() => {
     if (quoteData) {
       if (quoteData.investment && quoteData.configuration && Array.isArray(quoteData.investment.lineItems) && quoteData.investment.lineItems.length > 0) {
         setQuote(quoteData);
       } else {
-        setQuote(createDefaultQuote(quoteData?.customer || quoteData, quoteData));
+        setQuote(createDefaultQuote(quoteData?.customer || quoteData, quoteData, language));
       }
     }
-  }, [quoteData]);
+  }, [quoteData?.id, quoteData?.backendId]);
 
   // Auto-heal missing or empty cover photos
   useEffect(() => {
@@ -130,6 +184,11 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
   const [showFieldLabels, setShowFieldLabels] = useState(true);
   const [photoWarnings, setPhotoWarnings] = useState({});
   const [isCustomWoodMode, setIsCustomWoodMode] = useState(false);
+  const [newFeatureName, setNewFeatureName] = useState('');
+  const [isAddingFeature, setIsAddingFeature] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [draggedItemIndex, setDraggedItemIndex] = useState(null);
+  const [dragOverItemIndex, setDragOverItemIndex] = useState(null);
 
   const stepFormRef = useRef(null);
 
@@ -156,15 +215,23 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
     }
   }, [activeStep]);
 
-  // Auto-save effect whenever quote state updates
-  useEffect(() => {
-    if (!quote) return;
-    const saveTimer = setTimeout(() => {
-      onSaveQuote(quote, false); // silent save
+  // Manual save handler for Save buttons — triggers explicit API save and shows feedback
+  const handleManualSave = async (customToastMsg) => {
+    if (isApproved || !quote || !onSaveQuote || isSaving) return;
+    setIsSaving(true);
+    try {
+      const res = await onSaveQuote(quote, true);
       setLastSavedTime(new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }));
-    }, 400);
-    return () => clearTimeout(saveTimer);
-  }, [quote]);
+      if (customToastMsg) {
+        showToast(customToastMsg);
+      }
+      return res;
+    } catch (err) {
+      showToast(err.message || 'Error saving quote');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const showToast = (msg) => {
     setToastMsg(msg);
@@ -250,50 +317,12 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
       .toLowerCase()
       .trim();
 
-  // Language-aware display helpers for Dutch defaults
-  const getDisplayDimensionsUnit = (val) => {
-    if (!val) return language === 'EN' ? 'centimeters' : 'centimeter';
-    if (language === 'EN') {
-      if (val === 'centimeter') return 'centimeters';
-      if (val === 'centimeter (LxB)') return 'centimeters (LxW)';
-      if (val === 'meter (LxB)') return 'meters (LxW)';
-      if (val === 'meter') return 'meters';
-    } else {
-      if (val === 'centimeters') return 'centimeter';
-      if (val === 'centimeters (LxW)') return 'centimeter (LxB)';
-      if (val === 'meters (LxW)') return 'meter (LxB)';
-      if (val === 'meters') return 'meter';
-    }
-    return val;
-  };
-
-  const getDisplayDeliveryTime = (val) => {
-    if (!val) return language === 'EN' ? '3 to 5 weeks' : '3 tot 5 weken';
-    if (language === 'EN' && (val === '3 tot 5 weken' || val === '3-5 weken')) return '3 to 5 weeks';
-    if (language === 'NL' && (val === '3 to 5 weeks' || val === '3-5 weeks')) return '3 tot 5 weken';
-    return val;
-  };
-
-  const getDisplayDeliverySubtext = (val) => {
-    if (!val) return language === 'EN' ? 'upon drawing approval' : 'na akkoord op tekening';
-    if (language === 'EN' && (val === 'na akkoord op tekening' || val === 'na technisch akkoord')) return 'upon drawing approval';
-    if (language === 'NL' && (val === 'upon drawing approval' || val === 'after technical agreement')) return 'na akkoord op tekening';
-    return val;
-  };
-
-  const getDisplayOptionsSubtext = (val) => {
-    if (!val) return isGardenRoom ? (language === 'EN' ? 'Glass sliding wall 4-track' : 'Glazen schuifwand 4-rail') : (language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden');
-    if (language === 'EN' && (val === 'Large, rechts van het midden' || val === 'Rechts van het midden')) return 'Large, right of center';
-    if (language === 'NL' && val === 'Large, right of center') return 'Large, rechts van het midden';
-    return val;
-  };
-
-  const getDisplayLifespan = (val) => {
-    if (!val) return language === 'EN' ? '20 to 25 years' : '20 tot 25 jaar';
-    if (language === 'EN' && val === '20 tot 25 jaar') return '20 to 25 years';
-    if (language === 'NL' && val === '20 to 25 years') return '20 tot 25 jaar';
-    return val;
-  };
+  // Language-aware display helpers delegating to central bidirectional translator
+  const getDisplayDimensionsUnit = (val) => tGetDisplayDimensionsUnit(val, language);
+  const getDisplayDeliveryTime = (val) => tGetDisplayDeliveryTime(val, language);
+  const getDisplayDeliverySubtext = (val) => tGetDisplayDeliverySubtext(val, language);
+  const getDisplayOptionsSubtext = (val) => tGetDisplayOptionsSubtext(val, language);
+  const getDisplayLifespan = (val) => tGetDisplayLifespan(val, language);
 
   // Wood Type Selection Propagation
   const handleWoodTypeSelect = (woodName) => {
@@ -403,23 +432,28 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
       if (updatedOptions.bbqCutout?.enabled !== false) {
         titleParts.push(updatedOptions.bbqCutout?.type || config.optionsTitle || 'Big Green Egg Large');
       }
-      if (updatedOptions.fridge?.enabled) titleParts.push('RVS Koelkast');
-      if (updatedOptions.sink?.enabled) titleParts.push('Spoelbak met Kraan');
+      if (updatedOptions.fridge?.enabled) titleParts.push(language === 'NL' ? 'RVS Koelkast' : 'Stainless Fridge');
+      if (updatedOptions.sink?.enabled) titleParts.push(language === 'NL' ? 'Spoelbak met Kraan' : 'Sink with Tap');
+      (updatedOptions.customFeatures || []).forEach(cf => {
+        if (cf.enabled !== false && cf.label?.trim()) {
+          titleParts.push(cf.label.trim());
+        }
+      });
 
-      const newOptionsTitle = titleParts.length > 0 ? titleParts.join(' + ') : 'Standaard uitvoering';
+      const newOptionsTitle = titleParts.length > 0 ? titleParts.join(' + ') : (language === 'NL' ? 'Standaard uitvoering' : 'Standard build');
 
       // Update diagram segments automatically
       let nextSegments = [...(config.diagram?.segments || [])];
       if (optionKey === 'fridge') {
         if (enabled && !nextSegments.some(s => s.type === 'FRIDGE')) {
-          nextSegments.push({ id: `fridge-${Date.now()}`, type: 'FRIDGE', label: 'RVS Koelkast', width: 50 });
+          nextSegments.push({ id: `fridge-${Date.now()}`, type: 'FRIDGE', label: language === 'NL' ? 'RVS Koelkast' : 'Fridge', width: 50 });
         } else if (!enabled) {
           nextSegments = nextSegments.filter(s => s.type !== 'FRIDGE');
         }
       }
       if (optionKey === 'sink') {
         if (enabled && !nextSegments.some(s => s.type === 'SINK')) {
-          nextSegments.push({ id: `sink-${Date.now()}`, type: 'SINK', label: 'Spoelbak', width: 40 });
+          nextSegments.push({ id: `sink-${Date.now()}`, type: 'SINK', label: language === 'NL' ? 'Spoelbak' : 'Sink', width: 40 });
         } else if (!enabled) {
           nextSegments = nextSegments.filter(s => s.type !== 'SINK');
         }
@@ -430,17 +464,17 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
       if (specs.length > 0) {
         let topLines = [...(specs[0].lines || [])];
         if (optionKey === 'fridge') {
-          if (enabled && !topLines.some(l => l.text.toLowerCase().includes('koelkast'))) {
-            topLines.push({ id: `l-fridge-${Date.now()}`, text: 'Inbouw RVS koelkast met temperatuurregeling' });
+          if (enabled && !topLines.some(l => l.text.toLowerCase().includes('koelkast') || l.text.toLowerCase().includes('fridge'))) {
+            topLines.push({ id: `l-fridge-${Date.now()}`, text: language === 'NL' ? 'Inbouw RVS koelkast met temperatuurregeling' : 'Built-in stainless steel fridge with temperature control', isOption: true });
           } else if (!enabled) {
-            topLines = topLines.filter(l => !l.text.toLowerCase().includes('koelkast'));
+            topLines = topLines.filter(l => !l.text.toLowerCase().includes('koelkast') && !l.text.toLowerCase().includes('fridge'));
           }
         }
         if (optionKey === 'sink') {
-          if (enabled && !topLines.some(l => l.text.toLowerCase().includes('spoelbak'))) {
-            topLines.push({ id: `l-sink-${Date.now()}`, text: 'RVS spoelbak met mengkraan en wateraansluiting' });
+          if (enabled && !topLines.some(l => l.text.toLowerCase().includes('spoelbak') || l.text.toLowerCase().includes('sink'))) {
+            topLines.push({ id: `l-sink-${Date.now()}`, text: language === 'NL' ? 'RVS spoelbak met mengkraan en wateraansluiting' : 'Stainless steel sink with mixer tap and plumbing', isOption: true });
           } else if (!enabled) {
-            topLines = topLines.filter(l => !l.text.toLowerCase().includes('spoelbak'));
+            topLines = topLines.filter(l => !l.text.toLowerCase().includes('spoelbak') && !l.text.toLowerCase().includes('sink'));
           }
         }
         specs[0] = { ...specs[0], lines: topLines };
@@ -462,10 +496,245 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
     });
   };
 
+  // Custom Feature Handlers (Add, Delete, Toggle, Rename)
+  const handleAddCustomFeature = async (label) => {
+    if (isApproved || !label?.trim()) return;
+    const cleanLabel = label.trim();
+    const newId = `cf-${Date.now()}`;
+
+    const config = quote.configuration || {};
+    const options = config.options || {};
+    const currentCustom = Array.isArray(options.customFeatures) ? options.customFeatures : [];
+    const newFeature = { id: newId, label: cleanLabel, enabled: true };
+    const updatedCustom = [...currentCustom, newFeature];
+    const updatedOptions = { ...options, customFeatures: updatedCustom };
+
+    // Recalculate optionsTitle
+    let titleParts = [];
+    if (updatedOptions.bbqCutout?.enabled !== false) {
+      titleParts.push(updatedOptions.bbqCutout?.type || config.optionsTitle || 'Big Green Egg Large');
+    }
+    if (updatedOptions.fridge?.enabled) titleParts.push(language === 'NL' ? 'RVS Koelkast' : 'Stainless Fridge');
+    if (updatedOptions.sink?.enabled) titleParts.push(language === 'NL' ? 'Spoelbak met Kraan' : 'Sink with Tap');
+    updatedCustom.forEach(cf => {
+      if (cf.enabled !== false && cf.label?.trim()) {
+        titleParts.push(cf.label.trim());
+      }
+    });
+    const newOptionsTitle = titleParts.length > 0 ? titleParts.join(' + ') : (language === 'NL' ? 'Standaard uitvoering' : 'Standard build');
+
+    // Add to specifications line list
+    let specs = [...(config.specifications || [])];
+    if (specs.length > 0) {
+      let topLines = [...(specs[0].lines || [])];
+      if (!topLines.some(l => l.customFeatureId === newId || l.text === cleanLabel)) {
+        topLines.push({
+          id: `l-cf-${newId}`,
+          customFeatureId: newId,
+          text: cleanLabel,
+          isOption: true
+        });
+      }
+      specs[0] = { ...specs[0], lines: topLines };
+    }
+
+    const updatedQuote = {
+      ...quote,
+      configuration: {
+        ...config,
+        optionsTitle: newOptionsTitle,
+        options: updatedOptions,
+        specifications: specs
+      }
+    };
+
+    setQuote(updatedQuote);
+    setLastSavedTime(new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }));
+
+    if (onSaveQuote) {
+      setIsSaving(true);
+      try {
+        await onSaveQuote(updatedQuote, true);
+        showToast(language === 'NL' ? `Optie "${cleanLabel}" toegevoegd en opgeslagen!` : `Option "${cleanLabel}" added and saved!`);
+      } catch (err) {
+        showToast(err.message || 'Error saving feature');
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handleDeleteCustomFeature = async (id) => {
+    if (isApproved) return;
+    const config = quote.configuration || {};
+    const options = config.options || {};
+    const currentCustom = Array.isArray(options.customFeatures) ? options.customFeatures : [];
+    const targetFeat = currentCustom.find(f => f.id === id);
+    const featLabel = targetFeat?.label || (language === 'NL' ? 'Optie' : 'Option');
+    const updatedCustom = currentCustom.filter(f => f.id !== id);
+    const updatedOptions = { ...options, customFeatures: updatedCustom };
+
+    // Recalculate optionsTitle
+    let titleParts = [];
+    if (updatedOptions.bbqCutout?.enabled !== false) {
+      titleParts.push(updatedOptions.bbqCutout?.type || config.optionsTitle || 'Big Green Egg Large');
+    }
+    if (updatedOptions.fridge?.enabled) titleParts.push(language === 'NL' ? 'RVS Koelkast' : 'Stainless Fridge');
+    if (updatedOptions.sink?.enabled) titleParts.push(language === 'NL' ? 'Spoelbak met Kraan' : 'Sink with Tap');
+    updatedCustom.forEach(cf => {
+      if (cf.enabled !== false && cf.label?.trim()) {
+        titleParts.push(cf.label.trim());
+      }
+    });
+    const newOptionsTitle = titleParts.length > 0 ? titleParts.join(' + ') : (language === 'NL' ? 'Standaard uitvoering' : 'Standard build');
+
+    // Remove from specifications
+    let specs = [...(config.specifications || [])];
+    if (specs.length > 0) {
+      let topLines = [...(specs[0].lines || [])];
+      topLines = topLines.filter(l => l.customFeatureId !== id && (!targetFeat || l.text !== targetFeat.label));
+      specs[0] = { ...specs[0], lines: topLines };
+    }
+
+    const updatedQuote = {
+      ...quote,
+      configuration: {
+        ...config,
+        optionsTitle: newOptionsTitle,
+        options: updatedOptions,
+        specifications: specs
+      }
+    };
+
+    setQuote(updatedQuote);
+    setLastSavedTime(new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }));
+
+    if (onSaveQuote) {
+      setIsSaving(true);
+      try {
+        await onSaveQuote(updatedQuote, true);
+        showToast(language === 'NL' ? `Optie "${featLabel}" verwijderd en opgeslagen!` : `Option "${featLabel}" removed and saved!`);
+      } catch (err) {
+        showToast(err.message || 'Error deleting feature');
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handleToggleCustomFeature = async (id, enabled) => {
+    if (isApproved) return;
+    const config = quote.configuration || {};
+    const options = config.options || {};
+    const currentCustom = Array.isArray(options.customFeatures) ? options.customFeatures : [];
+    const updatedCustom = currentCustom.map(f => f.id === id ? { ...f, enabled } : f);
+    const targetFeat = currentCustom.find(f => f.id === id);
+    const updatedOptions = { ...options, customFeatures: updatedCustom };
+
+    // Recalculate optionsTitle
+    let titleParts = [];
+    if (updatedOptions.bbqCutout?.enabled !== false) {
+      titleParts.push(updatedOptions.bbqCutout?.type || config.optionsTitle || 'Big Green Egg Large');
+    }
+    if (updatedOptions.fridge?.enabled) titleParts.push(language === 'NL' ? 'RVS Koelkast' : 'Stainless Fridge');
+    if (updatedOptions.sink?.enabled) titleParts.push(language === 'NL' ? 'Spoelbak met Kraan' : 'Sink with Tap');
+    updatedCustom.forEach(cf => {
+      if (cf.enabled !== false && cf.label?.trim()) {
+        titleParts.push(cf.label.trim());
+      }
+    });
+    const newOptionsTitle = titleParts.length > 0 ? titleParts.join(' + ') : (language === 'NL' ? 'Standaard uitvoering' : 'Standard build');
+
+    // Update specifications
+    let specs = [...(config.specifications || [])];
+    if (specs.length > 0) {
+      let topLines = [...(specs[0].lines || [])];
+      if (enabled) {
+        if (targetFeat && !topLines.some(l => l.customFeatureId === id || l.text === targetFeat.label)) {
+          topLines.push({
+            id: `l-cf-${id}`,
+            customFeatureId: id,
+            text: targetFeat.label,
+            isOption: true
+          });
+        }
+      } else {
+        topLines = topLines.filter(l => l.customFeatureId !== id && (!targetFeat || l.text !== targetFeat.label));
+      }
+      specs[0] = { ...specs[0], lines: topLines };
+    }
+
+    const updatedQuote = {
+      ...quote,
+      configuration: {
+        ...config,
+        optionsTitle: newOptionsTitle,
+        options: updatedOptions,
+        specifications: specs
+      }
+    };
+
+    setQuote(updatedQuote);
+    setLastSavedTime(new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }));
+
+    if (onSaveQuote) {
+      await onSaveQuote(updatedQuote, true);
+    }
+  };
+
+  const handleRenameCustomFeature = (id, newLabel) => {
+    if (isApproved) return;
+    setQuote(prev => {
+      const config = prev.configuration || {};
+      const options = config.options || {};
+      const currentCustom = Array.isArray(options.customFeatures) ? options.customFeatures : [];
+      const prevFeat = currentCustom.find(f => f.id === id);
+      const updatedCustom = currentCustom.map(f => f.id === id ? { ...f, label: newLabel } : f);
+      const updatedOptions = { ...options, customFeatures: updatedCustom };
+
+      // Recalculate optionsTitle
+      let titleParts = [];
+      if (updatedOptions.bbqCutout?.enabled !== false) {
+        titleParts.push(updatedOptions.bbqCutout?.type || config.optionsTitle || 'Big Green Egg Large');
+      }
+      if (updatedOptions.fridge?.enabled) titleParts.push(language === 'NL' ? 'RVS Koelkast' : 'Stainless Fridge');
+      if (updatedOptions.sink?.enabled) titleParts.push(language === 'NL' ? 'Spoelbak met Kraan' : 'Sink with Tap');
+      updatedCustom.forEach(cf => {
+        if (cf.enabled !== false && cf.label?.trim()) {
+          titleParts.push(cf.label.trim());
+        }
+      });
+      const newOptionsTitle = titleParts.length > 0 ? titleParts.join(' + ') : (language === 'NL' ? 'Standaard uitvoering' : 'Standard build');
+
+      // Update specifications line if exists
+      let specs = [...(config.specifications || [])];
+      if (specs.length > 0) {
+        let topLines = [...(specs[0].lines || [])];
+        topLines = topLines.map(l => {
+          if (l.customFeatureId === id || (prevFeat && l.text === prevFeat.label)) {
+            return { ...l, text: newLabel, customFeatureId: id };
+          }
+          return l;
+        });
+        specs[0] = { ...specs[0], lines: topLines };
+      }
+
+      return {
+        ...prev,
+        configuration: {
+          ...config,
+          optionsTitle: newOptionsTitle,
+          options: updatedOptions,
+          specifications: specs
+        }
+      };
+    });
+  };
+
   // Product Type Change Handler
   const handleProductTypeChange = (pType) => {
     if (isApproved) return;
-    const defaults = PRODUCT_TYPE_DEFAULTS[pType];
+    const defaults = getProductTypeDefaults(pType, language);
     if (!defaults) return;
 
     setQuote(prev => {
@@ -481,7 +750,18 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
           ...prev.letterAndProcess,
           letterParagraphs: [...defaults.letterParagraphs],
           checklist: [...defaults.checklist],
-          processSteps: [...defaults.processSteps]
+          processSteps: (defaults.processSteps || []).map((st, i) => ({
+            step: String(st.step || st.stepNumber || i + 1),
+            title: st.title || `Stap ${i + 1}`,
+            desc: st.desc || st.description || (
+              i === 0 ? 'Bevestig eenvoudig per mail of WhatsApp, of onderteken de akkoordpagina. Vanaf dat moment nemen wij alles uit handen.' :
+              i === 1 ? 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.' :
+              i === 2 ? 'Jouw maatwerk wordt met de hand gemaakt door een gecertificeerde vakspecialist.' :
+              i === 3 ? 'We leveren en monteren op locatie op een moment dat jou uitkomt.' :
+              'We leveren pas op als alles naar wens is. Blijvende garantie en nazorg.'
+            ),
+            badge: st.badge || st.badgeText || '',
+          }))
         }
       };
 
@@ -504,7 +784,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
       return updated;
     });
 
-    showToast(pType === 'Garden room' ? '✓ Garden Room velden en items geladen!' : `✓ ${pType} template geladen!`);
+    showToast(pType === 'Garden room' ? (language === 'EN' ? '✓ Garden Room fields and items loaded!' : '✓ Garden Room velden en items geladen!') : `✓ ${pType} ${language === 'EN' ? 'template loaded!' : 'template geladen!'}`);
   };
 
   // Specification Line Repeater Actions
@@ -562,6 +842,29 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
     updateInvestmentField('lineItems', items);
   };
 
+  const handleReorderLineItems = (fromIndex, toIndex) => {
+    if (isApproved) return;
+    if (fromIndex === toIndex) return;
+    const items = [...(quote.investment?.lineItems || [])];
+    if (fromIndex < 0 || fromIndex >= items.length || toIndex < 0 || toIndex >= items.length) return;
+    const [moved] = items.splice(fromIndex, 1);
+    items.splice(toIndex, 0, moved);
+    updateInvestmentField('lineItems', items);
+  };
+
+  const handleMoveLineItemUp = (index) => {
+    if (index > 0) {
+      handleReorderLineItems(index, index - 1);
+    }
+  };
+
+  const handleMoveLineItemDown = (index) => {
+    const total = (quote.investment?.lineItems || []).length;
+    if (index < total - 1) {
+      handleReorderLineItems(index, index + 1);
+    }
+  };
+
   const handleLineItemChange = (index, field, val) => {
     if (isApproved) return;
     const items = [...(quote.investment?.lineItems || [])];
@@ -582,8 +885,8 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
     if (isApproved) return;
     const newItem = {
       id: `lib-${Date.now()}`,
-      title: libItem.title,
-      description: libItem.description,
+      title: getDisplayLineItemTitle(libItem.title, language),
+      description: getDisplayLineItemDesc(libItem.description, language),
       quantity: 1,
       priceInclVat: libItem.priceInclVat,
       vatRate: libItem.vatRate || 21,
@@ -591,7 +894,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
     };
     updateInvestmentField('lineItems', [...(quote.investment?.lineItems || []), newItem]);
     setShowLibraryModal(false);
-    showToast(`"${libItem.title}" toegevoegd uit bibliotheek!`);
+    showToast(language === 'EN' ? `"${newItem.title}" added from library!` : `"${newItem.title}" toegevoegd uit bibliotheek!`);
   };
 
   // Checklist helpers in Step 4
@@ -617,7 +920,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
       `Gratis bezorging in ${quote.customer?.city || 'Dongen'}`,
       'Garantie en nazorg na levering'
     ])];
-    updateInvestmentField('checklist', [...currentList, 'Nieuw inbegrepen onderdeel']);
+    updateInvestmentField('checklist', [...currentList, language === 'EN' ? 'New included item' : 'Nieuw inbegrepen onderdeel']);
   };
 
   const handleRemoveChecklistItem = (index) => {
@@ -628,7 +931,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
 
   const handleResetChecklistDefaults = () => {
     if (isApproved) return;
-    const defaultList = [
+    const defaultList = language === 'EN' ? [
+      'Architectural design and technical drawings prior to build',
+      'On-site survey prior to construction start',
+      'Construction by a certified craft specialist',
+      `Transport, assembly, and job site cleanup in ${quote.customer?.city || 'Dongen'}`,
+      'Structural warranty and aftercare following completion'
+    ] : [
       'Volledig maatwerk, gebouwd door een gecertificeerde vakspecialist',
       'Digitale tekening vooraf ter goedkeuring',
       'Olieafwerking in twee lagen (naturel)',
@@ -636,7 +945,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
       'Garantie en nazorg na levering'
     ];
     updateInvestmentField('checklist', defaultList);
-    showToast('Checklist hersteld naar standaard!');
+    showToast(language === 'EN' ? 'Checklist restored to defaults!' : 'Checklist hersteld naar standaard!');
   };
 
   // Instalment labels helper
@@ -692,15 +1001,36 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
 
   const handleResetProcessStepDefaults = () => {
     if (isApproved) return;
-    const defaultSteps = [
-      { step: '1', title: 'Akkoord op de offerte', desc: 'Bevestig eenvoudig per mail of WhatsApp, of onderteken de akkoordpagina. Vanaf dat moment nemen wij alles uit handen.', badge: '' },
-      { step: '2', title: 'Digitale tekening ter bevestiging', desc: 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.', badge: '' },
-      { step: '3', title: 'Productie door onze vakspecialist', desc: 'Jouw keuken wordt met de hand gemaakt door een gecertificeerde vakspecialist. Tussentijds houden we je op de hoogte.', badge: '3 TOT 5 WEKEN' },
-      { step: '4', title: `Bezorging in ${quote.customer?.city || 'Dongen'}`, desc: `We leveren de keuken op een moment dat jou uitkomt in ${quote.customer?.city || 'Dongen'}. Dankzij de zes zwenkwielen staat hij direct op de juiste plek.`, badge: 'GRATIS' },
-      { step: '5', title: 'Garantie & nazorg', desc: 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.', badge: '' }
-    ];
+    const pDefs = getProductTypeDefaults(quote.productType || 'Outdoor kitchen', language);
+    const rawSteps = (pDefs && pDefs.processSteps && pDefs.processSteps.length > 0) ? pDefs.processSteps : null;
+    const defaultSteps = rawSteps
+      ? rawSteps.map((st, i) => ({
+          step: String(st.step || st.stepNumber || i + 1),
+          title: st.title || `Stap ${i + 1}`,
+          desc: st.desc || st.description || (
+            i === 0 ? 'Bevestig eenvoudig per mail of WhatsApp, of onderteken de akkoordpagina. Vanaf dat moment nemen wij alles uit handen.' :
+            i === 1 ? 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.' :
+            i === 2 ? 'Jouw maatwerk wordt met de hand gemaakt door een gecertificeerde vakspecialist.' :
+            i === 3 ? `We leveren op een moment dat jou uitkomt in ${quote.customer?.city || 'locatie'}.` :
+            'We leveren pas op als alles naar wens is. Blijvende garantie en nazorg.'
+          ),
+          badge: st.badge || st.badgeText || '',
+        }))
+      : (language === 'EN' ? [
+          { step: '1', title: 'Proposal approval', desc: 'Confirm easily via email or WhatsApp, or sign the approval page. From that moment on, we take care of everything.', badge: '' },
+          { step: '2', title: 'Design & technical drawing', desc: 'You will receive the final design and technical drawings for sign-off. That way you know exactly what will be built before construction starts.', badge: '' },
+          { step: '3', title: 'On-site survey / production', desc: 'Crafted with precision by our certified specialists. We keep you closely updated throughout.', badge: '3 TO 5 WEEKS' },
+          { step: '4', title: `Delivery in ${quote.customer?.city || 'Dongen'}`, desc: `Scheduled at your convenience in ${quote.customer?.city || 'Dongen'}.`, badge: 'FREE' },
+          { step: '5', title: 'Handover, warranty & aftercare', desc: 'We only sign off once everything is to your satisfaction, with structural warranty.', badge: '' }
+        ] : [
+          { step: '1', title: 'Akkoord op de offerte', desc: 'Bevestig eenvoudig per mail of WhatsApp, of onderteken de akkoordpagina. Vanaf dat moment nemen wij alles uit handen.', badge: '' },
+          { step: '2', title: 'Digitale tekening ter bevestiging', desc: 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.', badge: '' },
+          { step: '3', title: 'Productie door onze vakspecialist', desc: 'Jouw keuken wordt met de hand gemaakt door een gecertificeerde vakspecialist. Tussentijds houden we je op de hoogte.', badge: '3 TOT 5 WEKEN' },
+          { step: '4', title: `Bezorging in ${quote.customer?.city || 'Dongen'}`, desc: `We leveren de keuken op een moment dat jou uitkomt in ${quote.customer?.city || 'Dongen'}. Dankzij de zes zwenkwielen staat hij direct op de juiste plek.`, badge: 'GRATIS' },
+          { step: '5', title: 'Garantie & nazorg', desc: 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.', badge: '' }
+        ]);
     updateLetterField('processSteps', defaultSteps);
-    showToast('Processtappen hersteld naar standaard!');
+    showToast(language === 'NL' ? 'Processtappen hersteld naar standaard!' : 'Process steps restored to defaults!');
   };
 
   // Spec section title helper
@@ -756,7 +1086,10 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
       <div className="flex-shrink-0 bg-white px-3 sm:px-4 py-2.5 rounded-2xl border border-[#D6CFC2] shadow-xs flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
-            onClick={onClose}
+            onClick={() => {
+              if (onSaveQuote && quote) onSaveQuote(quote, false);
+              onClose();
+            }}
             className="px-3 py-1.5 bg-white hover:bg-[#EDE8DF] text-primary border border-[#D6CFC2] rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer flex-shrink-0 shadow-2xs"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -784,6 +1117,32 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Live Preview Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setShowPreview(prev => !prev)}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border ${
+              showPreview
+                ? 'bg-[#33422C] text-white border-[#33422C]'
+                : 'bg-white hover:bg-[#EDE8DF] text-primary border-[#D6CFC2]'
+            }`}
+            title={showPreview ? (language === 'NL' ? 'Sluit live voorbeeld' : 'Close live preview') : (language === 'NL' ? 'Toon live voorbeeld' : 'Show live preview')}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{showPreview ? (language === 'NL' ? 'Sluit Voorbeeld' : 'Close Preview') : (language === 'NL' ? 'Live Voorbeeld' : 'Live Preview')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleManualSave(language === 'NL' ? 'Offerte concept succesvol opgeslagen!' : 'Quote draft saved successfully!')}
+            disabled={isSaving}
+            className="px-3 py-1.5 bg-[#33422C] text-white hover:bg-[#283523] rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs font-mono"
+            title={language === 'NL' ? 'Sla offerte concept op' : 'Save quote draft'}
+          >
+            <Check className="w-3.5 h-3.5 text-[#D97706]" />
+            <span className="hidden sm:inline">{isSaving ? (language === 'NL' ? 'Opslaan...' : 'Saving...') : (language === 'NL' ? 'Opslaan' : 'Save Draft')}</span>
+          </button>
+
           <div className="flex items-center gap-1.5 text-[11px] font-mono text-dark/60 bg-[#F8F7F4] px-3 py-1.5 rounded-xl border border-[#D6CFC2] whitespace-nowrap">
             <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></span>
             <span>{language === 'NL' ? 'Concept' : 'Draft'} · {lastSavedTime}</span>
@@ -791,13 +1150,13 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
         </div>
       </div>
 
-      {/* TWO-COLUMN LAYOUT: Left Step Nav + Right Content (+ optional Live Preview) */}
-      <div className="flex-1 flex gap-3 items-start min-h-0 overflow-hidden">
+      {/* TWO/THREE-COLUMN RESPONSIVE LAYOUT */}
+      <div className="flex-1 flex gap-3 lg:gap-4 items-start min-h-0 overflow-hidden relative">
 
         {/* ========================================================= */}
-        {/* ZONE 1: LEFT STEP NAVIGATION (fixed width)               */}
+        {/* ZONE 1: LEFT STEP NAVIGATION (hidden on small, visible on md+) */}
         {/* ========================================================= */}
-        <div className="w-[180px] flex-shrink-0 overflow-y-auto max-h-[calc(100vh-175px)] no-scrollbar space-y-3">
+        <div className="w-[170px] lg:w-[185px] hidden md:block flex-shrink-0 overflow-y-auto max-h-[calc(100vh-175px)] no-scrollbar space-y-3">
           <div className="bg-white rounded-2xl p-2.5 border border-[#D6CFC2] shadow-xs space-y-1.5">
             <div className="flex items-baseline justify-between">
               <h3 className="font-sans font-bold text-sm text-dark tracking-tight">{language === 'NL' ? 'Offerte' : 'Quote'} {quote.id}</h3>
@@ -808,7 +1167,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                 const isActive = activeStep === step.id;
                 const isCompleted = activeStep > step.id;
                 const dynamicSub = step.id === 1
-                  ? `${quote.customer?.name || 'Bjorn Valk'} · ${quote.customer?.city || 'Dongen'}`
+                  ? (quote.customer?.name ? `${quote.customer.name}${quote.customer.city ? ` · ${quote.customer.city}` : ''}` : (language === 'NL' ? 'Klant & gegevens' : 'Customer & details'))
                   : (language === 'NL' ? (step.descNl || step.desc) : step.desc);
 
                 return (
@@ -845,15 +1204,39 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
 
             <div className="pt-1.5 border-t border-[#E8E3DB] text-[10px] font-mono text-dark/50 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span>{language === 'NL' ? 'Automatisch opgeslagen als concept' : 'Auto-saved as draft'} · {lastSavedTime}</span>
+              <span>{language === 'NL' ? 'Laatst opgeslagen' : 'Last saved'} · {lastSavedTime}</span>
             </div>
           </div>
         </div>
 
         {/* ========================================================= */}
-        {/* ZONE 2: MIDDLE COLUMN - ACTIVE STEP FORM (6 Cols)          */}
+        {/* ZONE 2: MIDDLE COLUMN - ACTIVE STEP FORM                  */}
         {/* ========================================================= */}
-        <div ref={stepFormRef} className="flex-1 min-w-0 space-y-4 overflow-y-auto max-h-[calc(100vh-175px)] pr-1 no-scrollbar">
+        <div ref={stepFormRef} className="flex-1 min-w-0 w-full space-y-4 overflow-y-auto max-h-[calc(100vh-175px)] px-1 sm:px-2 no-scrollbar">
+
+          {/* Mobile Horizontal Stepper (< md) */}
+          <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-1 mb-2 no-scrollbar">
+            {STEPS.map((step) => {
+              const isActive = activeStep === step.id;
+              const isCompleted = activeStep > step.id;
+              return (
+                <button
+                  key={step.id}
+                  onClick={() => handleStepClick(step.id)}
+                  className={`px-3 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1 flex-shrink-0 transition-colors ${
+                    isActive
+                      ? 'bg-[#1C2B1A] text-white shadow-xs'
+                      : isCompleted
+                        ? 'bg-[#33422C]/10 text-[#33422C]'
+                        : 'bg-white border border-[#D6CFC2] text-dark/60'
+                  }`}
+                >
+                  <span>{step.number}.</span>
+                  <span>{language === 'NL' ? (step.titleNl || step.title) : step.title}</span>
+                </button>
+              );
+            })}
+          </div>
 
           {/* Main Title & Subtitle (Only on Step 1) */}
           {activeStep === 1 && (
@@ -1115,7 +1498,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                   const woodVal = quote.configuration?.woodType || 'Thermo Fraké';
                   const dimVal = (quote.configuration?.dimensions || '240 × 80').replace(/\s*cm$/i, '').trim();
                   const cutoutVal = quote.configuration?.optionsTitle || 'Big Green Egg Large';
-                  const autoSubString = `${woodVal} · ${dimVal} cm · ${cutoutVal}`;
+                  const autoSubString = getDisplayCoverSubtitle(woodVal, dimVal, cutoutVal, language);
                   const isOverride = quote.cover?.subtitleOverrideEnabled || false;
 
                   return (
@@ -1399,7 +1782,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                             className="w-full px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
                           >
                             {WOOD_LIBRARY.map((w) => (
-                              <option key={w.id} value={w.name}>{w.name}</option>
+                              <option key={w.id} value={w.name}>{getDisplayWoodType(w.name, language)}</option>
                             ))}
                             <option value="custom">{language === 'NL' ? 'Aangepaste houtsoort (vrije tekst)' : 'Custom wood type (free text)'}</option>
                           </select>
@@ -1407,9 +1790,17 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                           {/* Free-text input field when Custom is selected or active */}
                           {isCustomWood && (
                             <div className="space-y-1 pt-0.5">
-                              <label className="text-[9px] font-bold uppercase tracking-wider text-primary font-mono block">
-                                {language === 'NL' ? 'Vrije tekst houtsoort (bijv. Douglas, Accoya):' : 'Custom wood type name (e.g. Douglas, Accoya):'}
-                              </label>
+                              <div className="flex justify-between items-center">
+                                <label className="text-[9px] font-bold uppercase tracking-wider text-primary font-mono block">
+                                  {language === 'NL' ? 'Vrije tekst houtsoort (bijv. Douglas, Accoya):' : 'Custom wood type name (e.g. Douglas, Accoya):'}
+                                </label>
+                                {quote.configuration?.woodType && (
+                                  <span className="text-[9px] font-mono text-emerald-700 font-semibold flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    {language === 'NL' ? 'Automatisch opgeslagen' : 'Auto-saved'}
+                                  </span>
+                                )}
+                              </div>
                               <input
                                 type="text"
                                 value={quote.configuration?.woodType || ''}
@@ -1449,7 +1840,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     </div>
                     <input
                       type="text"
-                      value={quote.configuration?.optionsTitle || (isGardenRoom ? (language === 'EN' ? 'Flat roof with EPDM' : 'Plat dak met EPDM') : 'Big Green Egg')}
+                      value={getDisplayOptionsTitle(quote.configuration?.optionsTitle || (isGardenRoom ? (language === 'EN' ? 'Flat roof with EPDM' : 'Plat dak met EPDM') : 'Big Green Egg'), language)}
                       onChange={(e) => updateConfigField('optionsTitle', e.target.value)}
                       className="w-full px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
                       placeholder={isGardenRoom ? (language === 'NL' ? 'bijv. Plat dak met EPDM' : 'e.g. Flat roof with EPDM') : (language === 'NL' ? 'bijv. Big Green Egg' : 'e.g. Big Green Egg')}
@@ -1497,10 +1888,26 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                   </div>
 
                 </div>
+
+                {/* Save Configuration Button for Stat Tiles */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-3 border-t border-[#E2DDD3]">
+                  <span className="text-[11px] text-dark/50 font-body">
+                    {language === 'NL' ? 'Sla afmetingen, houtsoort en levertijd handmatig op' : 'Save dimensions, wood type and delivery time'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleManualSave(language === 'NL' ? 'Configuratie succesvol opgeslagen!' : 'Configuration saved successfully!')}
+                    disabled={isSaving}
+                    className="px-4 py-2 bg-[#33422C] text-white text-xs font-bold rounded-xl hover:bg-[#283523] flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <Check className="w-3.5 h-3.5 text-[#D97706]" />
+                    <span>{isSaving ? (language === 'NL' ? 'Opslaan...' : 'Saving...') : (language === 'NL' ? 'Configuratie opslaan' : 'Save Configuration')}</span>
+                  </button>
+                </div>
               </div>
 
-              {/* CARD 2: OPTIONS & FEATURES (ADAPTIVE: OUTDOOR KITCHEN VS GARDEN ROOM) */}
-              {isGardenRoom ? (
+              {/* CARD 2: GARDEN ROOM SPECIFICS (ROOF, WALLS, FLOOR & FOUNDATION) */}
+              {isGardenRoom && (
                 <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4 font-body">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -1544,7 +1951,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       </select>
                       <input
                         type="text"
-                        value={quote.configuration?.roofSubtext !== undefined ? quote.configuration.roofSubtext : 'Inclusief aluminium daktrim en hemelwaterafvoer'}
+                        value={quote.configuration?.roofSubtext !== undefined ? quote.configuration.roofSubtext : (language === 'EN' ? 'Including aluminum roof trim and rainwater drainage' : 'Inclusief aluminium daktrim en hemelwaterafvoer')}
                         onChange={(e) => updateConfigField('roofSubtext', e.target.value)}
                         placeholder={language === 'NL' ? 'Dakdetails bijv. Daktrim & HWA' : 'Roof details e.g. Roof trim & drainage'}
                         className="w-full px-2.5 py-1 bg-white border border-[#D6CFC2] rounded-md text-[11px]"
@@ -1578,7 +1985,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       </select>
                       <input
                         type="text"
-                        value={quote.configuration?.wallSubtext !== undefined ? quote.configuration.wallSubtext : '10mm gehard veiligheidsglas met tochtborstels'}
+                        value={quote.configuration?.wallSubtext !== undefined ? quote.configuration.wallSubtext : (language === 'EN' ? '10mm tempered safety glass with draft brushes' : '10mm gehard veiligheidsglas met tochtborstels')}
                         onChange={(e) => updateConfigField('wallSubtext', e.target.value)}
                         placeholder={language === 'NL' ? 'Wanddetails bijv. Tochtborstels & handgrepen' : 'Wall details e.g. Draft brushes & handles'}
                         className="w-full px-2.5 py-1 bg-white border border-[#D6CFC2] rounded-md text-[11px]"
@@ -1607,7 +2014,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       </select>
                       <input
                         type="text"
-                        value={quote.configuration?.floorSubtext !== undefined ? quote.configuration.floorSubtext : 'Onderbalken en rvs schroeven'}
+                        value={quote.configuration?.floorSubtext !== undefined ? quote.configuration.floorSubtext : (language === 'EN' ? 'Subbeams and stainless steel screws' : 'Onderbalken en rvs schroeven')}
                         onChange={(e) => updateConfigField('floorSubtext', e.target.value)}
                         placeholder={language === 'NL' ? 'Vloerdetails' : 'Floor details'}
                         className="w-full px-2.5 py-1 bg-white border border-[#D6CFC2] rounded-md text-[11px]"
@@ -1636,118 +2043,246 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                       </select>
                       <input
                         type="text"
-                        value={quote.configuration?.foundationSubtext !== undefined ? quote.configuration.foundationSubtext : 'Vorstvrij verankerd incl. snelbeton'}
+                        value={quote.configuration?.foundationSubtext !== undefined ? quote.configuration.foundationSubtext : (language === 'EN' ? 'Frost-free anchored incl. quick-setting concrete' : 'Vorstvrij verankerd incl. snelbeton')}
                         onChange={(e) => updateConfigField('foundationSubtext', e.target.value)}
                         placeholder={language === 'NL' ? 'Funderingsdetails' : 'Foundation details'}
                         className="w-full px-2.5 py-1 bg-white border border-[#D6CFC2] rounded-md text-[11px]"
                       />
                     </div>
+
+                    {/* Save Garden Room Details Button */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-3 border-t border-[#D6CFC2]/70 col-span-1 sm:col-span-2">
+                      <span className="text-[11px] text-dark/50 font-body">
+                        {language === 'NL' ? 'Sla dak-, wand-, vloer- en funderingskeuzes op' : 'Save roof, wall, floor and foundation choices'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleManualSave(language === 'NL' ? 'Buitenverblijf specificaties succesvol opgeslagen!' : 'Garden room specifications saved successfully!')}
+                        disabled={isSaving}
+                        className="px-4 py-2 bg-[#33422C] text-white text-xs font-bold rounded-xl hover:bg-[#283523] flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        <Check className="w-3.5 h-3.5 text-[#D97706]" />
+                        <span>{isSaving ? (language === 'NL' ? 'Opslaan...' : 'Saving...') : (language === 'NL' ? 'Buitenverblijf opslaan' : 'Save Garden Room Details')}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-3.5">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
-                        {language === 'NL' ? 'OPTIES & KENMERKEN' : 'OPTIONS & FEATURES'}
-                      </span>
-                      <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
-                        {language === 'NL' ? 'HANDMATIG' : 'MANUAL'}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">
-                      {language === 'NL' ? 'AAN/UIT PER OFFERTE' : 'ON/OFF PER QUOTE'}
+              )}
+
+              {/* CARD: OPTIONS & FEATURES (ADAPTIVE & AVAILABLE FOR BOTH OUTDOOR KITCHEN AND GARDEN ROOM) */}
+              <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-3.5">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-dark/80 font-mono">
+                      {isGardenRoom 
+                        ? (language === 'NL' ? 'EXTRA OPTIES & MAATWERK' : 'ADDITIONAL OPTIONS & FEATURES')
+                        : (language === 'NL' ? 'OPTIES & KENMERKEN' : 'OPTIONS & FEATURES')}
+                    </span>
+                    <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase">
+                      {language === 'NL' ? 'HANDMATIG' : 'MANUAL'}
                     </span>
                   </div>
+                  <span className="text-[10px] font-mono font-bold text-dark/50 uppercase">
+                    {language === 'NL' ? 'AAN/UIT PER OFFERTE' : 'ON/OFF PER QUOTE'}
+                  </span>
+                </div>
 
-                  <div className="space-y-2.5 text-xs">
-                    {/* Option 1: BBQ Cutout (with brand dropdown & detail subtext) */}
-                    <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 flex flex-wrap items-center justify-between gap-2">
+                <div className="space-y-2.5 text-xs">
+                  {/* Option 1: BBQ Cutout (with brand dropdown & detail subtext) */}
+                  <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 flex flex-wrap items-center justify-between gap-2">
+                    <label className="flex items-center gap-2 font-bold text-dark cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={quote.configuration?.options?.bbqCutout?.enabled !== false}
+                        onChange={(e) => handleOptionToggle('bbqCutout', e.target.checked)}
+                        className="w-4 h-4 text-primary rounded border-[#D6CFC2]"
+                      />
+                      <span>{language === 'NL' ? 'BBQ Uitsparing' : 'BBQ Cutout'}</span>
+                    </label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={quote.configuration?.options?.bbqCutout?.type || 'Big Green Egg'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setQuote(prev => {
+                            const updatedDiagram = { ...(prev.configuration?.diagram || {}) };
+                            if (updatedDiagram.segments) {
+                              updatedDiagram.segments = updatedDiagram.segments.map(seg =>
+                                seg.type === 'CUTOUT' ? { ...seg, label: val } : seg
+                              );
+                            }
+                            return {
+                              ...prev,
+                              configuration: {
+                                ...prev.configuration,
+                                optionsTitle: val,
+                                diagram: updatedDiagram,
+                                options: {
+                                  ...prev.configuration?.options,
+                                  bbqCutout: { ...prev.configuration?.options?.bbqCutout, type: val }
+                                }
+                              }
+                            };
+                          });
+                        }}
+                        className="px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-xs"
+                      >
+                        <option value="Big Green Egg">Big Green Egg</option>
+                        <option value="Kamado Joe">Kamado Joe</option>
+                        <option value="Bastard">Bastard</option>
+                      </select>
+                      <input
+                        type="text"
+                        value={quote.configuration?.optionsSubtext !== undefined ? quote.configuration.optionsSubtext : (language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden')}
+                        onChange={(e) => updateConfigField('optionsSubtext', e.target.value)}
+                        className="px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold text-dark/80 w-48 max-w-full"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Additional Data-Driven Options */}
+                  {[
+                    {
+                      key: 'fridge',
+                      label: language === 'NL' ? 'Koelkast (inbouw)' : 'Fridge (built-in)',
+                      hint: language === 'NL' ? '→ specificatieregel + optionele post + diagram' : '→ specification line + optional line item + diagram segment'
+                    },
+                    {
+                      key: 'sink',
+                      label: language === 'NL' ? 'Spoelbak met kraan' : 'Sink with tap',
+                      hint: language === 'NL' ? '→ specificatieregel + optionele post + diagram' : '→ specification line + optional line item + diagram segment'
+                    }
+                  ].map((optItem) => (
+                    <div key={optItem.key} className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 flex flex-wrap items-center justify-between gap-2">
                       <label className="flex items-center gap-2 font-bold text-dark cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={quote.configuration?.options?.bbqCutout?.enabled !== false}
-                          onChange={(e) => handleOptionToggle('bbqCutout', e.target.checked)}
+                          checked={quote.configuration?.options?.[optItem.key]?.enabled || false}
+                          onChange={(e) => handleOptionToggle(optItem.key, e.target.checked)}
                           className="w-4 h-4 text-primary rounded border-[#D6CFC2]"
                         />
-                        <span>{language === 'NL' ? 'BBQ Uitsparing' : 'BBQ Cutout'}</span>
+                        <span>{optItem.label}</span>
                       </label>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <select
-                          value={quote.configuration?.options?.bbqCutout?.type || 'Big Green Egg'}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setQuote(prev => {
-                              const updatedDiagram = { ...(prev.configuration?.diagram || {}) };
-                              if (updatedDiagram.segments) {
-                                updatedDiagram.segments = updatedDiagram.segments.map(seg =>
-                                  seg.type === 'CUTOUT' ? { ...seg, label: val } : seg
-                                );
-                              }
-                              return {
-                                ...prev,
-                                configuration: {
-                                  ...prev.configuration,
-                                  optionsTitle: val,
-                                  diagram: updatedDiagram,
-                                  options: {
-                                    ...prev.configuration?.options,
-                                    bbqCutout: { ...prev.configuration?.options?.bbqCutout, type: val }
-                                  }
-                                }
-                              };
-                            });
-                          }}
-                          className="px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-xs"
-                        >
-                          <option value="Big Green Egg">Big Green Egg</option>
-                          <option value="Kamado Joe">Kamado Joe</option>
-                          <option value="Bastard">Bastard</option>
-                        </select>
+                      <span className="text-[11px] font-mono text-dark/50">{optItem.hint}</span>
+                    </div>
+                  ))}
+
+                  {/* Dynamic Custom Features */}
+                  {(quote.configuration?.options?.customFeatures || []).map((feat) => (
+                    <div key={feat.id} className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={feat.enabled !== false}
+                          onChange={(e) => handleToggleCustomFeature(feat.id, e.target.checked)}
+                          className="w-4 h-4 text-primary rounded border-[#D6CFC2] cursor-pointer flex-shrink-0"
+                        />
                         <input
                           type="text"
-                          value={quote.configuration?.optionsSubtext !== undefined ? quote.configuration.optionsSubtext : (language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden')}
-                          onChange={(e) => updateConfigField('optionsSubtext', e.target.value)}
-                          className="px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold text-dark/80 w-48 max-w-full"
+                          value={feat.label}
+                          onChange={(e) => handleRenameCustomFeature(feat.id, e.target.value)}
+                          placeholder={language === 'NL' ? 'Bijv. Wijnkoeler' : 'E.g. Wine cooler'}
+                          className="px-2 py-1 bg-white border border-[#D6CFC2] rounded-md text-xs font-bold text-dark flex-1 min-w-0 focus:outline-primary"
                         />
                       </div>
-                    </div>
-
-                    {/* Additional Data-Driven Options */}
-                    {[
-                      {
-                        key: 'fridge',
-                        label: language === 'NL' ? 'Koelkast (inbouw)' : 'Fridge (built-in)',
-                        hint: language === 'NL' ? '→ specificatieregel + optionele post + diagram' : '→ specification line + optional line item + diagram segment'
-                      },
-                      {
-                        key: 'sink',
-                        label: language === 'NL' ? 'Spoelbak met kraan' : 'Sink with tap',
-                        hint: language === 'NL' ? '→ specificatieregel + optionele post + diagram' : '→ specification line + optional line item + diagram segment'
-                      }
-                    ].map((optItem) => (
-                      <div key={optItem.key} className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 flex flex-wrap items-center justify-between gap-2">
-                        <label className="flex items-center gap-2 font-bold text-dark cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={quote.configuration?.options?.[optItem.key]?.enabled || false}
-                            onChange={(e) => handleOptionToggle(optItem.key, e.target.checked)}
-                            className="w-4 h-4 text-primary rounded border-[#D6CFC2]"
-                          />
-                          <span>{optItem.label}</span>
-                        </label>
-                        <span className="text-[11px] font-mono text-dark/50">{optItem.hint}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-[10px] font-mono text-dark/50 uppercase hidden sm:inline">
+                          {feat.enabled !== false ? (language === 'NL' ? '✓ Actief' : '✓ Active') : (language === 'NL' ? 'Uit' : 'Off')}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCustomFeature(feat.id)}
+                          className="p-1 text-dark/40 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                          title={language === 'NL' ? 'Verwijder optie' : 'Delete option'}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
 
-                  <p className="text-[11px] text-dark/60 font-body">
-                    {language === 'NL'
-                      ? 'Elke ingeschakelde optie komt automatisch in: stat-tegel 3 · omslag ondertitel · specificatieregel (p3). Uit = overal verwijderd. Prijs via stap 4 (bibliotheek).'
-                      : 'Every enabled option automatically lands in: stat tile 3 · cover subtitle · a specification line (p3). Off = removed everywhere. An option is priced via a line item in step 4 (library).'}
-                  </p>
+                  {/* Add Custom Feature Row / Form */}
+                  {isAddingFeature ? (
+                    <div className="p-3 bg-white rounded-xl border-2 border-[#33422C]/40 flex flex-wrap items-center gap-2">
+                      <input
+                        type="text"
+                        value={newFeatureName}
+                        onChange={(e) => setNewFeatureName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (newFeatureName.trim()) {
+                              handleAddCustomFeature(newFeatureName);
+                              setNewFeatureName('');
+                              setIsAddingFeature(false);
+                            }
+                          } else if (e.key === 'Escape') {
+                            setIsAddingFeature(false);
+                            setNewFeatureName('');
+                          }
+                        }}
+                        placeholder={language === 'NL' ? 'Voer naam in (bijv. Wijnkoeler, Pizza oven, LED verlichting)...' : 'Enter feature name (e.g. Wine cooler, Pizza oven, LED lighting)...'}
+                        className="flex-1 px-3 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-medium text-dark focus:outline-primary min-w-[200px]"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newFeatureName.trim()) {
+                            handleAddCustomFeature(newFeatureName);
+                            setNewFeatureName('');
+                            setIsAddingFeature(false);
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-[#33422C] text-white text-xs font-bold rounded-lg hover:bg-[#283523] cursor-pointer"
+                      >
+                        {language === 'NL' ? 'Toevoegen' : 'Add'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingFeature(false);
+                          setNewFeatureName('');
+                        }}
+                        className="px-2.5 py-1.5 bg-gray-100 text-dark/70 text-xs font-bold rounded-lg hover:bg-gray-200 cursor-pointer"
+                      >
+                        {language === 'NL' ? 'Annuleren' : 'Cancel'}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingFeature(true)}
+                      className="w-full py-2 px-3 border border-dashed border-[#33422C]/40 rounded-xl text-xs font-bold text-[#33422C] hover:bg-[#33422C]/5 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>{language === 'NL' ? '+ Nieuwe optie / kenmerk toevoegen' : '+ Add custom feature / option'}</span>
+                    </button>
+                  )}
                 </div>
-              )}
+
+                <p className="text-[11px] text-dark/60 font-body">
+                  {language === 'NL'
+                    ? 'Elke ingeschakelde optie komt automatisch in: stat-tegel 3 · omslag ondertitel · specificatieregel (p3). Uit = overal verwijderd. Prijs via stap 4 (bibliotheek).'
+                    : 'Every enabled option automatically lands in: stat tile 3 · cover subtitle · a specification line (p3). Off = removed everywhere. An option is priced via a line item in step 4 (library).'}
+                </p>
+
+                {/* Save Options Button */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-3 border-t border-[#D6CFC2]/70">
+                  <span className="text-[11px] text-dark/50 font-body">
+                    {language === 'NL' ? 'Sla opties en maatwerk-kenmerken op' : 'Save options and custom features'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleManualSave(language === 'NL' ? 'Opties & kenmerken succesvol opgeslagen!' : 'Options & features saved successfully!')}
+                    disabled={isSaving}
+                    className="px-4 py-2 bg-[#33422C] text-white text-xs font-bold rounded-xl hover:bg-[#283523] flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <Check className="w-3.5 h-3.5 text-[#D97706]" />
+                    <span>{isSaving ? (language === 'NL' ? 'Opslaan...' : 'Saving...') : (language === 'NL' ? 'Opties opslaan' : 'Save Options')}</span>
+                  </button>
+                </div>
+              </div>
 
               {/* CARD 3: SPECIFICATIONS */}
               <div className="bg-white rounded-2xl p-5 border border-[#D6CFC2] shadow-2xs space-y-4">
@@ -1803,7 +2338,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                         <div className="flex items-center gap-2 flex-1">
                           <input
                             type="text"
-                            value={sec.title}
+                            value={getDisplaySpecTitle(sec.title, language)}
                             onChange={(e) => handleSpecSectionTitleChange(secIdx, e.target.value)}
                             className="font-bold text-xs text-dark/80 font-mono uppercase tracking-wider bg-transparent border-b border-transparent hover:border-[#D6CFC2] focus:border-primary focus:outline-none px-1 py-0.5"
                             placeholder={language === 'NL' ? 'SECTIETITEL' : 'SECTION TITLE'}
@@ -1837,7 +2372,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                             <span className="text-[#33422C] font-bold text-xs flex-shrink-0">✓</span>
                             <input
                               type="text"
-                              value={line.text}
+                              value={getDisplaySpecText(line.text, language)}
                               onChange={(e) => handleSpecLineTextChange(secIdx, lineIdx, e.target.value)}
                               className="flex-1 bg-transparent border-none focus:outline-none text-xs text-dark font-body font-medium"
                             />
@@ -2042,7 +2577,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     </div>
                     <input
                       type="text"
-                      value={quote.configuration?.infobox?.title || (language === 'EN' ? 'About Thermo Fraké' : 'Over Thermo Fraké')}
+                      value={getDisplayInfoboxTitle(quote.configuration?.infobox?.title, language, quote.configuration?.woodType)}
                       onChange={(e) => updateConfigField('infobox', { ...quote.configuration?.infobox, title: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary"
                     />
@@ -2062,7 +2597,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                     </div>
                     <textarea
                       rows={3}
-                      value={quote.configuration?.infobox?.text || ''}
+                      value={getDisplayInfoboxText(quote.configuration?.infobox?.text, language, quote.configuration?.woodType)}
                       onChange={(e) => updateConfigField('infobox', { ...quote.configuration?.infobox, text: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none focus:border-primary font-body"
                     />
@@ -2106,102 +2641,203 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                 </div>
 
                 <div className="space-y-3">
-                  {(quote.investment?.lineItems || []).map((item, idx) => (
-                    <div key={item.id || idx} className="p-4 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/70 space-y-2.5">
-                      {/* Row 1: Title, Qty, Price, VAT, Included */}
-                      <div className="flex flex-wrap xl:flex-nowrap items-center gap-2.5 text-xs">
-                        <input
-                          type="text"
-                          value={item.title || ''}
-                          onChange={(e) => handleLineItemChange(idx, 'title', e.target.value)}
-                          placeholder={language === 'NL' ? 'Titel offertepost' : 'Line item title'}
-                          className="w-full xl:flex-1 px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary min-w-[200px]"
-                        />
+                  {(quote.investment?.lineItems || []).map((item, idx) => {
+                    const isDragging = draggedItemIndex === idx;
+                    const isOver = dragOverItemIndex === idx;
+                    const totalItems = (quote.investment?.lineItems || []).length;
 
-                        <div className="flex items-center gap-1.5">
+                    return (
+                      <div
+                        key={item.id || idx}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'move';
+                          if (dragOverItemIndex !== idx) {
+                            setDragOverItemIndex(idx);
+                          }
+                        }}
+                        onDragLeave={() => {
+                          if (dragOverItemIndex === idx) {
+                            setDragOverItemIndex(null);
+                          }
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (draggedItemIndex !== null && draggedItemIndex !== idx) {
+                            handleReorderLineItems(draggedItemIndex, idx);
+                            showToast(language === 'NL' ? `Post #${draggedItemIndex + 1} verplaatst naar #${idx + 1}` : `Item #${draggedItemIndex + 1} moved to #${idx + 1}`);
+                          }
+                          setDraggedItemIndex(null);
+                          setDragOverItemIndex(null);
+                        }}
+                        className={`p-4 bg-[#F8F7F4] rounded-xl border transition-all space-y-2.5 ${
+                          isDragging
+                            ? 'opacity-40 border-dashed border-[#33422C] scale-[0.99]'
+                            : isOver
+                            ? 'border-[#33422C] ring-2 ring-[#33422C]/20 bg-[#F1EFE9]'
+                            : 'border-[#D6CFC2]/70'
+                        }`}
+                      >
+                        {/* Row 1: Drag handle, Reorder buttons, Position, Full-width Title, Delete */}
+                        <div className="flex items-center gap-2 text-xs">
+                          {/* Reorder Controls */}
+                          <div className="flex items-center gap-1 text-dark/50 flex-shrink-0">
+                            <div
+                              draggable={!isApproved}
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('text/plain', String(idx));
+                                e.dataTransfer.effectAllowed = 'move';
+                                setDraggedItemIndex(idx);
+                              }}
+                              onDragEnd={() => {
+                                setDraggedItemIndex(null);
+                                setDragOverItemIndex(null);
+                              }}
+                              className="p-1 cursor-grab active:cursor-grabbing hover:text-dark hover:bg-black/5 rounded transition-all"
+                              title={language === 'NL' ? 'Sleep om volgorde te wijzigen' : 'Drag to reorder'}
+                            >
+                              <GripVertical className="w-4 h-4 text-dark/60" />
+                            </div>
+
+                            <div className="flex flex-col -space-y-1">
+                              <button
+                                type="button"
+                                onClick={() => handleMoveLineItemUp(idx)}
+                                disabled={isApproved || idx === 0}
+                                className="p-0.5 hover:text-dark disabled:opacity-20 transition-colors cursor-pointer"
+                                title={language === 'NL' ? 'Omhoog verplaatsen' : 'Move up'}
+                              >
+                                <ChevronUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveLineItemDown(idx)}
+                                disabled={isApproved || idx === totalItems - 1}
+                                className="p-0.5 hover:text-dark disabled:opacity-20 transition-colors cursor-pointer"
+                                title={language === 'NL' ? 'Omlaag verplaatsen' : 'Move down'}
+                              >
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            <span className="w-5 h-5 bg-[#33422C]/10 text-[#33422C] rounded-full flex items-center justify-center font-mono font-bold text-[10px]">
+                              {idx + 1}
+                            </span>
+                          </div>
+
                           <input
-                            type="number"
-                            min="1"
-                            value={item.quantity || 1}
-                            onChange={(e) => handleLineItemChange(idx, 'quantity', Math.max(1, Number(e.target.value) || 1))}
-                            className="w-14 px-2 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-center font-mono text-xs focus:outline-none"
+                            type="text"
+                            value={getDisplayLineItemTitle(item.title || '', language)}
+                            onChange={(e) => handleLineItemChange(idx, 'title', e.target.value)}
+                            placeholder={language === 'NL' ? 'Titel offertepost' : 'Line item title'}
+                            className="flex-1 min-w-0 px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:border-primary"
                           />
-                          <span className="text-dark/50 font-bold">×</span>
-                          <div className="flex items-center gap-1 bg-white border border-[#D6CFC2] rounded-xl px-3 py-2 font-mono font-bold text-xs text-dark">
-                            <span>€</span>
+
+                          <button
+                            type="button"
+                            disabled={totalItems <= 1}
+                            onClick={() => {
+                              handleRemoveLineItem(idx);
+                              showToast(language === 'NL' ? 'Offertepost verwijderd' : 'Line item removed');
+                            }}
+                            className="p-1.5 text-dark/40 hover:text-red-600 font-bold transition-colors disabled:opacity-20 flex-shrink-0 cursor-pointer"
+                            title={language === 'NL' ? 'Verwijder regel' : 'Delete item'}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Row 2: Financial Controls (Qty × Price, VAT, Included) */}
+                        <div className="flex flex-wrap items-center gap-2.5 text-xs sm:pl-7">
+                          <div className="flex items-center gap-1.5">
                             <input
                               type="number"
-                              step="0.01"
-                              value={item.priceInclVat ?? 0}
-                              onChange={(e) => handleLineItemChange(idx, 'priceInclVat', e.target.value === '' ? 0 : Number(e.target.value))}
-                              className="w-20 bg-transparent border-none focus:outline-none font-bold text-dark"
+                              min="1"
+                              value={item.quantity || 1}
+                              onChange={(e) => handleLineItemChange(idx, 'quantity', Math.max(1, Number(e.target.value) || 1))}
+                              className="w-14 px-2 py-1.5 bg-white border border-[#D6CFC2] rounded-xl font-bold text-center font-mono text-xs focus:outline-none"
                             />
+                            <span className="text-dark/50 font-bold">×</span>
+                            <div className="flex items-center gap-1 bg-white border border-[#D6CFC2] rounded-xl px-2.5 py-1.5 font-mono font-bold text-xs text-dark">
+                              <span>€</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={item.priceInclVat ?? 0}
+                                onChange={(e) => handleLineItemChange(idx, 'priceInclVat', e.target.value === '' ? 0 : Number(e.target.value))}
+                                className="w-20 bg-transparent border-none focus:outline-none font-bold text-dark"
+                              />
+                            </div>
                           </div>
+
+                          <select
+                            value={item.vatRate || 21}
+                            onChange={(e) => handleLineItemChange(idx, 'vatRate', Number(e.target.value))}
+                            className="px-2.5 py-1.5 bg-white border border-[#D6CFC2] rounded-xl font-bold font-mono text-xs text-dark"
+                          >
+                            <option value={21}>21% btw</option>
+                            <option value={9}>9% btw</option>
+                            <option value={0}>0% btw</option>
+                          </select>
+
+                          <label className="flex items-center gap-1.5 cursor-pointer font-bold text-xs text-dark font-mono bg-white px-2.5 py-1.5 border border-[#D6CFC2] rounded-xl">
+                            <input
+                              type="checkbox"
+                              checked={item.isIncluded || false}
+                              onChange={(e) => handleLineItemChange(idx, 'isIncluded', e.target.checked)}
+                              className="w-4 h-4 text-primary rounded border-[#D6CFC2]"
+                            />
+                            <span>{language === 'NL' ? 'inbegrepen' : 'included'}</span>
+                          </label>
                         </div>
 
-                        <select
-                          value={item.vatRate || 21}
-                          onChange={(e) => handleLineItemChange(idx, 'vatRate', Number(e.target.value))}
-                          className="px-2.5 py-2 bg-white border border-[#D6CFC2] rounded-xl font-bold font-mono text-xs text-dark"
-                        >
-                          <option value={21}>21%</option>
-                          <option value={9}>9%</option>
-                          <option value={0}>0%</option>
-                        </select>
-
-                        <label className="flex items-center gap-1.5 cursor-pointer font-bold text-xs text-dark font-mono">
+                        {/* Row 2: Description with live char counter */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between items-center text-[10px] text-dark/50 font-mono">
+                            <span>{language === 'NL' ? 'OMSCHRIJVING' : 'DESCRIPTION'}</span>
+                            <span>{(item.description || '').length} / 220 {language === 'NL' ? 'tekens' : 'chars'}</span>
+                          </div>
                           <input
-                            type="checkbox"
-                            checked={item.isIncluded || false}
-                            onChange={(e) => handleLineItemChange(idx, 'isIncluded', e.target.checked)}
-                            className="w-4 h-4 text-primary rounded border-[#D6CFC2]"
+                            type="text"
+                            maxLength={220}
+                            value={getDisplayLineItemDesc(item.description || '', language)}
+                            onChange={(e) => handleLineItemChange(idx, 'description', e.target.value)}
+                            placeholder={language === 'NL' ? 'Omschrijvingstekst' : 'Description text'}
+                            className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark/80 focus:outline-none font-body"
                           />
-                          <span>{language === 'NL' ? 'inbegrepen' : 'included'}</span>
-                        </label>
-
-                        <button
-                          type="button"
-                          disabled={(quote.investment?.lineItems || []).length <= 1}
-                          onClick={() => {
-                            handleRemoveLineItem(idx);
-                            showToast(language === 'NL' ? 'Offertepost verwijderd' : 'Line item removed');
-                          }}
-                          className="p-1.5 text-dark/40 hover:text-red-600 font-bold transition-colors disabled:opacity-20 ml-auto"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {/* Row 2: Description with live char counter */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between items-center text-[10px] text-dark/50 font-mono">
-                          <span>{language === 'NL' ? 'OMSCHRIJVING' : 'DESCRIPTION'}</span>
-                          <span>{(item.description || '').length} / 220 {language === 'NL' ? 'tekens' : 'chars'}</span>
                         </div>
-                        <input
-                          type="text"
-                          maxLength={220}
-                          value={item.description || ''}
-                          onChange={(e) => handleLineItemChange(idx, 'description', e.target.value)}
-                          placeholder={language === 'NL' ? 'Omschrijvingstekst' : 'Description text'}
-                          className="w-full px-3.5 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark/80 focus:outline-none font-body"
-                        />
-                      </div>
 
-                      {(item.isIncluded || item.priceInclVat === 0) && (
-                        <div className="space-y-1 pt-1">
-                          <span className="inline-block bg-emerald-100 text-emerald-900 font-bold text-[10px] px-2.5 py-0.5 rounded-md font-mono uppercase">
-                            {language === 'NL' ? 'Inbegrepen' : 'Included'}
-                          </span>
-                          {item.title?.includes('Bezorging') && (
-                            <p className="text-[11px] text-dark/60 font-body">
-                              title = "Bezorging &#123;city&#125;" automatic · price € 0 → label "Inbegrepen" on p4 plus GRATIS badge on p3/p6.
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        {(item.isIncluded || item.priceInclVat === 0) && (
+                          <div className="space-y-1 pt-1">
+                            <span className="inline-block bg-emerald-100 text-emerald-900 font-bold text-[10px] px-2.5 py-0.5 rounded-md font-mono uppercase">
+                              {language === 'NL' ? 'Inbegrepen' : 'Included'}
+                            </span>
+                            {item.title?.includes('Bezorging') && (
+                              <p className="text-[11px] text-dark/60 font-body">
+                                title = "Bezorging &#123;city&#125;" automatic · price € 0 → label "Inbegrepen" on p4 plus GRATIS badge on p3/p6.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Save Investment Items Button */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-3 border-t border-[#D6CFC2]/70">
+                    <span className="text-[11px] text-dark/50 font-body">
+                      {language === 'NL' ? 'Sla offerteposten en gekozen volgorde op' : 'Save line items and chosen order'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleManualSave(language === 'NL' ? 'Investeringsposten succesvol opgeslagen!' : 'Line items saved successfully!')}
+                      disabled={isSaving}
+                      className="px-4 py-2 bg-[#33422C] text-white text-xs font-bold rounded-xl hover:bg-[#283523] flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <Check className="w-3.5 h-3.5 text-[#D97706]" />
+                      <span>{isSaving ? (language === 'NL' ? 'Opslaan...' : 'Saving...') : (language === 'NL' ? 'Investering opslaan' : 'Save Investment Items')}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -2572,7 +3208,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                   </div>
                   <input
                     type="text"
-                    value={quote.letterAndProcess?.salutation || (quote.customer?.firstName ? `Beste ${quote.customer.firstName},` : 'Beste Bjorn,')}
+                    value={getDisplaySalutation(quote.letterAndProcess?.salutation, quote.customer?.firstName, language)}
                     onChange={(e) => updateLetterField('salutation', e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-[#EFECE6] border border-[#D6CFC2] rounded-xl font-bold text-xs text-dark focus:outline-none focus:border-primary"
                   />
@@ -2604,12 +3240,18 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                         <button
                           type="button"
                           onClick={() => {
-                            const pDefaults = PRODUCT_TYPE_DEFAULTS[quote.productType || 'Outdoor kitchen']?.letterParagraphs || [
+                            const pDefs = getProductTypeDefaults(quote.productType || 'Outdoor kitchen', language);
+                            const pDefaults = pDefs?.letterParagraphs || (language === 'EN' ? [
+                              'Thank you very much for your inquiry and pleasant consultation. It is our great pleasure to present this personalized proposal for your custom outdoor kitchen.',
+                              'At Vanuit Ambacht, we believe in sustainable materials, artisan craftsmanship, and eye for detail. We build all our outdoor kitchens by hand in our workshop.',
+                              'In this document you will find the complete overview of your chosen configuration, including specifications, front-view drawing, and transparent investment.',
+                              'Do you have any questions or would you like to make further adjustments? We are glad to think along with you!'
+                            ] : [
                               'Hartelijk dank voor je aanvraag en het prettige gesprek. Met veel plezier presenteren wij deze persoonlijke offerte voor jouw maatwerk buitenkeuken.',
                               'Bij Vanuit Ambacht geloven we in duurzame materialen, ambachtelijke afwerking en oog voor detail. Wij maken al onze buitenkeukens met de hand in onze werkplaats.',
                               'In dit document vind je het volledige overzicht van jouw gekozen configuratie, inclusief specificaties, vooraanzicht tekening en transparante investering.',
                               'Heb je vragen of wens je nog aanpassingen? Wij denken graag met je mee!'
-                            ];
+                            ]);
                             updateLetterField('letterParagraphs', [...pDefaults]);
                             showToast(language === 'NL' ? 'Brieftekst hersteld naar standaard!' : 'Letter text defaults restored!');
                           }}
@@ -3225,7 +3867,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                 {/* Filename & notice */}
                 <p className="text-xs text-dark/70 font-body pt-1">
                   {language === 'NL' ? 'Bestandsnaam: ' : 'Filename: '}
-                  <strong className="font-bold text-dark">Quote-{quote.id} {typeof quote.customer === 'object' ? (quote.customer?.name || 'Jan de Vries') : (quote.customer || 'Jan de Vries')}.pdf</strong> · {language === 'NL' ? 'concept opslaan gebeurt automatisch' : 'draft saving is non-blocking'}
+                  <strong className="font-bold text-dark">Quote-{quote.id} {typeof quote.customer === 'object' ? (quote.customer?.name || (language === 'NL' ? 'Klant' : 'Client')) : (quote.customer || (language === 'NL' ? 'Klant' : 'Client'))}.pdf</strong> · {language === 'NL' ? 'concept opslaan gebeurt automatisch' : 'draft saving is non-blocking'}
                 </p>
               </div>
             </div>
@@ -3255,15 +3897,30 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
         </div>
 
         {/* ========================================================= */}
-        {/* ZONE 3: LIVE PREVIEW - always visible                     */}
+        {/* ZONE 3: LIVE PREVIEW (Responsive toggle / desktop side-by-side) */}
         {/* ========================================================= */}
-        <div className="w-[180px] flex-shrink-0 overflow-y-auto max-h-[calc(100vh-175px)] pr-1 no-scrollbar">
+        <div className={`flex-shrink-0 overflow-y-auto max-h-[calc(100vh-175px)] no-scrollbar ${
+          showPreview
+            ? 'fixed inset-y-16 right-4 z-50 w-[340px] max-w-[90vw] bg-white rounded-2xl shadow-2xl p-2 border border-[#D6CFC2] xl:static xl:inset-auto xl:z-auto xl:shadow-none xl:p-0 xl:border-none xl:w-[260px] 2xl:w-[300px]'
+            : 'hidden'
+        }`}>
           <div className="bg-white rounded-2xl p-3 border border-[#D6CFC2] shadow-xs space-y-2 font-body relative">
             {/* Live Preview Header */}
             <div className="flex justify-between items-center border-b border-[#D6CFC2]/80 pb-2.5">
               <span className="text-xs font-mono font-bold tracking-wider text-dark/80 uppercase">{language === 'NL' ? 'LIVE VOORBEELD' : 'LIVE PREVIEW'}</span>
-              <div className="text-xs font-mono font-bold text-dark/70 bg-[#F8F7F4] px-2.5 py-1 rounded-md border border-[#E2DDD3]">
-                {language === 'NL' ? 'PAGINA' : 'PAGE'} <span className="text-[#33422C] font-extrabold">{previewPage}</span> / 6
+              <div className="flex items-center gap-1.5">
+                <div className="text-xs font-mono font-bold text-dark/70 bg-[#F8F7F4] px-2 py-0.5 rounded-md border border-[#E2DDD3]">
+                  {language === 'NL' ? 'PAGINA' : 'PAGE'} <span className="text-[#33422C] font-extrabold">{previewPage}</span> / 6
+                </div>
+                {showPreview && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPreview(false)}
+                    className="xl:hidden p-1 text-dark/50 hover:text-dark rounded-md hover:bg-gray-100 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -3309,7 +3966,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                   <span className="text-dark/60 font-mono uppercase text-[10px] font-bold">
                     {language === 'NL' ? 'Klant' : 'Client'}
                   </span>
-                  <span className="font-bold text-dark">{quote.customer?.name || 'Bjorn Valk'}</span>
+                  <span className="font-bold text-dark">{quote.customer?.name || (language === 'NL' ? 'Klant' : 'Client')}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-dark/60 font-mono uppercase text-[10px] font-bold">
@@ -3409,8 +4066,8 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
                 {PRESET_PRODUCT_LIBRARY.map((item) => (
                   <div key={item.id} className="p-3 bg-white border border-[#D6CFC2] rounded-xl flex justify-between items-center hover:border-primary/50 transition-all">
                     <div>
-                      <h4 className="font-bold text-primary">{item.title}</h4>
-                      <p className="text-[11px] text-dark/60">{item.description}</p>
+                      <h4 className="font-bold text-primary">{getDisplayLineItemTitle(item.title, language)}</h4>
+                      <p className="text-[11px] text-dark/60">{getDisplayLineItemDesc(item.description, language)}</p>
                       <span className="font-mono text-xs font-bold text-amber-700">€ {item.priceInclVat.toFixed(2)}</span>
                     </div>
                     <Button size="sm" onClick={() => handleAddFromLibrary(item)} className="text-xs">
@@ -3427,7 +4084,7 @@ export default function QuoteEditor({ quoteData, onClose, onSaveQuote, onPublish
       {/* 100% CLEAN PDF PRINT PORTAL ATTACHED DIRECTLY TO DOCUMENT BODY */}
       {quote && createPortal(
         <div id="printable-offerte-portal">
-          <Offerte6PagePDF quote={quote} />
+          <Offerte6PagePDF quote={quote} language={language} />
         </div>,
         document.body
       )}

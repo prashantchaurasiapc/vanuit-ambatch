@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Card from '../../components/Card';
@@ -82,7 +83,12 @@ const mapBackendQuoteToRow = (q) => {
   else if (q.status === 'expired') displayStatus = 'Verlopen';
   else if (q.status === 'draft') displayStatus = 'Concept';
 
-  const custName = q.customerName || (q.customer ? `${q.customer.firstName || ''} ${q.customer.lastName || ''}`.trim() : 'Onbekend');
+  const customerInfo = activeVer?.optionsConfig?.customerInfo;
+  const custName = q.customerName || customerInfo?.name || (q.customer ? `${q.customer.firstName || ''} ${q.customer.lastName || ''}`.trim() : 'Onbekend');
+  const custEmail = q.customerEmail || customerInfo?.email || '';
+  const custCity = q.customerCity || customerInfo?.city || '';
+  const custPhone = q.customerPhone || customerInfo?.phone || '';
+  const custAddress = q.customerAddress || customerInfo?.address || '';
   const projectName = activeVer?.coverTitleLine1 || (q.productType ? q.productType.replace(/_/g, ' ') : 'Maatwerk Keuken');
 
   return {
@@ -92,10 +98,10 @@ const mapBackendQuoteToRow = (q) => {
     publicToken: q.publicToken,
     publicUrl: q.publicUrl,
     customer: custName,
-    customerEmail: q.customerEmail,
-    customerCity: q.customerCity,
-    customerPhone: q.customerPhone,
-    customerAddress: q.customerAddress,
+    customerEmail: custEmail,
+    customerCity: custCity,
+    customerPhone: custPhone,
+    customerAddress: custAddress,
     project: projectName,
     amount: formattedAmt,
     numericAmount: totalAmount,
@@ -215,7 +221,14 @@ export default function Quotes() {
           };
         });
 
-      const combinedRows = [...backendRows, ...localRows];
+      const combinedRows = [...backendRows, ...localRows].filter(r => {
+        // Filter out accidental dummy orphan drafts that have no customer and no items
+        const isOrphan = r.rawStatus === 'draft' &&
+          (!r.customer || r.customer === 'Onbekend' || r.customer === 'Nieuwe Klant') &&
+          !r.customerEmail &&
+          (!r.items || r.items.length === 0);
+        return !isOrphan;
+      });
       setQuotes(combinedRows);
 
       if (!quotesRes.success && combinedRows.length === 0) {
@@ -245,7 +258,37 @@ export default function Quotes() {
   const [customerSelect, setCustomerSelect] = useState('Other');
   const [projectSelect, setProjectSelect] = useState('Exclusieve Buitenkeuken');
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeEditorStep, setActiveEditorStep] = useState(1);
   const [activeEditorQuote, setActiveEditorQuote] = useState(null);
+
+  // Auto-restore editor on page load / browser refresh (F5)
+  useEffect(() => {
+    const urlQuoteId = searchParams.get('quoteId') || searchParams.get('edit');
+    const urlStep = parseInt(searchParams.get('step') || '1', 10);
+
+    if (urlQuoteId) {
+      if (urlQuoteId === 'new') {
+        const localNewDraft = JSON.parse(localStorage.getItem('quote_editor_draft_new') || 'null');
+        const defaultLead = leadsList[0] || null;
+        const newModel = localNewDraft || createDefaultQuote(defaultLead, {
+          id: `OF-${new Date().getFullYear()}-032`,
+          backendId: null,
+          status: 'Concept'
+        });
+        setActiveEditorStep(urlStep);
+        setActiveEditorQuote(newModel);
+      } else if (!activeEditorQuote || (activeEditorQuote.backendId !== urlQuoteId && activeEditorQuote.id !== urlQuoteId)) {
+        handleOpenEditModal({ backendId: urlQuoteId, id: urlQuoteId }, urlStep);
+      }
+    } else {
+      // Check saved session in localStorage
+      const savedSession = JSON.parse(localStorage.getItem('vanuit_active_quote_session') || 'null');
+      if (savedSession && savedSession.quoteId && (!activeEditorQuote || (activeEditorQuote.backendId !== savedSession.quoteId && activeEditorQuote.id !== savedSession.quoteId))) {
+        setSearchParams({ quoteId: savedSession.quoteId, step: String(savedSession.step || 1) });
+      }
+    }
+  }, [searchParams, leadsList]);
 
   // Handle autosave or manual save of 6-step proposal draft to backend
   const handleSaveEditorQuote = async (updatedQuote, showToastFlag = false) => {
@@ -257,9 +300,31 @@ export default function Quotes() {
         const pType = (updatedQuote.productType || 'outdoor_kitchen').toLowerCase().includes('garden')
           ? 'garden_room'
           : 'outdoor_kitchen';
-        const isUuidLead = updatedQuote.customer?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(updatedQuote.customer.id));
+
+        let leadIdToUse = undefined;
+        if (updatedQuote.customer?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(updatedQuote.customer.id))) {
+          leadIdToUse = updatedQuote.customer.id;
+        } else if (updatedQuote.customer?.name && updatedQuote.customer.name.trim()) {
+          try {
+            const leadRes = await api.post('/leads', {
+              name: updatedQuote.customer.name.trim(),
+              email: updatedQuote.customer.email?.trim() || undefined,
+              phone: updatedQuote.customer.phone?.trim() || undefined,
+              city: updatedQuote.customer.city?.trim() || undefined,
+              address: updatedQuote.customer.address?.trim() || undefined,
+              productType: pType,
+            });
+            if (leadRes.success && leadRes.data) {
+              leadIdToUse = leadRes.data.id;
+              updatedQuote.customer = { ...updatedQuote.customer, id: leadIdToUse };
+            }
+          } catch (e) {
+            console.warn('Auto-create lead failed:', e);
+          }
+        }
+
         const createRes = await api.post('/quotes', {
-          leadId: isUuidLead ? updatedQuote.customer.id : undefined,
+          leadId: leadIdToUse,
           productType: pType
         });
         if (createRes.success && createRes.data) {
@@ -267,6 +332,12 @@ export default function Quotes() {
           updatedQuote.backendId = createRes.data.id;
           updatedQuote.publicToken = createRes.data.publicToken;
           updatedQuote.id = createRes.data.quoteNumber || updatedQuote.id;
+
+          localStorage.removeItem('quote_editor_draft_new');
+          localStorage.setItem(`quote_editor_draft_${targetId}`, JSON.stringify(updatedQuote));
+          localStorage.setItem('vanuit_active_quote_session', JSON.stringify({ quoteId: targetId, step: activeEditorStep }));
+          setSearchParams({ quoteId: targetId, step: String(activeEditorStep) });
+
           setActiveEditorQuote({ ...updatedQuote });
           fetchQuotes();
         }
@@ -277,6 +348,33 @@ export default function Quotes() {
 
     targetId = targetId || updatedQuote.id;
     if (!targetId) return;
+
+    // Also update lead record if customer details were modified
+    if (updatedQuote.customer && typeof updatedQuote.customer === 'object') {
+      const cust = updatedQuote.customer;
+      if (cust.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(cust.id))) {
+        api.patch(`/leads/${cust.id}`, {
+          name: cust.name,
+          email: cust.email,
+          phone: cust.phone,
+          city: cust.city,
+          address: cust.address,
+        }).catch(() => {});
+      } else if (cust.name && cust.name.trim()) {
+        api.post('/leads', {
+          name: cust.name.trim(),
+          email: cust.email?.trim() || undefined,
+          phone: cust.phone?.trim() || undefined,
+          city: cust.city?.trim() || undefined,
+          address: cust.address?.trim() || undefined,
+          productType: (updatedQuote.productType || 'outdoor_kitchen').toLowerCase().includes('garden') ? 'garden_room' : 'outdoor_kitchen',
+        }).then(res => {
+          if (res.success && res.data) {
+            api.patch(`/quotes/${targetId}`, { leadId: res.data.id }).catch(() => {});
+          }
+        }).catch(() => {});
+      }
+    }
 
     try {
       const lineItems = (updatedQuote.investment?.lineItems || []).map((it, idx) => ({
@@ -307,12 +405,27 @@ export default function Quotes() {
         marginAmount: updatedQuote.investment?.marginAmount ? Number(updatedQuote.investment.marginAmount) : undefined,
         finishTreatment: updatedQuote.investment?.finishTreatment,
         lineItems,
-        instalmentsConfig: updatedQuote.investment?.instalments ? {
-          count: updatedQuote.investment.instalments.length,
-          percentages: updatedQuote.investment.instalments.map(i => Number(i.percentage) || 50),
-          labels: updatedQuote.investment.instalments.map(i => i.label || 'Termijn'),
-          subtexts: updatedQuote.investment.instalments.map(i => i.subtext || ''),
-        } : undefined,
+        instalmentsConfig: (() => {
+          const inst = updatedQuote.investment?.instalments;
+          if (!inst) return undefined;
+          if (Array.isArray(inst)) {
+            return {
+              count: inst.length,
+              percentages: inst.map(i => Number(i.percentage) || 50),
+              labels: inst.map(i => i.label || 'Termijn'),
+              subtexts: inst.map(i => i.subtext || ''),
+            };
+          }
+          if (typeof inst === 'object') {
+            return {
+              count: Number(inst.count) || (Array.isArray(inst.percentages) ? inst.percentages.length : 2),
+              percentages: Array.isArray(inst.percentages) ? inst.percentages.map(Number) : [50, 50],
+              labels: Array.isArray(inst.labels) ? inst.labels.map(String) : ['Bij akkoord', 'Bij levering'],
+              subtexts: Array.isArray(inst.subtexts) ? inst.subtexts.map(String) : [],
+            };
+          }
+          return undefined;
+        })(),
         diagramConfig: updatedQuote.configuration?.diagram ? {
           show: Boolean(updatedQuote.configuration.diagram.show ?? true),
           totalWidth: Number(updatedQuote.configuration.diagram.totalWidth) || 240,
@@ -323,7 +436,7 @@ export default function Quotes() {
             width: Number(s.width) || 60,
           })),
         } : undefined,
-        specificationsOverview: updatedQuote.configuration?.specifications ? updatedQuote.configuration.specifications.map(sec => ({
+        specificationsOverview: Array.isArray(updatedQuote.configuration?.specifications) ? updatedQuote.configuration.specifications.map(sec => ({
           id: String(sec.id || Math.random()),
           title: String(sec.title || 'SPECIFICATIES'),
           lines: (sec.lines || []).map(l => ({
@@ -332,22 +445,62 @@ export default function Quotes() {
             isOption: Boolean(l.isOption),
           })),
         })) : undefined,
-        letterConfig: updatedQuote.letterAndProcess,
+        letterConfig: updatedQuote.letterAndProcess ? {
+          salutation: updatedQuote.letterAndProcess.salutation ? String(updatedQuote.letterAndProcess.salutation).trim() : undefined,
+          letterParagraphs: Array.isArray(updatedQuote.letterAndProcess.letterParagraphs)
+            ? updatedQuote.letterAndProcess.letterParagraphs.map(p => String(p || '').trim()).filter(Boolean)
+            : undefined,
+          signoffName: updatedQuote.letterAndProcess.signoffName ? String(updatedQuote.letterAndProcess.signoffName).trim() : undefined,
+          signoffRole: updatedQuote.letterAndProcess.signoffRole ? String(updatedQuote.letterAndProcess.signoffRole).trim() : undefined,
+          uspCards: Array.isArray(updatedQuote.letterAndProcess.uspCards)
+            ? updatedQuote.letterAndProcess.uspCards.map((c, i) => ({
+                id: Number(c.id) || i + 1,
+                title: String(c.title || `USP ${i + 1}`).trim(),
+                desc: String(c.desc || c.description || '').trim(),
+              }))
+            : undefined,
+          processSteps: Array.isArray(updatedQuote.letterAndProcess.processSteps)
+            ? updatedQuote.letterAndProcess.processSteps.map((st, i) => ({
+                step: String(st.step || st.stepNumber || i + 1),
+                title: String(st.title || `Stap ${i + 1}`).trim(),
+                desc: String(st.desc || st.description || (
+                  i === 0 ? 'Bevestig eenvoudig per mail of WhatsApp, of onderteken de akkoordpagina. Vanaf dat moment nemen wij alles uit handen.' :
+                  i === 1 ? 'Je ontvangt het definitieve ontwerp met technische tekening ter bevestiging. Zo weet je precies wat er gebouwd wordt vóór de bouw start.' :
+                  i === 2 ? 'Jouw buitenverblijf of buitenkeuken wordt op locatie gebouwd door een gecertificeerde vakspecialist.' :
+                  i === 3 ? 'We leveren en monteren op locatie op een moment dat jou uitkomt.' :
+                  'We leveren pas op als alles naar wens is. Blijvende garantie en nazorg.'
+                )).trim(),
+                badge: String(st.badge || st.badgeText || '').trim(),
+              }))
+            : undefined,
+          approvalTitle: updatedQuote.letterAndProcess.approvalTitle ? String(updatedQuote.letterAndProcess.approvalTitle).trim() : undefined,
+          approvalSubheading: updatedQuote.letterAndProcess.approvalSubheading ? String(updatedQuote.letterAndProcess.approvalSubheading).trim() : undefined,
+          approvalText: updatedQuote.letterAndProcess.approvalText ? String(updatedQuote.letterAndProcess.approvalText).trim() : undefined,
+          closingQuote: updatedQuote.letterAndProcess.closingQuote ? String(updatedQuote.letterAndProcess.closingQuote).trim() : undefined,
+          closingAuthor: updatedQuote.letterAndProcess.closingAuthor ? String(updatedQuote.letterAndProcess.closingAuthor).trim() : undefined,
+        } : undefined,
+        optionsConfig: {
+          ...(updatedQuote.configuration?.options || {}),
+          customerInfo: typeof updatedQuote.customer === 'object' ? updatedQuote.customer : { name: updatedQuote.customer }
+        },
       };
 
       const res = await api.put(`/quotes/${targetId}/versions/draft`, draftPayload);
       if (res.success) {
+        localStorage.setItem(`quote_editor_draft_${targetId}`, JSON.stringify(updatedQuote));
         if (showToastFlag) {
           showToast(language === 'EN' ? `Quote ${updatedQuote.id} saved successfully!` : `Offerte ${updatedQuote.id} succesvol opgeslagen!`);
         }
       } else if (showToastFlag) {
         showToast(res.error?.message || 'Error saving draft');
       }
+      return res;
     } catch (err) {
-      console.error('Error autosaving quote draft:', err);
+      console.error('Error saving quote draft:', err);
       if (showToastFlag) {
         showToast(err.message || 'Error saving draft');
       }
+      return { success: false, error: err };
     }
   };
 
@@ -394,41 +547,56 @@ export default function Quotes() {
     const newQuoteModel = createDefaultQuote(defaultLead, {
       id: `OF-${new Date().getFullYear()}-${String(quotes.length + 1).padStart(3, '0')}`,
       backendId: null,
-      customer: defaultLead ? { name: defaultLead.name, email: defaultLead.email, phone: defaultLead.phone, city: defaultLead.city } : 'Nieuwe Klant',
+      customer: defaultLead ? { id: defaultLead.id, name: defaultLead.name, email: defaultLead.email, phone: defaultLead.phone, city: defaultLead.city } : { name: '', email: '', phone: '', city: '', address: '' },
       productType: 'outdoor_kitchen',
       status: 'Concept'
     });
+    setSearchParams({ quoteId: 'new', step: '1' });
+    localStorage.setItem('vanuit_active_quote_session', JSON.stringify({ quoteId: 'new', step: 1 }));
+    localStorage.setItem('quote_editor_draft_new', JSON.stringify(newQuoteModel));
+    setActiveEditorStep(1);
     setActiveEditorQuote(newQuoteModel);
   };
 
-  const handleOpenEditModal = async (quoteRow) => {
+  const handleOpenEditModal = async (quoteRow, targetStep = 1) => {
     const targetId = quoteRow.backendId || quoteRow.id;
+    const initialStep = targetStep || parseInt(searchParams.get('step') || '1', 10) || 1;
+    setActiveEditorStep(initialStep);
+    setSearchParams({ quoteId: targetId, step: String(initialStep) });
+    localStorage.setItem('vanuit_active_quote_session', JSON.stringify({ quoteId: targetId, step: initialStep }));
+
+    const localDraft = JSON.parse(localStorage.getItem(`quote_editor_draft_${targetId}`) || 'null');
+
     try {
       const res = await api.get(`/quotes/${targetId}`);
       if (res.success && res.data) {
         const qData = res.data;
+        const customerInfo = qData.activeVersion?.optionsConfig?.customerInfo;
         const fullQuoteModel = createDefaultQuote(null, {
           ...qData,
           id: qData.quoteNumber,
           backendId: qData.id,
           publicToken: qData.publicToken,
           customer: {
-            name: qData.customerName || quoteRow.customer,
-            email: qData.customerEmail,
-            phone: qData.customerPhone,
-            city: qData.customerCity,
-            address: qData.customerAddress,
+            id: qData.leadId || customerInfo?.id || localDraft?.customer?.id,
+            name: customerInfo?.name || qData.customerName || (typeof quoteRow.customer === 'object' ? quoteRow.customer?.name : quoteRow.customer) || localDraft?.customer?.name || '',
+            email: customerInfo?.email || qData.customerEmail || localDraft?.customer?.email || '',
+            phone: customerInfo?.phone || qData.customerPhone || localDraft?.customer?.phone || '',
+            city: customerInfo?.city || qData.customerCity || localDraft?.customer?.city || '',
+            address: customerInfo?.address || qData.customerAddress || localDraft?.customer?.address || '',
           },
           status: qData.status === 'draft' ? 'Concept' : qData.status === 'sent' ? 'Verzonden' : qData.status === 'approved' ? 'Geaccepteerd' : qData.status,
           date: qData.issueDate,
           validUntil: qData.validUntil,
           cover: qData.activeVersion ? {
-            titleLine1: qData.activeVersion.coverTitleLine1 || 'EEN BUITENKEUKEN OP MAAT',
-            titleLine2: qData.activeVersion.coverTitleLine2 || '',
-            customSubtitle: qData.activeVersion.customSubtitle || '',
-            photos: qData.activeVersion.coverPhotos || ['/cover_img1.png', '/cover_img2.png', '/cover_img3.png']
-          } : undefined,
-          configuration: qData.activeVersion ? {
+            titleLine1: localDraft?.cover?.titleLine1 || qData.activeVersion.coverTitleLine1 || 'EEN BUITENKEUKEN OP MAAT',
+            titleLine2: localDraft?.cover?.titleLine2 || qData.activeVersion.coverTitleLine2 || '',
+            customSubtitle: localDraft?.cover?.customSubtitle || qData.activeVersion.customSubtitle || '',
+            photos: (Array.isArray(localDraft?.cover?.photos) && localDraft.cover.photos.length === 3 && localDraft.cover.photos.some(p => p && p.startsWith('data:')))
+              ? localDraft.cover.photos
+              : (qData.activeVersion.coverPhotos || ['/cover_img1.png', '/cover_img2.png', '/cover_img3.png'])
+          } : (localDraft?.cover || undefined),
+          configuration: localDraft?.configuration || (qData.activeVersion ? {
             dimensions: qData.activeVersion.dimensionsText || '240 × 80',
             woodType: qData.activeVersion.woodType || 'Thermo Fraké',
             woodLifespan: qData.activeVersion.woodLifespan || '20 tot 25 jaar',
@@ -437,39 +605,49 @@ export default function Quotes() {
             deliveryTime: qData.activeVersion.deliveryTimeText || '3 tot 5 weken',
             deliverySubtext: qData.activeVersion.deliverySubtext || 'na technisch akkoord',
             specifications: qData.activeVersion.specificationsOverview || [],
-            diagram: qData.activeVersion.diagramConfig || { show: true, totalWidth: 240, segments: [] }
-          } : undefined,
-          investment: qData.activeVersion ? {
+            diagram: qData.activeVersion.diagramConfig || { show: true, totalWidth: 240, segments: [] },
+            options: qData.activeVersion.optionsConfig || undefined
+          } : undefined),
+          investment: localDraft?.investment || (qData.activeVersion ? {
             costPrice: qData.activeVersion.costPrice,
             marginPercent: qData.activeVersion.marginPercent,
             marginAmount: qData.activeVersion.marginAmount,
-            lineItems: (qData.activeVersion.items || []).map((it, idx) => ({
-              id: it.id || `item-${idx + 1}`,
-              title: it.title,
-              description: it.description || '',
-              quantity: it.quantity,
-              priceInclVat: it.priceInclVat ?? it.unitPriceInclVat ?? 0,
-              vatRate: it.vatRate || 21,
-              isIncluded: it.isIncluded,
-              isStelpost: it.isStelpost,
-            })),
+            lineItems: [...(qData.activeVersion.items || [])]
+              .sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0))
+              .map((it, idx) => ({
+                id: it.id || `item-${idx + 1}`,
+                position: it.position ?? idx + 1,
+                title: it.title,
+                description: it.description || '',
+                quantity: it.quantity,
+                priceInclVat: it.priceInclVat ?? it.unitPriceInclVat ?? 0,
+                vatRate: it.vatRate || 21,
+                isIncluded: it.isIncluded,
+                isStelpost: it.isStelpost,
+              })),
             finishTreatment: qData.activeVersion.finishTreatment,
             instalmentsConfig: qData.activeVersion.instalmentsConfig,
-          } : undefined,
-          letterAndProcess: qData.activeVersion?.letterConfig || undefined,
+          } : undefined),
+          letterAndProcess: localDraft?.letterAndProcess || qData.activeVersion?.letterConfig || undefined,
         });
         fullQuoteModel.backendId = qData.id;
         fullQuoteModel.publicToken = qData.publicToken;
         setActiveEditorQuote(fullQuoteModel);
+      } else if (localDraft) {
+        setActiveEditorQuote(localDraft);
       } else {
         const fallback = createDefaultQuote(null, quoteRow);
         fallback.backendId = targetId;
         setActiveEditorQuote(fallback);
       }
     } catch (err) {
-      const fallback = createDefaultQuote(null, quoteRow);
-      fallback.backendId = targetId;
-      setActiveEditorQuote(fallback);
+      if (localDraft) {
+        setActiveEditorQuote(localDraft);
+      } else {
+        const fallback = createDefaultQuote(null, quoteRow);
+        fallback.backendId = targetId;
+        setActiveEditorQuote(fallback);
+      }
     }
   };
 
@@ -887,8 +1065,17 @@ export default function Quotes() {
     return (
       <QuoteEditor
         quoteData={activeEditorQuote}
+        initialStep={activeEditorStep}
+        onStepChange={(newStep) => {
+          setActiveEditorStep(newStep);
+          const currentId = activeEditorQuote.backendId || activeEditorQuote.id || 'new';
+          setSearchParams({ quoteId: currentId, step: String(newStep) });
+          localStorage.setItem('vanuit_active_quote_session', JSON.stringify({ quoteId: currentId, step: newStep }));
+        }}
         leadsList={leadsList}
         onClose={() => {
+          setSearchParams({});
+          localStorage.removeItem('vanuit_active_quote_session');
           setActiveEditorQuote(null);
           fetchQuotes();
         }}

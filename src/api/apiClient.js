@@ -8,8 +8,7 @@
  *  - Global 401 → redirect to /login
  *  - Global 403 → console warn (caller handles UI)
  */
-
-const BASE_URL = '/api'; // Proxied to http://localhost:3000/api by Vite in dev
+export const BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '');
 
 async function request(method, path, body = null, isFormData = false) {
   const headers = {};
@@ -18,10 +17,16 @@ async function request(method, path, body = null, isFormData = false) {
     headers['Content-Type'] = 'application/json';
   }
 
+  // Attach JWT Bearer token from storage if present (ensures authentication across cross-origin/local environments)
+  const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const options = {
     method,
     headers,
-    credentials: 'include', // Always send/receive HttpOnly JWT cookie
+    credentials: 'include', // Also send/receive HttpOnly JWT cookie when on same origin
   };
 
   if (body) {
@@ -33,8 +38,10 @@ async function request(method, path, body = null, isFormData = false) {
   // Handle 401 globally — session expired or not logged in
   if (response.status === 401) {
     sessionStorage.removeItem('auth_user');
-    // Avoid redirect loop on the login page itself
-    if (!window.location.pathname.includes('/login')) {
+    sessionStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_token');
+    // Avoid redirect loop on the login page or public offerte pages
+    if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/offerte/')) {
       window.location.href = '/login';
     }
     return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired. Please log in again.' } };

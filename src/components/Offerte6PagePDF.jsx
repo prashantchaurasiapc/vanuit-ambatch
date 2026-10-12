@@ -4,6 +4,23 @@ import projectImg from '../assets/outdoor_project_card.png';
 import { calculateTotals, calculateInstalments } from '../utils/quoteSchema';
 import { LanguageContext } from '../context/LanguageContext';
 import api from '../api/apiClient';
+import {
+  getDisplayWoodType,
+  getDisplayOptionsTitle,
+  getDisplayOptionsSubtext,
+  getDisplayDeliveryTime,
+  getDisplayDeliverySubtext,
+  getDisplayDimensionsUnit,
+  getDisplayLifespan,
+  getDisplayCoverTitle,
+  getDisplayCoverSubtitle,
+  getDisplaySpecTitle,
+  getDisplaySpecText,
+  getDisplayInfoboxTitle,
+  getDisplayInfoboxText,
+  getDisplayLineItemTitle,
+  getDisplayLineItemDesc
+} from '../utils/translator';
 
 export default function Offerte6PagePDF({ quote, activePage = null, highlightField = null, companyDetails = null, language: propLanguage = null }) {
   // Safely read language context if rendered inside LanguageProvider
@@ -53,11 +70,13 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
   // Extract dynamic customer & header properties
   const custObj = typeof quote?.customer === 'object' ? quote.customer : null;
-  const customerName = custObj?.name || quote?.customer || quote?.customerName || (language === 'EN' ? 'Bjorn Valk' : 'Bjorn Valk');
-  const firstName = custObj?.firstName || (customerName ? customerName.trim().split(' ')[0] : 'Bjorn');
-  const city = custObj?.city || quote?.deliveryLocation || quote?.city || 'Dongen';
-  const quoteId = quote?.id || 'OF-2026331';
-  const quoteDate = quote?.date || new Date().toISOString().split('T')[0];
+  const customerInfo = quote?.activeVersion?.optionsConfig?.customerInfo || quote?.configuration?.options?.customerInfo;
+  const rawCustName = custObj?.name || customerInfo?.name || quote?.customer || quote?.customerName;
+  const customerName = (rawCustName && rawCustName !== 'Onbekend' && rawCustName !== 'Nieuwe Klant') ? rawCustName : (language === 'EN' ? 'Client' : 'Klant');
+  const firstName = custObj?.firstName || customerInfo?.firstName || (customerName && customerName !== 'Client' && customerName !== 'Klant' ? customerName.trim().split(' ')[0] : (language === 'EN' ? 'Client' : 'Klant'));
+  const city = custObj?.city || customerInfo?.city || quote?.deliveryLocation || quote?.city || '';
+  const quoteId = quote?.id || quote?.quoteNumber || 'OF-2026-032';
+  const quoteDate = quote?.date || quote?.issueDate || new Date().toISOString().split('T')[0];
   const validUntil = quote?.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   // Category Family Detection (Outdoor Kitchen vs Garden Room / Veranda / Poolhouse)
@@ -78,17 +97,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   const rawTitle1 = cover.titleLine1 || defaultTitle1;
   const rawTitle2 = cover.titleLine2 || defaultTitle2;
 
-  const titleLine1 = language === 'EN' && (rawTitle1 === 'Uw buitenkeuken,' || rawTitle1 === 'Uw exclusief buitenverblijf,')
-    ? (isGardenRoom ? 'Your bespoke garden room,' : 'Your outdoor kitchen,')
-    : (language === 'NL' && (rawTitle1 === 'Your outdoor kitchen,' || rawTitle1 === 'Your bespoke garden room,')
-        ? (isGardenRoom ? 'Uw exclusief buitenverblijf,' : 'Uw buitenkeuken,')
-        : rawTitle1);
-
-  const titleLine2 = language === 'EN' && rawTitle2 === 'op maat gemaakt.'
-    ? 'custom crafted.'
-    : (language === 'NL' && rawTitle2 === 'custom crafted.'
-        ? 'op maat gemaakt.'
-        : rawTitle2);
+  const coverTitles = getDisplayCoverTitle(rawTitle1, rawTitle2, isGardenRoom, language);
+  const titleLine1 = coverTitles.titleLine1;
+  const titleLine2 = coverTitles.titleLine2;
 
   const config = quote?.configuration || {};
   const woodType = config.woodType || quote?.woodType || 'Thermo Fraké';
@@ -106,19 +117,25 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
   const optionsTitle = config.optionsTitle || quote?.optionsTitle || 'Big Green Egg Large';
   const rawDeliveryTime = config.deliveryTime || quote?.deliveryTime || (language === 'EN' ? (isGardenRoom ? '6 to 8 weeks' : '3 to 5 weeks') : (isGardenRoom ? '6 tot 8 weken' : '3 tot 5 weken'));
-  const deliveryTime = language === 'EN' && (rawDeliveryTime === '3 tot 5 weken' || rawDeliveryTime === '3-5 weken') ? '3 to 5 weeks' : rawDeliveryTime;
-  const woodLifespan = config.woodLifespan || (language === 'EN' ? '20 to 25 years' : '20 tot 25 jaar');
+  const deliveryTime = getDisplayDeliveryTime(rawDeliveryTime, language);
+  const woodLifespan = getDisplayLifespan(config.woodLifespan, language);
 
   const optionsObj = config.options || {};
   const bbqEnabled = optionsObj.bbqCutout?.enabled !== false;
   const bbqType = optionsObj.bbqCutout?.type || optionsTitle;
   const fridgeEnabled = optionsObj.fridge?.enabled || false;
   const sinkEnabled = optionsObj.sink?.enabled || false;
+  const customFeatures = Array.isArray(optionsObj.customFeatures) ? optionsObj.customFeatures : [];
+  const activeCustomFeatures = customFeatures.filter(f => f.enabled !== false && f.label?.trim());
 
-  let tile3Title = language === 'EN' ? 'CUTOUT' : 'UITSPARING';
-  let tile3Value = bbqType;
-  let tile3Subtext = language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden';
-  let coverOptionStr = bbqType;
+  let tile3Title = isGardenRoom
+    ? (language === 'EN' ? 'ROOF & WALLS' : 'DAK & WANDEN')
+    : ((fridgeEnabled || sinkEnabled || activeCustomFeatures.length > 0)
+        ? (language === 'EN' ? 'OPTIONS' : 'OPTIES')
+        : (language === 'EN' ? 'CUTOUT' : 'UITSPARING'));
+  let tile3Value = isGardenRoom ? (config.optionsTitle || (language === 'EN' ? 'Flat roof with EPDM' : 'Plat dak met EPDM')) : (config.optionsTitle || bbqType);
+  let tile3Subtext = isGardenRoom ? (config.optionsSubtext || (language === 'EN' ? 'Glass sliding walls (4-track)' : 'Glazen schuifwanden (4-rail)')) : (config.optionsSubtext || (language === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden'));
+  let coverOptionStr = isGardenRoom ? (config.optionsTitle || (language === 'EN' ? 'Glass sliding wall & EPDM' : 'Glazen schuifwand & EPDM')) : (config.optionsTitle || bbqType);
 
   if (!bbqEnabled) {
     const enabledList = [];
@@ -131,6 +148,10 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       enabledList.push(language === 'EN' ? 'Sink with Tap' : 'Spoelbak met kraan');
       coverList.push(language === 'EN' ? 'Sink' : 'Spoelbak');
     }
+    activeCustomFeatures.forEach(f => {
+      enabledList.push(f.label.trim());
+      coverList.push(f.label.trim());
+    });
 
     tile3Title = language === 'EN' ? 'OPTIONS' : 'OPTIES';
     if (enabledList.length > 0) {
@@ -144,14 +165,18 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
     }
   }
 
+  const displayWood = getDisplayWoodType(woodType, language);
+  const displayCoverOption = getDisplayOptionsTitle(coverOptionStr, language);
+
   const subtitleText = cover.subtitleOverrideEnabled && cover.customSubtitle
     ? cover.customSubtitle
-    : `${woodType} · ${cleanDimensions} cm · ${coverOptionStr}`;
+    : `${displayWood} · ${cleanDimensions} cm · ${displayCoverOption}`;
 
+  const rawPhotos = quote?.cover?.photos || quote?.activeVersion?.coverPhotos;
   const coverPhotos = [
-    (cover.photos?.[0] && String(cover.photos[0]).trim().length > 3) ? cover.photos[0] : '/cover_img1.png',
-    (cover.photos?.[1] && String(cover.photos[1]).trim().length > 3) ? cover.photos[1] : '/cover_img2.png',
-    (cover.photos?.[2] && String(cover.photos[2]).trim().length > 3) ? cover.photos[2] : '/cover_img3.png'
+    (rawPhotos?.[0] && String(rawPhotos[0]).trim().length > 3) ? rawPhotos[0] : '/cover_img1.png',
+    (rawPhotos?.[1] && String(rawPhotos[1]).trim().length > 3) ? rawPhotos[1] : '/cover_img2.png',
+    (rawPhotos?.[2] && String(rawPhotos[2]).trim().length > 3) ? rawPhotos[2] : '/cover_img3.png'
   ];
 
   // Dynamic Line Items & Calculations
@@ -261,6 +286,10 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
+      if (language === 'EN') {
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+      }
       const months = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
       return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
     } catch (e) {
@@ -313,11 +342,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   <span className="text-[#D6CFC2] font-normal">{cover.customSubtitle}</span>
                 ) : (
                   <>
-                    <span className="text-[#D6CFC2] font-normal">{woodType}</span>
+                    <span className="text-[#D6CFC2] font-normal">{displayWood}</span>
                     <span className="text-[#D6CFC2] mx-2">·</span>
-                    <span className="text-[#D6CFC2] font-normal">{cleanDimensions} {language === 'EN' ? 'cm' : 'cm'}</span>
+                    <span className="text-[#D6CFC2] font-normal">{cleanDimensions} cm</span>
                     <span className="text-[#D6CFC2] mx-2">·</span>
-                    <span className="text-[#D6CFC2] font-normal">{coverOptionStr}</span>
+                    <span className="text-[#D6CFC2] font-normal">{displayCoverOption}</span>
                   </>
                 )}
               </p>
@@ -402,10 +431,10 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               <div className="grid grid-cols-3 gap-5 items-start">
                 <div className="col-span-2 space-y-3 text-[13px] leading-[1.65] text-[#4A4A43]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   <h3 className="text-2xl sm:text-3xl font-normal text-[#33422C]" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
-                    {language === 'EN' ? 'Dear' : 'Beste'} <span className="text-[#3E4E36] capitalize font-semibold">{firstName}</span>,
+                    {quote?.letterAndProcess?.salutation ? quote.letterAndProcess.salutation : <>{language === 'EN' ? 'Dear' : 'Beste'} <span className="text-[#3E4E36] capitalize font-semibold">{firstName}</span>,</>}
                   </h3>
-                  {(quote?.letterAndProcess?.letterParagraphs && quote.letterAndProcess.letterParagraphs.length > 0 && !quote.letterAndProcess.letterParagraphs[0].includes('Hartelijk dank voor je aanvraag')
-                    ? quote.letterAndProcess.letterParagraphs
+                  {(quote?.letterAndProcess?.letterParagraphs && Array.isArray(quote.letterAndProcess.letterParagraphs) && quote.letterAndProcess.letterParagraphs.length > 0 && quote.letterAndProcess.letterParagraphs.some(p => p && p.trim().length > 0)
+                    ? quote.letterAndProcess.letterParagraphs.filter(p => p && p.trim().length > 0)
                     : [
                         language === 'EN'
                           ? 'Thank you very much for your inquiry and pleasant consultation. We are delighted to present this personalized proposal for your custom outdoor project.'
@@ -571,9 +600,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 </span>
                 <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{cleanDimensions}</p>
                 <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
-                  {language === 'EN'
-                    ? ((config.dimensionsUnit === 'centimeter' || !config.dimensionsUnit) ? 'centimeters' : (config.dimensionsUnit === 'centimeter (LxB)' ? 'centimeters (LxW)' : config.dimensionsUnit))
-                    : (config.dimensionsUnit || 'centimeter')}
+                  {getDisplayDimensionsUnit(config.dimensionsUnit || 'centimeter', language)}
                 </span>
               </div>
 
@@ -581,11 +608,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <span className="text-[9px] uppercase tracking-widest text-[#D6CFC2] block font-bold" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {language === 'EN' ? 'WOOD TYPE' : 'HOUTSOORT'}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{woodType}</p>
+                <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                  {getDisplayWoodType(woodType, language)}
+                </p>
                 <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
-                  {language === 'EN'
-                    ? ((config.woodLifespan === '20 tot 25 jaar' || !config.woodLifespan) ? '20 to 25 years' : (config.woodLifespan === '10 tot 15 jaar' ? '10 to 15 years' : config.woodLifespan))
-                    : (config.woodLifespan || woodLifespan)}
+                  {getDisplayLifespan(config.woodLifespan || woodLifespan, language)}
                 </span>
               </div>
 
@@ -593,11 +620,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <span className="text-[9px] uppercase tracking-widest text-[#D6CFC2] block font-bold" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {tile3Title}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal truncate" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{tile3Value}</p>
+                <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal truncate" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                  {getDisplayOptionsTitle(tile3Value, language)}
+                </p>
                 <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
-                  {language === 'EN'
-                    ? ((config.optionsSubtext === 'Large, rechts van het midden' || !config.optionsSubtext) ? 'Large, right of center' : config.optionsSubtext)
-                    : (config.optionsSubtext || tile3Subtext)}
+                  {getDisplayOptionsSubtext(config.optionsSubtext || tile3Subtext, language)}
                 </span>
               </div>
 
@@ -605,11 +632,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <span className="text-[9px] uppercase tracking-widest text-[#D6CFC2] block font-bold" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {language === 'EN' ? 'DELIVERY TIME' : 'LEVERTIJD'}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{deliveryTime}</p>
+                <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                  {getDisplayDeliveryTime(deliveryTime, language)}
+                </p>
                 <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
-                  {language === 'EN'
-                    ? ((config.deliverySubtext === 'na akkoord op tekening' || !config.deliverySubtext) ? 'upon drawing approval' : config.deliverySubtext)
-                    : (config.deliverySubtext || 'na akkoord op tekening')}
+                  {getDisplayDeliverySubtext(config.deliverySubtext || 'na akkoord op tekening', language)}
                 </span>
               </div>
             </div>
@@ -618,13 +645,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               {/* Dynamic Specifications */}
               <div className="space-y-3.5 text-xs font-body">
                 {specifications.map((sec, sIdx) => {
-                  const displaySecTitle = language === 'EN'
-                    ? (sec.title === 'BOVENBLAD' ? 'WORKTOP'
-                      : sec.title === 'INDELING & OPBERGRUIMTE' ? 'LAYOUT & STORAGE'
-                      : sec.title === 'AFWERKING & MOBILITEIT' ? 'FINISH & MOBILITY'
-                      : sec.title === 'BEZORGING' ? 'DELIVERY'
-                      : sec.title)
-                    : sec.title;
+                  const displaySecTitle = getDisplaySpecTitle(sec.title, language);
 
                   return (
                     <div key={sec.id || sIdx}>
@@ -638,7 +659,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                         {(sec.lines || []).map((l, lIdx) => (
                           <li key={lIdx} className="flex items-start gap-2">
                             <span className="text-[#33422C] font-bold flex-shrink-0">✓</span>
-                            <span>{l.text}</span>
+                            <span>{getDisplaySpecText(l.text, language)}</span>
                           </li>
                         ))}
                       </ul>
@@ -726,9 +747,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 {/* Wood Infobox */}
                 {infobox.show && (
                   <div className="p-3.5 bg-[#35442E] text-[#FDFBF7] rounded-2xl space-y-1 shadow-sm border border-[#43543A]">
-                    <h4 className="text-sm font-normal text-[#FDFBF7]" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>{infobox.title}</h4>
+                    <h4 className="text-sm font-normal text-[#FDFBF7]" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
+                      {getDisplayInfoboxTitle(infobox.title, language, woodType)}
+                    </h4>
                     <p className="text-[11px] text-[#E5DFD5] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                      {infobox.text}
+                      {getDisplayInfoboxText(infobox.text, language, woodType)}
                     </p>
                   </div>
                 )}
@@ -783,11 +806,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                     <tr key={idx}>
                       <td className="py-3 px-1">
                         <p className="font-bold text-[#3E4E36] text-xs sm:text-sm" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                          {item.title || item.description}
+                          {getDisplayLineItemTitle(item.title || item.description, language)}
                         </p>
                         {item.description && item.title && (
                           <p className="text-[11px] text-[#4A4A43] mt-0.5 leading-relaxed font-normal" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                            {item.description}
+                            {getDisplayLineItemDesc(item.description, language)}
                           </p>
                         )}
                       </td>
@@ -958,19 +981,19 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 05 &nbsp;·&nbsp; {language === 'EN' ? 'APPROVAL' : 'AKKOORD'}
               </span>
               <h3 className="text-2xl font-serif font-bold text-[#33422C]" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-                {language === 'EN' ? 'Shall we craft this for you?' : (quote?.letterAndProcess?.approvalTitle || 'Zullen we hem gaan maken?')}
+                {quote?.letterAndProcess?.approvalTitle || (language === 'EN' ? 'Shall we craft this for you?' : 'Zullen we hem gaan maken?')}
               </h3>
             </div>
 
             <div className="p-6 sm:p-7 bg-[#35442E] text-[#FDFBF7] rounded-2xl space-y-4 shadow-sm border border-[#43543A] relative overflow-hidden">
               <div className="relative z-10 space-y-1.5">
                 <h4 className="text-xl font-serif text-[#FDFBF7] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-                  {language === 'EN' ? 'Approving takes just one minute' : (quote?.letterAndProcess?.approvalSubheading || 'Akkoord geven kan in één minuut')}
+                  {quote?.letterAndProcess?.approvalSubheading || (language === 'EN' ? 'Approving takes just one minute' : 'Akkoord geven kan in één minuut')}
                 </h4>
                 <p className="text-xs text-[#E5DFD5] leading-relaxed max-w-xl" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                  {language === 'EN'
+                  {quote?.letterAndProcess?.approvalText || (language === 'EN'
                     ? 'Send a quick confirmation via WhatsApp or email, or sign below. You will then receive the final design with technical drawings for confirmation, and we will get right to work.'
-                    : (quote?.letterAndProcess?.approvalText || 'Stuur een korte bevestiging per WhatsApp of mail, of onderteken hieronder. Daarna ontvang je het definitieve ontwerp met technische tekening ter bevestiging en gaan we voor je aan de slag.')}
+                    : 'Stuur een korte bevestiging per WhatsApp of mail, of onderteken hieronder. Daarna ontvang je het definitieve ontwerp met technische tekening ter bevestiging en gaan we voor je aan de slag.')}
                 </p>
               </div>
 
@@ -1110,7 +1133,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 06 &nbsp;·&nbsp; {language === 'EN' ? 'FROM APPROVAL TO BACKYARD' : 'VAN AKKOORD TOT ACHTERTUIN'}
               </span>
               <h3 className="text-2xl sm:text-3xl font-serif text-[#33422C] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-                {language === 'EN' ? 'How it works in five simple steps' : (quote?.letterAndProcess?.processTitle || 'Zo werkt het in vijf stappen')}
+                {quote?.letterAndProcess?.processTitle || (language === 'EN' ? 'How it works in five simple steps' : 'Zo werkt het in vijf stappen')}
               </h3>
             </div>
 
@@ -1133,14 +1156,16 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                     { step: '5', title: 'Oplevering, garantie & nazorg', desc: 'We leveren pas op als alles naar wens is. Ook daarna blijven wij je vaste aanspreekpunt, met garantie op de constructie.', badge: null }
                   ];
 
-                  const rawSteps = quote?.letterAndProcess?.processSteps || defaultClientSteps;
+                  const rawSteps = (quote?.letterAndProcess?.processSteps && Array.isArray(quote.letterAndProcess.processSteps) && quote.letterAndProcess.processSteps.length > 0)
+                    ? quote.letterAndProcess.processSteps
+                    : defaultClientSteps;
                   return rawSteps.map((s, sIdx) => {
                     let stepNum = s.step || s.stepNumber || String(sIdx + 1);
                     let title = s.title || defaultClientSteps[sIdx]?.title;
                     let desc = s.desc || defaultClientSteps[sIdx]?.desc;
                     let badge = s.badge;
 
-                    if (language === 'EN') {
+                    if (!quote?.letterAndProcess?.processSteps && language === 'EN') {
                       title = defaultClientSteps[sIdx]?.title || title;
                       desc = defaultClientSteps[sIdx]?.desc || desc;
                       if (badge === '2 TOT 3 WEKEN') badge = '2 TO 3 WEEKS';
@@ -1200,9 +1225,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               <div className="w-[3px] bg-[#33422C] rounded-full flex-shrink-0"></div>
               <div className="space-y-2">
                 <p className="text-base sm:text-lg font-serif italic text-[#33422C] leading-snug whitespace-pre-line" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-                  {language === 'EN'
+                  {quote?.letterAndProcess?.closingQuote || (language === 'EN'
                     ? '“No mass production. No standard solutions.\nSimply crafted with excellence. For you.”'
-                    : (quote?.letterAndProcess?.closingQuote || '“Geen massa. Geen standaardoplossing.\nGewoon goed gemaakt. Voor jou.”')}
+                    : '“Geen massa. Geen standaardoplossing.\nGewoon goed gemaakt. Voor jou.”')}
                 </p>
                 <p className="text-[11px] font-semibold text-[#8A8275] tracking-[0.16em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   {quote?.letterAndProcess?.closingAuthor || `TIM & BRAM · ${compName.toUpperCase()}`}

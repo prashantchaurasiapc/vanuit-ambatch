@@ -54,7 +54,7 @@ export const compressImage = (fileOrDataUrl, maxDimension = 1200, quality = 0.82
             width = maxDimension;
           } else {
             width = Math.round((width * maxDimension) / height);
-            maxDimension = height;
+            height = maxDimension;
           }
         }
 
