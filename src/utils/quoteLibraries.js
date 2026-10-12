@@ -24,7 +24,8 @@ export const WOOD_LIBRARY = [
 ];
 
 export function getWoodTypeDefaults(woodName, language = 'NL') {
-  const match = WOOD_LIBRARY.find(w => w.name.toLowerCase() === (woodName || '').toLowerCase());
+  const norm = (str) => String(str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const match = WOOD_LIBRARY.find(w => norm(w.name) === norm(woodName));
   if (match) {
     return {
       name: match.name,
