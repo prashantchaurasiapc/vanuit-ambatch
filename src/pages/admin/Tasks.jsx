@@ -87,7 +87,7 @@ export default function Tasks() {
     let isMounted = true;
     const loadTasksData = async () => {
       try {
-        const res = await api.get('/tasks');
+        const res = await api.get('/tasks?status=all');
         if (isMounted) {
           if (res.success && Array.isArray(res.data)) {
             setTasks(res.data.map(t => ({

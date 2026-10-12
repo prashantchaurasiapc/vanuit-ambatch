@@ -74,15 +74,89 @@ export default function ProfitLoss() {
     return () => window.removeEventListener('app_data_changed', loadPLData);
   }, []);
 
+  const normalizeCat = (cat) => {
+    if (!cat) return '';
+    const s = String(cat).toLowerCase().replace(/[\s_-]+/g, '');
+    if (s.includes('kitchen') || s.includes('keuken')) return 'kitchen';
+    if (s.includes('garden') || s.includes('room') || s.includes('verblijf')) return 'garden_room';
+    if (s.includes('canop') || s.includes('overkapping')) return 'canopy';
+    if (s.includes('bin') || s.includes('storage') || s.includes('kliko')) return 'bin_storage';
+    if (s.includes('terrac') || s.includes('terras')) return 'terrace';
+    if (s.includes('pool')) return 'poolhouse';
+    return s;
+  };
+
+  const formatCategory = (cat) => {
+    if (!cat) return '';
+    const norm = normalizeCat(cat);
+    if (language === 'NL') {
+      if (norm === 'kitchen') return 'Buitenkeukens';
+      if (norm === 'garden_room') return 'Buitenverblijven';
+      if (norm === 'canopy') return 'Overkappingen';
+      if (norm === 'bin_storage') return 'Kliko Ombouw';
+      if (norm === 'terrace') return 'Terrassen';
+      if (norm === 'poolhouse') return 'Poolhouse';
+      return cat;
+    } else {
+      if (norm === 'kitchen') return 'Outdoor Kitchens';
+      if (norm === 'garden_room') return 'Garden Rooms';
+      if (norm === 'canopy') return 'Canopies';
+      if (norm === 'bin_storage') return 'Bin Storage';
+      if (norm === 'terrace') return 'Terraces';
+      if (norm === 'poolhouse') return 'Poolhouse';
+      return cat;
+    }
+  };
+
+  const translateProjectName = (name) => {
+    if (!name) return '';
+    let str = String(name);
+    if (language === 'NL') {
+      return str
+        .replace(/\boutdoor_kitchen\b/gi, 'Buitenkeuken')
+        .replace(/\boutdoor kitchen\b/gi, 'Buitenkeuken')
+        .replace(/\bgarden_room\b/gi, 'Buitenverblijf')
+        .replace(/\bgarden room\b/gi, 'Buitenverblijf')
+        .replace(/Luxury Teak Outdoor Kitchen 4m/gi, 'Luxe Teak Buitenkeuken 4m')
+        .replace(/Luxury Teak Outdoor Kitchen/gi, 'Luxe Teak Buitenkeuken')
+        .replace(/Triple Bin Storage Anthracite/gi, 'Kliko Ombouw Triple Antraciet')
+        .replace(/Oak Wooden Canopy 6x4m/gi, 'Eiken Houten Overkapping 6x4m')
+        .replace(/Oak Wooden Canopy/gi, 'Eiken Houten Overkapping')
+        .replace(/Luxury Terrace Decking/gi, 'Tuinterras De Luxe')
+        .replace(/Bin Storage/gi, 'Kliko Ombouw')
+        .replace(/Canopy/gi, 'Overkapping');
+    }
+    return str
+      .replace(/\boutdoor_kitchen\b/gi, 'Outdoor Kitchen')
+      .replace(/Luxe Teak Buitenkeuken 4m/gi, 'Luxury Teak Outdoor Kitchen 4m')
+      .replace(/Luxe Teak Buitenkeuken/gi, 'Luxury Teak Outdoor Kitchen')
+      .replace(/Kliko Ombouw Triple Antraciet/gi, 'Triple Bin Storage Anthracite')
+      .replace(/Eiken Houten Overkapping 6x4m/gi, 'Oak Wooden Canopy 6x4m')
+      .replace(/Eiken Houten Overkapping/gi, 'Oak Wooden Canopy')
+      .replace(/Tuinterras De Luxe/gi, 'Luxury Terrace Decking')
+      .replace(/Buitenkeuken/gi, 'Outdoor Kitchen')
+      .replace(/Buitenverblijf/gi, 'Garden Room')
+      .replace(/Kliko Ombouw/gi, 'Bin Storage')
+      .replace(/Overkapping/gi, 'Canopy');
+  };
+
   // Filtered P&L Data
   const processedPLs = [...projectPLs].filter(p => {
     const q = (searchQuery || '').toLowerCase();
     const projStr = String(p.projectName || p.name || '').toLowerCase();
     const custStr = String(p.customer || p.customerName || '').toLowerCase();
     const catStr = String(p.category || '').toLowerCase();
+    const translatedName = translateProjectName(p.projectName || p.name || '').toLowerCase();
+    const translatedCat = formatCategory(p.category || '').toLowerCase();
 
-    const matchesSearch = !q || projStr.includes(q) || custStr.includes(q) || catStr.includes(q);
-    const matchesCat = categoryFilter === 'All' || p.category === categoryFilter;
+    const matchesSearch = !q || 
+      projStr.includes(q) || 
+      translatedName.includes(q) || 
+      custStr.includes(q) || 
+      catStr.includes(q) || 
+      translatedCat.includes(q);
+
+    const matchesCat = categoryFilter === 'All' || normalizeCat(p.category) === normalizeCat(categoryFilter);
     return matchesSearch && matchesCat;
   });
 
@@ -179,19 +253,6 @@ export default function ProfitLoss() {
     setModalOpen(false);
   };
 
-  // Translations
-  const translateProjectName = (name) => {
-    if (language !== 'EN' || !name) return name;
-    return name
-      .replace(/Luxe Teak Buitenkeuken 4m/g, 'Luxury Teak Outdoor Kitchen 4m')
-      .replace(/Kliko Ombouw Triple Antraciet/g, 'Triple Bin Storage Anthracite')
-      .replace(/Eiken Houten Overkapping 6x4m/g, 'Oak Wooden Canopy 6x4m')
-      .replace(/Tuinterras De Luxe/g, 'Luxury Terrace Decking')
-      .replace(/Buitenkeuken/g, 'Outdoor Kitchen')
-      .replace(/Kliko Ombouw/g, 'Bin Storage')
-      .replace(/Overkapping/g, 'Canopy');
-  };
-
   // Live Modal Preview Calculations
   const liveRev = parseFloat(form.revenue) || 0;
   const liveCosts = (parseFloat(form.partnerCost) || 0) + (parseFloat(form.materialCost) || 0) + (parseFloat(form.otherCost) || 0);
@@ -215,12 +276,12 @@ export default function ProfitLoss() {
       header: language === 'EN' ? 'CATEGORY' : 'Categorie',
       render: (row) => (
         <span className="text-[11px] font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-lg">
-          {row.category}
+          {formatCategory(row.category)}
         </span>
       )
     },
     { 
-      header: language === 'EN' ? 'REVENUE' : 'Omzet (Revenue)', 
+      header: language === 'EN' ? 'REVENUE' : 'Omzet', 
       render: (row) => <span className="font-mono font-bold text-dark text-xs sm:text-sm">€ {(parseFloat(row.revenue) || 0).toLocaleString()}</span> 
     },
     { 
@@ -230,13 +291,17 @@ export default function ProfitLoss() {
         return (
           <div>
             <span className="font-mono text-rose-700 font-bold text-xs sm:text-sm block">€ {costSum.toLocaleString()}</span>
-            <span className="text-[9px] text-dark/40 font-mono">Partner: €{row.partnerCost || 0} • Mat: €{row.materialCost || 0}</span>
+            <span className="text-[9px] text-dark/40 font-mono">
+              {language === 'EN'
+                ? `Partner: €${row.partnerCost || 0} • Mat: €${row.materialCost || 0}`
+                : `Vakman: €${row.partnerCost || 0} • Mat: €${row.materialCost || 0}`}
+            </span>
           </div>
         );
       }
     },
     { 
-      header: language === 'EN' ? 'GROSS PROFIT' : 'Brutowinst (Profit)', 
+      header: language === 'EN' ? 'GROSS PROFIT' : 'Brutowinst', 
       render: (row) => {
         const rev = parseFloat(row.revenue) || 0;
         const costSum = (parseFloat(row.partnerCost) || 0) + (parseFloat(row.materialCost) || 0) + (parseFloat(row.otherCost) || 0);
@@ -272,13 +337,13 @@ export default function ProfitLoss() {
       }
     },
     {
-      header: language === 'EN' ? 'ACTIONS' : 'Acties',
+      header: language === 'EN' ? 'ACTIONS' : 'Actie',
       render: (row) => (
         <div className="flex items-center gap-1">
           <button
             onClick={() => handleOpenEditModal(row)}
             className="p-1.5 text-dark/50 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-            title={language === 'EN' ? 'Edit P&L Amounts' : 'Bewerk P&L Bedragen'}
+            title={language === 'EN' ? 'Edit P&L Amounts' : 'Winst & Verlies Bedragen Bewerken'}
           >
             <Edit2 className="w-4 h-4" />
           </button>
@@ -413,22 +478,28 @@ export default function ProfitLoss() {
             {[
               { key: 'All', label: language === 'EN' ? 'All' : 'Alle' },
               { key: 'Outdoor Kitchens', label: language === 'EN' ? 'Outdoor Kitchens' : 'Buitenkeukens' },
+              { key: 'Garden Rooms', label: language === 'EN' ? 'Garden Rooms' : 'Buitenverblijven' },
               { key: 'Canopies', label: language === 'EN' ? 'Canopies' : 'Overkappingen' },
               { key: 'Bin Storage', label: language === 'EN' ? 'Bin Storage' : 'Kliko Ombouw' },
               { key: 'Terraces', label: language === 'EN' ? 'Terraces' : 'Terrassen' }
-            ].map((catItem) => (
-              <button
-                key={catItem.key}
-                onClick={() => setCategoryFilter(catItem.key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border whitespace-nowrap ${
-                  categoryFilter === catItem.key
-                    ? 'bg-primary text-cream border-primary shadow-xs'
-                    : 'bg-[#F8F7F4] text-dark/70 border-[#D6CFC2] hover:bg-[#EDE8DF]'
-                }`}
-              >
-                {catItem.label}
-              </button>
-            ))}
+            ].map((catItem) => {
+              const isActive = catItem.key === 'All'
+                ? categoryFilter === 'All'
+                : (categoryFilter === catItem.key || normalizeCat(categoryFilter) === normalizeCat(catItem.key));
+              return (
+                <button
+                  key={catItem.key}
+                  onClick={() => setCategoryFilter(catItem.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border whitespace-nowrap ${
+                    isActive
+                      ? 'bg-primary text-cream border-primary shadow-xs'
+                      : 'bg-[#F8F7F4] text-dark/70 border-[#D6CFC2] hover:bg-[#EDE8DF]'
+                  }`}
+                >
+                  {catItem.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -484,11 +555,12 @@ export default function ProfitLoss() {
                     onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
                     className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold text-primary"
                   >
-                    <option value="Outdoor Kitchens">Outdoor Kitchens</option>
-                    <option value="Canopies">Canopies</option>
-                    <option value="Bin Storage">Bin Storage</option>
+                    <option value="Outdoor Kitchens">{language === 'EN' ? 'Outdoor Kitchens' : 'Buitenkeukens'}</option>
+                    <option value="Garden Rooms">{language === 'EN' ? 'Garden Rooms' : 'Buitenverblijven'}</option>
+                    <option value="Canopies">{language === 'EN' ? 'Canopies' : 'Overkappingen'}</option>
+                    <option value="Bin Storage">{language === 'EN' ? 'Bin Storage' : 'Kliko Ombouw'}</option>
                     <option value="Poolhouse">Poolhouse</option>
-                    <option value="Terraces">Terraces</option>
+                    <option value="Terraces">{language === 'EN' ? 'Terraces' : 'Terrassen'}</option>
                   </select>
                 </div>
 
@@ -559,17 +631,17 @@ export default function ProfitLoss() {
                   </span>
                   <div className="grid grid-cols-3 gap-2 text-xs font-mono">
                     <div>
-                      <span className="text-[9px] text-dark/60 uppercase block">Total Costs</span>
+                      <span className="text-[9px] text-dark/60 uppercase block">{language === 'EN' ? 'Total Costs' : 'Totale Kosten'}</span>
                       <span className="font-bold text-rose-700">€ {liveCosts.toLocaleString()}</span>
                     </div>
                     <div>
-                      <span className="text-[9px] text-dark/60 uppercase block">Gross Profit</span>
+                      <span className="text-[9px] text-dark/60 uppercase block">{language === 'EN' ? 'Gross Profit' : 'Brutowinst'}</span>
                       <span className={`font-bold ${liveProfit >= 0 ? 'text-emerald-800' : 'text-rose-600'}`}>
                         {liveProfit >= 0 ? '€ ' + liveProfit.toLocaleString() : '- € ' + Math.abs(liveProfit).toLocaleString()}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[9px] text-dark/60 uppercase block">Profit Margin</span>
+                      <span className="text-[9px] text-dark/60 uppercase block">{language === 'EN' ? 'Profit Margin' : 'Winstmarge'}</span>
                       <span className="font-bold text-primary">{liveMargin}%</span>
                     </div>
                   </div>

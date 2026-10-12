@@ -5,12 +5,53 @@ import api from '../../api/apiClient';
 import { useLanguage } from '../../context/LanguageContext';
 
 const typeColors = {
-  'Site Visit': { text: '#46607C', fill: '#EAF0F6', border: '#C3D2E2', dot: '#46607C', short: 'SITE VISIT' },
-  'Canopy Build': { text: '#3E6468', fill: '#E3EEEE', border: '#B3CCCB', dot: '#3E6468', short: 'BUILD' },
-  'Kitchen Delivery': { text: '#9A5530', fill: '#F8E9DE', border: '#E3C1A8', dot: '#9A5530', short: 'DELIVERY' },
-  'Handover': { text: '#4F6A45', fill: '#E8F0E2', border: '#C3D5B8', dot: '#4F6A45', short: 'HANDOVER' },
-  'Service': { text: '#6E5580', fill: '#F0EAF4', border: '#D5C8E0', dot: '#6E5580', short: 'SERVICE' }
+  'Site Visit': { text: '#46607C', fill: '#EAF0F6', border: '#C3D2E2', dot: '#46607C', short: 'SITE VISIT', shortNL: 'LOCATIEBEZOEK' },
+  'Canopy Build': { text: '#3E6468', fill: '#E3EEEE', border: '#B3CCCB', dot: '#3E6468', short: 'BUILD', shortNL: 'BOUW' },
+  'Kitchen Delivery': { text: '#9A5530', fill: '#F8E9DE', border: '#E3C1A8', dot: '#9A5530', short: 'DELIVERY', shortNL: 'LEVERING' },
+  'Handover': { text: '#4F6A45', fill: '#E8F0E2', border: '#C3D5B8', dot: '#4F6A45', short: 'HANDOVER', shortNL: 'OPLEVERING' },
+  'Service': { text: '#6E5580', fill: '#F0EAF4', border: '#D5C8E0', dot: '#6E5580', short: 'SERVICE', shortNL: 'SERVICE' }
 };
+
+function translateProjectTitle(str, lang) {
+  if (!str) return '';
+  if (lang === 'NL') {
+    return String(str)
+      .replace(/\boutdoor_kitchen\b/gi, 'Buitenkeuken')
+      .replace(/\boutdoor kitchen\b/gi, 'Buitenkeuken')
+      .replace(/\bgarden_room\b/gi, 'Buitenverblijf')
+      .replace(/\bgarden room\b/gi, 'Buitenverblijf');
+  }
+  return String(str)
+    .replace(/\boutdoor_kitchen\b/gi, 'Outdoor Kitchen')
+    .replace(/\bgarden_room\b/gi, 'Garden Room');
+}
+
+function formatAppointmentStatus(status, lang) {
+  if (!status) return '';
+  if (lang === 'NL') {
+    const s = String(status).toLowerCase();
+    if (s === 'scheduled') return 'Gepland';
+    if (s === 'confirmed') return 'Bevestigd';
+    if (s === 'completed') return 'Afgerond';
+    if (s === 'in_progress' || s === 'in progress') return 'In uitvoering';
+    if (s === 'rescheduled') return 'Herpland';
+    if (s === 'cancelled') return 'Geannuleerd';
+    return status;
+  }
+  return status;
+}
+
+function formatDrawerDate(appt, lang) {
+  if (!appt) return '';
+  const rawDate = appt.raw?.event?.startTime || appt.rawStartTime || appt.date;
+  const d = new Date(rawDate);
+  if (isNaN(d.getTime())) return appt.date;
+  return d.toLocaleDateString(lang === 'NL' ? 'nl-NL' : 'en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  });
+}
 
 function mapBackendEventType(eventType) {
   switch (eventType) {
@@ -54,7 +95,14 @@ function getMonday(date) {
 
 export default function Planning() {
   const { language, t } = useLanguage();
-  const [activeTab, setActiveTab] = useState('Project Planning');
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('admin_planning_tab') || 'Project Planning';
+  });
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    localStorage.setItem('admin_planning_tab', tab);
+  };
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [activeFilter, setActiveFilter] = useState('All');
   const [partnerFilter, setPartnerFilter] = useState('All');
@@ -69,8 +117,21 @@ export default function Planning() {
     localStorage.setItem('admin_planning_view', view);
   };
 
-  // Dynamic Date state (defaulting to current date / today)
-  const [currentDate, setCurrentDate] = useState(() => new Date());
+  // Dynamic Date state (persisted in localStorage across page reloads)
+  const [currentDate, setCurrentDate] = useState(() => {
+    const saved = localStorage.getItem('admin_planning_date');
+    if (saved) {
+      const parsed = new Date(saved);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+    return new Date();
+  });
+
+  useEffect(() => {
+    if (currentDate instanceof Date && !isNaN(currentDate.getTime())) {
+      localStorage.setItem('admin_planning_date', currentDate.toISOString());
+    }
+  }, [currentDate]);
 
   // Backend state
   const [rawEvents, setRawEvents] = useState([]);
@@ -169,7 +230,9 @@ export default function Planning() {
 
   const handleToday = () => {
     // Jump to current real date / today
-    setCurrentDate(new Date());
+    const now = new Date();
+    setCurrentDate(now);
+    localStorage.setItem('admin_planning_date', now.toISOString());
   };
 
   const monthNamesNL = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
@@ -269,7 +332,7 @@ export default function Planning() {
       setLoading(true);
       const [eventsRes, tasksRes, projectsRes, partnersRes] = await Promise.all([
         api.get('/planning/events'),
-        api.get('/tasks?limit=50'),
+        api.get('/tasks?status=all&limit=50'),
         api.get('/projects?limit=50'),
         api.get('/partners?limit=100')
       ]);
@@ -298,6 +361,8 @@ export default function Planning() {
 
   useEffect(() => {
     loadData();
+    window.addEventListener('app_data_changed', loadData);
+    return () => window.removeEventListener('app_data_changed', loadData);
   }, []);
 
   // Format backend planning events for calendar rendering
@@ -383,6 +448,8 @@ export default function Planning() {
       partner: partnerName,
       partnerCompany: ptn?.companyName,
       partnerId: evt.partnerId,
+      rawStartTime: evt.startTime,
+      rawEndTime: evt.endTime,
       date: startDate.toLocaleDateString(language === 'NL' ? 'nl-NL' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
       startTime: `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}`,
       endTime: `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`,
@@ -428,6 +495,12 @@ export default function Planning() {
   const countHandover = filteredEvents.filter((e) => e.type === 'Handover').length;
   const countService = filteredEvents.filter((e) => e.type === 'Service').length;
 
+  // Find nearest upcoming scheduled event relative to currentDate for quick jumping
+  const upcomingEvent = formattedEvents
+    .filter((e) => new Date(e.rawStartTime).getTime() >= new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()).getTime())
+    .sort((a, b) => new Date(a.rawStartTime).getTime() - new Date(b.rawStartTime).getTime())[0]
+    || formattedEvents.sort((a, b) => new Date(b.rawStartTime).getTime() - new Date(a.rawStartTime).getTime())[0];
+
   // Handle saving new appointment to backend
   const handleSave = async () => {
     if (!newApptData.date || !newApptData.startTime) {
@@ -458,8 +531,10 @@ export default function Planning() {
       if (res.success) {
         await loadData();
         setIsModalOpen(false);
-        // Switch calendar view to the week of the newly created appointment
-        setCurrentDate(new Date(`${newApptData.date}T10:00:00Z`));
+        // Switch calendar view to the date of the newly created appointment and persist
+        const targetDate = new Date(`${newApptData.date}T10:00:00Z`);
+        setCurrentDate(targetDate);
+        localStorage.setItem('admin_planning_date', targetDate.toISOString());
         setNewApptData({
           title: '',
           projectId: '',
@@ -483,22 +558,40 @@ export default function Planning() {
 
   // Toggle task completion
   const handleToggleTask = async (taskId, currentStatus) => {
+    const isCompleted = currentStatus === 'completed' || currentStatus === true;
+    const nextCompleted = !isCompleted;
+    const nextStatus = nextCompleted ? 'completed' : 'pending';
+
+    // Optimistic update
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId
+          ? { ...t, status: nextStatus, completed: nextCompleted }
+          : t
+      )
+    );
+
     try {
-      const isCompleted = currentStatus === 'completed';
       const res = await api.patch(`/tasks/${taskId}/status`, {
-        completed: !isCompleted
+        completed: nextCompleted,
+        status: nextStatus
       });
       if (res.success) {
+        window.dispatchEvent(new Event('app_data_changed'));
+      } else {
+        // Rollback on failure
         setTasks((prev) =>
           prev.map((t) =>
             t.id === taskId
-              ? { ...t, status: !isCompleted ? 'completed' : 'pending' }
+              ? { ...t, status: currentStatus, completed: isCompleted }
               : t
           )
         );
       }
     } catch (err) {
       console.error('Failed to update task status:', err);
+      // Reload fresh data from server to recover state
+      loadData();
     }
   };
 
@@ -517,7 +610,7 @@ export default function Planning() {
             </h1>
             <div className="flex items-center gap-6 mt-1">
               <button
-                onClick={() => setActiveTab('Project Planning')}
+                onClick={() => handleTabChange('Project Planning')}
                 className={`pb-2.5 text-[14px] font-bold border-b-[3px] transition-colors cursor-pointer ${
                   activeTab === 'Project Planning'
                     ? 'border-[#3E4A3D] text-[#2A2925]'
@@ -527,7 +620,7 @@ export default function Planning() {
                 {t('planning.projectPlanning')}
               </button>
               <button
-                onClick={() => setActiveTab('Task Agenda')}
+                onClick={() => handleTabChange('Task Agenda')}
                 className={`pb-2.5 text-[14px] font-bold border-b-[3px] transition-colors flex items-center gap-2 cursor-pointer ${
                   activeTab === 'Task Agenda'
                     ? 'border-[#3E4A3D] text-[#2A2925]'
@@ -536,7 +629,7 @@ export default function Planning() {
               >
                 {t('planning.taskAgenda')}{' '}
                 <span className="bg-[#E6E0D4] text-[#58534A] text-[10px] px-2 py-0.5 rounded-full ml-1 font-mono font-bold">
-                  {tasks.filter((tItem) => tItem.status !== 'completed').length} open
+                  {tasks.filter((tItem) => tItem.status !== 'completed' && !tItem.completed).length} open
                 </span>
               </button>
             </div>
@@ -612,6 +705,22 @@ export default function Planning() {
                     <span className="text-[10px] font-body bg-transparent border border-[#E6E0D4] text-[#736E64] px-1.5 py-0.5 rounded uppercase font-bold font-mono">
                       TIMELINE
                     </span>
+                  )}
+                  {filteredEvents.length === 0 && upcomingEvent && (
+                    <button
+                      onClick={() => {
+                        const targetDate = new Date(upcomingEvent.rawStartTime);
+                        setCurrentDate(targetDate);
+                        localStorage.setItem('admin_planning_date', targetDate.toISOString());
+                      }}
+                      className="text-xs bg-[#FAF5EE] border border-[#D9CEBF] text-[#7C6348] hover:bg-[#F2EADB] px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ml-1"
+                      title={language === 'NL' ? 'Spring naar datum van geplande afspraak' : 'Jump to scheduled appointment date'}
+                    >
+                      <Calendar className="w-3.5 h-3.5 text-[#A67C52]" />
+                      <span>
+                        {language === 'NL' ? 'Naar geplande taak' : 'Go to planned task'}: {upcomingEvent.date} ({translateProjectTitle(upcomingEvent.title, language)}) →
+                      </span>
+                    </button>
                   )}
                 </div>
               </div>
@@ -742,8 +851,8 @@ export default function Planning() {
                     <div className="flex border-b border-[#E6E0D4] bg-[#F9F8F6] shrink-0">
                       <div className="w-16 shrink-0 flex items-center justify-center leading-none z-10">
                         <span className="text-[9px] uppercase font-bold text-[#736E64] text-center">
-                          BUILD<br />
-                          <span className="text-[8px] font-normal normal-case">ongoing</span>
+                          {language === 'NL' ? 'BOUW' : 'BUILD'}<br />
+                          <span className="text-[8px] font-normal normal-case">{language === 'NL' ? 'lopend' : 'ongoing'}</span>
                         </span>
                       </div>
 
@@ -765,9 +874,9 @@ export default function Planning() {
                               }`}
                             >
                               <div className="flex items-center gap-2">
-                                <span className="text-[9.5px] font-bold text-[#3E6468]">BUILD</span>
-                                <span className="text-[11px] font-bold text-[#2A2925]">{b.customer}</span>
-                                <span className="text-[11px] text-[#58534A] truncate">{b.product}</span>
+                                <span className="text-[9.5px] font-bold text-[#3E6468]">{language === 'NL' ? 'BOUW' : 'BUILD'}</span>
+                                <span className="text-[11px] font-bold text-[#2A2925]">{translateProjectTitle(b.customer, language)}</span>
+                                <span className="text-[11px] text-[#58534A] truncate">{translateProjectTitle(b.product, language)}</span>
                               </div>
                               <span className="text-[10px] text-[#58534A]">{b.partner}</span>
                             </div>
@@ -828,15 +937,15 @@ export default function Planning() {
                                     className="text-[9.5px] font-bold uppercase tracking-wider"
                                     style={{ color: styleConfig.text }}
                                   >
-                                    {styleConfig.short}
+                                    {language === 'NL' ? (styleConfig.shortNL || styleConfig.short) : styleConfig.short}
                                   </span>
                                   <CheckCircle2 className="w-3.5 h-3.5 text-[#4B7355] shrink-0" />
                                 </div>
                                 <span className="text-[12px] font-bold text-[#2A2925] leading-snug mb-0.5 truncate">
-                                  {appt.customer}
+                                  {translateProjectTitle(appt.customer, language)}
                                 </span>
                                 <span className="text-[10px] text-[#736E64] leading-tight truncate mb-0.5">
-                                  {appt.product}
+                                  {translateProjectTitle(appt.product, language)}
                                 </span>
                                 <span className="text-[9.5px] text-[#736E64] font-medium mt-auto">
                                   {appt.startTime}–{appt.endTime} · {appt.partner}
@@ -930,7 +1039,7 @@ export default function Planning() {
                                     className={`px-2 py-1 rounded text-[11px] truncate cursor-pointer transition-all flex items-center justify-between gap-1 shadow-xs hover:brightness-95 ${
                                       isSelected ? 'ring-2 ring-[#3E4A3D] ring-offset-1 z-10' : ''
                                     }`}
-                                    title={`${appt.startTime}–${appt.endTime} · ${appt.customer} (${appt.type})`}
+                                    title={`${appt.startTime}–${appt.endTime} · ${translateProjectTitle(appt.customer, language)} (${language === 'NL' ? (styleConfig.shortNL || styleConfig.short) : appt.type})`}
                                   >
                                     <div className="flex items-center gap-1.5 min-w-0">
                                       <span
@@ -938,7 +1047,7 @@ export default function Planning() {
                                         style={{ backgroundColor: styleConfig.dot }}
                                       />
                                       <span className="font-bold text-[#2A2925] truncate text-[11px]">
-                                        {appt.customer}
+                                        {translateProjectTitle(appt.customer, language)}
                                       </span>
                                     </div>
                                     <span className="text-[9.5px] text-[#736E64] font-medium shrink-0">
@@ -1099,15 +1208,15 @@ export default function Planning() {
                                           className={`absolute h-[32px] rounded-lg px-2.5 flex items-center justify-between cursor-pointer shadow-sm hover:brightness-95 hover:z-30 transition-all ${
                                             isSelected ? 'ring-2 ring-[#3E4A3D] ring-offset-1 z-30' : 'z-10'
                                           }`}
-                                          title={`${appt.date} (${appt.startTime}–${appt.endTime}) · ${appt.customer} - ${appt.product} (${appt.partner})`}
+                                          title={`${appt.date} (${appt.startTime}–${appt.endTime}) · ${translateProjectTitle(appt.customer, language)} - ${translateProjectTitle(appt.product, language)} (${appt.partner})`}
                                         >
                                           <div className="flex items-center gap-2 min-w-0">
                                             <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: styleConfig.dot }} />
                                             <span className="text-[11.5px] font-bold text-[#2A2925] truncate">
-                                              {appt.customer}
+                                              {translateProjectTitle(appt.customer, language)}
                                             </span>
                                             <span className="text-[10px] text-[#58534A] truncate hidden sm:inline">
-                                              {appt.product}
+                                              {translateProjectTitle(appt.product, language)}
                                             </span>
                                           </div>
                                           <span className="text-[10px] font-bold text-[#736E64] shrink-0 ml-1">
@@ -1183,17 +1292,19 @@ export default function Planning() {
                               border: `1px solid ${typeColors[selectedAppointment.type]?.border || '#D5C8E0'}`
                             }}
                           >
-                            {typeColors[selectedAppointment.type]?.short || selectedAppointment.type}
+                            {language === 'NL'
+                              ? (typeColors[selectedAppointment.type]?.shortNL || typeColors[selectedAppointment.type]?.short || selectedAppointment.type)
+                              : (typeColors[selectedAppointment.type]?.short || selectedAppointment.type)}
                           </span>
                           <span className="text-[11px] font-mono text-[#736E64] font-bold">
                             {selectedAppointment.projectRef}
                           </span>
                         </div>
                         <h2 className="text-[22px] font-heading font-bold text-[#2A2925] mb-1 leading-tight">
-                          {selectedAppointment.customer}
+                          {translateProjectTitle(selectedAppointment.customer, language)}
                         </h2>
                         {selectedAppointment.product && (
-                          <p className="text-[13px] text-[#58534A] leading-snug">{selectedAppointment.product}</p>
+                          <p className="text-[13px] text-[#58534A] leading-snug">{translateProjectTitle(selectedAppointment.product, language)}</p>
                         )}
                         {selectedAppointment.location && (
                           <p className="text-[13px] text-[#736E64] mt-0.5 flex items-center gap-1">
@@ -1214,12 +1325,12 @@ export default function Planning() {
                       {/* Details Table */}
                       <div className="space-y-2.5 text-[13px] border-b border-[#E6E0D4] pb-4">
                         <div className="flex items-start justify-between">
-                          <span className="w-28 text-[#736E64] shrink-0">Event code</span>
+                          <span className="w-28 text-[#736E64] shrink-0">{language === 'NL' ? 'Afspraakcode' : 'Event code'}</span>
                           <span className="font-mono font-medium text-[#2A2925]">{selectedAppointment.eventNumber}</span>
                         </div>
                         <div className="flex items-start justify-between">
                           <span className="w-28 text-[#736E64] shrink-0">{language === 'NL' ? 'Datum' : 'Date'}</span>
-                          <span className="font-medium text-[#2A2925]">{selectedAppointment.date}</span>
+                          <span className="font-medium text-[#2A2925]">{formatDrawerDate(selectedAppointment, language)}</span>
                         </div>
                         <div className="flex items-start justify-between">
                           <span className="w-28 text-[#736E64] shrink-0">{language === 'NL' ? 'Tijd' : 'Time'}</span>
@@ -1235,14 +1346,14 @@ export default function Planning() {
                         </div>
                         <div className="flex items-start justify-between">
                           <span className="w-28 text-[#736E64] shrink-0">Status</span>
-                          <span className="font-bold text-[#4B7355]">{selectedAppointment.status}</span>
+                          <span className="font-bold text-[#4B7355]">{formatAppointmentStatus(selectedAppointment.status, language)}</span>
                         </div>
                       </div>
 
                       {/* Project Progress */}
                       {selectedAppointment.progress && (() => {
                         const steps = [
-                          { key: 'site_survey', label: language === 'NL' ? 'Inmeten & Survey' : 'Site Survey' },
+                          { key: 'site_survey', label: language === 'NL' ? 'Inmeting & Inspectie' : 'Site Survey' },
                           { key: 'design', label: language === 'NL' ? 'Offerte & Ontwerp' : 'Quote & Design' },
                           { key: 'build', label: language === 'NL' ? 'Montage & Bouw' : 'Assembly & Build' },
                           { key: 'handover', label: language === 'NL' ? 'Oplevering' : 'Handover' },
@@ -1257,7 +1368,7 @@ export default function Planning() {
                               {steps.map((step, idx) => {
                                 const isDone = progress.includes(step.key);
                                 return (
-                                  <div key={step.key} className="flex items-stretch gap-3">
+                                   <div key={step.key} className="flex items-stretch gap-3">
                                     <div className="flex flex-col items-center w-3">
                                       <div
                                         className={`w-3 h-3 rounded-full shrink-0 mt-0.5 ${
@@ -1290,7 +1401,7 @@ export default function Planning() {
                         <div className="flex items-start justify-between">
                           <span className="w-24 text-[#736E64] shrink-0">{language === 'NL' ? 'Klant' : 'Customer'}</span>
                           <span className="font-medium text-[#2A2925] text-right">
-                            {selectedAppointment.contact} · {selectedAppointment.phone}
+                            {translateProjectTitle(selectedAppointment.contact, language)} · {selectedAppointment.phone}
                           </span>
                         </div>
                         <div className="flex items-start justify-between">
@@ -1341,15 +1452,15 @@ export default function Planning() {
                     <span className="font-heading text-[20px] font-medium text-[#2A2925]">{language === 'NL' ? 'Openstaande Taken' : 'Open Tasks'}</span>
                   </div>
                   <span className="text-[13px] text-[#736E64] font-medium">
-                    {tasks.filter((t) => t.status !== 'completed').length} open
+                    {tasks.filter((t) => t.status !== 'completed' && !t.completed).length} open
                   </span>
                 </div>
                 <div className="p-5 overflow-y-auto space-y-4">
-                  {tasks.filter((t) => t.status !== 'completed').length === 0 ? (
+                  {tasks.filter((t) => t.status !== 'completed' && !t.completed).length === 0 ? (
                     <p className="text-sm text-[#736E64] italic">{language === 'NL' ? 'Geen openstaande taken.' : 'No open tasks.'}</p>
                   ) : (
                     tasks
-                      .filter((t) => t.status !== 'completed')
+                      .filter((t) => t.status !== 'completed' && !t.completed)
                       .map((task) => (
                         <div
                           key={task.id}
@@ -1395,15 +1506,15 @@ export default function Planning() {
                     <span className="font-heading text-[20px] font-medium text-[#2A2925]">{language === 'NL' ? 'Afgerond' : 'Completed'}</span>
                   </div>
                   <span className="text-[13px] text-[#736E64] font-medium">
-                    {tasks.filter((t) => t.status === 'completed').length} {language === 'NL' ? 'afgerond' : 'done'}
+                    {tasks.filter((t) => t.status === 'completed' || t.completed === true).length} {language === 'NL' ? 'afgerond' : 'done'}
                   </span>
                 </div>
                 <div className="p-5 overflow-y-auto space-y-4">
-                  {tasks.filter((t) => t.status === 'completed').length === 0 ? (
+                  {tasks.filter((t) => t.status === 'completed' || t.completed === true).length === 0 ? (
                     <p className="text-sm text-[#736E64] italic">{language === 'NL' ? 'Nog geen taken afgerond.' : 'No completed tasks yet.'}</p>
                   ) : (
                     tasks
-                      .filter((t) => t.status === 'completed')
+                      .filter((t) => t.status === 'completed' || t.completed === true)
                       .map((task) => (
                         <div
                           key={task.id}
