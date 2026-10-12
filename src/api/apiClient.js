@@ -9,13 +9,19 @@
  *  - Global 403 → console warn (caller handles UI)
  */
 
-const BASE_URL = '/api'; // Proxied to http://localhost:3000/api by Vite in dev
+export const BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://feisty-beauty-production-2f61.up.railway.app/api').replace(/\/+$/, '');
 
 async function request(method, path, body = null, isFormData = false) {
   const headers = {};
 
   if (body && !isFormData) {
     headers['Content-Type'] = 'application/json';
+  }
+
+  // Attach Authorization header if token is stored (works seamlessly cross-origin or via proxy)
+  const token = sessionStorage.getItem('va_token') || localStorage.getItem('va_token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
 
   const options = {
@@ -33,6 +39,8 @@ async function request(method, path, body = null, isFormData = false) {
   // Handle 401 globally — session expired or not logged in
   if (response.status === 401) {
     sessionStorage.removeItem('auth_user');
+    sessionStorage.removeItem('va_token');
+    localStorage.removeItem('va_token');
     // Avoid redirect loop on the login page itself
     if (!window.location.pathname.includes('/login')) {
       window.location.href = '/login';
