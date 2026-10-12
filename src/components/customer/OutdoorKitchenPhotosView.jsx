@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, Sparkles, Camera, Image, Check, Heart, X } from 'lucide-react';
-
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * OutdoorKitchenPhotosView Component (1-to-1 implementation of Client Mockup PDF Outdoor Kitchen Screen 5 & Screenshot 2)
@@ -13,17 +13,28 @@ import { MessageSquare, Sparkles, Camera, Image, Check, Heart, X } from 'lucide-
  * - Section 3: Instagram Consent Banner (May we share your kitchen on our Instagram?)
  */
 export default function OutdoorKitchenPhotosView({ project = null }) {
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
+
   const [feedbackToast, setFeedbackToast] = useState('');
   const [instagramChoice, setInstagramChoice] = useState(null); // 'yes' | 'no'
 
-  const projectCode = project?.id || '2026-014';
+  const projectCode = project?.projectNumber || project?.id || 'cbb7ba25-974f-4516-b9f4-1c66f097b62e';
 
   const handleInstagramConsent = (choice) => {
     setInstagramChoice(choice);
     if (choice === 'yes') {
-      setFeedbackToast('Thank you! We look forward to receiving your photo when your kitchen is delivered.');
+      setFeedbackToast(
+        isNl
+          ? 'Bedankt! We kijken uit naar je foto zodra je keuken is geplaatst.'
+          : 'Thank you! We look forward to receiving your photo when your kitchen is delivered.'
+      );
     } else {
-      setFeedbackToast('Understood! We respect your privacy.');
+      setFeedbackToast(
+        isNl
+          ? 'Begrepen! We respecteren je privacy.'
+          : 'Understood! We respect your privacy.'
+      );
     }
     setTimeout(() => setFeedbackToast(''), 4000);
   };
@@ -41,11 +52,11 @@ export default function OutdoorKitchenPhotosView({ project = null }) {
       {/* 1. TOP HEADER TAG BAR (1-to-1 Client Mockup Screenshot 2) */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-dark/60">
         <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-md font-bold">
-          Custom Outdoor Kitchen — project {projectCode}
+          {isNl ? 'Maatwerk Buitenkeuken' : 'Custom Outdoor Kitchen'} — project {projectCode}
         </span>
         <div className="flex items-center gap-2">
           <span className="bg-cream border border-[#D6CFC2] px-2 py-0.5 rounded-md font-bold text-[11px]">
-            Updates 3
+            {isNl ? '3 Updates' : 'Updates 3'}
           </span>
           <a
             href="https://wa.me/31682008025"
@@ -54,7 +65,7 @@ export default function OutdoorKitchenPhotosView({ project = null }) {
             className="bg-primary text-cream px-3 py-1 rounded-xl text-xs font-bold hover:bg-primary/90 transition-all flex items-center gap-1 shadow-xs"
           >
             <MessageSquare className="w-3.5 h-3.5 text-accent" />
-            <span>WhatsApp us</span>
+            <span>{isNl ? 'WhatsApp ons' : 'WhatsApp us'}</span>
           </a>
         </div>
       </div>
@@ -62,17 +73,19 @@ export default function OutdoorKitchenPhotosView({ project = null }) {
       {/* 2. PAGE TITLE & SUBTITLE */}
       <div className="space-y-1">
         <h1 className="text-2xl sm:text-3xl font-heading font-bold text-primary">
-          Photos from the workshop
+          {isNl ? 'Foto\'s uit de werkplaats' : 'Photos from the workshop'}
         </h1>
         <p className="text-xs sm:text-sm text-dark/70 font-medium">
-          This is how your kitchen is created. We send a message as soon as there are new photos.
+          {isNl
+            ? 'Zo ontstaat jouw keuken. Zodra er nieuwe foto\'s zijn, sturen we een bericht.'
+            : 'This is how your kitchen is created. We send a message as soon as there are new photos.'}
         </p>
       </div>
 
       {/* 3. SECTION 1: IN THE WORKSHOP · AUGUST 2026 (1-to-1 Screenshot 2) */}
       <div className="space-y-3 pt-1">
         <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider text-accent block">
-          IN THE WORKSHOP · AUGUST 2026
+          {isNl ? 'IN DE WERKPLAATS · AUGUSTUS 2026' : 'IN THE WORKSHOP · AUGUST 2026'}
         </span>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
@@ -91,22 +104,24 @@ export default function OutdoorKitchenPhotosView({ project = null }) {
                   }}
                 />
                 <div className="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-mono font-bold px-2.5 py-1 rounded-md tracking-wider">
-                  17 AUGUST
+                  {isNl ? '17 AUGUSTUS' : '17 AUGUST'}
                 </div>
               </div>
 
               {/* Title + New Badge Row */}
               <div className="flex justify-between items-start gap-2">
                 <h4 className="font-heading font-bold text-primary text-sm sm:text-base">
-                  Frame assembled
+                  {isNl ? 'Frame gemonteerd' : 'Frame assembled'}
                 </h4>
                 <span className="bg-[#D7E3EC] text-[#2B4B68] text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border border-[#B8D0E0]">
-                  • New
+                  {isNl ? '• Nieuw' : '• New'}
                 </span>
               </div>
 
               <p className="text-xs text-dark/70 leading-relaxed font-medium">
-                The frame is up and the cabinets are hung. Next step: the worktop.
+                {isNl
+                  ? 'Het frame staat en de kasten zijn ingehangen. Volgende stap: het werkblad.'
+                  : 'The frame is up and the cabinets are hung. Next step: the worktop.'}
               </p>
             </div>
           </div>
@@ -124,22 +139,24 @@ export default function OutdoorKitchenPhotosView({ project = null }) {
                   }}
                 />
                 <div className="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-mono font-bold px-2.5 py-1 rounded-md tracking-wider">
-                  15 AUGUST
+                  {isNl ? '15 AUGUSTUS' : '15 AUGUST'}
                 </div>
               </div>
 
               {/* Title + New Badge Row */}
               <div className="flex justify-between items-start gap-2">
                 <h4 className="font-heading font-bold text-primary text-sm sm:text-base">
-                  Custom cut
+                  {isNl ? 'Op maat gezaagd' : 'Custom cut'}
                 </h4>
                 <span className="bg-[#D7E3EC] text-[#2B4B68] text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border border-[#B8D0E0]">
-                  • New
+                  {isNl ? '• Nieuw' : '• New'}
                 </span>
               </div>
 
               <p className="text-xs text-dark/70 leading-relaxed font-medium">
-                All parts custom cut. 240 cm, exactly as on drawing.
+                {isNl
+                  ? 'Alle onderdelen op maat gezaagd. 240 cm, exact volgens werktekening.'
+                  : 'All parts custom cut. 240 cm, exactly as on drawing.'}
               </p>
             </div>
           </div>
@@ -157,17 +174,19 @@ export default function OutdoorKitchenPhotosView({ project = null }) {
                   }}
                 />
                 <div className="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-mono font-bold px-2.5 py-1 rounded-md tracking-wider">
-                  14 AUGUST
+                  {isNl ? '14 AUGUSTUS' : '14 AUGUST'}
                 </div>
               </div>
 
               {/* Title */}
               <h4 className="font-heading font-bold text-primary text-sm sm:text-base">
-                Materials received
+                {isNl ? 'Materialen ontvangen' : 'Materials received'}
               </h4>
 
               <p className="text-xs text-dark/70 leading-relaxed font-medium">
-                The batch of Thermo Fraké has arrived and checked for color and quality.
+                {isNl
+                  ? 'De partij Thermo Fraké is binnengekomen en gecontroleerd op kleur en kwaliteit.'
+                  : 'The batch of Thermo Fraké has arrived and checked for color and quality.'}
               </p>
             </div>
           </div>
@@ -178,7 +197,7 @@ export default function OutdoorKitchenPhotosView({ project = null }) {
       {/* 4. SECTION 2: UPCOMING MILESTONES (NOG TE KOMEN 1-to-1 Screenshot 2) */}
       <div className="space-y-3 pt-2">
         <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider text-accent block">
-          UPCOMING MILESTONES
+          {isNl ? 'AANKOMENDE MIJLPALEN' : 'UPCOMING MILESTONES'}
         </span>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -187,11 +206,11 @@ export default function OutdoorKitchenPhotosView({ project = null }) {
           <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-4 rounded-2xl shadow-xs space-y-3">
             <div className="h-32 bg-[#C8C2B8] rounded-xl flex items-end justify-start p-3 shadow-inner relative overflow-hidden">
               <span className="bg-black/40 text-white font-mono text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
-                EXPECTED EARLY SEPT
+                {isNl ? 'VERWACHT BEGIN SEPT' : 'EXPECTED EARLY SEPT'}
               </span>
             </div>
             <h4 className="font-heading font-bold text-primary text-sm">
-              Worktop & cutout
+              {isNl ? 'Werkblad & uitsparing' : 'Worktop & cutout'}
             </h4>
           </div>
 
@@ -199,11 +218,11 @@ export default function OutdoorKitchenPhotosView({ project = null }) {
           <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-4 rounded-2xl shadow-xs space-y-3">
             <div className="h-32 bg-[#C8C2B8] rounded-xl flex items-end justify-start p-3 shadow-inner relative overflow-hidden">
               <span className="bg-black/40 text-white font-mono text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
-                EXPECTED 10 SEPT
+                {isNl ? 'VERWACHT 10 SEPT' : 'EXPECTED 10 SEPT'}
               </span>
             </div>
             <h4 className="font-heading font-bold text-primary text-sm">
-              Oiling & final inspection
+              {isNl ? 'Oliën & eindcontrole' : 'Oiling & final inspection'}
             </h4>
           </div>
 
@@ -211,11 +230,11 @@ export default function OutdoorKitchenPhotosView({ project = null }) {
           <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-4 rounded-2xl shadow-xs space-y-3">
             <div className="h-32 bg-[#C8C2B8] rounded-xl flex items-end justify-start p-3 shadow-inner relative overflow-hidden">
               <span className="bg-black/40 text-white font-mono text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
-                EXPECTED WEEK 38
+                {isNl ? 'VERWACHT WEEK 38' : 'EXPECTED WEEK 38'}
               </span>
             </div>
             <h4 className="font-heading font-bold text-primary text-sm">
-              In your garden
+              {isNl ? 'In jouw tuin' : 'In your garden'}
             </h4>
           </div>
 
@@ -227,10 +246,12 @@ export default function OutdoorKitchenPhotosView({ project = null }) {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="space-y-1.5 max-w-2xl">
             <h3 className="text-base sm:text-lg font-heading font-bold text-primary">
-              May we share your kitchen on our Instagram?
+              {isNl ? 'Mogen we jouw keuken delen op onze Instagram?' : 'May we share your kitchen on our Instagram?'}
             </h3>
             <p className="text-xs sm:text-xs text-dark/70 leading-relaxed font-medium">
-              Have you taken a nice photo yourself? Send it over. We never post anything without your permission, and your address or name will never be included.
+              {isNl
+                ? 'Heb je zelf een mooie foto gemaakt? Stuur hem gerust door. We plaatsen nooit iets zonder jouw toestemming en vermelden nooit je adres of naam.'
+                : 'Have you taken a nice photo yourself? Send it over. We never post anything without your permission, and your address or name will never be included.'}
             </p>
           </div>
 
@@ -245,7 +266,7 @@ export default function OutdoorKitchenPhotosView({ project = null }) {
               }`}
             >
               <Camera className="w-3.5 h-3.5 text-pink-300" />
-              <span>Yes, here is a photo</span>
+              <span>{isNl ? 'Ja, hier is een foto' : 'Yes, here is a photo'}</span>
             </button>
 
             <button
@@ -257,7 +278,7 @@ export default function OutdoorKitchenPhotosView({ project = null }) {
                   : 'bg-white text-dark/80 border border-[#D6CFC2] hover:bg-gray-50'
               }`}
             >
-              <span>Rather not</span>
+              <span>{isNl ? 'Liever niet' : 'Rather not'}</span>
             </button>
           </div>
         </div>

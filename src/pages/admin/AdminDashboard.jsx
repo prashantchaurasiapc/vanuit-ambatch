@@ -72,7 +72,7 @@ export default function AdminDashboard() {
       const [leadsRes, quotesRes, tasksRes, finRes, funRes, todayRes, warnRes, actRes, custRes] = await Promise.allSettled([
         api.get('/leads'),
         api.get('/quotes'),
-        api.get('/tasks'),
+        api.get('/tasks?status=all'),
         api.get('/dashboard/financials'),
         api.get('/dashboard/funnel'),
         api.get('/dashboard/today'),
@@ -161,7 +161,7 @@ export default function AdminDashboard() {
     const updated = dashboardTasks.map(t => t.id === taskId ? { ...t, completed: nextCompleted } : t);
     setDashboardTasks(updated);
     try {
-      await api.patch(`/tasks/${taskId}/status`, { status: nextCompleted ? 'completed' : 'todo' });
+      await api.patch(`/tasks/${taskId}/status`, { completed: nextCompleted, status: nextCompleted ? 'completed' : 'pending' });
     } catch (e) {}
     showToast("Task status updated!");
   };
@@ -265,6 +265,120 @@ export default function AdminDashboard() {
     refreshDashboard();
   };
 
+  const formatDueBadge = (due) => {
+    if (!due) return '';
+    const d = String(due).trim().toLowerCase();
+    if (language === 'NL') {
+      if (d === 'tomorrow') return 'Morgen';
+      if (d === 'today') return 'Vandaag';
+      if (d === 'yesterday') return 'Gisteren';
+      return due;
+    } else {
+      if (d === 'morgen') return 'Tomorrow';
+      if (d === 'vandaag') return 'Today';
+      if (d === 'gisteren') return 'Yesterday';
+      return due;
+    }
+  };
+
+  const formatActivityTime = (timeStr) => {
+    if (!timeStr) return '';
+    if (language === 'NL') {
+      let s = String(timeStr);
+      s = s.replace(/\bjust now\b/gi, 'zojuist');
+      s = s.replace(/(\d+)\s*m\s*ago/gi, '$1m geleden');
+      s = s.replace(/(\d+)\s*h\s*ago/gi, '$1u geleden');
+      s = s.replace(/\byesterday\b/gi, 'gisteren');
+      s = s.replace(/(\d+)\s*d\s*ago/gi, '$1d geleden');
+      s = s.replace(/(\d+)\s*w\s*ago/gi, '$1w geleden');
+      return s;
+    }
+    return timeStr;
+  };
+
+  const formatActivityItem = (a) => {
+    if (a.textKey) {
+      return {
+        text: t(a.textKey, a.params),
+        time: a.timeKey ? t(a.timeKey) : formatActivityTime(a.time || a.timeAgo)
+      };
+    }
+
+    let title = a.title || '';
+    let detail = a.detail || '';
+    let rawText = a.text || '';
+
+    if (language === 'NL') {
+      if (rawText) {
+        let txt = rawText;
+        txt = txt.replace(/New lead received/gi, 'Nieuwe lead ontvangen');
+        txt = txt.replace(/Quote approved/gi, 'Offerte goedgekeurd');
+        txt = txt.replace(/was accepted by customer/gi, 'is geaccepteerd door klant');
+        txt = txt.replace(/Invoice paid/gi, 'Factuur betaald');
+        txt = txt.replace(/Received payment of/gi, 'Betaling ontvangen van');
+        txt = txt.replace(/Photos uploaded/gi, "Foto's geüpload");
+        txt = txt.replace(/Task completed/gi, 'Taak voltooid');
+        txt = txt.replace(/\bgarden room\b/gi, 'buitenverblijf');
+        txt = txt.replace(/\boutdoor kitchen\b/gi, 'buitenkeuken');
+        txt = txt.replace(/\bQuote\b/gi, 'Offerte');
+        return {
+          text: txt,
+          time: formatActivityTime(a.time || a.timeAgo)
+        };
+      }
+
+      if (title === 'New lead received') title = 'Nieuwe lead ontvangen';
+      else if (title === 'Quote approved') title = 'Offerte goedgekeurd';
+      else if (title === 'Invoice paid') title = 'Factuur betaald';
+      else if (title === 'Photos uploaded') title = "Foto's geüpload";
+      else if (title === 'Task completed') title = 'Taak voltooid';
+      else if (title === 'Quote sent') title = 'Offerte verzonden';
+
+      if (detail) {
+        detail = detail.replace(/Quote ([\w-]+) was accepted by customer/gi, 'Offerte $1 is geaccepteerd door klant');
+        detail = detail.replace(/Received payment of/gi, 'Betaling ontvangen van');
+        detail = detail.replace(/\bgarden room\b/gi, 'buitenverblijf');
+        detail = detail.replace(/\boutdoor kitchen\b/gi, 'buitenkeuken');
+        detail = detail.replace(/was accepted by customer/gi, 'is geaccepteerd door klant');
+      }
+    } else {
+      if (rawText) {
+        return {
+          text: rawText,
+          time: a.time || a.timeAgo || ''
+        };
+      }
+      if (title === 'Nieuwe lead ontvangen') title = 'New lead received';
+      else if (title === 'Offerte goedgekeurd') title = 'Quote approved';
+      else if (title === 'Factuur betaald') title = 'Invoice paid';
+    }
+
+    return {
+      text: detail ? `${title} - ${detail}` : (title || rawText),
+      time: formatActivityTime(a.time || a.timeAgo)
+    };
+  };
+
+  const formatWarningItem = (warning) => {
+    let type = warning.type || '';
+    let detail = warning.detail || '';
+    let customer = warning.customer || '';
+
+    if (language === 'NL') {
+      if (type === 'Overdue Invoice') type = 'Vervallen Factuur';
+      else if (type === 'Pending Down Payment') type = 'Aanbetaling In Afwachting';
+      else if (type === 'Delivery Approaching') type = 'Levering Nadert';
+
+      if (detail) {
+        detail = detail.replace(/Invoice ([\w-]+) \((.*?)\) is overdue since ([\w-]+)\./gi, 'Factuur $1 ($2) is vervallen sinds $3.');
+        detail = detail.replace(/Down payment ([\w-]+) of (.*?) is awaiting customer deposit\./gi, 'Aanbetaling $1 van $2 wacht op aanbetaling van klant.');
+        detail = detail.replace(/(.*?) is scheduled for delivery on ([\w-]+)\./gi, '$1 staat gepland voor levering op $2.');
+      }
+    }
+
+    return { type, customer, detail };
+  };
+
   return (
     <div className="space-y-6 relative font-body">
       {/* Toast Notification */}
@@ -342,7 +456,7 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button
               onClick={() => {
-                navigate('/admin/photos', { state: { projectId: partnerNotifs[0].projectId } });
+                navigate('/admin/documents?tab=photos', { state: { projectId: partnerNotifs[0].projectId } });
               }}
               className="px-3.5 py-1.5 bg-primary text-cream rounded-xl text-xs font-bold shadow-xs hover:bg-primary/90 transition-all flex items-center gap-1.5 whitespace-nowrap"
             >
@@ -532,7 +646,7 @@ export default function AdminDashboard() {
                           <p className="text-xs font-bold text-dark truncate">{item.name}</p>
                           <p className="text-[10px] text-dark/50 truncate">{item.type}</p>
                         </div>
-                        <Badge variant="warning" className="whitespace-nowrap flex-shrink-0 text-[10px]">{item.due}</Badge>
+                        <Badge variant="warning" className="whitespace-nowrap flex-shrink-0 text-[10px]">{formatDueBadge(item.due)}</Badge>
                       </div>
                     ))
                   )}
@@ -554,7 +668,7 @@ export default function AdminDashboard() {
                           <p className="text-xs font-bold text-dark truncate mr-2">{item.project}</p>
                           <span className="text-[10px] font-bold text-primary">{item.date}</span>
                         </div>
-                        <p className="text-[10px] text-dark/50">{item.customer}</p>
+                        <p className="text-[10px] text-dark/50">{language === 'NL' && item.customer === 'Customer Project' ? 'Klantproject' : item.customer}</p>
                       </div>
                     ))
                   )}
@@ -672,18 +786,21 @@ export default function AdminDashboard() {
               {warnings.length === 0 ? (
                 <p className="text-[11px] text-dark/40 italic py-2">{language === 'NL' ? 'Geen actie vereist.' : 'No action required.'}</p>
               ) : (
-                warnings.map(warning => (
-                  <div key={warning.id} className="flex gap-3 p-3 bg-red-50/50 rounded-xl border border-red-100 items-start">
-                    <div className="mt-0.5 p-1.5 bg-red-100 rounded-lg text-red-600">
-                      <AlertTriangle className="w-3.5 h-3.5" strokeWidth={2.5} />
+                warnings.map(warning => {
+                  const formatted = formatWarningItem(warning);
+                  return (
+                    <div key={warning.id} className="flex gap-3 p-3 bg-red-50/50 rounded-xl border border-red-100 items-start">
+                      <div className="mt-0.5 p-1.5 bg-red-100 rounded-lg text-red-600">
+                        <AlertTriangle className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-bold text-red-900 leading-none mb-1">{formatted.type}</p>
+                        <p className="text-[10px] text-dark font-medium">{formatted.customer}</p>
+                        <p className="text-[10px] text-red-700/70">{formatted.detail}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[11px] font-bold text-red-900 leading-none mb-1">{warning.type}</p>
-                      <p className="text-[10px] text-dark font-medium">{warning.customer}</p>
-                      <p className="text-[10px] text-red-700/70">{warning.detail}</p>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </Card>
@@ -694,18 +811,23 @@ export default function AdminDashboard() {
               {activities.length === 0 ? (
                 <p className="text-[11px] text-dark/40 italic py-2">{language === 'NL' ? 'Geen recente activiteit.' : 'No recent activity.'}</p>
               ) : (
-                activities.map((a, i) => (
-                  <div key={a.id || i} className="relative pl-5">
-                    <div className="absolute left-0 top-1.5 w-2 h-2 rounded-full bg-accent"></div>
-                    {i < activities.length - 1 && (
-                      <div className="absolute left-[3px] top-4 bottom-[-16px] w-px bg-cream-dark/60"></div>
-                    )}
-                    <p className="text-xs text-dark font-body leading-snug">
-                      {a.textKey ? t(a.textKey, a.params) : (a.text || (a.title ? `${a.title} - ${a.detail || ''}` : ''))}
-                    </p>
-                    <span className="text-[10px] text-dark/35 font-body mt-0.5 block">{a.timeKey ? t(a.timeKey) : a.time || ''}</span>
-                  </div>
-                ))
+                activities.map((a, i) => {
+                  const formatted = formatActivityItem(a);
+                  return (
+                    <div key={a.id || i} className="relative pl-5">
+                      <div className="absolute left-0 top-1.5 w-2 h-2 rounded-full bg-accent"></div>
+                      {i < activities.length - 1 && (
+                        <div className="absolute left-[3px] top-4 bottom-[-16px] w-px bg-cream-dark/60"></div>
+                      )}
+                      <p className="text-xs text-dark font-body leading-snug">
+                        {formatted.text}
+                      </p>
+                      {formatted.time && (
+                        <span className="text-[10px] text-dark/35 font-body mt-0.5 block">{formatted.time}</span>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           </Card>

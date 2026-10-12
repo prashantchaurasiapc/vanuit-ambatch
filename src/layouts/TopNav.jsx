@@ -43,7 +43,7 @@ const ADMIN_NOTIFS = [
     isCustomText: true, 
     timeKey: '5m ago', 
     unread: true, 
-    link: '/admin/photos', 
+    link: '/admin/documents?tab=photos', 
     icon: Camera 
   },
   { id: 1, titleKey: 'notifications.newLead', descKey: 'notifications.newLeadDesc', descParams: { name: 'Sanne Visser', category: 'Bespoke Outdoor Kitchen' }, timeKey: 'notifications.10m', unread: true, link: '/admin/leads', icon: UserPlus },

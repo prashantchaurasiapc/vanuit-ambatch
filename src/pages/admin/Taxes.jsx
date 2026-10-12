@@ -7,7 +7,7 @@ import Button from '../../components/Button';
 import { Receipt, CheckCircle, Download, FileText, Send, Calendar, Percent, Loader2, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import BookkeepingHeader from '../../components/admin/BookkeepingHeader';
-import api from '../../api/apiClient';
+import api, { BASE_URL } from '../../api/apiClient';
 
 const AVAILABLE_QUARTERS = ['Q4-2026', 'Q3-2026', 'Q2-2026', 'Q1-2026'];
 
@@ -81,7 +81,7 @@ export default function Taxes() {
   const handleDownloadVatPdf = (row) => {
     if (!row) return;
     const filingId = row.id || `BTW-${selectedQuarter.replace('-', '')}`;
-    const pdfUrl = `/api/reports/taxes/receipt-pdf?filingNumber=${encodeURIComponent(filingId)}`;
+    const pdfUrl = `${BASE_URL}/reports/taxes/receipt-pdf?filingNumber=${encodeURIComponent(filingId)}`;
 
     // Try official backend PDF download
     const pdfWindow = window.open(pdfUrl, '_blank');

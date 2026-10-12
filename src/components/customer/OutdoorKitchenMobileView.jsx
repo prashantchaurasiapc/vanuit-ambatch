@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, Sparkles, Smartphone, Check, ChevronRight, Calendar, ArrowRight, FileText } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import timberSlatRender from '../../assets/wood_texture.png';
 
 /**
@@ -14,6 +15,8 @@ import timberSlatRender from '../../assets/wood_texture.png';
  * - Bottom Status Legend Pill Badges (Action from you, Completed/paid, Our turn, New since last visit)
  */
 export default function OutdoorKitchenMobileView({ project = null }) {
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
   const [feedbackToast, setFeedbackToast] = useState('');
 
   const projectCode = project?.projectNumber || project?.id || '';
@@ -31,7 +34,7 @@ export default function OutdoorKitchenMobileView({ project = null }) {
       {/* 1. TOP HEADER TAG BAR */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-dark/60">
         <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-md font-bold text-[11px]">
-          Custom Outdoor Kitchen — project {projectCode}
+          {isNl ? `Buitenkeuken op maat — project ${projectCode}` : `Custom Outdoor Kitchen — project ${projectCode}`}
         </span>
         <div className="flex items-center gap-2">
           <span className="bg-cream border border-[#D6CFC2] px-2 py-0.5 rounded-md font-bold text-[10px]">
@@ -44,7 +47,7 @@ export default function OutdoorKitchenMobileView({ project = null }) {
             className="bg-primary text-cream px-2.5 py-0.5 rounded-xl text-xs font-bold hover:bg-primary/90 transition-all flex items-center gap-1 shadow-xs"
           >
             <MessageSquare className="w-3 h-3 text-accent" />
-            <span>WhatsApp us</span>
+            <span>{isNl ? 'WhatsApp ons' : 'WhatsApp us'}</span>
           </a>
         </div>
       </div>
@@ -53,10 +56,10 @@ export default function OutdoorKitchenMobileView({ project = null }) {
       <div className="space-y-0.5">
         <h1 className="text-lg sm:text-xl font-heading font-bold text-primary flex items-center gap-2">
           <Smartphone className="w-5 h-5 text-primary" />
-          <span>Mobile View</span>
+          <span>{isNl ? 'Mobiele Weergave' : 'Mobile View'}</span>
         </h1>
         <p className="text-[11px] sm:text-xs text-dark/70 font-medium">
-          Same content, different priority: actions at the top, sticky approval and payment buttons at the bottom.
+          {isNl ? 'Dezelfde inhoud, andere prioriteit: acties bovenaan, sticky akkoord- en betaalknoppen onderaan.' : 'Same content, different priority: actions at the top, sticky approval and payment buttons at the bottom.'}
         </p>
       </div>
 
@@ -79,26 +82,28 @@ export default function OutdoorKitchenMobileView({ project = null }) {
             <div className="space-y-2">
               {/* Greeting */}
               <h4 className="font-heading font-bold text-primary text-xs">
-                Hoi Sander
+                {isNl ? 'Hoi Sander' : 'Hi Sander'}
               </h4>
 
               {/* Action Card */}
               <div className="bg-[#FFFBF2] border border-[#E8D4B0] p-2 rounded-lg space-y-1.5 shadow-2xs">
                 <span className="bg-[#B8860B] text-white text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-full inline-block">
-                  • 1 action from you
+                  {isNl ? '• 1 actie van jou' : '• 1 action from you'}
                 </span>
 
                 <div className="space-y-1">
                   <h5 className="font-heading font-bold text-primary text-[10px]">
-                    Leveringsvoorstel goedkeuren
+                    {isNl ? 'Leveringsvoorstel goedkeuren' : 'Approve delivery proposal'}
                   </h5>
-                  <p className="text-[9px] text-dark/60 font-mono">di 15 sep · 13:00 - 16:00</p>
+                  <p className="text-[9px] text-dark/60 font-mono">
+                    {isNl ? 'di 15 sep · 13:00 - 16:00' : 'Tue 15 Sep · 13:00 - 16:00'}
+                  </p>
                   <button
                     type="button"
-                    onClick={() => setFeedbackToast('Opened Delivery Proposal on Mobile')}
+                    onClick={() => setFeedbackToast(isNl ? 'Leveringsvoorstel geopend op mobiel' : 'Opened Delivery Proposal on Mobile')}
                     className="w-full py-1 bg-[#B69661] text-white font-bold rounded text-[9px] hover:bg-[#A38250] transition-all shadow-xs"
                   >
-                    Voorstel bekijken
+                    {isNl ? 'Voorstel bekijken' : 'View proposal'}
                   </button>
                 </div>
               </div>
@@ -109,9 +114,11 @@ export default function OutdoorKitchenMobileView({ project = null }) {
                   STATUS
                 </span>
                 <h5 className="font-heading font-bold text-primary text-[10px]">
-                  In de werkplaats
+                  {isNl ? 'In de werkplaats' : 'In the workshop'}
                 </h5>
-                <p className="text-[9px] text-dark/60 font-mono">Stap 4 van 6 · levering week 38</p>
+                <p className="text-[9px] text-dark/60 font-mono">
+                  {isNl ? 'Stap 4 van 6 · levering week 38' : 'Step 4 of 6 · delivery week 38'}
+                </p>
 
                 {/* Workshop Photo Thumbnail */}
                 <div className="h-16 w-full rounded-md overflow-hidden bg-[#B69661] border border-[#A4824D]/40 flex items-end p-1.5"
@@ -122,17 +129,17 @@ export default function OutdoorKitchenMobileView({ project = null }) {
                 </div>
 
                 <span className="font-heading font-bold text-[10px] text-primary block">
-                  Frame gemonteerd
+                  {isNl ? 'Frame gemonteerd' : 'Frame assembled'}
                 </span>
               </div>
             </div>
 
             {/* Bottom Mobile Tab Bar */}
             <div className="bg-[#2B3827] text-white p-1.5 flex justify-around items-center text-[8px] font-mono font-bold">
-              <span className="text-amber-300 underline">Overzicht</span>
-              <span className="opacity-70">Offerte</span>
+              <span className="text-amber-300 underline">{isNl ? 'Overzicht' : 'Overview'}</span>
+              <span className="opacity-70">{isNl ? 'Offerte' : 'Quote'}</span>
               <span className="opacity-70">Planning</span>
-              <span className="opacity-70">Foto's</span>
+              <span className="opacity-70">{isNl ? "Foto's" : 'Photos'}</span>
               <span className="opacity-70">Contact</span>
             </div>
           </div>
@@ -144,9 +151,13 @@ export default function OutdoorKitchenMobileView({ project = null }) {
           <div className="bg-[#2B3827] px-3 py-2 flex items-center justify-between text-white border-b border-white/10">
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-amber-400" />
-              <span className="font-heading font-bold tracking-wider text-[10px] uppercase">MIJN OFFERTE</span>
+              <span className="font-heading font-bold tracking-wider text-[10px] uppercase">
+                {isNl ? 'MIJN OFFERTE' : 'MY QUOTE'}
+              </span>
             </div>
-            <span className="text-[8px] font-mono text-amber-300 bg-black/30 px-1.5 py-0.5 rounded font-bold">AGREED</span>
+            <span className="text-[8px] font-mono text-amber-300 bg-black/30 px-1.5 py-0.5 rounded font-bold">
+              {isNl ? 'AKKOORD' : 'AGREED'}
+            </span>
           </div>
 
           {/* Phone Screen Body Content */}
@@ -154,7 +165,7 @@ export default function OutdoorKitchenMobileView({ project = null }) {
             <div className="space-y-2">
               <div className="bg-[#E5F0E3] text-[#2D5A27] border border-[#2D5A27]/20 p-1.5 rounded text-[9px] font-medium flex items-center gap-1">
                 <Check className="w-3 h-3" />
-                <span>Akkoord gegeven · 11 aug 2026 door Sander</span>
+                <span>{isNl ? 'Akkoord gegeven · 11 aug 2026 door Sander' : 'Approved · 11 Aug 2026 by Sander'}</span>
               </div>
 
               {/* Itemized Quote Card */}
@@ -162,7 +173,7 @@ export default function OutdoorKitchenMobileView({ project = null }) {
                 <div className="flex justify-between items-start">
                   <div>
                     <h5 className="font-heading font-bold text-primary text-[10px]">
-                      Buitenkeuken Thermo Fraké
+                      {isNl ? 'Buitenkeuken Thermo Fraké' : 'Outdoor Kitchen Thermo Fraké'}
                     </h5>
                     <p className="text-[8.5px] text-dark/60">240 × 80 cm · Big Green Egg Large</p>
                   </div>
@@ -172,7 +183,7 @@ export default function OutdoorKitchenMobileView({ project = null }) {
                 <div className="flex justify-between items-start pt-1 border-t border-[#D6CFC2]/50">
                   <div>
                     <h5 className="font-heading font-bold text-primary text-[10px]">
-                      Kraan & wasbak
+                      {isNl ? 'Kraan & wasbak' : 'Sink & tap'}
                     </h5>
                   </div>
                   <span className="font-bold font-mono text-[10px]">€ 425,00</span>
@@ -182,26 +193,28 @@ export default function OutdoorKitchenMobileView({ project = null }) {
               {/* Dark Green Total Box */}
               <div className="bg-[#2B3827] text-white p-2.5 rounded-lg space-y-0.5 shadow-xs">
                 <div className="flex justify-between items-center text-[9px] font-mono text-white/80">
-                  <span>Totaal incl. btw</span>
+                  <span>{isNl ? 'Totaal incl. btw' : 'Total incl. VAT'}</span>
                 </div>
                 <div className="text-sm font-bold font-mono text-amber-300">
                   € 3.920,00
                 </div>
-                <p className="text-[8px] text-white/70">50% betaald · 50% bij levering</p>
+                <p className="text-[8px] text-white/70">
+                  {isNl ? '50% betaald · 50% bij levering' : '50% paid · 50% upon delivery'}
+                </p>
               </div>
 
               {/* Action Buttons Row */}
               <div className="flex gap-1 pt-0.5">
                 <button
                   type="button"
-                  onClick={() => setFeedbackToast('Tracking Project on Mobile')}
+                  onClick={() => setFeedbackToast(isNl ? 'Project gevolgd op mobiel' : 'Tracking Project on Mobile')}
                   className="flex-1 py-1 bg-[#2B3827] text-white font-bold rounded text-[9px] text-center shadow-xs"
                 >
-                  Volg je project
+                  {isNl ? 'Volg je project' : 'Track project'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFeedbackToast('Downloaded Quote PDF on Mobile')}
+                  onClick={() => setFeedbackToast(isNl ? 'Offerte PDF gedownload op mobiel' : 'Downloaded Quote PDF on Mobile')}
                   className="py-1 px-2.5 bg-white text-dark/80 border border-[#D6CFC2] font-bold rounded text-[9px] text-center shadow-2xs"
                 >
                   pdf
@@ -211,10 +224,10 @@ export default function OutdoorKitchenMobileView({ project = null }) {
 
             {/* Bottom Mobile Tab Bar */}
             <div className="bg-[#2B3827] text-white p-1.5 flex justify-around items-center text-[8px] font-mono font-bold">
-              <span className="opacity-70">Overzicht</span>
-              <span className="text-amber-300 underline">Offerte</span>
+              <span className="opacity-70">{isNl ? 'Overzicht' : 'Overview'}</span>
+              <span className="text-amber-300 underline">{isNl ? 'Offerte' : 'Quote'}</span>
               <span className="opacity-70">Planning</span>
-              <span className="opacity-70">Foto's</span>
+              <span className="opacity-70">{isNl ? "Foto's" : 'Photos'}</span>
               <span className="opacity-70">Contact</span>
             </div>
           </div>
@@ -226,56 +239,62 @@ export default function OutdoorKitchenMobileView({ project = null }) {
           <div className="bg-[#2B3827] px-3 py-2 flex items-center justify-between text-white border-b border-white/10">
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-amber-400" />
-              <span className="font-heading font-bold tracking-wider text-[10px] uppercase">LEVERING</span>
+              <span className="font-heading font-bold tracking-wider text-[10px] uppercase">
+                {isNl ? 'LEVERING' : 'DELIVERY'}
+              </span>
             </div>
-            <span className="text-[8px] font-mono text-amber-300 bg-black/30 px-1.5 py-0.5 rounded font-bold">PROPOSAL</span>
+            <span className="text-[8px] font-mono text-amber-300 bg-black/30 px-1.5 py-0.5 rounded font-bold">
+              {isNl ? 'VOORSTEL' : 'PROPOSAL'}
+            </span>
           </div>
 
           {/* Phone Screen Body Content */}
           <div className="p-2.5 space-y-2 text-dark text-[11px] flex-1 flex flex-col justify-between">
             <div className="space-y-1.5">
               <h4 className="font-heading font-bold text-primary text-[11px]">
-                Ons voorstel
+                {isNl ? 'Ons voorstel' : 'Our proposal'}
               </h4>
-              <p className="text-[9px] text-dark/60 font-mono">Wacht op jouw akkoord</p>
+              <p className="text-[9px] text-dark/60 font-mono">
+                {isNl ? 'Wacht op jouw akkoord' : 'Awaiting your approval'}
+              </p>
 
               {/* Delivery Date Card */}
               <div className="bg-white border border-[#D8D2C5] p-2.5 rounded-lg space-y-1.5 shadow-2xs">
                 <h5 className="font-heading font-bold text-primary text-[10px]">
-                  Dinsdag 15 september
+                  {isNl ? 'Dinsdag 15 september' : 'Tuesday 15 September'}
                 </h5>
                 <p className="text-[8.5px] text-dark/70 font-mono">
-                  tussen 13:00 en 16:00 ± 1 uur, inclusief uitleg
+                  {isNl ? 'tussen 13:00 en 16:00 ± 1 uur, inclusief uitleg' : 'between 13:00 and 16:00 ± 1 hr, incl. walkthrough'}
                 </p>
 
                 <button
                   type="button"
-                  onClick={() => setFeedbackToast('Agreed Delivery Day on Mobile')}
+                  onClick={() => setFeedbackToast(isNl ? 'Leveringsdag goedgekeurd op mobiel' : 'Agreed Delivery Day on Mobile')}
                   className="w-full py-1 bg-[#B69661] text-white font-bold rounded text-[9px] text-center shadow-xs"
                 >
-                  Akkoord — plan deze dag in
+                  {isNl ? 'Akkoord — plan deze dag in' : 'Approve — schedule this day'}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setFeedbackToast('Requested Another Delivery Day on Mobile')}
+                  onClick={() => setFeedbackToast(isNl ? 'Andere dag aangevraagd op mobiel' : 'Requested Another Delivery Day on Mobile')}
                   className="w-full py-1 bg-white text-dark/70 border border-[#D6CFC2] font-bold rounded text-[9px] text-center shadow-2xs"
                 >
-                  Andere dag aanvragen
+                  {isNl ? 'Andere dag aanvragen' : 'Request another day'}
                 </button>
               </div>
 
               <p className="text-[8.5px] text-dark/50 italic leading-snug">
-                Na akkoord: agenda-uitnodiging. Wijzigen kan kosteloos tot 3 dagen vooraf.
+                {isNl ? 'Na akkoord: agenda-uitnodiging. Wijzigen kan kosteloos tot 3 dagen vooraf.' : 'Upon approval: calendar invite. Free rescheduling up to 3 days in advance.'}
               </p>
             </div>
 
             {/* Bottom Mobile Tab Bar */}
             <div className="bg-[#2B3827] text-white p-1.5 flex justify-around items-center text-[8px] font-mono font-bold">
-              <span className="opacity-70">Overzicht</span>
-              <span className="opacity-70">Offerte</span>
+              <span className="opacity-70">{isNl ? 'Overzicht' : 'Overview'}</span>
+              <span className="opacity-70">{isNl ? 'Offerte' : 'Quote'}</span>
               <span className="text-amber-300 underline">Planning</span>
-              <span className="opacity-70">Foto's</span>
+              <span className="opacity-70">{isNl ? "Foto's" : 'Photos'}</span>
               <span className="opacity-70">Contact</span>
             </div>
           </div>
@@ -286,34 +305,34 @@ export default function OutdoorKitchenMobileView({ project = null }) {
       {/* 4. BOTTOM STATUS LEGEND PILL BADGES */}
       <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-3 rounded-2xl shadow-xs space-y-1.5 pt-2.5">
         <h4 className="font-heading font-bold text-primary text-[11px]">
-          Legenda statussen
+          {isNl ? 'Legenda statussen' : 'Status legend'}
         </h4>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3.5 text-[9.5px] sm:text-[10px] font-medium text-dark/80">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#B8860B] inline-block shadow-2xs" />
-            <span>Actie van jou (brons/oranje)</span>
+            <span>{isNl ? 'Actie van jou (brons/oranje)' : 'Action from you (bronze/orange)'}</span>
           </div>
 
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#2D5A27] inline-block shadow-2xs" />
-            <span>Afgerond / betaald (groen)</span>
+            <span>{isNl ? 'Afgerond / betaald (groen)' : 'Completed / paid (green)'}</span>
           </div>
 
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#D6CFC2] border border-[#A8A092] inline-block shadow-2xs" />
-            <span>Wij zijn aan zet / nog niet beschikbaar (zand)</span>
+            <span>{isNl ? 'Wij zijn aan zet / nog niet beschikbaar (zand)' : 'Our turn / not yet available (sand)'}</span>
           </div>
 
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#2B4B68] inline-block shadow-2xs" />
-            <span>Nieuw sinds je vorige bezoek (blauw)</span>
+            <span>{isNl ? 'Nieuw sinds je vorige bezoek (blauw)' : 'New since last visit (blue)'}</span>
           </div>
         </div>
       </div>
 
       {/* FOOTNOTE CAPTION */}
       <p className="text-[11px] text-dark/60 italic text-center pt-0.5">
-        Mobile designs: overview, quote reference and delivery proposal in phone view.
+        {isNl ? 'Mobiele weergaves: overzicht, offerte-referentie en leveringsvoorstel in telefoonweergave.' : 'Mobile designs: overview, quote reference and delivery proposal in phone view.'}
       </p>
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Card from '../Card';
 import ProvDefBadge from './ProvDefBadge';
 import { Calendar, CheckCircle2, Clock, Send, Download, FileText } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import { generateBurenbriefPdf } from '../../utils/pdfGenerator';
 
 /**
@@ -18,6 +19,8 @@ export default function SchouwProposalCard({
   project = null,
   onUpdateProject = () => {}
 }) {
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [requestedDate, setRequestedDate] = useState('');
   const [requestedNote, setRequestedNote] = useState('');
@@ -104,16 +107,18 @@ END:VCALENDAR`;
   };
 
   return (
-    <Card title="Site Survey On Location" icon={Calendar}>
+    <Card title={isNl ? 'Schouw op locatie' : 'Site Survey On Location'} icon={Calendar}>
       <div className="space-y-4 font-body">
         {/* Header Status & Badge */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-[#D6CFC2]/60">
           <div>
             <h4 className="font-heading font-bold text-primary text-sm sm:text-base">
-              Appointment for Site Survey
+              {isNl ? 'Afspraak voor schouw' : 'Appointment for Site Survey'}
             </h4>
             <p className="text-xs text-dark/70 mt-0.5">
-              The proposed construction schedule is provisional. After the site survey on location, we will make the schedule definitive.
+              {isNl 
+                ? 'De voorgestelde bouwplanning is voorlopig. Na de schouw op locatie maken we de planning definitief.'
+                : 'The proposed construction schedule is provisional. After the site survey on location, we will make the schedule definitive.'}
             </p>
           </div>
           <ProvDefBadge scheduleStatus={isCompleted ? 'definitive' : 'provisional'} />
@@ -123,13 +128,13 @@ END:VCALENDAR`;
         <div className="bg-[#EDE8DF] border border-[#D6CFC2] p-4 rounded-xl space-y-2">
           <div className="flex items-center gap-2 text-xs font-mono text-accent font-bold">
             <Clock className="w-4 h-4 text-primary" />
-            <span>Proposed Date & Time</span>
+            <span>{isNl ? 'Voorgestelde datum & tijd' : 'Proposed Date & Time'}</span>
           </div>
           <div className="text-sm sm:text-base font-bold text-primary font-heading">
-            {schouw.proposedDate || 'Tuesday 26 August 2026'}
+            {schouw.proposedDate || (isNl ? 'Dinsdag 26 augustus 2026' : 'Tuesday 26 August 2026')}
           </div>
           <div className="text-xs text-dark/70 font-medium">
-            {schouw.proposedTime || 'between 10:00 and 12:00'} (Craftsman will visit for site survey & garden inspection)
+            {schouw.proposedTime || (isNl ? 'tussen 10:00 en 12:00 uur' : 'between 10:00 and 12:00')} {isNl ? '(Vakman komt langs voor schouw & tuininspectie)' : '(Craftsman will visit for site survey & garden inspection)'}
           </div>
         </div>
 
@@ -144,7 +149,7 @@ END:VCALENDAR`;
                   className="px-4 py-2 bg-primary text-cream text-xs font-bold rounded-xl shadow-xs hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4 text-accent" />
-                  <span>Approve — Schedule Site Survey</span>
+                  <span>{isNl ? 'Akkoord — plan de schouw in' : 'Approve — Schedule Site Survey'}</span>
                 </button>
 
                 <button
@@ -152,7 +157,7 @@ END:VCALENDAR`;
                   onClick={() => setShowRescheduleModal(true)}
                   className="px-3.5 py-2 bg-white text-dark/80 border border-[#D6CFC2] text-xs font-bold rounded-xl hover:bg-gray-50 transition-all cursor-pointer"
                 >
-                  <span>Request Another Day</span>
+                  <span>{isNl ? 'Andere dag aanvragen' : 'Request Another Day'}</span>
                 </button>
               </>
             )}
@@ -160,7 +165,7 @@ END:VCALENDAR`;
             {isAccepted && !isCompleted && (
               <div className="flex items-center gap-2 text-xs text-primary font-bold bg-primary/10 px-3.5 py-2 rounded-xl border border-primary/20">
                 <CheckCircle2 className="w-4 h-4 text-primary" />
-                <span>Approval submitted — Craftsman will confirm the time definitively</span>
+                <span>{isNl ? 'Akkoord doorgegeven — Vakman bevestigt de tijd definitief' : 'Approval submitted — Craftsman will confirm the time definitively'}</span>
               </div>
             )}
 
@@ -171,7 +176,7 @@ END:VCALENDAR`;
                 className="px-4 py-2 bg-primary text-cream text-xs font-bold rounded-xl shadow-xs hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Download className="w-4 h-4 text-accent" />
-                <span>Download Calendar Invite (.ics)</span>
+                <span>{isNl ? 'Agenda-uitnodiging downloaden (.ics)' : 'Download Calendar Invite (.ics)'}</span>
               </button>
             )}
           </div>
@@ -183,7 +188,7 @@ END:VCALENDAR`;
             className="px-3.5 py-2 bg-white text-primary border border-primary/40 hover:bg-primary/5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ml-auto"
           >
             <FileText className="w-4 h-4 text-primary" />
-            <span>Download Neighbour Letter</span>
+            <span>{isNl ? 'Burenbrief downloaden (PDF)' : 'Download Neighbour Letter'}</span>
           </button>
         </div>
 
@@ -192,11 +197,13 @@ END:VCALENDAR`;
           <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
             <div className="bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4 text-xs font-body">
               <div className="border-b border-[#D6CFC2] pb-2 flex justify-between items-center">
-                <h3 className="font-heading font-bold text-primary text-sm">Request Another Date</h3>
+                <h3 className="font-heading font-bold text-primary text-sm">
+                  {isNl ? 'Andere datum aanvragen' : 'Request Another Date'}
+                </h3>
                 <button
                   type="button"
                   onClick={() => setShowRescheduleModal(false)}
-                  className="text-dark/50 hover:text-dark font-bold"
+                  className="text-dark/50 hover:text-dark font-bold cursor-pointer"
                 >
                   ✕
                 </button>
@@ -205,19 +212,23 @@ END:VCALENDAR`;
               {rescheduleSubmitted ? (
                 <div className="p-4 bg-green-100 border border-green-300 text-green-800 rounded-xl text-center space-y-1">
                   <CheckCircle2 className="w-6 h-6 mx-auto text-green-700" />
-                  <h4 className="font-bold text-xs">Request Received!</h4>
-                  <p className="text-[11px]">We will contact you within 24 hours to coordinate a new time.</p>
+                  <h4 className="font-bold text-xs">
+                    {isNl ? 'Aanvraag ontvangen!' : 'Request Received!'}
+                  </h4>
+                  <p className="text-[11px]">
+                    {isNl ? 'We nemen binnen 24 uur contact met je op om een nieuw moment af te stemmen.' : 'We will contact you within 24 hours to coordinate a new time.'}
+                  </p>
                 </div>
               ) : (
                 <form onSubmit={handleSubmitReschedule} className="space-y-3">
                   <div>
                     <label className="block font-bold text-primary text-[11px] mb-1">
-                      Preferred Date or Time:
+                      {isNl ? 'Voorkeur datum of dagdeel:' : 'Preferred Date or Time:'}
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Thursday 28 August in the morning"
+                      placeholder={isNl ? "bijv. Donderdag 28 augustus in de ochtend" : "e.g. Thursday 28 August in the morning"}
                       value={requestedDate}
                       onChange={(e) => setRequestedDate(e.target.value)}
                       className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none focus:border-primary"
@@ -226,11 +237,11 @@ END:VCALENDAR`;
 
                   <div>
                     <label className="block font-bold text-primary text-[11px] mb-1">
-                      Note (optional):
+                      {isNl ? 'Opmerking (optioneel):' : 'Note (optional):'}
                     </label>
                     <textarea
                       rows={2}
-                      placeholder="e.g. I am only available after 14:00..."
+                      placeholder={isNl ? "bijv. Ik ben pas na 14:00 thuis..." : "e.g. I am only available after 14:00..."}
                       value={requestedNote}
                       onChange={(e) => setRequestedNote(e.target.value)}
                       className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none focus:border-primary"
@@ -241,16 +252,16 @@ END:VCALENDAR`;
                     <button
                       type="button"
                       onClick={() => setShowRescheduleModal(false)}
-                      className="px-3 py-2 bg-white text-dark/70 rounded-xl border border-[#D6CFC2] font-bold"
+                      className="px-3 py-2 bg-white text-dark/70 rounded-xl border border-[#D6CFC2] font-bold cursor-pointer"
                     >
-                      Cancel
+                      {isNl ? 'Annuleren' : 'Cancel'}
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-primary text-cream font-bold rounded-xl flex items-center gap-1 hover:bg-primary/90"
+                      className="px-4 py-2 bg-primary text-cream font-bold rounded-xl flex items-center gap-1 hover:bg-primary/90 cursor-pointer"
                     >
                       <Send className="w-3.5 h-3.5" />
-                      <span>Submit Request</span>
+                      <span>{isNl ? 'Aanvraag versturen' : 'Submit Request'}</span>
                     </button>
                   </div>
                 </form>

@@ -1,6 +1,7 @@
 import React from 'react';
 import Card from '../Card';
 import { Layers } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * RenderDetailCards Component (Step 3 - Garden Room Extension)
@@ -11,6 +12,9 @@ import { Layers } from 'lucide-react';
  * 3. Vloer / Floor
  */
 export default function RenderDetailCards({ detailRenders = [] }) {
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
+
   // Ensure default 3 slots if empty
   const defaultItems = [
     { id: 'det-wood', titleEN: 'Wood', titleNL: 'Hout', descEN: 'Thermo Fraké / Douglas timber quality', descNL: 'Thermo Fraké / Douglas houtkwaliteit', url: '/wood_texture.png' },
@@ -23,7 +27,7 @@ export default function RenderDetailCards({ detailRenders = [] }) {
     : defaultItems;
 
   return (
-    <Card title="Materials & Details" icon={Layers}>
+    <Card title={isNl ? 'Materialen & Details' : 'Materials & Details'} icon={Layers}>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 font-body">
         {itemsToRender.map((item, idx) => (
           <div
@@ -35,7 +39,7 @@ export default function RenderDetailCards({ detailRenders = [] }) {
               {item.url ? (
                 <img
                   src={item.url}
-                  alt={item.titleEN || item.titleNL || 'Detail Render'}
+                  alt={isNl ? (item.titleNL || item.titleEN || 'Detail Render') : (item.titleEN || item.titleNL || 'Detail Render')}
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     e.target.style.display = 'none';
@@ -48,18 +52,22 @@ export default function RenderDetailCards({ detailRenders = [] }) {
                 style={{ display: item.url ? 'none' : 'flex' }}
               >
                 <Layers className="w-6 h-6 mb-1 opacity-40 text-primary" />
-                <span className="text-[10px] italic">No detail render available</span>
+                <span className="text-[10px] italic">
+                  {isNl ? 'Geen detailrender beschikbaar' : 'No detail render available'}
+                </span>
               </div>
             </div>
 
             {/* Meta Content */}
             <div className="p-3 space-y-1 flex-1 flex flex-col justify-between">
               <h5 className="font-heading font-bold text-primary text-xs sm:text-sm">
-                {item.titleEN || item.titleNL || item.title || (idx === 0 ? 'Wood' : idx === 1 ? 'Roof' : 'Floor')}
+                {isNl 
+                  ? (item.titleNL || item.title || (idx === 0 ? 'Hout' : idx === 1 ? 'Dak' : 'Vloer'))
+                  : (item.titleEN || item.title || (idx === 0 ? 'Wood' : idx === 1 ? 'Roof' : 'Floor'))}
               </h5>
-              {item.descEN || item.descNL || item.description ? (
+              {(item.descEN || item.descNL || item.description) ? (
                 <p className="text-[11px] text-dark/70 leading-snug">
-                  {item.descEN || item.descNL || item.description}
+                  {isNl ? (item.descNL || item.description || item.descEN) : (item.descEN || item.description || item.descNL)}
                 </p>
               ) : null}
             </div>

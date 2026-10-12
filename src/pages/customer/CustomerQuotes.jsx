@@ -80,7 +80,7 @@ export default function CustomerQuotes() {
       <div className="bg-[#EDE8DF] border border-[#C4BEB3] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
         <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-accent" />
-          <span>Testing Quote Switcher:</span>
+          <span>{language === 'NL' ? 'Offerte Weergave Switcher:' : 'Testing Quote Switcher:'}</span>
         </span>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
@@ -92,7 +92,7 @@ export default function CustomerQuotes() {
                 : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
             }`}
           >
-            Outdoor Kitchen (50/50 Payment)
+            {language === 'NL' ? 'Buitenkeuken (50/50 Betaling)' : 'Outdoor Kitchen (50/50 Payment)'}
           </button>
 
           <button
@@ -104,7 +104,7 @@ export default function CustomerQuotes() {
                 : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
             }`}
           >
-            Garden Room / Poolhouse (40/40/20 Payment)
+            {language === 'NL' ? 'Buitenverblijf / Poolhouse (40/40/20 Betaling)' : 'Garden Room / Poolhouse (40/40/20 Payment)'}
           </button>
         </div>
       </div>

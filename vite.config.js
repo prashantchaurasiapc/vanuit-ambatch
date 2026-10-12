@@ -4,9 +4,9 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  let backendTarget = env.VITE_BACKEND_URL || 'http://localhost:3000'
+  let backendTarget = env.VITE_BACKEND_URL || 'https://feisty-beauty-production-2f61.up.railway.app'
   if (!backendTarget.startsWith('http://') && !backendTarget.startsWith('https://')) {
-    backendTarget = `http://${backendTarget}`
+    backendTarget = `https://${backendTarget}`
   }
   backendTarget = backendTarget.replace(/\/api\/?$/, '').replace(/\/$/, '')
 

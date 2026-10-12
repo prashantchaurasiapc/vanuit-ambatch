@@ -40,11 +40,15 @@ export default function Login() {
       });
 
       if (res.success && res.data?.user) {
+<<<<<<< HEAD
         if (res.data.token) {
           sessionStorage.setItem('auth_token', res.data.token);
           localStorage.setItem('auth_token', res.data.token);
         }
         login(res.data.user, res.data.token);
+=======
+        login(res.data.user, res.data.token); // useAuth stores user & token from backend
+>>>>>>> d438597e9c3877d85325b35b08f86186134eec68
       } else {
         setError(
           language === 'EN'

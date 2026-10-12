@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, CheckCircle, Check, X, ShieldCheck, Clock, Download, MessageSquare, Mail, Phone, Lock, Sparkles, AlertCircle, AlertTriangle, Printer, ThumbsDown } from 'lucide-react';
-import api from '../api/apiClient';
+import api, { BASE_URL } from '../api/apiClient';
 import Offerte6PagePDF from '../components/Offerte6PagePDF';
 import { downloadDirectPdfFile } from '../utils/pdfGenerator';
 import { useLanguage } from '../context/LanguageContext';
@@ -173,7 +173,7 @@ export default function PublicOfferte() {
   // Handle PDF download via backend or client fallback
   const handleDownloadPdf = () => {
     try {
-      window.open(`/api/offerte/${token}/pdf`, '_blank');
+      window.open(`${BASE_URL}/offerte/${token}/pdf`, '_blank');
     } catch {
       if (quote) {
         downloadDirectPdfFile(quote);

@@ -1585,8 +1585,6 @@ export default function QuoteEditor({
                     const currentPhoto = (photoVal && typeof photoVal === 'string' && photoVal.trim().length > 3)
                       ? photoVal.trim()
                       : defaultImg;
-                    const warning = photoWarnings[slot];
-
                     return (
                       <div
                         key={slot}
@@ -1600,17 +1598,17 @@ export default function QuoteEditor({
                         </div>
 
                         {/* Image Preview Box */}
-                        <div className="aspect-[4/3] w-full rounded-lg overflow-hidden border border-[#D6CFC2] bg-[#EDE8DF] relative group flex items-center justify-center">
+                        <div className="aspect-[4/3] w-full rounded-lg overflow-hidden border border-[#D6CFC2] bg-[#2D3A27] relative group flex items-center justify-center">
                           <img
                             src={currentPhoto}
                             alt={label}
-                            className="w-full h-full object-cover object-center"
+                            className="w-full h-full object-contain object-center"
                             onError={(e) => {
                               e.target.onerror = null;
                               e.target.src = defaultImg;
                             }}
                           />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2 z-10">
                             <label
                               htmlFor={`cover-photo-input-${slot}`}
                               className="px-2.5 py-1 bg-white text-dark text-[10px] font-bold font-mono rounded shadow-xs cursor-pointer hover:bg-cream"
@@ -1619,14 +1617,6 @@ export default function QuoteEditor({
                             </label>
                           </div>
                         </div>
-
-                        {/* Low Resolution Warning Badge if uploaded image < 600px */}
-                        {warning && (
-                          <div className="bg-amber-50 border border-amber-300 text-amber-900 p-1.5 rounded-md text-[10px] font-body flex items-center gap-1">
-                            <span className="text-amber-600 font-bold">⚠️</span>
-                            <span>{language === 'NL' ? 'Lage resolutie' : 'Low resolution'} ({warning.width}×{warning.height}px)</span>
-                          </div>
-                        )}
 
                         <input
                           type="file"
@@ -1641,18 +1631,7 @@ export default function QuoteEditor({
                                 const compressedDataUrl = await compressImage(file, 1200, 0.85);
                                 const imgObj = new Image();
                                 imgObj.onload = () => {
-                                  const isLow = imgObj.width < 600 || imgObj.height < 600;
-                                  if (isLow) {
-                                    setPhotoWarnings(prev => ({ ...prev, [slot]: { width: imgObj.width, height: imgObj.height } }));
-                                    showToast(`⚠️ Photo ${slot + 1} updated (${imgObj.width}×${imgObj.height}px) - low resolution warning`);
-                                  } else {
-                                    setPhotoWarnings(prev => {
-                                      const next = { ...prev };
-                                      delete next[slot];
-                                      return next;
-                                    });
-                                    showToast(`✓ Photo ${slot + 1} updated & optimized!`);
-                                  }
+                                  showToast(language === 'NL' ? `✓ Foto ${slot + 1} bijgewerkt!` : `✓ Photo ${slot + 1} updated!`);
                                   const baseArr = (Array.isArray(quote.cover?.photos) && quote.cover.photos.length === 3)
                                     ? quote.cover.photos
                                     : ['/cover_img1.png', '/cover_img2.png', '/cover_img3.png'];
@@ -1682,11 +1661,6 @@ export default function QuoteEditor({
                               const newPhotos = [...baseArr];
                               newPhotos[slot] = defaultImg;
                               updateCoverField('photos', newPhotos);
-                              setPhotoWarnings(prev => {
-                                const next = { ...prev };
-                                delete next[slot];
-                                return next;
-                              });
                               showToast(language === 'NL' ? `Foto ${slot + 1} hersteld` : `Photo ${slot + 1} reset to default`);
                             }}
                             className="text-dark/50 hover:text-dark underline"

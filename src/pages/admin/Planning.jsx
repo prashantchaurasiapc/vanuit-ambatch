@@ -5,12 +5,53 @@ import api from '../../api/apiClient';
 import { useLanguage } from '../../context/LanguageContext';
 
 const typeColors = {
-  'Site Visit': { text: '#46607C', fill: '#EAF0F6', border: '#C3D2E2', dot: '#46607C', short: 'SITE VISIT' },
-  'Canopy Build': { text: '#3E6468', fill: '#E3EEEE', border: '#B3CCCB', dot: '#3E6468', short: 'BUILD' },
-  'Kitchen Delivery': { text: '#9A5530', fill: '#F8E9DE', border: '#E3C1A8', dot: '#9A5530', short: 'DELIVERY' },
-  'Handover': { text: '#4F6A45', fill: '#E8F0E2', border: '#C3D5B8', dot: '#4F6A45', short: 'HANDOVER' },
-  'Service': { text: '#6E5580', fill: '#F0EAF4', border: '#D5C8E0', dot: '#6E5580', short: 'SERVICE' }
+  'Site Visit': { text: '#46607C', fill: '#EAF0F6', border: '#C3D2E2', dot: '#46607C', short: 'SITE VISIT', shortNL: 'LOCATIEBEZOEK' },
+  'Canopy Build': { text: '#3E6468', fill: '#E3EEEE', border: '#B3CCCB', dot: '#3E6468', short: 'BUILD', shortNL: 'BOUW' },
+  'Kitchen Delivery': { text: '#9A5530', fill: '#F8E9DE', border: '#E3C1A8', dot: '#9A5530', short: 'DELIVERY', shortNL: 'LEVERING' },
+  'Handover': { text: '#4F6A45', fill: '#E8F0E2', border: '#C3D5B8', dot: '#4F6A45', short: 'HANDOVER', shortNL: 'OPLEVERING' },
+  'Service': { text: '#6E5580', fill: '#F0EAF4', border: '#D5C8E0', dot: '#6E5580', short: 'SERVICE', shortNL: 'SERVICE' }
 };
+
+function translateProjectTitle(str, lang) {
+  if (!str) return '';
+  if (lang === 'NL') {
+    return String(str)
+      .replace(/\boutdoor_kitchen\b/gi, 'Buitenkeuken')
+      .replace(/\boutdoor kitchen\b/gi, 'Buitenkeuken')
+      .replace(/\bgarden_room\b/gi, 'Buitenverblijf')
+      .replace(/\bgarden room\b/gi, 'Buitenverblijf');
+  }
+  return String(str)
+    .replace(/\boutdoor_kitchen\b/gi, 'Outdoor Kitchen')
+    .replace(/\bgarden_room\b/gi, 'Garden Room');
+}
+
+function formatAppointmentStatus(status, lang) {
+  if (!status) return '';
+  if (lang === 'NL') {
+    const s = String(status).toLowerCase();
+    if (s === 'scheduled') return 'Gepland';
+    if (s === 'confirmed') return 'Bevestigd';
+    if (s === 'completed') return 'Afgerond';
+    if (s === 'in_progress' || s === 'in progress') return 'In uitvoering';
+    if (s === 'rescheduled') return 'Herpland';
+    if (s === 'cancelled') return 'Geannuleerd';
+    return status;
+  }
+  return status;
+}
+
+function formatDrawerDate(appt, lang) {
+  if (!appt) return '';
+  const rawDate = appt.raw?.event?.startTime || appt.rawStartTime || appt.date;
+  const d = new Date(rawDate);
+  if (isNaN(d.getTime())) return appt.date;
+  return d.toLocaleDateString(lang === 'NL' ? 'nl-NL' : 'en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  });
+}
 
 function mapBackendEventType(eventType) {
   switch (eventType) {
@@ -54,7 +95,14 @@ function getMonday(date) {
 
 export default function Planning() {
   const { language, t } = useLanguage();
-  const [activeTab, setActiveTab] = useState('Project Planning');
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('admin_planning_tab') || 'Project Planning';
+  });
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    localStorage.setItem('admin_planning_tab', tab);
+  };
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [activeFilter, setActiveFilter] = useState('All');
   const [partnerFilter, setPartnerFilter] = useState('All');
@@ -69,8 +117,21 @@ export default function Planning() {
     localStorage.setItem('admin_planning_view', view);
   };
 
-  // Dynamic Date state (defaulting to current date / today)
-  const [currentDate, setCurrentDate] = useState(() => new Date());
+  // Dynamic Date state (persisted in localStorage across page reloads)
+  const [currentDate, setCurrentDate] = useState(() => {
+    const saved = localStorage.getItem('admin_planning_date');
+    if (saved) {
+      const parsed = new Date(saved);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+    return new Date();
+  });
+
+  useEffect(() => {
+    if (currentDate instanceof Date && !isNaN(currentDate.getTime())) {
+      localStorage.setItem('admin_planning_date', currentDate.toISOString());
+    }
+  }, [currentDate]);
 
   // Backend state
   const [rawEvents, setRawEvents] = useState([]);
@@ -169,7 +230,9 @@ export default function Planning() {
 
   const handleToday = () => {
     // Jump to current real date / today
-    setCurrentDate(new Date());
+    const now = new Date();
+    setCurrentDate(now);
+    localStorage.setItem('admin_planning_date', now.toISOString());
   };
 
   const monthNamesNL = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
@@ -269,7 +332,7 @@ export default function Planning() {
       setLoading(true);
       const [eventsRes, tasksRes, projectsRes, partnersRes] = await Promise.all([
         api.get('/planning/events'),
-        api.get('/tasks?limit=50'),
+        api.get('/tasks?status=all&limit=50'),
         api.get('/projects?limit=50'),
         api.get('/partners?limit=100')
       ]);
@@ -298,6 +361,12 @@ export default function Planning() {
 
   useEffect(() => {
     loadData();
+    window.addEventListener('app_data_changed', loadData);
+    window.addEventListener('focus', loadData);
+    return () => {
+      window.removeEventListener('app_data_changed', loadData);
+      window.removeEventListener('focus', loadData);
+    };
   }, []);
 
   // Format backend planning events for calendar rendering
@@ -383,6 +452,8 @@ export default function Planning() {
       partner: partnerName,
       partnerCompany: ptn?.companyName,
       partnerId: evt.partnerId,
+      rawStartTime: evt.startTime,
+      rawEndTime: evt.endTime,
       date: startDate.toLocaleDateString(language === 'NL' ? 'nl-NL' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
       startTime: `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}`,
       endTime: `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`,
@@ -421,12 +492,28 @@ export default function Planning() {
   const gridAppointments = filteredEvents.filter((e) => !e.isMultiDay);
   const ongoingBuilds = filteredEvents.filter((e) => e.isMultiDay);
 
-  // Type counts for currently viewed week
-  const countKitchen = filteredEvents.filter((e) => e.type === 'Kitchen Delivery').length;
-  const countCanopy = filteredEvents.filter((e) => e.type === 'Canopy Build').length;
-  const countSiteVisit = filteredEvents.filter((e) => e.type === 'Site Visit').length;
-  const countHandover = filteredEvents.filter((e) => e.type === 'Handover').length;
-  const countService = filteredEvents.filter((e) => e.type === 'Service').length;
+  // Type counts for currently viewed range (independent of activeFilter)
+  const viewEvents = formattedEvents.filter((appt) => {
+    if (!appt.isInView) return false;
+    if (partnerFilter !== 'All' && appt.partnerId !== partnerFilter) return false;
+    if (statusFilter !== 'All' && appt.status.toLowerCase() !== statusFilter.toLowerCase()) return false;
+    return true;
+  });
+
+  const countKitchen = viewEvents.filter((e) => e.type === 'Kitchen Delivery').length;
+  const countCanopy = viewEvents.filter((e) => e.type === 'Canopy Build').length;
+  const countSiteVisit = viewEvents.filter((e) => e.type === 'Site Visit').length;
+  const countHandover = viewEvents.filter((e) => e.type === 'Handover').length;
+  const countService = viewEvents.filter((e) => e.type === 'Service').length;
+
+  // Find nearest upcoming scheduled event relative to currentDate for quick jumping
+  const upcomingEvent = formattedEvents
+    .filter((e) => new Date(e.rawStartTime).getTime() >= new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()).getTime() && e.status !== 'Completed')
+    .sort((a, b) => new Date(a.rawStartTime).getTime() - new Date(b.rawStartTime).getTime())[0]
+    || formattedEvents.filter((e) => e.status !== 'Completed').sort((a, b) => new Date(b.rawStartTime).getTime() - new Date(a.rawStartTime).getTime())[0];
+
+  const allActivePartnerEvents = formattedEvents.filter((e) => e.status !== 'Completed');
+  const allCompletedPartnerEvents = formattedEvents.filter((e) => e.status === 'Completed');
 
   // Handle saving new appointment to backend
   const handleSave = async () => {
@@ -458,8 +545,10 @@ export default function Planning() {
       if (res.success) {
         await loadData();
         setIsModalOpen(false);
-        // Switch calendar view to the week of the newly created appointment
-        setCurrentDate(new Date(`${newApptData.date}T10:00:00Z`));
+        // Switch calendar view to the date of the newly created appointment and persist
+        const targetDate = new Date(`${newApptData.date}T10:00:00Z`);
+        setCurrentDate(targetDate);
+        localStorage.setItem('admin_planning_date', targetDate.toISOString());
         setNewApptData({
           title: '',
           projectId: '',
@@ -483,22 +572,80 @@ export default function Planning() {
 
   // Toggle task completion
   const handleToggleTask = async (taskId, currentStatus) => {
+    const isCompleted = currentStatus === 'completed' || currentStatus === true;
+    const nextCompleted = !isCompleted;
+    const nextStatus = nextCompleted ? 'completed' : 'pending';
+
+    // Optimistic update
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId
+          ? { ...t, status: nextStatus, completed: nextCompleted }
+          : t
+      )
+    );
+
     try {
-      const isCompleted = currentStatus === 'completed';
       const res = await api.patch(`/tasks/${taskId}/status`, {
-        completed: !isCompleted
+        completed: nextCompleted,
+        status: nextStatus
       });
       if (res.success) {
+        window.dispatchEvent(new Event('app_data_changed'));
+      } else {
+        // Rollback on failure
         setTasks((prev) =>
           prev.map((t) =>
             t.id === taskId
-              ? { ...t, status: !isCompleted ? 'completed' : 'pending' }
+              ? { ...t, status: currentStatus, completed: isCompleted }
               : t
           )
         );
       }
     } catch (err) {
       console.error('Failed to update task status:', err);
+      // Reload fresh data from server to recover state
+      loadData();
+    }
+  };
+
+  // Toggle planning event status (Scheduled <-> Completed)
+  const handleToggleEventStatus = async (eventId, currentStatus) => {
+    const isCompleted = currentStatus?.toLowerCase() === 'completed';
+    const nextStatus = isCompleted ? 'scheduled' : 'completed';
+
+    // Optimistic update in rawEvents
+    setRawEvents((prev) =>
+      prev.map((item) => {
+        if (item.event?.id === eventId) {
+          return {
+            ...item,
+            event: { ...item.event, status: nextStatus }
+          };
+        }
+        return item;
+      })
+    );
+
+    if (selectedAppointment?.id === eventId) {
+      setSelectedAppointment((prev) => ({
+        ...prev,
+        status: nextStatus === 'completed' ? 'Completed' : 'Scheduled'
+      }));
+    }
+
+    try {
+      const res = await api.patch(`/planning/events/${eventId}`, {
+        status: nextStatus
+      });
+      if (res.success) {
+        window.dispatchEvent(new Event('app_data_changed'));
+      } else {
+        loadData();
+      }
+    } catch (err) {
+      console.error('Failed to update planning event status:', err);
+      loadData();
     }
   };
 
@@ -517,7 +664,7 @@ export default function Planning() {
             </h1>
             <div className="flex items-center gap-6 mt-1">
               <button
-                onClick={() => setActiveTab('Project Planning')}
+                onClick={() => handleTabChange('Project Planning')}
                 className={`pb-2.5 text-[14px] font-bold border-b-[3px] transition-colors cursor-pointer ${
                   activeTab === 'Project Planning'
                     ? 'border-[#3E4A3D] text-[#2A2925]'
@@ -527,7 +674,7 @@ export default function Planning() {
                 {t('planning.projectPlanning')}
               </button>
               <button
-                onClick={() => setActiveTab('Task Agenda')}
+                onClick={() => handleTabChange('Task Agenda')}
                 className={`pb-2.5 text-[14px] font-bold border-b-[3px] transition-colors flex items-center gap-2 cursor-pointer ${
                   activeTab === 'Task Agenda'
                     ? 'border-[#3E4A3D] text-[#2A2925]'
@@ -536,7 +683,7 @@ export default function Planning() {
               >
                 {t('planning.taskAgenda')}{' '}
                 <span className="bg-[#E6E0D4] text-[#58534A] text-[10px] px-2 py-0.5 rounded-full ml-1 font-mono font-bold">
-                  {tasks.filter((tItem) => tItem.status !== 'completed').length} open
+                  {tasks.filter((tItem) => tItem.status !== 'completed' && !tItem.completed).length + allActivePartnerEvents.length} open
                 </span>
               </button>
             </div>
@@ -612,6 +759,22 @@ export default function Planning() {
                     <span className="text-[10px] font-body bg-transparent border border-[#E6E0D4] text-[#736E64] px-1.5 py-0.5 rounded uppercase font-bold font-mono">
                       TIMELINE
                     </span>
+                  )}
+                  {filteredEvents.length === 0 && upcomingEvent && (
+                    <button
+                      onClick={() => {
+                        const targetDate = new Date(upcomingEvent.rawStartTime);
+                        setCurrentDate(targetDate);
+                        localStorage.setItem('admin_planning_date', targetDate.toISOString());
+                      }}
+                      className="text-xs bg-[#FAF5EE] border border-[#D9CEBF] text-[#7C6348] hover:bg-[#F2EADB] px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ml-1"
+                      title={language === 'NL' ? 'Spring naar datum van geplande afspraak' : 'Jump to scheduled appointment date'}
+                    >
+                      <Calendar className="w-3.5 h-3.5 text-[#A67C52]" />
+                      <span>
+                        {language === 'NL' ? 'Naar geplande taak' : 'Go to planned task'}: {upcomingEvent.date} ({translateProjectTitle(upcomingEvent.title, language)}) →
+                      </span>
+                    </button>
                   )}
                 </div>
               </div>
@@ -713,6 +876,78 @@ export default function Planning() {
               </div>
             </div>
 
+            {/* Active Planned Partner Tasks Bar — Always visible across page reloads until partner completes */}
+            {allActivePartnerEvents.length > 0 && (
+              <div className="mb-4 p-3.5 bg-[#FAF8F5] border border-[#E6E0D4] rounded-2xl shadow-xs">
+                <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#9A5530] animate-pulse"></span>
+                    <span className="text-[12.5px] font-bold text-[#2A2925]">
+                      {language === 'NL' ? 'Geplande Partner Taken' : 'Planned Partner Tasks'}
+                    </span>
+                    <span className="text-[11px] bg-[#E8F0E2] text-[#345330] border border-[#C3D5B8] px-2 py-0.5 rounded-full font-bold">
+                      {allActivePartnerEvents.length} {language === 'NL' ? 'openstaand · wachten op partner afronding' : 'open · awaiting partner completion'}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-[#736E64] italic hidden sm:inline">
+                    {language === 'NL' ? 'Blijft altijd zichtbaar totdat de taak als afgerond is gemarkeerd' : 'Remains visible until task is marked as completed'}
+                  </span>
+                </div>
+                <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
+                  {allActivePartnerEvents.map((evt) => {
+                    const isTargetDate = new Date(evt.rawStartTime).toDateString() === currentDate.toDateString();
+                    return (
+                      <div
+                        key={evt.id}
+                        onClick={() => {
+                          const targetDate = new Date(evt.rawStartTime);
+                          setCurrentDate(targetDate);
+                          localStorage.setItem('admin_planning_date', targetDate.toISOString());
+                          setSelectedAppointment(evt);
+                        }}
+                        className={`flex items-center justify-between gap-3 p-2.5 rounded-xl border transition-all shrink-0 cursor-pointer ${
+                          isTargetDate
+                            ? 'bg-white border-[#3E4A3D] ring-2 ring-[#3E4A3D]/40 shadow-xs'
+                            : 'bg-white/90 border-[#E6E0D4] hover:border-[#9A5530]/60 hover:bg-white shadow-2xs'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-[10px] font-mono font-bold bg-[#F4EDE4] text-[#8C5D33] px-2 py-1 rounded-md whitespace-nowrap">
+                            {evt.date}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-[12px] font-bold text-[#2A2925] truncate max-w-[150px]">
+                              {evt.title}
+                            </p>
+                            <p className="text-[10px] text-[#736E64] truncate max-w-[150px]">
+                              {evt.partner} · {evt.startTime}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-[#8C5D33] bg-[#F4EDE4] border border-[#E6D7C3] px-2 py-1 rounded-lg">
+                            <Clock className="w-3 h-3 text-[#9A5530]" />
+                            <span>{language === 'NL' ? 'Wacht op partner' : 'Awaiting partner'}</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleEventStatus(evt.id, evt.status);
+                            }}
+                            className="px-2 py-1 bg-white hover:bg-[#E8F0E2] text-[#736E64] hover:text-[#345330] rounded-lg text-[10px] font-bold transition-colors whitespace-nowrap border border-[#D6CFC2] hover:border-[#C3D5B8] cursor-pointer"
+                            title={language === 'NL' ? 'Als admin direct afronden' : 'Complete now as admin'}
+                          >
+                            {language === 'NL' ? 'Direct afronden' : 'Complete now'}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Calendar Card & Sidebar Wrapper */}
             <div className="flex gap-4 w-full mb-8 relative items-stretch">
               {/* Calendar Card */}
@@ -742,18 +977,34 @@ export default function Planning() {
                     <div className="flex border-b border-[#E6E0D4] bg-[#F9F8F6] shrink-0">
                       <div className="w-16 shrink-0 flex items-center justify-center leading-none z-10">
                         <span className="text-[9px] uppercase font-bold text-[#736E64] text-center">
-                          BUILD<br />
-                          <span className="text-[8px] font-normal normal-case">ongoing</span>
+                          {language === 'NL' ? 'BOUW' : 'BUILD'}<br />
+                          <span className="text-[8px] font-normal normal-case">{language === 'NL' ? 'lopend' : 'ongoing'}</span>
                         </span>
                       </div>
 
                       <div className="flex-1 relative p-1.5 min-h-[50px] flex items-center">
                         {ongoingBuilds.length === 0 ? (
-                          <span className="text-[11px] text-[#8C877D] italic pl-3">
-                            {activeView === 'Day'
-                              ? (language === 'NL' ? 'Geen meerdaagse bouw voor deze dag ingepland' : 'No multi-day builds scheduled for this day')
-                              : (language === 'NL' ? 'Geen meerdaagse bouw deze week ingepland' : 'No multi-day builds scheduled this week')}
-                          </span>
+                          <div className="flex items-center justify-between w-full pl-3 pr-2 flex-wrap gap-2">
+                            <span className="text-[11px] text-[#8C877D] italic">
+                              {activeView === 'Day'
+                                ? (language === 'NL' ? 'Geen meerdaagse bouw voor deze dag ingepland' : 'No multi-day builds scheduled for this day')
+                                : (language === 'NL' ? 'Geen meerdaagse bouw deze week ingepland' : 'No multi-day builds scheduled this week')}
+                            </span>
+                            {activeView === 'Day' && upcomingEvent && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const targetDate = new Date(upcomingEvent.rawStartTime);
+                                  setCurrentDate(targetDate);
+                                  localStorage.setItem('admin_planning_date', targetDate.toISOString());
+                                  setSelectedAppointment(upcomingEvent);
+                                }}
+                                className="text-[10.5px] bg-white border border-[#D9CEBF] text-[#7C6348] hover:bg-[#F2EADB] px-2.5 py-0.5 rounded font-bold cursor-pointer transition-colors"
+                              >
+                                {language === 'NL' ? 'Naar volgende geplande taak' : 'Go to next planned task'}: {upcomingEvent.date} ({upcomingEvent.title}) →
+                              </button>
+                            )}
+                          </div>
                         ) : (
                           ongoingBuilds.map((b) => (
                             <div
@@ -765,11 +1016,24 @@ export default function Planning() {
                               }`}
                             >
                               <div className="flex items-center gap-2">
-                                <span className="text-[9.5px] font-bold text-[#3E6468]">BUILD</span>
-                                <span className="text-[11px] font-bold text-[#2A2925]">{b.customer}</span>
-                                <span className="text-[11px] text-[#58534A] truncate">{b.product}</span>
+                                <span className="text-[9.5px] font-bold text-[#3E6468]">{language === 'NL' ? 'BOUW' : 'BUILD'}</span>
+                                <span className="text-[11px] font-bold text-[#2A2925]">{translateProjectTitle(b.customer, language)}</span>
+                                <span className="text-[11px] text-[#58534A] truncate">{translateProjectTitle(b.product, language)}</span>
                               </div>
-                              <span className="text-[10px] text-[#58534A]">{b.partner}</span>
+                              <div className="flex items-center gap-1.5">
+                                {b.status === 'Completed' ? (
+                                  <span className="flex items-center gap-1 text-[9px] font-bold text-[#345330] bg-[#E8F0E2] px-1.5 py-0.5 rounded">
+                                    <CheckCircle2 className="w-3 h-3 text-[#345330]" />
+                                    <span>{language === 'NL' ? 'Afgerond' : 'Done'}</span>
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1 text-[9px] font-bold text-[#8C5D33] bg-[#F4EDE4] px-1.5 py-0.5 rounded">
+                                    <Clock className="w-3 h-3 text-[#9A5530]" />
+                                    <span>{language === 'NL' ? 'Wacht op partner' : 'Awaiting'}</span>
+                                  </span>
+                                )}
+                                <span className="text-[10px] text-[#58534A]">{b.partner}</span>
+                              </div>
                             </div>
                           ))
                         )}
@@ -823,20 +1087,56 @@ export default function Planning() {
                                   border: `1px solid ${styleConfig.border}`
                                 }}
                               >
-                                <div className="flex justify-between items-start mb-1">
-                                  <span
-                                    className="text-[9.5px] font-bold uppercase tracking-wider"
-                                    style={{ color: styleConfig.text }}
-                                  >
-                                    {styleConfig.short}
-                                  </span>
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-[#4B7355] shrink-0" />
-                                </div>
+                                  <div className="flex justify-between items-start gap-1 mb-1">
+                                    <span
+                                      className="text-[9.5px] font-bold uppercase tracking-wider truncate min-w-0"
+                                      style={{ color: styleConfig.text }}
+                                    >
+                                      {language === 'NL' ? (styleConfig.shortNL || styleConfig.short) : styleConfig.short}
+                                    </span>
+                                    {appt.status === 'Completed' ? (
+                                      <div
+                                        className="flex items-center gap-1 shrink-0"
+                                        title={language === 'NL' ? 'Afgerond door partner' : 'Completed by partner'}
+                                      >
+                                        {activeView === 'Day' && (
+                                          <span className="text-[9px] font-bold text-[#345330] bg-[#E8F0E2] border border-[#C3D5B8] px-1.5 py-0.5 rounded shadow-2xs">
+                                            {language === 'NL' ? 'Afgerond' : 'Completed'}
+                                          </span>
+                                        )}
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-[#4B7355] shrink-0" />
+                                      </div>
+                                    ) : appt.status === 'Confirmed' ? (
+                                      <div
+                                        className="flex items-center gap-1 shrink-0"
+                                        title={language === 'NL' ? 'Bevestigd' : 'Confirmed'}
+                                      >
+                                        {activeView === 'Day' && (
+                                          <span className="text-[9px] font-bold text-[#2A3329] bg-[#E2EBE0] px-1.5 py-0.5 rounded shadow-2xs">
+                                            {language === 'NL' ? 'Bevestigd' : 'Confirmed'}
+                                          </span>
+                                        )}
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-[#3E4A3D] shrink-0" />
+                                      </div>
+                                    ) : (
+                                      <div
+                                        className="flex items-center gap-1 shrink-0"
+                                        title={language === 'NL' ? 'Gepland · Wacht op partner' : 'Scheduled · Awaiting partner'}
+                                      >
+                                        {activeView === 'Day' && (
+                                          <span className="text-[9px] font-bold text-[#8C5D33] bg-[#F4EDE4] border border-[#E6D7C3] px-1.5 py-0.5 rounded shadow-2xs">
+                                            {language === 'NL' ? 'Wacht op partner' : 'Awaiting'}
+                                          </span>
+                                        )}
+                                        <Clock className="w-3.5 h-3.5 text-[#8C5D33] shrink-0" />
+                                      </div>
+                                    )}
+                                  </div>
                                 <span className="text-[12px] font-bold text-[#2A2925] leading-snug mb-0.5 truncate">
-                                  {appt.customer}
+                                  {translateProjectTitle(appt.customer, language)}
                                 </span>
                                 <span className="text-[10px] text-[#736E64] leading-tight truncate mb-0.5">
-                                  {appt.product}
+                                  {translateProjectTitle(appt.product, language)}
                                 </span>
                                 <span className="text-[9.5px] text-[#736E64] font-medium mt-auto">
                                   {appt.startTime}–{appt.endTime} · {appt.partner}
@@ -868,8 +1168,8 @@ export default function Planning() {
                         const cellMid = c.midnight;
                         const cellEnd = cellMid + 86399999;
                         const cellEvents = filteredEvents.filter((appt) => {
-                          const sTime = new Date(appt.raw.startTime).getTime();
-                          const eTime = new Date(appt.raw.endTime || appt.raw.startTime).getTime();
+                          const sTime = new Date(appt.rawStartTime || appt.raw?.event?.startTime).getTime();
+                          const eTime = new Date(appt.rawEndTime || appt.raw?.event?.endTime || appt.rawStartTime).getTime();
                           return (sTime <= cellEnd && eTime >= cellMid);
                         });
 
@@ -930,7 +1230,7 @@ export default function Planning() {
                                     className={`px-2 py-1 rounded text-[11px] truncate cursor-pointer transition-all flex items-center justify-between gap-1 shadow-xs hover:brightness-95 ${
                                       isSelected ? 'ring-2 ring-[#3E4A3D] ring-offset-1 z-10' : ''
                                     }`}
-                                    title={`${appt.startTime}–${appt.endTime} · ${appt.customer} (${appt.type})`}
+                                    title={`${appt.startTime}–${appt.endTime} · ${translateProjectTitle(appt.customer, language)} (${language === 'NL' ? (styleConfig.shortNL || styleConfig.short) : appt.type})`}
                                   >
                                     <div className="flex items-center gap-1.5 min-w-0">
                                       <span
@@ -938,12 +1238,19 @@ export default function Planning() {
                                         style={{ backgroundColor: styleConfig.dot }}
                                       />
                                       <span className="font-bold text-[#2A2925] truncate text-[11px]">
-                                        {appt.customer}
+                                        {translateProjectTitle(appt.customer, language)}
                                       </span>
                                     </div>
-                                    <span className="text-[9.5px] text-[#736E64] font-medium shrink-0">
-                                      {appt.startTime}
-                                    </span>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      {appt.status === 'Completed' ? (
+                                        <CheckCircle2 className="w-3 h-3 text-[#4B7355]" title={language === 'NL' ? 'Afgerond door partner' : 'Completed by partner'} />
+                                      ) : (
+                                        <Clock className="w-3 h-3 text-[#8C5D33]" title={language === 'NL' ? 'Wacht op partner' : 'Awaiting partner'} />
+                                      )}
+                                      <span className="text-[9.5px] text-[#736E64] font-medium">
+                                        {appt.startTime}
+                                      </span>
+                                    </div>
                                   </div>
                                 );
                               })}
@@ -1059,8 +1366,8 @@ export default function Planning() {
                                 ) : (
                                   <div className="absolute inset-0 p-2 pointer-events-auto">
                                     {laneEvents.map((appt, evtIdx) => {
-                                      const startObj = new Date(appt.raw.startTime);
-                                      const endObj = new Date(appt.raw.endTime || appt.raw.startTime);
+                                      const startObj = new Date(appt.rawStartTime || appt.raw?.event?.startTime);
+                                      const endObj = new Date(appt.rawEndTime || appt.raw?.event?.endTime || appt.rawStartTime);
 
                                       let startDay = 1;
                                       if (startObj.getFullYear() === currentDate.getFullYear() && startObj.getMonth() === currentDate.getMonth()) {
@@ -1099,20 +1406,27 @@ export default function Planning() {
                                           className={`absolute h-[32px] rounded-lg px-2.5 flex items-center justify-between cursor-pointer shadow-sm hover:brightness-95 hover:z-30 transition-all ${
                                             isSelected ? 'ring-2 ring-[#3E4A3D] ring-offset-1 z-30' : 'z-10'
                                           }`}
-                                          title={`${appt.date} (${appt.startTime}–${appt.endTime}) · ${appt.customer} - ${appt.product} (${appt.partner})`}
+                                          title={`${appt.date} (${appt.startTime}–${appt.endTime}) · ${translateProjectTitle(appt.customer, language)} - ${translateProjectTitle(appt.product, language)} (${appt.partner})`}
                                         >
                                           <div className="flex items-center gap-2 min-w-0">
                                             <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: styleConfig.dot }} />
                                             <span className="text-[11.5px] font-bold text-[#2A2925] truncate">
-                                              {appt.customer}
+                                              {translateProjectTitle(appt.customer, language)}
                                             </span>
                                             <span className="text-[10px] text-[#58534A] truncate hidden sm:inline">
-                                              {appt.product}
+                                              {translateProjectTitle(appt.product, language)}
                                             </span>
                                           </div>
-                                          <span className="text-[10px] font-bold text-[#736E64] shrink-0 ml-1">
-                                            {appt.partner}
-                                          </span>
+                                          <div className="flex items-center gap-1 shrink-0 ml-1">
+                                            {appt.status === 'Completed' ? (
+                                              <CheckCircle2 className="w-3 h-3 text-[#4B7355]" title={language === 'NL' ? 'Afgerond' : 'Completed'} />
+                                            ) : (
+                                              <Clock className="w-3 h-3 text-[#8C5D33]" title={language === 'NL' ? 'Wacht op partner' : 'Awaiting partner'} />
+                                            )}
+                                            <span className="text-[10px] font-bold text-[#736E64]">
+                                              {appt.partner}
+                                            </span>
+                                          </div>
                                         </div>
                                       );
                                     })}
@@ -1133,11 +1447,11 @@ export default function Planning() {
                     <span className="font-normal text-[#58534A]">{t('common.status')}:</span>
                     <div className="flex items-center gap-1.5 text-[#4B7355] font-bold">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>{t('planning.confirmed')}</span>
+                      <span>{language === 'NL' ? 'Afgerond door partner' : 'Completed by partner'}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[#6E5580] font-bold">
+                    <div className="flex items-center gap-1.5 text-[#8C5D33] font-bold">
                       <Clock className="w-3.5 h-3.5" />
-                      <span>{t('planning.scheduled')}</span>
+                      <span>{language === 'NL' ? 'Gepland · Wacht op partner' : 'Scheduled · Awaiting partner'}</span>
                     </div>
                   </div>
                   <div>
@@ -1183,17 +1497,19 @@ export default function Planning() {
                               border: `1px solid ${typeColors[selectedAppointment.type]?.border || '#D5C8E0'}`
                             }}
                           >
-                            {typeColors[selectedAppointment.type]?.short || selectedAppointment.type}
+                            {language === 'NL'
+                              ? (typeColors[selectedAppointment.type]?.shortNL || typeColors[selectedAppointment.type]?.short || selectedAppointment.type)
+                              : (typeColors[selectedAppointment.type]?.short || selectedAppointment.type)}
                           </span>
                           <span className="text-[11px] font-mono text-[#736E64] font-bold">
                             {selectedAppointment.projectRef}
                           </span>
                         </div>
                         <h2 className="text-[22px] font-heading font-bold text-[#2A2925] mb-1 leading-tight">
-                          {selectedAppointment.customer}
+                          {translateProjectTitle(selectedAppointment.customer, language)}
                         </h2>
                         {selectedAppointment.product && (
-                          <p className="text-[13px] text-[#58534A] leading-snug">{selectedAppointment.product}</p>
+                          <p className="text-[13px] text-[#58534A] leading-snug">{translateProjectTitle(selectedAppointment.product, language)}</p>
                         )}
                         {selectedAppointment.location && (
                           <p className="text-[13px] text-[#736E64] mt-0.5 flex items-center gap-1">
@@ -1214,12 +1530,12 @@ export default function Planning() {
                       {/* Details Table */}
                       <div className="space-y-2.5 text-[13px] border-b border-[#E6E0D4] pb-4">
                         <div className="flex items-start justify-between">
-                          <span className="w-28 text-[#736E64] shrink-0">Event code</span>
+                          <span className="w-28 text-[#736E64] shrink-0">{language === 'NL' ? 'Afspraakcode' : 'Event code'}</span>
                           <span className="font-mono font-medium text-[#2A2925]">{selectedAppointment.eventNumber}</span>
                         </div>
                         <div className="flex items-start justify-between">
                           <span className="w-28 text-[#736E64] shrink-0">{language === 'NL' ? 'Datum' : 'Date'}</span>
-                          <span className="font-medium text-[#2A2925]">{selectedAppointment.date}</span>
+                          <span className="font-medium text-[#2A2925]">{formatDrawerDate(selectedAppointment, language)}</span>
                         </div>
                         <div className="flex items-start justify-between">
                           <span className="w-28 text-[#736E64] shrink-0">{language === 'NL' ? 'Tijd' : 'Time'}</span>
@@ -1235,14 +1551,35 @@ export default function Planning() {
                         </div>
                         <div className="flex items-start justify-between">
                           <span className="w-28 text-[#736E64] shrink-0">Status</span>
-                          <span className="font-bold text-[#4B7355]">{selectedAppointment.status}</span>
+                          <span className={`font-bold text-[13px] flex items-center gap-1.5 ${
+                            selectedAppointment.status === 'Completed'
+                              ? 'text-[#4B7355]'
+                              : selectedAppointment.status === 'Confirmed'
+                              ? 'text-[#3E4A3D]'
+                              : 'text-[#9A5530]'
+                          }`}>
+                            {selectedAppointment.status === 'Completed' ? (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5 text-[#4B7355]" />
+                                <span>{formatAppointmentStatus(selectedAppointment.status, language)}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Clock className="w-3.5 h-3.5 text-[#9A5530]" />
+                                <span>{formatAppointmentStatus(selectedAppointment.status, language)}</span>
+                                <span className="text-[11px] font-normal text-[#8C5D33]">
+                                  ({language === 'NL' ? 'Wacht op partner' : 'Awaiting partner'})
+                                </span>
+                              </>
+                            )}
+                          </span>
                         </div>
                       </div>
 
                       {/* Project Progress */}
                       {selectedAppointment.progress && (() => {
                         const steps = [
-                          { key: 'site_survey', label: language === 'NL' ? 'Inmeten & Survey' : 'Site Survey' },
+                          { key: 'site_survey', label: language === 'NL' ? 'Inmeting & Inspectie' : 'Site Survey' },
                           { key: 'design', label: language === 'NL' ? 'Offerte & Ontwerp' : 'Quote & Design' },
                           { key: 'build', label: language === 'NL' ? 'Montage & Bouw' : 'Assembly & Build' },
                           { key: 'handover', label: language === 'NL' ? 'Oplevering' : 'Handover' },
@@ -1257,7 +1594,7 @@ export default function Planning() {
                               {steps.map((step, idx) => {
                                 const isDone = progress.includes(step.key);
                                 return (
-                                  <div key={step.key} className="flex items-stretch gap-3">
+                                   <div key={step.key} className="flex items-stretch gap-3">
                                     <div className="flex flex-col items-center w-3">
                                       <div
                                         className={`w-3 h-3 rounded-full shrink-0 mt-0.5 ${
@@ -1290,7 +1627,7 @@ export default function Planning() {
                         <div className="flex items-start justify-between">
                           <span className="w-24 text-[#736E64] shrink-0">{language === 'NL' ? 'Klant' : 'Customer'}</span>
                           <span className="font-medium text-[#2A2925] text-right">
-                            {selectedAppointment.contact} · {selectedAppointment.phone}
+                            {translateProjectTitle(selectedAppointment.contact, language)} · {selectedAppointment.phone}
                           </span>
                         </div>
                         <div className="flex items-start justify-between">
@@ -1306,9 +1643,21 @@ export default function Planning() {
                     <div className="p-4 border-t border-[#E6E0D4] flex gap-2 shrink-0 bg-[#FFFEFB] mt-auto">
                       <button
                         onClick={() => setSelectedAppointment(null)}
-                        className="flex-1 py-2 border border-[#D6CFC2] rounded-xl text-[13px] font-bold bg-white hover:bg-[#F7F4EE] text-[#2A2925] transition-colors"
+                        className="py-2 px-4 border border-[#D6CFC2] rounded-xl text-[13px] font-bold bg-white hover:bg-[#F7F4EE] text-[#2A2925] transition-colors cursor-pointer"
                       >
                         {language === 'NL' ? 'Sluiten' : 'Close'}
+                      </button>
+                      <button
+                        onClick={() => handleToggleEventStatus(selectedAppointment.id, selectedAppointment.status)}
+                        className={`flex-1 py-2 px-3 rounded-xl text-[13px] font-bold transition-colors text-center cursor-pointer ${
+                          selectedAppointment.status === 'Completed'
+                            ? 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200'
+                            : 'bg-[#3E4A3D] text-white hover:bg-[#2A3329]'
+                        }`}
+                      >
+                        {selectedAppointment.status === 'Completed'
+                          ? (language === 'NL' ? '↺ Heropenen (Zet terug naar Gepland)' : '↺ Reopen Task')
+                          : (language === 'NL' ? '✓ Markeer als Afgerond door Partner' : '✓ Mark as Completed by Partner')}
                       </button>
                     </div>
                   </motion.div>
@@ -1322,9 +1671,9 @@ export default function Planning() {
             <div className="flex justify-between items-center mb-5 mt-2 pt-1">
               <div className="flex items-center gap-4">
                 <div className="text-[22px] font-heading font-medium text-[#2A2925] flex items-center gap-3 whitespace-nowrap">
-                  {language === 'NL' ? 'Overzicht Taken' : 'Task Overview'}
+                  {language === 'NL' ? 'Overzicht Taken & Planningen' : 'Task & Planning Overview'}
                   <span className="text-[10px] font-body bg-transparent border border-[#E6E0D4] text-[#736E64] px-1.5 py-0.5 rounded uppercase font-bold">
-                    {tasks.length} TOTAL
+                    {tasks.length + formattedEvents.length} TOTAL
                   </span>
                 </div>
               </div>
@@ -1341,46 +1690,83 @@ export default function Planning() {
                     <span className="font-heading text-[20px] font-medium text-[#2A2925]">{language === 'NL' ? 'Openstaande Taken' : 'Open Tasks'}</span>
                   </div>
                   <span className="text-[13px] text-[#736E64] font-medium">
-                    {tasks.filter((t) => t.status !== 'completed').length} open
+                    {tasks.filter((t) => t.status !== 'completed' && !t.completed).length + allActivePartnerEvents.length} open
                   </span>
                 </div>
-                <div className="p-5 overflow-y-auto space-y-4">
-                  {tasks.filter((t) => t.status !== 'completed').length === 0 ? (
+                <div className="p-5 overflow-y-auto space-y-3">
+                  {tasks.filter((t) => t.status !== 'completed' && !t.completed).length === 0 && allActivePartnerEvents.length === 0 ? (
                     <p className="text-sm text-[#736E64] italic">{language === 'NL' ? 'Geen openstaande taken.' : 'No open tasks.'}</p>
                   ) : (
-                    tasks
-                      .filter((t) => t.status !== 'completed')
-                      .map((task) => (
+                    <>
+                      {/* 1. Partner Planning Events */}
+                      {allActivePartnerEvents.map((evt) => (
                         <div
-                          key={task.id}
-                          className="flex items-start justify-between p-3 rounded-xl border border-[#E6E0D4] hover:bg-[#FAF8F5] transition-colors"
+                          key={`evt-${evt.id}`}
+                          className="flex items-start justify-between p-3 rounded-xl border border-[#D9CEBF] bg-[#FAF8F5] hover:bg-[#F5EFE6] transition-colors"
                         >
-                          <div className="flex items-start gap-3">
+                          <div className="flex items-start gap-3 min-w-0">
                             <input
                               type="checkbox"
                               checked={false}
-                              onChange={() => handleToggleTask(task.id, task.status)}
-                              className="mt-1 w-4 h-4 rounded border-[#D6CFC2] cursor-pointer"
+                              onChange={() => handleToggleEventStatus(evt.id, evt.status)}
+                              className="mt-1 w-4 h-4 rounded border-[#D6CFC2] cursor-pointer accent-[#3E4A3D]"
+                              title={language === 'NL' ? 'Klik om als afgerond te markeren' : 'Click to mark completed'}
                             />
-                            <div>
-                              <p className="text-[13.5px] font-medium text-[#2A2925]">{task.title}</p>
-                              <div className="flex items-center gap-2 mt-1 text-[11px] text-[#736E64]">
-                                <span className="font-mono font-bold">{task.taskNumber}</span>
-                                {task.dueDate && <span>· {language === 'NL' ? 'Vervaldatum' : 'Due date'}: {task.dueDate}</span>}
+                            <div className="min-w-0">
+                              <p className="text-[13.5px] font-bold text-[#2A2925] truncate">{evt.title}</p>
+                              <div className="flex items-center gap-2 mt-1 text-[11px] text-[#736E64] flex-wrap">
+                                <span className="font-mono font-bold text-[#8C5D33]">{evt.date} ({evt.startTime})</span>
+                                <span>· {evt.partner}</span>
+                                {evt.location && <span>· {evt.location}</span>}
                               </div>
                             </div>
                           </div>
-                          <span
-                            className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
-                              task.priority === 'high'
-                                ? 'bg-[#FBF0EC] text-[#A13C28]'
-                                : 'bg-[#EAF0F6] text-[#46607C]'
-                            }`}
-                          >
-                            {task.priority || 'medium'}
-                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            <span className="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-[#E8F0E2] text-[#345330] border border-[#C3D5B8]">
+                              Partner Taak
+                            </span>
+                            <span className="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-[#F4EDE4] text-[#8C5D33]">
+                              {evt.type}
+                            </span>
+                          </div>
                         </div>
-                      ))
+                      ))}
+
+                      {/* 2. Standard Tasks */}
+                      {tasks
+                        .filter((t) => t.status !== 'completed' && !t.completed)
+                        .map((task) => (
+                          <div
+                            key={`tsk-${task.id}`}
+                            className="flex items-start justify-between p-3 rounded-xl border border-[#E6E0D4] hover:bg-[#FAF8F5] transition-colors"
+                          >
+                            <div className="flex items-start gap-3">
+                              <input
+                                type="checkbox"
+                                checked={false}
+                                onChange={() => handleToggleTask(task.id, task.status)}
+                                className="mt-1 w-4 h-4 rounded border-[#D6CFC2] cursor-pointer"
+                              />
+                              <div>
+                                <p className="text-[13.5px] font-medium text-[#2A2925]">{task.title}</p>
+                                <div className="flex items-center gap-2 mt-1 text-[11px] text-[#736E64]">
+                                  <span className="font-mono font-bold">{task.taskNumber}</span>
+                                  {task.dueDate && <span>· {language === 'NL' ? 'Vervaldatum' : 'Due date'}: {task.dueDate}</span>}
+                                </div>
+                              </div>
+                            </div>
+                            <span
+                              className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
+                                task.priority === 'high'
+                                  ? 'bg-[#FBF0EC] text-[#A13C28]'
+                                  : 'bg-[#EAF0F6] text-[#46607C]'
+                              }`}
+                            >
+                              {task.priority || 'medium'}
+                            </span>
+                          </div>
+                        ))}
+                    </>
                   )}
                 </div>
               </div>
@@ -1395,37 +1781,65 @@ export default function Planning() {
                     <span className="font-heading text-[20px] font-medium text-[#2A2925]">{language === 'NL' ? 'Afgerond' : 'Completed'}</span>
                   </div>
                   <span className="text-[13px] text-[#736E64] font-medium">
-                    {tasks.filter((t) => t.status === 'completed').length} {language === 'NL' ? 'afgerond' : 'done'}
+                    {tasks.filter((t) => t.status === 'completed' || t.completed === true).length + allCompletedPartnerEvents.length} {language === 'NL' ? 'afgerond' : 'done'}
                   </span>
                 </div>
-                <div className="p-5 overflow-y-auto space-y-4">
-                  {tasks.filter((t) => t.status === 'completed').length === 0 ? (
+                <div className="p-5 overflow-y-auto space-y-3">
+                  {tasks.filter((t) => t.status === 'completed' || t.completed === true).length === 0 && allCompletedPartnerEvents.length === 0 ? (
                     <p className="text-sm text-[#736E64] italic">{language === 'NL' ? 'Nog geen taken afgerond.' : 'No completed tasks yet.'}</p>
                   ) : (
-                    tasks
-                      .filter((t) => t.status === 'completed')
-                      .map((task) => (
+                    <>
+                      {/* Completed Partner Planning Events */}
+                      {allCompletedPartnerEvents.map((evt) => (
                         <div
-                          key={task.id}
-                          className="flex items-start justify-between p-3 rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] opacity-75"
+                          key={`done-evt-${evt.id}`}
+                          className="flex items-start justify-between p-3 rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] opacity-80"
                         >
-                          <div className="flex items-start gap-3">
+                          <div className="flex items-start gap-3 min-w-0">
                             <input
                               type="checkbox"
                               checked={true}
-                              onChange={() => handleToggleTask(task.id, task.status)}
-                              className="mt-1 w-4 h-4 rounded border-[#D6CFC2] cursor-pointer"
+                              onChange={() => handleToggleEventStatus(evt.id, evt.status)}
+                              className="mt-1 w-4 h-4 rounded border-[#D6CFC2] cursor-pointer accent-[#3E4A3D]"
+                              title={language === 'NL' ? 'Klik om te heropenen' : 'Click to reopen'}
                             />
-                            <div>
-                              <p className="text-[13.5px] font-medium text-[#736E64] line-through">{task.title}</p>
+                            <div className="min-w-0">
+                              <p className="text-[13.5px] font-medium text-[#736E64] line-through truncate">{evt.title}</p>
                               <div className="flex items-center gap-2 mt-1 text-[11px] text-[#8C877D]">
-                                <span className="font-mono">{task.taskNumber}</span>
+                                <span>{evt.date} · {evt.partner}</span>
                               </div>
                             </div>
                           </div>
-                          <CheckCircle2 className="w-4 h-4 text-[#4B7355]" />
+                          <CheckCircle2 className="w-4 h-4 text-[#4B7355] shrink-0" />
                         </div>
-                      ))
+                      ))}
+
+                      {/* Completed Standard Tasks */}
+                      {tasks
+                        .filter((t) => t.status === 'completed' || t.completed === true)
+                        .map((task) => (
+                          <div
+                            key={`done-tsk-${task.id}`}
+                            className="flex items-start justify-between p-3 rounded-xl border border-[#E6E0D4] bg-[#FAF8F5] opacity-75"
+                          >
+                            <div className="flex items-start gap-3">
+                              <input
+                                type="checkbox"
+                                checked={true}
+                                onChange={() => handleToggleTask(task.id, task.status)}
+                                className="mt-1 w-4 h-4 rounded border-[#D6CFC2] cursor-pointer"
+                              />
+                              <div>
+                                <p className="text-[13.5px] font-medium text-[#736E64] line-through">{task.title}</p>
+                                <div className="flex items-center gap-2 mt-1 text-[11px] text-[#8C877D]">
+                                  <span className="font-mono">{task.taskNumber}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <CheckCircle2 className="w-4 h-4 text-[#4B7355]" />
+                          </div>
+                        ))}
+                    </>
                   )}
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../Card';
 import { ClipboardCheck, CheckSquare, Square } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * PrepChecklist Component (Step 4 - Garden Room Extension)
@@ -15,6 +16,9 @@ import { ClipboardCheck, CheckSquare, Square } from 'lucide-react';
  * Persists checked state per project to localStorage.
  */
 export default function PrepChecklist({ projectId = 'P-2001', prepChecklist = [] }) {
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
+
   const defaultItems = [
     { id: 'prep-1', labelEN: 'Access to the rear garden at least 1.20 m wide', labelNL: 'Toegang naar de achtertuin minimaal 1,20 m breed', isChecked: true },
     { id: 'prep-2', labelEN: 'At least 15 m² work/storage space available', labelNL: 'Minimaal 15 m² werk-/opslagruimte beschikbaar', isChecked: false },
@@ -53,12 +57,14 @@ export default function PrepChecklist({ projectId = 'P-2001', prepChecklist = []
   const completedCount = items.filter(i => i.isChecked).length;
 
   return (
-    <Card title="Customer Preparation" icon={ClipboardCheck}>
+    <Card title={isNl ? 'Voorbereiding Klant' : 'Customer Preparation'} icon={ClipboardCheck}>
       <div className="space-y-3 font-body">
         <div className="flex items-center justify-between text-xs border-b border-[#D6CFC2]/60 pb-2">
-          <span className="text-dark/70 font-medium">Check off what is already arranged for the build:</span>
+          <span className="text-dark/70 font-medium">
+            {isNl ? 'Vink af wat er al geregeld is voor de bouw:' : 'Check off what is already arranged for the build:'}
+          </span>
           <span className="font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md text-[11px]">
-            {completedCount} of {items.length} ready
+            {completedCount} {isNl ? 'van' : 'of'} {items.length} {isNl ? 'gereed' : 'ready'}
           </span>
         </div>
 
@@ -82,7 +88,7 @@ export default function PrepChecklist({ projectId = 'P-2001', prepChecklist = []
                   <Square className="w-4 h-4 text-dark/40 flex-shrink-0 mt-0.5" />
                 )}
                 <span className={`text-xs leading-snug ${isChecked ? 'line-through opacity-80' : ''}`}>
-                  {item.labelEN || item.labelNL || item.label}
+                  {isNl ? (item.labelNL || item.label || item.labelEN) : (item.labelEN || item.label || item.labelNL)}
                 </span>
               </button>
             );

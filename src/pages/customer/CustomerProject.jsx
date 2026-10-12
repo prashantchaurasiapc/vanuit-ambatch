@@ -154,7 +154,7 @@ export default function CustomerProject() {
         <div className="bg-[#FAF7F2] border border-[#E4DED4] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
           <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-accent" />
-            <span>Testing Design View Switcher:</span>
+            <span>{language === 'NL' ? 'Ontwerp Weergave Switcher:' : 'Testing Design View Switcher:'}</span>
           </span>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
@@ -166,7 +166,7 @@ export default function CustomerProject() {
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
               }`}
             >
-              Outdoor Kitchen (Design & Options)
+              {language === 'NL' ? 'Buitenkeuken (Ontwerp & Opties)' : 'Outdoor Kitchen (Design & Options)'}
             </button>
 
             <button
@@ -178,7 +178,7 @@ export default function CustomerProject() {
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
               }`}
             >
-              Garden Room / Poolhouse (Design & Renders)
+              {language === 'NL' ? 'Buitenverblijf / Poolhouse (Ontwerp & Renders)' : 'Garden Room / Poolhouse (Design & Renders)'}
             </button>
           </div>
         </div>
@@ -204,7 +204,7 @@ export default function CustomerProject() {
         <div className="bg-[#FAF7F2] border border-[#E4DED4] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
           <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-accent" />
-            <span>Testing Planning View Switcher:</span>
+            <span>{language === 'NL' ? 'Planning Weergave Switcher:' : 'Testing Planning View Switcher:'}</span>
           </span>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
@@ -216,7 +216,7 @@ export default function CustomerProject() {
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
               }`}
             >
-              Outdoor Kitchen (Planning & Delivery)
+              {language === 'NL' ? 'Buitenkeuken (Planning & Levering)' : 'Outdoor Kitchen (Planning & Delivery)'}
             </button>
 
             <button
@@ -228,7 +228,7 @@ export default function CustomerProject() {
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
               }`}
             >
-              Garden Room / Poolhouse (Planning & Build)
+              {language === 'NL' ? 'Buitenverblijf / Poolhouse (Planning & Bouw)' : 'Garden Room / Poolhouse (Planning & Build)'}
             </button>
           </div>
         </div>
@@ -254,7 +254,7 @@ export default function CustomerProject() {
         <div className="bg-[#FAF7F2] border border-[#E4DED4] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
           <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-accent" />
-            <span>Testing Payments View Switcher:</span>
+            <span>{language === 'NL' ? 'Betalingen Weergave Switcher:' : 'Testing Payments View Switcher:'}</span>
           </span>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
@@ -266,7 +266,7 @@ export default function CustomerProject() {
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
               }`}
             >
-              Outdoor Kitchen (Payments)
+              {language === 'NL' ? 'Buitenkeuken (Betalingen)' : 'Outdoor Kitchen (Payments)'}
             </button>
 
             <button
@@ -278,7 +278,7 @@ export default function CustomerProject() {
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
               }`}
             >
-              Garden Room / Poolhouse (Payments)
+              {language === 'NL' ? 'Buitenverblijf / Poolhouse (Betalingen)' : 'Garden Room / Poolhouse (Payments)'}
             </button>
           </div>
         </div>
@@ -302,7 +302,7 @@ export default function CustomerProject() {
         <div className="bg-[#FAF7F2] border border-[#E4DED4] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
           <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-accent" />
-            <span>Testing Handover View Switcher:</span>
+            <span>{language === 'NL' ? 'Oplevering Weergave Switcher:' : 'Testing Handover View Switcher:'}</span>
           </span>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
@@ -314,7 +314,7 @@ export default function CustomerProject() {
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
               }`}
             >
-              Outdoor Kitchen (Handover & Aftercare)
+              {language === 'NL' ? 'Buitenkeuken (Oplevering & Nazorg)' : 'Outdoor Kitchen (Handover & Aftercare)'}
             </button>
 
             <button
@@ -326,7 +326,7 @@ export default function CustomerProject() {
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
               }`}
             >
-              Garden Room / Poolhouse (Handover & Aftercare)
+              {language === 'NL' ? 'Buitenverblijf / Poolhouse (Oplevering & Nazorg)' : 'Garden Room / Poolhouse (Handover & Aftercare)'}
             </button>
           </div>
         </div>
@@ -351,7 +351,7 @@ export default function CustomerProject() {
         <div className="bg-[#FAF7F2] border border-[#E4DED4] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
           <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-accent" />
-            <span>Testing Mobile View Switcher:</span>
+            <span>{language === 'NL' ? 'Mobiel Weergave Switcher:' : 'Testing Mobile View Switcher:'}</span>
           </span>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
@@ -363,7 +363,7 @@ export default function CustomerProject() {
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
               }`}
             >
-              Outdoor Kitchen (Mobile View)
+              {language === 'NL' ? 'Buitenkeuken (Mobiel)' : 'Outdoor Kitchen (Mobile View)'}
             </button>
 
             <button
@@ -375,7 +375,7 @@ export default function CustomerProject() {
                   : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
               }`}
             >
-              Garden Room / Poolhouse (Mobile View)
+              {language === 'NL' ? 'Buitenverblijf / Poolhouse (Mobiel)' : 'Garden Room / Poolhouse (Mobile View)'}
             </button>
           </div>
         </div>
@@ -399,7 +399,7 @@ export default function CustomerProject() {
       <div className="bg-[#EDE8DF] border border-[#C4BEB3] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
         <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-accent" />
-          <span>Testing View Switcher:</span>
+          <span>{language === 'NL' ? 'Overzicht Weergave Switcher:' : 'Testing View Switcher:'}</span>
         </span>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
@@ -411,7 +411,7 @@ export default function CustomerProject() {
                 : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
             }`}
           >
-            Outdoor Kitchen (6-Stage)
+            {language === 'NL' ? 'Buitenkeuken (6-Fasen)' : 'Outdoor Kitchen (6-Stage)'}
           </button>
 
           <button
@@ -423,7 +423,7 @@ export default function CustomerProject() {
                 : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
             }`}
           >
-            Garden Room / Poolhouse (7-Stage)
+            {language === 'NL' ? 'Buitenverblijf / Poolhouse (7-Fasen)' : 'Garden Room / Poolhouse (7-Stage)'}
           </button>
         </div>
       </div>

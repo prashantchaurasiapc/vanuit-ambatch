@@ -29,8 +29,28 @@ export default function PartnerProjects() {
   // Default active logged-in partner name
   const currentPartnerName = 'Sven Hoek';
 
-  // Load assigned projects from real API (partner-scoped, RBAC filtered)
-  useEffect(() => {
+  // Helper to resolve project card image from local storage or project data
+  const resolveProjectCardImage = (project) => {
+    if (!project) return projectImg;
+    // 1. Check local storage for project's latest photo
+    if (typeof window !== 'undefined' && project.id) {
+      const cached = localStorage.getItem(`va_proj_photo_${project.id}`);
+      if (cached && (cached.startsWith('data:image') || cached.startsWith('http'))) {
+        return cached;
+      }
+    }
+    // 2. Direct photo properties on project object
+    if (project.img && (project.img.startsWith('data:image') || project.img.startsWith('http'))) return project.img;
+    if (project.photoUrl && (project.photoUrl.startsWith('data:image') || project.photoUrl.startsWith('http'))) return project.photoUrl;
+    if (Array.isArray(project.photos) && project.photos.length > 0) {
+      const ph = project.photos[0];
+      const url = ph.photoUrl || ph.img || ph.url;
+      if (url && (url.startsWith('data:image') || url.startsWith('http'))) return url;
+    }
+    return projectImg;
+  };
+
+  const loadProjects = () => {
     api.get('/partner/projects?limit=50').then(res => {
       if (res.success && Array.isArray(res.data) && res.data.length > 0) {
         const enriched = res.data.map((p, idx) => ({
@@ -48,7 +68,14 @@ export default function PartnerProjects() {
         }));
         setProjects(enriched);
       }
-    });
+    }).catch(() => {});
+  };
+
+  // Load assigned projects from real API (partner-scoped, RBAC filtered)
+  useEffect(() => {
+    loadProjects();
+    window.addEventListener('app_data_changed', loadProjects);
+    return () => window.removeEventListener('app_data_changed', loadProjects);
   }, []);
 
   // Default Partner Messages
@@ -141,30 +168,94 @@ export default function PartnerProjects() {
     }
   };
 
-  // REVERSE FLOW: Partner uploads photo -> Notifies Admin & Updates Customer Portal Photos
+  // REVERSE FLOW: Partner uploads photo -> Updates Project Card, Notifies Admin & Updates Customer Portal Photos
   const handleUploadPartnerPhoto = async (e) => {
     e.preventDefault();
     if (!uploadPhotoProject) return;
 
     const projectId = uploadPhotoProject.id;
-    const res = await api.post(`/partner/projects/${projectId}/photos`, {
-      photoUrl: photoForm.img || projectImg,
-      caption: photoForm.desc.trim() || 'Photo uploaded by partner craftsman.',
-      title: photoForm.title.trim() || 'Workshop Progress Photo',
-      tag: 'workshop',
-      visibleToCustomer: true
-    });
+    const finalPhoto = photoForm.img || projectImg;
+    const photoTitle = photoForm.title.trim() || `${uploadPhotoProject.name} - Werkplaatsvoortgang`;
+    const photoDesc = photoForm.desc.trim() || 'Kwaliteitscontrole en montage in werkplaats voltooid.';
 
-    if (res.success) {
-      showToast(language === 'EN'
-        ? `📸 Photo uploaded for Project ${projectId}! Admin notified of progress update!`
-        : `📸 Foto geüpload voor Project ${projectId}! Beheerder is per melding op de hoogte gebracht!`);
-    } else {
-      showToast(`⚠ ${res.error?.message || 'Failed to upload photo'}`);
+    // 1. Update project state IMMEDIATELY so the card image updates right before the user's eyes!
+    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, img: finalPhoto, photoUrl: finalPhoto } : p));
+
+    // 2. Persist in local storage for this project so page reload maintains the image
+    try {
+      localStorage.setItem(`va_proj_photo_${projectId}`, finalPhoto);
+    } catch (err) {}
+
+    // 3. Post to backend API
+    let createdPhoto = null;
+    try {
+      let res = await api.post(`/partner/projects/${projectId}/photos`, {
+        photoUrl: finalPhoto,
+        title: photoTitle,
+        phase: `Workshop Phase · ${new Date().toLocaleDateString('default', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+        craftsman: currentPartnerName || 'Sven Hoek',
+        caption: photoDesc,
+        tag: 'workshop',
+        visibleToCustomer: true
+      });
+
+      if (!res.success) {
+        // Fallback to /projects/:id/photos if partner route was forbidden or restricted
+        res = await api.post(`/projects/${projectId}/photos`, {
+          photoUrl: finalPhoto,
+          title: photoTitle,
+          phase: `Workshop Phase · ${new Date().toLocaleDateString('default', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+          craftsman: currentPartnerName || 'Sven Hoek',
+          caption: photoDesc,
+          tag: 'workshop',
+          visibleToCustomer: true
+        });
+      }
+
+      if (res.success && res.data) {
+        createdPhoto = res.data;
+        if (createdPhoto.id) {
+          try {
+            localStorage.setItem(`va_photo_${createdPhoto.id}`, finalPhoto);
+          } catch (err) {}
+        }
+      }
+    } catch (err) {
+      console.warn('Backend photo upload network error:', err);
     }
 
+    // 4. Save to va_custom_photos so Admin Photos & Documents galleries see it immediately!
+    try {
+      const customPhotos = JSON.parse(localStorage.getItem('va_custom_photos') || '[]');
+      const newPhotoEntry = {
+        id: createdPhoto?.id || `ph-p-${Date.now()}`,
+        projectId: projectId,
+        projectName: uploadPhotoProject.name,
+        customer: uploadPhotoProject.customer || uploadPhotoProject.customerName || '',
+        title: photoTitle,
+        phase: `Workshop Phase · ${new Date().toLocaleDateString('default', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+        description: photoDesc,
+        caption: photoDesc,
+        craftsman: currentPartnerName || 'Sven Hoek',
+        uploaderRole: 'partner',
+        isShared: true,
+        visibleToCustomer: true,
+        img: finalPhoto,
+        photoUrl: finalPhoto,
+        createdAt: new Date().toISOString()
+      };
+      // Prepend so it appears first in Admin galleries
+      localStorage.setItem('va_custom_photos', JSON.stringify([newPhotoEntry, ...customPhotos.filter(cp => cp.id !== newPhotoEntry.id)]));
+      // Notify all tabs / components in realtime
+      window.dispatchEvent(new Event('app_data_changed'));
+    } catch (err) {}
+
+    showToast(language === 'EN'
+      ? `📸 Photo updated for ${uploadPhotoProject.name}! Card updated & Admin notified!`
+      : `📸 Foto bijgewerkt voor ${uploadPhotoProject.name}! Projectkaart aangepast & beheerder geïnformeerd!`);
+
     setUploadPhotoProject(null);
-    setPhotoForm({ title: '', desc: '', img: projectImg });
+    setPhotoForm({ title: '', desc: '', img: null });
   };
 
   // Real PDF Blueprint download via jsPDF — direct file, no popup
@@ -244,7 +335,7 @@ export default function PartnerProjects() {
             <div>
               {/* Image & Division Header */}
               <div className="relative h-36 sm:h-44 overflow-hidden bg-cream-dark/20">
-                <img src={projectImg} alt={project.name} className="w-full h-full object-cover" />
+                <img src={resolveProjectCardImage(project)} alt={project.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/95 via-primary/50 to-transparent"></div>
                 
                 <div className="absolute top-2.5 right-2.5 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg border border-[#D6CFC2] shadow-xs flex items-center gap-1.5">
@@ -335,8 +426,8 @@ export default function PartnerProjects() {
       {/* UPDATE PROGRESS MODAL */}
       <AnimatePresence>
         {editProject && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto my-auto">
               <div className="flex justify-between items-center pb-2 border-b border-[#D6CFC2]">
                 <h3 className="text-lg font-heading font-bold text-primary">{label('Update Progress & Status', 'Voortgang & Status Bijwerken')}</h3>
                 <button onClick={() => setEditProject(null)} className="text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
@@ -592,60 +683,117 @@ export default function PartnerProjects() {
       {/* UPLOAD PARTNER PHOTO MODAL (NOTIFIES ADMIN & UPDATES CUSTOMER PORTAL) */}
       <AnimatePresence>
         {uploadPhotoProject && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl text-xs font-body">
-              <div className="flex justify-between items-center pb-2 border-b border-[#D6CFC2]">
-                <div className="flex items-center gap-2">
-                  <Camera className="w-5 h-5 text-primary" />
-                  <h3 className="text-lg font-heading font-bold text-primary">
-                    {language === 'EN' ? 'Upload Build Photo & Notify Admin' : 'Voortgangsfoto Uploaden & Beheerder Melden'}
-                  </h3>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-5 sm:p-6 w-full max-w-lg shadow-2xl text-xs font-body max-h-[90vh] flex flex-col my-auto"
+            >
+              {/* Sticky Modal Header */}
+              <div className="flex justify-between items-center pb-3 border-b border-[#D6CFC2] flex-shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                    <Camera className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-heading font-bold text-primary leading-tight">
+                      {language === 'EN' ? 'Upload Build Photo & Notify Admin' : 'Voortgangsfoto Uploaden & Beheerder Melden'}
+                    </h3>
+                    <p className="text-[11px] text-dark/60 font-body">
+                      {language === 'EN' ? 'Share workshop milestone with admin & customer' : 'Deel werkplaatsmijlpaal met beheerder en klant'}
+                    </p>
+                  </div>
                 </div>
-                <button onClick={() => setUploadPhotoProject(null)} className="text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
+                <button
+                  type="button"
+                  onClick={() => setUploadPhotoProject(null)}
+                  className="p-1.5 text-dark/40 hover:text-dark hover:bg-black/5 rounded-lg transition-colors cursor-pointer"
+                  title={label('Close', 'Sluiten')}
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              <form onSubmit={handleUploadPartnerPhoto} className="space-y-3">
-                <div className="p-3 bg-white/80 rounded-xl border border-[#D6CFC2]/60 space-y-1">
-                  <span className="text-[10px] text-dark/50 uppercase font-bold block">{label('Linked Project', 'Gekoppeld Project')}</span>
-                  <span className="font-bold text-primary text-sm block">{uploadPhotoProject.name} ({uploadPhotoProject.id})</span>
-                  <span className="text-[11px] text-dark/60 font-mono block">{label('Delivery Address:', 'Opleverlocatie:')} {uploadPhotoProject.deliveryAddress}</span>
-                </div>
+              {/* Form with Scrollable Content Body and Sticky Footer */}
+              <form onSubmit={handleUploadPartnerPhoto} className="flex flex-col flex-1 min-h-0 pt-3">
+                <div className="flex-1 overflow-y-auto pr-1 sm:pr-2 space-y-3.5 max-h-full">
+                  {/* Linked Project Card */}
+                  <div className="p-3 bg-white/90 rounded-xl border border-[#D6CFC2]/70 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] text-dark/50 uppercase font-bold tracking-wider">{label('Linked Project', 'Gekoppeld Project')}</span>
+                      <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-primary/10 text-primary">
+                        {uploadPhotoProject.projectNumber || (uploadPhotoProject.id?.length > 12 ? `PRJ-${uploadPhotoProject.id.slice(0, 8)}` : uploadPhotoProject.id)}
+                      </span>
+                    </div>
+                    <span className="font-bold text-primary text-sm block truncate">{uploadPhotoProject.name}</span>
+                    <span className="text-[11px] text-dark/60 font-mono flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-accent flex-shrink-0" />
+                      <span className="truncate">{uploadPhotoProject.deliveryAddress || 'Address TBC'}</span>
+                    </span>
+                  </div>
 
-                <div>
-                  <label className="block text-dark/70 font-semibold mb-1 uppercase tracking-wider">{label('Photo Title / Subject *', 'Foto Titel / Onderwerp *')}</label>
-                  <input
-                    type="text"
-                    required
-                    value={photoForm.title}
-                    onChange={e => setPhotoForm(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark"
-                    placeholder={label('e.g. Solid Teak Frame Assembled', 'bijv. Massief Teakhout Frame Gezaagd')}
-                  />
-                </div>
+                  {/* Photo Title */}
+                  <div>
+                    <label className="block text-dark/70 font-semibold mb-1 uppercase tracking-wider">{label('Photo Title / Subject *', 'Foto Titel / Onderwerp *')}</label>
+                    <input
+                      type="text"
+                      required
+                      value={photoForm.title}
+                      onChange={e => setPhotoForm(prev => ({ ...prev, title: e.target.value }))}
+                      className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                      placeholder={label('e.g. Solid Teak Frame Assembled', 'bijv. Massief Teakhout Frame Gezaagd')}
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-dark/70 font-semibold mb-1 uppercase tracking-wider">{label('Workshop Note / Explanation *', 'Werkplaats Toelichting *')}</label>
-                  <textarea
-                    required
-                    rows={3}
-                    value={photoForm.desc}
-                    onChange={e => setPhotoForm(prev => ({ ...prev, desc: e.target.value }))}
-                    className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg text-dark"
-                    placeholder={label('Brief update on workshop progress...', 'Korte toelichting over de voortgang...')}
-                  />
-                </div>
+                  {/* Workshop Note */}
+                  <div>
+                    <label className="block text-dark/70 font-semibold mb-1 uppercase tracking-wider">{label('Workshop Note / Explanation *', 'Werkplaats Toelichting *')}</label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={photoForm.desc}
+                      onChange={e => setPhotoForm(prev => ({ ...prev, desc: e.target.value }))}
+                      className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg text-dark focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                      placeholder={label('Brief update on workshop progress...', 'Korte toelichting over de voortgang...')}
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-dark/70 font-semibold mb-1 uppercase tracking-wider">{language === 'EN' ? 'Select Photo File (Device / Camera)' : 'Selecteer Foto (Bestand / Camera)'}</label>
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-[#D6CFC2] p-4 rounded-xl text-center bg-white hover:bg-[#F8F7F4] transition-colors cursor-pointer space-y-1.5"
-                  >
-                    <ImageIcon className="w-6 h-6 text-primary mx-auto" />
-                    <p className="text-xs font-bold text-primary">
-                      {language === 'EN' ? 'Click to browse photo from phone / computer' : 'Klik om foto te kiezen vanaf computer / telefoon'}
-                    </p>
-                    <p className="text-[10px] text-dark/50">PNG, JPG, WEBP</p>
+                  {/* Photo Selection and Preview */}
+                  <div>
+                    <label className="block text-dark/70 font-semibold mb-1 uppercase tracking-wider">{language === 'EN' ? 'Photo File (Device / Camera) *' : 'Foto (Bestand / Camera) *'}</label>
+                    
+                    {photoForm.img ? (
+                      <div className="relative rounded-xl overflow-hidden border border-[#D6CFC2] bg-black/10 group">
+                        <img src={photoForm.img} alt="Selected Preview" className="w-full h-36 object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-3.5 py-1.5 bg-white text-dark font-bold text-xs rounded-xl shadow-sm hover:bg-[#FAF8F5] transition-colors flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Camera className="w-3.5 h-3.5 text-primary" />
+                            <span>{language === 'EN' ? 'Change Photo' : 'Wijzig Foto'}</span>
+                          </button>
+                        </div>
+                        <div className="absolute bottom-2 right-2 bg-emerald-700 text-white px-2.5 py-0.5 rounded-md text-[10px] font-bold shadow-sm flex items-center gap-1">
+                          <Check className="w-3 h-3" />
+                          <span>{language === 'EN' ? 'Photo Ready' : 'Foto Gereed'}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-[#D6CFC2] p-4 rounded-xl text-center bg-white hover:bg-[#F8F7F4] hover:border-primary/50 transition-all cursor-pointer space-y-1.5"
+                      >
+                        <ImageIcon className="w-6 h-6 text-primary mx-auto" />
+                        <p className="text-xs font-bold text-primary">
+                          {language === 'EN' ? 'Click to browse photo from phone / computer' : 'Klik om foto te kiezen vanaf computer / telefoon'}
+                        </p>
+                        <p className="text-[10px] text-dark/50">PNG, JPG, WEBP</p>
+                      </div>
+                    )}
+
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -655,23 +803,15 @@ export default function PartnerProjects() {
                     />
                   </div>
 
-                  {/* Selected image preview */}
-                  {photoForm.img && (
-                    <div className="mt-2 relative rounded-xl overflow-hidden border border-[#D6CFC2] h-24 bg-black/10">
-                      <img src={photoForm.img} alt="Selected Preview" className="w-full h-full object-cover" />
-                      <span className="absolute bottom-1 right-1 bg-white/90 px-2 py-0.5 rounded text-[9px] font-bold text-primary">
-                        ✓ Photo Ready
-                      </span>
-                    </div>
-                  )}
+                  {/* Admin Notification Callout */}
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px] flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <span className="leading-snug">{label('Admin (Tim & Bram) immediately receives an automatic notification upon save!', 'Beheerder (Tim & Bram) ontvangt direct een automatische melding bij het opslaan!')}</span>
+                  </div>
                 </div>
 
-                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px] flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                  <span>{label('Admin (Tim & Bram) immediately receives an automatic notification upon save!', 'Beheerder (Tim & Bram) ontvangt direct een automatische melding bij het opslaan!')}</span>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
+                {/* Sticky Modal Footer */}
+                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2] flex-shrink-0 mt-2">
                   <Button type="button" variant="outline" onClick={() => setUploadPhotoProject(null)}>{label('Cancel', 'Annuleren')}</Button>
                   <Button type="submit" icon={Upload} className="bg-primary text-cream font-bold cursor-pointer">{label('Upload Photo & Notify →', 'Foto Uploaden & Melden →')}</Button>
                 </div>

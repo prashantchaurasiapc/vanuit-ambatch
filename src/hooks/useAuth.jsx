@@ -5,12 +5,13 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const savedUser = sessionStorage.getItem('auth_user');
+    const savedUser = sessionStorage.getItem('auth_user') || localStorage.getItem('auth_user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
   // On first mount: verify session is still valid with backend
   useEffect(() => {
+<<<<<<< HEAD
     const savedUser = sessionStorage.getItem('auth_user');
     const savedToken = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
 
@@ -27,11 +28,20 @@ export function AuthProvider({ children }) {
         .catch(() => {});
     }
 
+=======
+    const savedUser = sessionStorage.getItem('auth_user') || localStorage.getItem('auth_user');
+>>>>>>> d438597e9c3877d85325b35b08f86186134eec68
     if (savedUser) {
       // Silently verify token is still valid; clear session if not
       api.get('/auth/me').then((res) => {
         if (!res.success || !res.data?.user) {
+<<<<<<< HEAD
           // If 401 unauthenticated, clear session
+=======
+          setUser(null);
+          sessionStorage.removeItem('auth_user');
+          localStorage.removeItem('auth_user');
+>>>>>>> d438597e9c3877d85325b35b08f86186134eec68
         } else {
           // Refresh user data from backend (in case role/name changed)
           const fresh = {
@@ -45,6 +55,7 @@ export function AuthProvider({ children }) {
           };
           setUser(fresh);
           sessionStorage.setItem('auth_user', JSON.stringify(fresh));
+          localStorage.setItem('auth_user', JSON.stringify(fresh));
         }
       }).catch(() => {
         // Network error — keep cached session, don't force logout
@@ -58,8 +69,13 @@ export function AuthProvider({ children }) {
    */
   const login = (userData, token = null) => {
     if (token) {
+<<<<<<< HEAD
       sessionStorage.setItem('auth_token', token);
       localStorage.setItem('auth_token', token);
+=======
+      sessionStorage.setItem('va_token', token);
+      localStorage.setItem('va_token', token);
+>>>>>>> d438597e9c3877d85325b35b08f86186134eec68
     }
     const normalized = {
       id:             userData.id,
@@ -72,6 +88,7 @@ export function AuthProvider({ children }) {
     };
     setUser(normalized);
     sessionStorage.setItem('auth_user', JSON.stringify(normalized));
+    localStorage.setItem('auth_user', JSON.stringify(normalized));
   };
 
   const logout = async () => {
@@ -82,8 +99,14 @@ export function AuthProvider({ children }) {
     } finally {
       setUser(null);
       sessionStorage.removeItem('auth_user');
+<<<<<<< HEAD
       sessionStorage.removeItem('auth_token');
       localStorage.removeItem('auth_token');
+=======
+      sessionStorage.removeItem('va_token');
+      localStorage.removeItem('auth_user');
+      localStorage.removeItem('va_token');
+>>>>>>> d438597e9c3877d85325b35b08f86186134eec68
       window.location.href = '/login';
     }
   };

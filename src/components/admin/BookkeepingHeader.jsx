@@ -55,7 +55,7 @@ export default function BookkeepingHeader({ activeTab = 'quotes' }) {
             {language === 'NL' ? 'BEHEERDERSPORTAAL · BOEKHOUDING & FINANCIËN' : 'ADMIN PORTAL · BOOKKEEPING & FINANCE'}
           </span>
           <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#33422C] mt-0.5">
-            {t('finance.title') || (language === 'NL' ? 'Boekhouding & Financiën' : 'Bookkeeping & Finance')}
+            {language === 'NL' ? 'Boekhouding & Financiën' : 'Bookkeeping & Finance'}
           </h2>
         </div>
 

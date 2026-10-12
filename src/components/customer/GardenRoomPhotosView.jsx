@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, Sparkles, Camera, Image, Check, Heart, X } from 'lucide-react';
-
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * GardenRoomPhotosView Component (1-to-1 implementation of Client Mockup PDF Garden Rooms Page 10 & Screenshot 1)
@@ -13,17 +13,28 @@ import { MessageSquare, Sparkles, Camera, Image, Check, Heart, X } from 'lucide-
  * - Section 3: Instagram Consent Banner (Mag jouw buitenverblijf op onze Instagram?)
  */
 export default function GardenRoomPhotosView({ project = null }) {
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
+
   const [feedbackToast, setFeedbackToast] = useState('');
   const [instagramChoice, setInstagramChoice] = useState(null); // 'yes' | 'no'
 
-  const projectCode = project?.id || '2026-021';
+  const projectCode = project?.projectNumber || project?.id || 'PRJ-2026-021';
 
   const handleInstagramConsent = (choice) => {
     setInstagramChoice(choice);
     if (choice === 'yes') {
-      setFeedbackToast('Thank you! We will reach out for your best photo when your garden room is completed.');
+      setFeedbackToast(
+        isNl
+          ? 'Bedankt! We nemen contact met je op voor de mooiste foto zodra je buitenverblijf gereed is.'
+          : 'Thank you! We will reach out for your best photo when your garden room is completed.'
+      );
     } else {
-      setFeedbackToast('Understood! We respect your privacy.');
+      setFeedbackToast(
+        isNl
+          ? 'Begrepen! We respecteren je privacy.'
+          : 'Understood! We respect your privacy.'
+      );
     }
     setTimeout(() => setFeedbackToast(''), 4000);
   };
@@ -41,11 +52,11 @@ export default function GardenRoomPhotosView({ project = null }) {
       {/* 1. TOP HEADER TAG BAR (1-to-1 Client Mockup Screenshot 1) */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-dark/60">
         <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-md font-bold">
-          Custom Garden Room — project {projectCode}
+          {isNl ? 'Maatwerk Buitenverblijf' : 'Custom Garden Room'} — project {projectCode}
         </span>
         <div className="flex items-center gap-2">
           <span className="bg-cream border border-[#D6CFC2] px-2 py-0.5 rounded-md font-bold text-[11px]">
-            Updates 3
+            {isNl ? '3 Updates' : 'Updates 3'}
           </span>
           <a
             href="https://wa.me/31682008025"
@@ -54,7 +65,7 @@ export default function GardenRoomPhotosView({ project = null }) {
             className="bg-primary text-cream px-3 py-1 rounded-xl text-xs font-bold hover:bg-primary/90 transition-all flex items-center gap-1 shadow-xs"
           >
             <MessageSquare className="w-3.5 h-3.5 text-accent" />
-            <span>WhatsApp us</span>
+            <span>{isNl ? 'WhatsApp ons' : 'WhatsApp us'}</span>
           </a>
         </div>
       </div>
@@ -62,17 +73,19 @@ export default function GardenRoomPhotosView({ project = null }) {
       {/* 2. PAGE TITLE & SUBTITLE */}
       <div className="space-y-1">
         <h1 className="text-2xl sm:text-3xl font-heading font-bold text-primary">
-          Photos & updates
+          {isNl ? 'Foto\'s & updates' : 'Photos & updates'}
         </h1>
         <p className="text-xs sm:text-sm text-dark/70 font-medium">
-          Follow the construction of your garden room — from ground breaking to handover. We send a message with every update.
+          {isNl
+            ? 'Volg de bouw van jouw buitenverblijf — van eerste grondwerk tot oplevering. Bij elke update sturen we een bericht.'
+            : 'Follow the construction of your garden room — from ground breaking to handover. We send a message with every update.'}
         </p>
       </div>
 
       {/* 3. SECTION 1: WEEK 34 · DESIGN (1-to-1 Screenshot 1) */}
       <div className="space-y-3 pt-1">
         <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider text-accent block">
-          WEEK 34 · DESIGN
+          {isNl ? 'WEEK 34 · ONTWERP' : 'WEEK 34 · DESIGN'}
         </span>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
@@ -86,21 +99,23 @@ export default function GardenRoomPhotosView({ project = null }) {
                 </div>
                 <div>
                   <h4 className="font-heading font-bold text-primary text-sm sm:text-base">
-                    Update from Tim
+                    {isNl ? 'Update van Tim' : 'Update from Tim'}
                   </h4>
                   <p className="text-[11px] font-mono text-dark/60 font-medium">
-                    14 August 2026
+                    {isNl ? '14 augustus 2026' : '14 August 2026'}
                   </p>
                 </div>
               </div>
 
               <span className="bg-[#D7E3EC] text-[#2B4B68] text-[11px] font-mono font-bold px-3 py-1 rounded-full border border-[#B8D0E0]">
-                • New
+                {isNl ? '• Nieuw' : '• New'}
               </span>
             </div>
 
             <p className="text-xs sm:text-sm text-dark/80 leading-relaxed italic font-medium bg-white/60 p-4 rounded-xl border border-[#D6CFC2]/60">
-              "Render version 2 is ready. We moved the sliding door to the south side — with the afternoon sun that will be the best spot. Next step is the site survey; the proposal is in your portal."
+              {isNl
+                ? '"Renderversie 2 is gereed. We hebben de schuifpui naar de zuidzijde verplaatst — met de middagzon is dat veruit de beste plek. Volgende stap is de inmeetsessie / schouw; het voorstel staat in je portaal."'
+                : '"Render version 2 is ready. We moved the sliding door to the south side — with the afternoon sun that will be the best spot. Next step is the site survey; the proposal is in your portal."'}
             </p>
           </div>
 
@@ -118,16 +133,16 @@ export default function GardenRoomPhotosView({ project = null }) {
 
               {/* Render Badge Overlay */}
               <div className="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-mono font-bold px-2.5 py-1 rounded-md tracking-wider">
-                RENDER · VERSION 2
+                {isNl ? 'RENDER · VERSIE 2' : 'RENDER · VERSION 2'}
               </div>
             </div>
 
             <div className="space-y-1 flex-1 flex flex-col justify-end">
               <h4 className="font-heading font-bold text-primary text-sm">
-                Design completed
+                {isNl ? 'Ontwerp afgerond' : 'Design completed'}
               </h4>
               <p className="text-xs text-dark/70 font-medium">
-                All views are available under Design & renders.
+                {isNl ? 'Alle aanzichten zijn te bekijken onder Ontwerp & renders.' : 'All views are available under Design & renders.'}
               </p>
             </div>
           </div>
@@ -138,7 +153,7 @@ export default function GardenRoomPhotosView({ project = null }) {
       {/* 4. SECTION 2: UPCOMING MILESTONES (NOG TE KOMEN 1-to-1 Screenshot 1) */}
       <div className="space-y-3 pt-2">
         <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider text-accent block">
-          UPCOMING MILESTONES
+          {isNl ? 'AANKOMENDE MIJLPALEN' : 'UPCOMING MILESTONES'}
         </span>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -151,7 +166,7 @@ export default function GardenRoomPhotosView({ project = null }) {
               </span>
             </div>
             <h4 className="font-heading font-bold text-primary text-sm">
-              Preparation & foundation
+              {isNl ? 'Voorbereiding & fundering' : 'Preparation & foundation'}
             </h4>
           </div>
 
@@ -163,7 +178,7 @@ export default function GardenRoomPhotosView({ project = null }) {
               </span>
             </div>
             <h4 className="font-heading font-bold text-primary text-sm">
-              Structure erected
+              {isNl ? 'Plaatsing casco' : 'Structure erected'}
             </h4>
           </div>
 
@@ -175,7 +190,7 @@ export default function GardenRoomPhotosView({ project = null }) {
               </span>
             </div>
             <h4 className="font-heading font-bold text-primary text-sm">
-              Delivery & handover
+              {isNl ? 'Oplevering & overdracht' : 'Delivery & handover'}
             </h4>
           </div>
 
@@ -187,10 +202,12 @@ export default function GardenRoomPhotosView({ project = null }) {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="space-y-1.5 max-w-2xl">
             <h3 className="text-base sm:text-lg font-heading font-bold text-primary">
-              May we share your garden room on our Instagram?
+              {isNl ? 'Mag jouw buitenverblijf op onze Instagram?' : 'May we share your garden room on our Instagram?'}
             </h3>
             <p className="text-xs sm:text-xs text-dark/70 leading-relaxed font-medium">
-              Later, when it's built: send us your best photo. We never post anything without your permission, and your address or name will never be included.
+              {isNl
+                ? 'Straks als hij staat: stuur ons je mooiste foto. We plaatsen nooit iets zonder jouw toestemming en vermelden nooit je adres of naam.'
+                : 'Later, when it\'s built: send us your best photo. We never post anything without your permission, and your address or name will never be included.'}
             </p>
           </div>
 
@@ -205,8 +222,7 @@ export default function GardenRoomPhotosView({ project = null }) {
               }`}
             >
               <Camera className="w-3.5 h-3.5 text-pink-300" />
-
-              <span>Great, hold me to it</span>
+              <span>{isNl ? 'Top, hou me eraan' : 'Great, hold me to it'}</span>
             </button>
 
             <button
@@ -218,7 +234,7 @@ export default function GardenRoomPhotosView({ project = null }) {
                   : 'bg-white text-dark/80 border border-[#D6CFC2] hover:bg-gray-50'
               }`}
             >
-              <span>Rather not</span>
+              <span>{isNl ? 'Liever niet' : 'Rather not'}</span>
             </button>
           </div>
         </div>

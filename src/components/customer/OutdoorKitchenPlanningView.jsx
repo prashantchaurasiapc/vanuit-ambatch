@@ -40,6 +40,8 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
 
   const projectCode = project?.projectNumber || project?.id || '';
 
+  const isNl = language === 'NL';
+
   const toggleCheck = async (key) => {
     const nextVal = !checklist[key];
     setChecklist(prev => ({ ...prev, [key]: nextVal }));
@@ -51,7 +53,7 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
         console.warn('Checklist update error:', err);
       }
     }
-    setFeedbackToast('Delivery prep checklist updated!');
+    setFeedbackToast(isNl ? 'Voorbereidingschecklist bijgewerkt!' : 'Delivery prep checklist updated!');
     setTimeout(() => setFeedbackToast(''), 3000);
   };
 
@@ -72,14 +74,14 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
         console.warn('API delivery slot confirm:', e);
       }
     }
-    setFeedbackToast('Delivery appointment approved!');
+    setFeedbackToast(isNl ? 'Bezorgmoment goedgekeurd & ingepland!' : 'Delivery appointment approved & scheduled!');
     setIsApproving(false);
     setTimeout(() => setFeedbackToast(''), 4000);
   };
 
   const handleRequestOtherDate = async () => {
     if (!customDateNote.trim()) {
-      setFeedbackToast('Please enter your preferred delivery date/time first.');
+      setFeedbackToast(isNl ? 'Vul eerst jouw gewenste datum of tijdvak in.' : 'Please enter your preferred delivery date/time first.');
       setTimeout(() => setFeedbackToast(''), 3000);
       return;
     }
@@ -91,61 +93,63 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
         });
       } catch (e) {}
     }
-    setFeedbackToast('Alternative delivery date request submitted! We will contact you shortly.');
+    setFeedbackToast(isNl ? 'Verzoek voor andere datum ingediend! We nemen snel contact op.' : 'Alternative delivery date request submitted! We will contact you shortly.');
     setCustomDateNote('');
     setTimeout(() => setFeedbackToast(''), 4000);
   };
 
   const timelineSteps = [
     {
-      title: 'Inquiry received',
-      date: '14 July 2026 · via Instagram',
+      title: isNl ? 'Aanvraag ontvangen' : 'Inquiry received',
+      date: isNl ? '14 juli 2026 · via Instagram' : '14 July 2026 · via Instagram',
       status: 'completed'
     },
     {
-      title: 'Price indication sent',
-      date: '15 July 2026 · via WhatsApp',
+      title: isNl ? 'Prijsindicatie verzonden' : 'Price indication sent',
+      date: isNl ? '15 juli 2026 · via WhatsApp' : '15 July 2026 · via WhatsApp',
       status: 'completed'
     },
     {
-      title: 'Quote sent',
-      date: '21 July 2026 · OF-2026325',
+      title: isNl ? 'Offerte verzonden' : 'Quote sent',
+      date: isNl ? '21 juli 2026 · OF-2026325' : '21 July 2026 · OF-2026325',
       status: 'completed'
     },
     {
-      title: 'Approval & order confirmed',
-      date: '11 August 2026 · order dispatched to specialist craftsman',
+      title: isNl ? 'Akkoord & bestelling bevestigd' : 'Approval & order confirmed',
+      date: isNl ? '11 augustus 2026 · opdracht doorgezet naar vakman' : '11 August 2026 · order dispatched to specialist craftsman',
       status: 'completed'
     },
     {
-      title: 'Working drawing shared',
-      date: '12 August 2026 · version 2, for review',
+      title: isNl ? 'Werktekening gedeeld' : 'Working drawing shared',
+      date: isNl ? '12 augustus 2026 · versie 2, ter controle' : '12 August 2026 · version 2, for review',
       status: 'completed'
     },
     {
-      title: 'Materials received',
-      date: '14 August 2026 · Thermo Fraké timber and ceramic stones',
+      title: isNl ? 'Materialen ontvangen' : 'Materials received',
+      date: isNl ? '14 augustus 2026 · Thermo Fraké hout en keramiek bladen' : '14 August 2026 · Thermo Fraké timber and ceramic stones',
       status: 'completed'
     },
     {
-      title: 'In the workshop',
-      date: 'Started 17 August 2026',
+      title: isNl ? 'In de werkplaats' : 'In the workshop',
+      date: isNl ? 'Gestart 17 augustus 2026' : 'Started 17 August 2026',
       status: 'active',
-      activeBoxText: 'Frame and cabinet modules are assembled. This week: finishing the worktop and sawing out the Big Green Egg cutout. Afterwards the entire kitchen receives a natural oil treatment as agreed.'
+      activeBoxText: isNl 
+        ? 'Het frame en de kastmodules zijn gemonteerd. Deze week: afwerken van het werkblad en uitzagen van de Big Green Egg uitsparing. Daarna krijgt de gehele keuken een natuurlijke oliebehandeling zoals afgesproken.'
+        : 'Frame and cabinet modules are assembled. This week: finishing the worktop and sawing out the Big Green Egg cutout. Afterwards the entire kitchen receives a natural oil treatment as agreed.'
     },
     {
-      title: 'Final quality inspection by Tim & Bram',
-      date: 'Around 10 September 2026',
+      title: isNl ? 'Eindcontrole door Tim & Bram' : 'Final quality inspection by Tim & Bram',
+      date: isNl ? 'Rond 10 september 2026' : 'Around 10 September 2026',
       status: 'pending'
     },
     {
-      title: 'Delivery & installation',
-      date: 'Week 38 · 14 to 18 September 2026',
+      title: isNl ? 'Levering & montage' : 'Delivery & installation',
+      date: isNl ? 'Week 38 · 14 t/m 18 september 2026' : 'Week 38 · 14 to 18 September 2026',
       status: 'pending'
     },
     {
-      title: 'Aftercare & warranty',
-      date: 'From completion · warranty & maintenance support',
+      title: isNl ? 'Nazorg & garantie' : 'Aftercare & warranty',
+      date: isNl ? 'Vanaf oplevering · garantie & onderhoudsadvies' : 'From completion · warranty & maintenance support',
       status: 'pending'
     }
   ];
@@ -163,11 +167,11 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
       {/* 1. TOP HEADER TAG BAR (1-to-1 Client Mockup Screenshot 1) */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-dark/60">
         <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-md font-bold">
-          Custom Outdoor Kitchen — project {projectCode}
+          {isNl ? 'Maatwerk Buitenkeuken' : 'Custom Outdoor Kitchen'} — project {projectCode || 'PRJ-2026-001'}
         </span>
         <div className="flex items-center gap-2">
           <span className="bg-cream border border-[#D6CFC2] px-2 py-0.5 rounded-md font-bold text-[11px]">
-            Updates 3
+            {isNl ? '3 Updates' : 'Updates 3'}
           </span>
           <a
             href="https://wa.me/31682008025"
@@ -176,7 +180,7 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
             className="bg-primary text-cream px-3 py-1 rounded-xl text-xs font-bold hover:bg-primary/90 transition-all flex items-center gap-1 shadow-xs"
           >
             <MessageSquare className="w-3.5 h-3.5 text-accent" />
-            <span>WhatsApp us</span>
+            <span>{isNl ? 'WhatsApp ons' : 'WhatsApp us'}</span>
           </a>
         </div>
       </div>
@@ -184,10 +188,10 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
       {/* 2. PAGE TITLE & SUBTITLE */}
       <div className="space-y-1">
         <h1 className="text-2xl sm:text-3xl font-heading font-bold text-primary">
-          {language === 'NL' ? 'Planning & levering' : 'Planning & delivery'}
+          {isNl ? 'Planning & levering' : 'Planning & delivery'}
         </h1>
         <p className="text-xs sm:text-sm text-dark/70 font-medium">
-          {language === 'NL' 
+          {isNl 
             ? "Zo vordert jouw project. Als er iets verandert, hoor je het direct van ons — ook bij eventuele vertragingen."
             : "This is how your project progresses. If anything changes, you'll hear it right away from us — even if it's bad news."}
         </p>
@@ -197,21 +201,21 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
       <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-5 sm:p-6 rounded-2xl shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider text-accent">
-            {language === 'NL' ? 'VERWACHTE LEVERING' : 'EXPECTED DELIVERY'}
+            {isNl ? 'VERWACHTE LEVERING' : 'EXPECTED DELIVERY'}
           </span>
           {/* Soft Green Pill */}
           <span className="bg-[#E5F0E3] text-[#2D5A27] px-3 py-1 rounded-full text-[11px] font-mono font-bold flex items-center gap-1">
             <Check className="w-3.5 h-3.5 text-[#2D5A27]" />
-            <span>{language === 'NL' ? 'Op schema' : 'On schedule'}</span>
+            <span>{isNl ? 'Op schema' : 'On schedule'}</span>
           </span>
         </div>
 
         <div className="space-y-1">
           <h2 className="text-xl sm:text-2xl font-heading font-bold text-primary">
-            Week 38 · 14 {language === 'NL' ? 't/m' : 'to'} 18 {language === 'NL' ? 'september' : 'September'} 2026
+            Week 38 · 14 {isNl ? 't/m' : 'to'} 18 {isNl ? 'september' : 'September'} 2026
           </h2>
           <p className="text-xs sm:text-sm text-dark/70 leading-relaxed font-medium">
-            {language === 'NL'
+            {isNl
               ? 'Wij doen een voorstel voor dag en tijdvak — goedkeuren kan met één klik.'
               : 'We make a proposal for day and time slot — approval takes just one click.'}
           </p>
@@ -222,7 +226,7 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
       <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-5 sm:p-6 rounded-2xl shadow-xs space-y-4">
         <div className="flex justify-between items-center border-b border-[#D6CFC2]/60 pb-3">
           <h3 className="text-base sm:text-lg font-heading font-bold text-primary">
-            {language === 'NL' ? 'Ons voorstel voor de levering' : 'Our proposal for delivery'}
+            {isNl ? 'Ons voorstel voor de levering' : 'Our proposal for delivery'}
           </h3>
           {/* Soft Amber Pill */}
           <span className={`text-[11px] font-mono font-bold px-3 py-1 rounded-full border transition-all ${
@@ -231,18 +235,18 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
               : 'bg-[#FDF8EE] text-[#9E7B3B] border-[#E8D4B0]'
           }`}>
             {deliveryApproved 
-              ? (language === 'NL' ? '✓ Leverdatum bevestigd' : '✓ Delivery date confirmed') 
-              : (language === 'NL' ? '• Wacht op jouw akkoord' : '• Awaiting your approval')}
+              ? (isNl ? '✓ Leverdatum bevestigd' : '✓ Delivery date confirmed') 
+              : (isNl ? '• Wacht op jouw akkoord' : '• Awaiting your approval')}
           </span>
         </div>
 
         {/* Soft Sage-Green Date Highlight Box */}
         <div className="bg-[#EAF0E8] border border-[#BACBB7] p-4.5 rounded-2xl space-y-1.5 max-w-lg shadow-2xs">
           <div className="text-base sm:text-lg font-heading font-bold text-primary">
-            {language === 'NL' ? 'Dinsdag 15 september 2026' : 'Tuesday 15 September 2026'}
+            {isNl ? 'Dinsdag 15 september 2026' : 'Tuesday 15 September 2026'}
           </div>
           <div className="text-xs sm:text-[13px] text-dark/80 font-medium leading-relaxed">
-            {language === 'NL'
+            {isNl
               ? 'tussen 13:00 en 16:00 · we komen met zijn tweeën en nemen circa 1 uur de tijd, inclusief uitleg'
               : 'between 13:00 and 16:00 · two of us will come and we will take about an hour, including explanation'}
           </div>
@@ -263,13 +267,13 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
             <Check className="w-4 h-4" />
             <span>
               {deliveryApproved 
-                ? (language === 'NL' ? 'Goedgekeurd & Bevestigd' : 'Approved & Confirmed') 
-                : (language === 'NL' ? 'Akkoord — plan deze dag in' : 'Approve — schedule this day')}
+                ? (isNl ? 'Goedgekeurd & Bevestigd' : 'Approved & Confirmed') 
+                : (isNl ? 'Akkoord — plan deze dag in' : 'Approve — schedule this day')}
             </span>
           </button>
 
           <span className="text-[11px] sm:text-xs text-dark/60 italic font-medium">
-            {language === 'NL' 
+            {isNl 
               ? 'Aanpassingen kunnen kosteloos tot 3 dagen van tevoren worden doorgegeven.' 
               : 'Modifications can be made free of charge up to 3 days in advance.'}
           </span>
@@ -278,7 +282,9 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
         {/* Custom Date Input Prompt */}
         <div className="pt-3 border-t border-[#D6CFC2]/60 space-y-2">
           <p className="text-xs sm:text-xs text-dark/70 font-medium">
-            Does this day not suit you? Let us know when it works for you.
+            {isNl 
+              ? 'Komt deze dag niet uit? Laat ons weten wanneer het wel schikt.'
+              : 'Does this day not suit you? Let us know when it works for you.'}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-2.5 max-w-xl">
@@ -286,7 +292,7 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
               type="text"
               value={customDateNote}
               onChange={(e) => setCustomDateNote(e.target.value)}
-              placeholder="For example: Thursday works better, or morning only"
+              placeholder={isNl ? 'Bijvoorbeeld: Donderdag komt beter uit, of alleen ochtend' : 'For example: Thursday works better, or morning only'}
               className="flex-1 bg-white border border-[#D6CFC2] px-4 py-2.5 rounded-xl text-xs text-dark focus:outline-none focus:border-primary shadow-2xs placeholder:text-dark/40 font-medium"
             />
             <button
@@ -294,7 +300,7 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
               onClick={handleRequestOtherDate}
               className="px-4 py-2.5 bg-[#FAF8F5] text-dark/80 border border-[#D6CFC2] text-xs font-bold rounded-xl hover:bg-gray-50 transition-all cursor-pointer shadow-2xs flex-shrink-0"
             >
-              Request another day
+              {isNl ? 'Andere dag aanvragen' : 'Request another day'}
             </button>
           </div>
         </div>
@@ -306,7 +312,7 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
         {/* LEFT COLUMN: DETAILED PROJECT TIMELINE (2 Columns wide) */}
         <div className="md:col-span-2 bg-[#FAF8F5] border border-[#D8D2C5] p-5 sm:p-6 rounded-2xl shadow-xs space-y-5">
           <h3 className="text-base sm:text-lg font-heading font-bold text-primary border-b border-[#D6CFC2]/60 pb-3">
-            Timeline of your project
+            {isNl ? 'Tijdlijn van jouw project' : 'Timeline of your project'}
           </h3>
 
           <div className="space-y-4 relative pl-1">
@@ -343,9 +349,7 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
                   {/* Step Content */}
                   <div className="flex-1 pb-2 space-y-1">
                     <div className="flex justify-between items-start flex-wrap gap-1">
-                      <h4 className={`font-heading font-bold text-sm sm:text-base ${
-                        isActive ? 'text-primary' : 'text-primary'
-                      }`}>
+                      <h4 className="font-heading font-bold text-sm sm:text-base text-primary">
                         {step.title}
                       </h4>
                     </div>
@@ -373,25 +377,41 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
           {/* 1. HOW DELIVERY WORKS CARD (Zo verloopt de levering) */}
           <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-5 rounded-2xl shadow-xs space-y-3">
             <h4 className="font-heading font-bold text-primary text-sm sm:text-base border-b border-[#D6CFC2]/60 pb-2">
-              How delivery works
+              {isNl ? 'Zo verloopt de levering' : 'How delivery works'}
             </h4>
 
             <ol className="space-y-3 text-xs sm:text-[13px] text-dark/80 font-medium">
               <li className="flex items-start gap-2.5">
                 <span className="font-bold text-primary font-mono text-xs w-4 flex-shrink-0">1</span>
-                <span>Two of us will arrive and deliver directly to the exact location where your kitchen will stand.</span>
+                <span>
+                  {isNl 
+                    ? 'We komen met twee personen en leveren direct op de plek waar de keuken komt te staan.' 
+                    : 'Two of us will arrive and deliver directly to the exact location where your kitchen will stand.'}
+                </span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="font-bold text-primary font-mono text-xs w-4 flex-shrink-0">2</span>
-                <span>We level the kitchen precisely and inspect all drawers and soft-close hinges.</span>
+                <span>
+                  {isNl 
+                    ? 'We stellen de keuken waterpas af en controleren alle lades en soft-close scharnieren.' 
+                    : 'We level the kitchen precisely and inspect all drawers and soft-close hinges.'}
+                </span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="font-bold text-primary font-mono text-xs w-4 flex-shrink-0">3</span>
-                <span>You receive detailed instructions on usage, care, and initial timber maintenance.</span>
+                <span>
+                  {isNl 
+                    ? 'Je ontvangt duidelijke instructies over gebruik, onderhoud en de eerste houtbehandeling.' 
+                    : 'You receive detailed instructions on usage, care, and initial timber maintenance.'}
+                </span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="font-bold text-primary font-mono text-xs w-4 flex-shrink-0">4</span>
-                <span>Together we complete the handover checklist. Finished in about an hour.</span>
+                <span>
+                  {isNl 
+                    ? 'Samen lopen we het opleverrapport na. Binnen circa een uur gereed.' 
+                    : 'Together we complete the handover checklist. Finished in about an hour.'}
+                </span>
               </li>
             </ol>
           </div>
@@ -399,11 +419,11 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
           {/* 2. PREP CHECKLIST CARD (Zo help je ons) */}
           <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-5 rounded-2xl shadow-xs space-y-3">
             <h4 className="font-heading font-bold text-primary text-sm sm:text-base border-b border-[#D6CFC2]/60 pb-2">
-              How you can help us
+              {isNl ? 'Zo help je ons' : 'How you can help us'}
             </h4>
 
             <p className="text-[11px] sm:text-xs text-dark/70 leading-relaxed font-medium">
-              Check off completed items — so we know as well.
+              {isNl ? 'Vink af wat gereed is — dan weten wij het ook.' : 'Check off completed items — so we know as well.'}
             </p>
 
             <div className="space-y-2.5 pt-1 text-xs sm:text-[13px] text-dark/80">
@@ -415,7 +435,7 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
                   className="mt-0.5 rounded text-primary focus:ring-primary w-4 h-4 border-[#D6CFC2] cursor-pointer"
                 />
                 <span className={checklist.passage ? 'line-through text-dark/50' : 'font-medium'}>
-                  Clear garden access pathway at least 90 cm wide
+                  {isNl ? 'Vrije doorgang naar de tuin van minimaal 90 cm breed' : 'Clear garden access pathway at least 90 cm wide'}
                 </span>
               </label>
 
@@ -427,7 +447,7 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
                   className="mt-0.5 rounded text-primary focus:ring-primary w-4 h-4 border-[#D6CFC2] cursor-pointer"
                 />
                 <span className={checklist.flatGround ? 'line-through text-dark/50' : 'font-medium'}>
-                  Flat, solid ground surface at final installation spot
+                  {isNl ? 'Vlakke, verharde ondergrond op de definitieve plek' : 'Flat, solid ground surface at final installation spot'}
                 </span>
               </label>
 
@@ -439,7 +459,7 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
                   className="mt-0.5 rounded text-primary focus:ring-primary w-4 h-4 border-[#D6CFC2] cursor-pointer"
                 />
                 <span className={checklist.someonePresent ? 'line-through text-dark/50' : 'font-medium'}>
-                  Someone present during the delivery time slot
+                  {isNl ? 'Iemand aanwezig tijdens het afgesproken tijdvak' : 'Someone present during the delivery time slot'}
                 </span>
               </label>
 
@@ -451,7 +471,7 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
                   className="mt-0.5 rounded text-primary focus:ring-primary w-4 h-4 border-[#D6CFC2] cursor-pointer"
                 />
                 <span className={checklist.parking ? 'line-through text-dark/50' : 'font-medium'}>
-                  Parking space for delivery van nearby
+                  {isNl ? 'Parkeergelegenheid voor onze bestelbus dichtbij' : 'Parking space for delivery van nearby'}
                 </span>
               </label>
             </div>

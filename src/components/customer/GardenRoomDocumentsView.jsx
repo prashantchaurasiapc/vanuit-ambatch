@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MessageSquare, Sparkles, Download, Eye, FileText, CheckCircle2, Lock } from 'lucide-react';
 import { downloadDirectPdfFile } from '../../utils/pdfGenerator';
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * GardenRoomDocumentsView Component (1-to-1 implementation of Client Mockup PDF Garden Rooms Screen 6 & Screenshot 1)
@@ -12,14 +13,19 @@ import { downloadDirectPdfFile } from '../../utils/pdfGenerator';
  * - Interactive View PDF Modal & Download PDF Actions
  */
 export default function GardenRoomDocumentsView({ project = null }) {
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
+
   const [feedbackToast, setFeedbackToast] = useState('');
   const [activePdfPreview, setActivePdfPreview] = useState(null);
 
-  const projectCode = project?.id || '2026-021';
+  const projectCode = project?.projectNumber || project?.id || 'PRJ-2026-021';
 
   const handleDownload = (docName) => {
     downloadDirectPdfFile(docName);
-    setFeedbackToast(`Downloaded ${docName} successfully!`);
+    setFeedbackToast(
+      isNl ? `Succesvol gedownload: ${docName}!` : `Downloaded ${docName} successfully!`
+    );
     setTimeout(() => setFeedbackToast(''), 3500);
   };
 
@@ -31,32 +37,32 @@ export default function GardenRoomDocumentsView({ project = null }) {
     {
       id: 1,
       tag: 'OFFERTE',
-      title: 'Quote OF-2026418',
-      desc: '1 August 2026 · including your digital approval',
+      title: isNl ? 'Offerte OF-2026418' : 'Quote OF-2026418',
+      desc: isNl ? '1 augustus 2026 · inclusief jouw digitale akkoord' : '1 August 2026 · including your digital approval',
       status: 'available',
       fileKey: 'quote-garden-room'
     },
     {
       id: 2,
       tag: 'CONTRACT',
-      title: 'Order confirmation',
-      desc: '3 August 2026 · approved by Sander de Vries at 19:32',
+      title: isNl ? 'Opdrachtbevestiging' : 'Order confirmation',
+      desc: isNl ? '3 augustus 2026 · akkoord gegeven door Sander de Vries om 19:32' : '3 August 2026 · approved by Sander de Vries at 19:32',
       status: 'available',
       fileKey: 'contract-garden-room'
     },
     {
       id: 3,
-      tag: 'PERMIT',
-      title: 'Permit check assessment',
-      desc: '5 August 2026 · evaluation: permit-free construction allowed at this location',
+      tag: isNl ? 'VERGUNNING' : 'PERMIT',
+      title: isNl ? 'Vergunningcheck beoordeling' : 'Permit check assessment',
+      desc: isNl ? '5 augustus 2026 · evaluatie: vergunningvrij bouwen toegestaan op deze locatie' : '5 August 2026 · evaluation: permit-free construction allowed at this location',
       status: 'available',
       fileKey: 'permit-check'
     },
     {
       id: 4,
-      tag: 'DRAWING',
-      title: 'Working drawing version 2',
-      desc: '14 August 2026 · for review — dimensions and pad foundations',
+      tag: isNl ? 'TEKENING' : 'DRAWING',
+      title: isNl ? 'Werktekening versie 2' : 'Working drawing version 2',
+      desc: isNl ? '14 augustus 2026 · ter controle — afmetingen en schroeffundamenten' : '14 August 2026 · for review — dimensions and pad foundations',
       isNew: true,
       status: 'available',
       fileKey: 'working-drawing-v2'
@@ -64,54 +70,54 @@ export default function GardenRoomDocumentsView({ project = null }) {
     {
       id: 5,
       tag: 'RENDER',
-      title: 'Render package version 2',
-      desc: '14 August 2026 · all 3D exterior & interior views in high resolution',
+      title: isNl ? 'Renderpakket versie 2' : 'Render package version 2',
+      desc: isNl ? '14 augustus 2026 · alle 3D exterieur- & interieuraanzichten in hoge resolutie' : '14 August 2026 · all 3D exterior & interior views in high resolution',
       status: 'available',
       fileKey: 'render-package-v2'
     },
     {
       id: 6,
-      tag: 'INVOICE',
-      title: 'Invoice 1st term (40%)',
-      desc: '3 August 2026 · € 15,180.00 · paid on 4 August 2026',
+      tag: isNl ? 'FACTUUR' : 'INVOICE',
+      title: isNl ? 'Factuur 1e termijn (40%)' : 'Invoice 1st term (40%)',
+      desc: isNl ? '3 augustus 2026 · € 15.180,00 · betaald op 4 augustus 2026' : '3 August 2026 · € 15,180.00 · paid on 4 August 2026',
       status: 'available',
       fileKey: 'invoice-term-1'
     },
     {
       id: 7,
-      tag: 'GUIDE',
-      title: 'Build week preparation guide',
-      desc: 'Everything to prepare in advance, including neighbour notification letter',
+      tag: isNl ? 'GIDS' : 'GUIDE',
+      title: isNl ? 'Bouwweek voorbereidingsgids' : 'Build week preparation guide',
+      desc: isNl ? 'Alles om tijdig voor te bereiden, inclusief bureninformatiebrief' : 'Everything to prepare in advance, including neighbour notification letter',
       status: 'available',
       fileKey: 'preparation-guide'
     },
     {
       id: 8,
-      tag: 'TERMS',
-      title: 'General terms & conditions',
-      desc: 'Version 2026 · part of your signed order agreement',
+      tag: isNl ? 'VOORWAARDEN' : 'TERMS',
+      title: isNl ? 'Algemene voorwaarden' : 'General terms & conditions',
+      desc: isNl ? 'Versie 2026 · onderdeel van jouw getekende opdracht' : 'Version 2026 · part of your signed order agreement',
       status: 'available',
       fileKey: 'terms-and-conditions'
     },
     {
       id: 9,
-      tag: 'INVOICE',
-      title: 'Invoice 2nd term (40%)',
-      desc: 'Available at the start of construction week',
+      tag: isNl ? 'FACTUUR' : 'INVOICE',
+      title: isNl ? 'Factuur 2e termijn (40%)' : 'Invoice 2nd term (40%)',
+      desc: isNl ? 'Beschikbaar bij aanvang van de bouwweek' : 'Available at the start of construction week',
       status: 'disabled'
     },
     {
       id: 10,
-      tag: 'WARRANTY',
-      title: 'Warranty certificate',
-      desc: 'Available after final handover',
+      tag: isNl ? 'GARANTIE' : 'WARRANTY',
+      title: isNl ? 'Garantiecertificaat' : 'Warranty certificate',
+      desc: isNl ? 'Beschikbaar na definitieve oplevering' : 'Available after final handover',
       status: 'disabled'
     },
     {
       id: 11,
-      tag: 'MANUAL',
-      title: 'Douglas timber & EPDM maintenance guide',
-      desc: 'Available after final handover, with maintenance schedule calendar',
+      tag: isNl ? 'HANDLEIDING' : 'MANUAL',
+      title: isNl ? 'Douglas hout & EPDM onderhoudsgids' : 'Douglas timber & EPDM maintenance guide',
+      desc: isNl ? 'Beschikbaar na oplevering, inclusief onderhoudskalender' : 'Available after final handover, with maintenance schedule calendar',
       status: 'disabled'
     }
   ];
@@ -129,11 +135,11 @@ export default function GardenRoomDocumentsView({ project = null }) {
       {/* 1. TOP HEADER TAG BAR (1-to-1 Client Mockup Screenshot 1) */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-dark/60">
         <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-md font-bold">
-          Custom Garden Room — project {projectCode}
+          {isNl ? 'Maatwerk Buitenverblijf' : 'Custom Garden Room'} — project {projectCode}
         </span>
         <div className="flex items-center gap-2">
           <span className="bg-cream border border-[#D6CFC2] px-2 py-0.5 rounded-md font-bold text-[11px]">
-            Updates 3
+            {isNl ? '3 Updates' : 'Updates 3'}
           </span>
           <a
             href="https://wa.me/31682008025"
@@ -142,7 +148,7 @@ export default function GardenRoomDocumentsView({ project = null }) {
             className="bg-primary text-cream px-3 py-1 rounded-xl text-xs font-bold hover:bg-primary/90 transition-all flex items-center gap-1 shadow-xs"
           >
             <MessageSquare className="w-3.5 h-3.5 text-accent" />
-            <span>WhatsApp us</span>
+            <span>{isNl ? 'WhatsApp ons' : 'WhatsApp us'}</span>
           </a>
         </div>
       </div>
@@ -150,10 +156,12 @@ export default function GardenRoomDocumentsView({ project = null }) {
       {/* 2. PAGE TITLE & SUBTITLE */}
       <div className="space-y-1">
         <h1 className="text-2xl sm:text-3xl font-heading font-bold text-primary">
-          Documents
+          {isNl ? 'Documenten' : 'Documents'}
         </h1>
         <p className="text-xs sm:text-sm text-dark/70 font-medium">
-          Everything belonging to your project, in one place. Downloads are always permitted — it also stays here.
+          {isNl
+            ? 'Alles wat bij jouw project hoort, op één plek. Downloads zijn altijd mogelijk — het blijft hier ook bewaard.'
+            : 'Everything belonging to your project, in one place. Downloads are always permitted — it also stays here.'}
         </p>
       </div>
 
@@ -182,7 +190,7 @@ export default function GardenRoomDocumentsView({ project = null }) {
 
                       {doc.isNew && (
                         <span className="bg-[#D7E3EC] text-[#2B4B68] text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border border-[#B8D0E0]">
-                          • New
+                          {isNl ? '• Nieuw' : '• New'}
                         </span>
                       )}
                     </div>
@@ -205,7 +213,7 @@ export default function GardenRoomDocumentsView({ project = null }) {
                         className="px-3.5 py-1.5 bg-white text-dark/80 border border-[#D6CFC2] text-xs font-bold rounded-xl hover:bg-gray-50 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
                       >
                         <Eye className="w-3.5 h-3.5 text-accent" />
-                        <span>View</span>
+                        <span>{isNl ? 'Bekijken' : 'View'}</span>
                       </button>
 
                       <button
@@ -214,13 +222,13 @@ export default function GardenRoomDocumentsView({ project = null }) {
                         className="px-3.5 py-1.5 bg-[#2B3827] text-white text-xs font-bold rounded-xl hover:bg-[#1F291C] transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
                       >
                         <Download className="w-3.5 h-3.5 text-cream" />
-                        <span>Download</span>
+                        <span>{isNl ? 'Downloaden' : 'Download'}</span>
                       </button>
                     </>
                   ) : (
                     <span className="bg-gray-100 text-gray-400 font-mono text-[11px] font-bold px-3 py-1.5 rounded-xl border border-gray-200 flex items-center gap-1">
                       <Lock className="w-3 h-3 text-gray-400" />
-                      <span>Not yet available</span>
+                      <span>{isNl ? 'Nog niet beschikbaar' : 'Not yet available'}</span>
                     </span>
                   )}
                 </div>
@@ -243,7 +251,7 @@ export default function GardenRoomDocumentsView({ project = null }) {
                 onClick={() => setActivePdfPreview(null)}
                 className="text-dark/40 hover:text-dark text-xs font-bold font-mono px-2 py-1 bg-white border border-[#D6CFC2] rounded-lg cursor-pointer"
               >
-                Close ✕
+                {isNl ? 'Sluiten ✕' : 'Close ✕'}
               </button>
             </div>
 
@@ -251,7 +259,9 @@ export default function GardenRoomDocumentsView({ project = null }) {
               <FileText className="w-12 h-12 text-primary mx-auto" />
               <div className="text-sm font-bold text-primary">{activePdfPreview}</div>
               <p className="text-xs text-dark/70">
-                Official document preview. All specifications and terms are verified.
+                {isNl
+                  ? 'Officieel documentvoorbeeld. Alle specificaties en voorwaarden zijn geverifieerd.'
+                  : 'Official document preview. All specifications and terms are verified.'}
               </p>
             </div>
 
@@ -264,7 +274,7 @@ export default function GardenRoomDocumentsView({ project = null }) {
                 }}
                 className="px-4 py-2 bg-[#2B3827] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#1F291C]"
               >
-                Download PDF
+                {isNl ? 'Download PDF' : 'Download PDF'}
               </button>
             </div>
           </div>
