@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar, Clock, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * WeekCard Component (Step 4 - Garden Room Extension)
@@ -11,46 +12,53 @@ import { Calendar, Clock, CheckCircle2 } from 'lucide-react';
  * - Short description
  */
 export default function WeekCard({ weekData = null }) {
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
+
   if (!weekData) return null;
 
-  const { weekNumber, phaseNameNL, dateRange, status, descriptionNL } = weekData;
+  const { weekNumber, phaseNameNL, phaseNameEN, dateRange, status, descriptionNL, descriptionEN } = weekData;
+
+  const phaseName = isNl ? (phaseNameNL || phaseNameEN) : (phaseNameEN || phaseNameNL);
+  const description = isNl ? (descriptionNL || descriptionEN) : (descriptionEN || descriptionNL);
 
   const getStatusBadge = () => {
     switch (status) {
       case 'done':
+      case 'completed':
         return (
           <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-green-100 text-green-800 px-2 py-0.5 rounded-md">
-            <CheckCircle2 className="w-3 h-3 text-green-700" /> Completed
+            <CheckCircle2 className="w-3 h-3 text-green-700" /> {isNl ? 'Afgerond' : 'Completed'}
           </span>
         );
       case 'now':
         return (
           <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-primary text-cream px-2 py-0.5 rounded-md">
-            <Clock className="w-3 h-3 text-accent animate-pulse" /> Currently Active
+            <Clock className="w-3 h-3 text-accent animate-pulse" /> {isNl ? 'Momenteel actief' : 'Currently Active'}
           </span>
         );
       case 'prep':
         return (
           <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md">
-            Preparation
+            {isNl ? 'Voorbereiding' : 'Preparation'}
           </span>
         );
       case 'materials':
         return (
           <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-[#EDE8DF] text-primary px-2 py-0.5 rounded-md">
-            Materials
+            {isNl ? 'Materialen' : 'Materials'}
           </span>
         );
       case 'build':
         return (
           <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-accent/20 text-accent px-2 py-0.5 rounded-md">
-            The Build
+            {isNl ? 'De Bouw' : 'The Build'}
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-gray-100 text-gray-700 px-2 py-0.5 rounded-md">
-            Scheduled
+            {isNl ? 'Ingepland' : 'Scheduled'}
           </span>
         );
     }
@@ -65,7 +73,7 @@ export default function WeekCard({ weekData = null }) {
             Week {weekNumber}
           </span>
           <h4 className="font-heading font-bold text-primary text-sm sm:text-base">
-            {phaseNameNL || `Bouwfase Week ${weekNumber}`}
+            {phaseName || (isNl ? `Bouwfase Week ${weekNumber}` : `Build Phase Week ${weekNumber}`)}
           </h4>
         </div>
         <div>{getStatusBadge()}</div>
@@ -78,9 +86,9 @@ export default function WeekCard({ weekData = null }) {
             <span>{dateRange}</span>
           </div>
         ) : null}
-        {descriptionNL ? (
+        {description ? (
           <p className="text-xs text-dark/80 leading-relaxed">
-            {descriptionNL}
+            {description}
           </p>
         ) : null}
       </div>

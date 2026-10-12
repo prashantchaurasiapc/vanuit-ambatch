@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MessageSquare, Sparkles, Check, Download, ShieldCheck, Star, ExternalLink, Calendar, RefreshCw } from 'lucide-react';
 import { downloadDirectPdfFile } from '../../utils/pdfGenerator';
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * OutdoorKitchenHandoverView Component (1-to-1 exact implementation of Client Mockup PDF Outdoor Kitchen Screen 9 / Page 20)
@@ -13,6 +14,9 @@ import { downloadDirectPdfFile } from '../../utils/pdfGenerator';
  * - Section 2: 3 Equal-Width Columns Side-by-Side Grid (Maintenance in 3 steps, Google Review/Instagram, Build further in your garden)
  */
 export default function OutdoorKitchenHandoverView({ project = null }) {
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
+
   const [feedbackToast, setFeedbackToast] = useState('');
   const [checklist, setChecklist] = useState({
     drawingComplete: true,
@@ -24,8 +28,7 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
   const [confirmed, setConfirmed] = useState(false);
   const [springReminder, setSpringReminder] = useState(true);
 
-  // Use 2026-014 to match Client PDF Page 20 1-to-1
-  const projectCode = project?.projectNumber || project?.id || '';
+  const projectCode = project?.projectNumber || project?.id || 'cbb7ba25-974f-4516-b9f4-1c66f097b62e';
 
   const toggleCheck = (key) => {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -33,13 +36,19 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
 
   const handleConfirmHandover = () => {
     setConfirmed(true);
-    setFeedbackToast('Handover confirmed! Final invoice (50%) & warranty certificate activated.');
+    setFeedbackToast(
+      isNl
+        ? 'Oplevering bevestigd! Eindfactuur (50%) & garantiebewijs zijn geactiveerd.'
+        : 'Handover confirmed! Final invoice (50%) & warranty certificate activated.'
+    );
     setTimeout(() => setFeedbackToast(''), 4000);
   };
 
   const handleDownloadWarranty = () => {
     downloadDirectPdfFile('warranty-certificate-outdoor-kitchen');
-    setFeedbackToast('Downloaded Warranty Certificate (PDF)!');
+    setFeedbackToast(
+      isNl ? 'Garantiecertificaat (PDF) gedownload!' : 'Downloaded Warranty Certificate (PDF)!'
+    );
     setTimeout(() => setFeedbackToast(''), 3500);
   };
 
@@ -56,11 +65,11 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
       {/* 1. TOP HEADER TAG BAR */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-dark/60">
         <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-md font-bold text-[11px]">
-          Custom Outdoor Kitchen — project {projectCode}
+          {isNl ? 'Maatwerk Buitenkeuken' : 'Custom Outdoor Kitchen'} — project {projectCode}
         </span>
         <div className="flex items-center gap-2">
           <span className="bg-cream border border-[#D6CFC2] px-2 py-0.5 rounded-md font-bold text-[10px]">
-            Updates 3
+            {isNl ? '3 Updates' : 'Updates 3'}
           </span>
           <a
             href="https://wa.me/31682008025"
@@ -69,7 +78,7 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
             className="bg-primary text-cream px-2.5 py-0.5 rounded-xl text-xs font-bold hover:bg-primary/90 transition-all flex items-center gap-1 shadow-xs"
           >
             <MessageSquare className="w-3 h-3 text-accent" />
-            <span>WhatsApp us</span>
+            <span>{isNl ? 'WhatsApp ons' : 'WhatsApp us'}</span>
           </a>
         </div>
       </div>
@@ -77,10 +86,12 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
       {/* 2. PAGE TITLE & SUBTITLE */}
       <div className="space-y-0.5">
         <h1 className="text-lg sm:text-xl font-heading font-bold text-primary">
-          Handover & Aftercare
+          {isNl ? 'Oplevering & Nazorg' : 'Handover & Aftercare'}
         </h1>
         <p className="text-[11px] sm:text-xs text-dark/70 font-medium">
-          Delivered on 15 September 2026. Enjoy cooking — and we remain reachable.
+          {isNl
+            ? 'Opgeleverd op 15 september 2026. Veel kookplezier — en we blijven bereikbaar.'
+            : 'Delivered on 15 September 2026. Enjoy cooking — and we remain reachable.'}
         </p>
       </div>
 
@@ -91,7 +102,7 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
                backgroundImage: `repeating-linear-gradient(90deg, #B69661, #B69661 14px, #A58450 14px, #A58450 16px, #C2A36C 16px, #C2A36C 28px)`
              }}>
           <div className="bg-[#4E3D2C]/85 backdrop-blur-xs text-white font-mono text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow-sm">
-            IN YOUR GARDEN · 15 SEPTEMBER 2026
+            {isNl ? 'IN JOUW TUIN · 15 SEPTEMBER 2026' : 'IN YOUR GARDEN · 15 SEPTEMBER 2026'}
           </div>
         </div>
       </div>
@@ -103,10 +114,12 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
         <div className="lg:col-span-2 bg-[#FAF8F5] border border-[#D8D2C5] p-3.5 sm:p-4 rounded-2xl shadow-xs space-y-2.5 flex flex-col justify-between">
           <div className="space-y-1.5">
             <h3 className="font-heading font-bold text-primary text-sm sm:text-base">
-              Is everything correct?
+              {isNl ? 'Klopt alles naar wens?' : 'Is everything correct?'}
             </h3>
             <p className="text-[11px] sm:text-xs text-dark/70 leading-relaxed font-medium">
-              We went through the checklist together. Confirm below, then delivery is complete. Notice something later? Aftercare is always available.
+              {isNl
+                ? 'We hebben samen de checklist nagelopen. Bevestig hieronder, dan is de oplevering compleet. Merk je later toch iets op? Nazorg blijft altijd mogelijk.'
+                : 'We went through the checklist together. Confirm below, then delivery is complete. Notice something later? Aftercare is always available.'}
             </p>
 
             {/* Checkbox List */}
@@ -118,7 +131,7 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
                   onChange={() => toggleCheck('drawingComplete')}
                   className="w-3.5 h-3.5 rounded text-primary border-[#D6CFC2] focus:ring-primary accent-[#2B3827]"
                 />
-                <span className="truncate">Delivered complete according to drawing</span>
+                <span className="truncate">{isNl ? 'Volledig geleverd conform werktekening' : 'Delivered complete according to drawing'}</span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer text-[11px] sm:text-xs font-medium text-dark/80 hover:text-primary">
@@ -128,7 +141,7 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
                   onChange={() => toggleCheck('noDamage')}
                   className="w-3.5 h-3.5 rounded text-primary border-[#D6CFC2] focus:ring-primary accent-[#2B3827]"
                 />
-                <span className="truncate">No damage to wood or worktop</span>
+                <span className="truncate">{isNl ? 'Geen beschadigingen aan hout of werkblad' : 'No damage to wood or worktop'}</span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer text-[11px] sm:text-xs font-medium text-dark/80 hover:text-primary">
@@ -138,7 +151,7 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
                   onChange={() => toggleCheck('drawersHinges')}
                   className="w-3.5 h-3.5 rounded text-primary border-[#D6CFC2] focus:ring-primary accent-[#2B3827]"
                 />
-                <span className="truncate">Drawers and hinges operating smoothly</span>
+                <span className="truncate">{isNl ? 'Laden en scharnieren lopen soepel' : 'Drawers and hinges operating smoothly'}</span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer text-[11px] sm:text-xs font-medium text-dark/80 hover:text-primary">
@@ -148,7 +161,7 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
                   onChange={() => toggleCheck('instructionsReceived')}
                   className="w-3.5 h-3.5 rounded text-primary border-[#D6CFC2] focus:ring-primary accent-[#2B3827]"
                 />
-                <span className="truncate">Explanation of use and maintenance received</span>
+                <span className="truncate">{isNl ? 'Uitleg over gebruik en onderhoud ontvangen' : 'Explanation of use and maintenance received'}</span>
               </label>
             </div>
           </div>
@@ -164,18 +177,24 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
                   : 'bg-[#2B3827] text-white hover:bg-[#1F291C]'
               }`}
             >
-              {confirmed ? '✓ Confirmed & Handed Over' : 'Everything correct — confirm'}
+              {confirmed 
+                ? (isNl ? '✓ Bevestigd & Opgeleverd' : '✓ Confirmed & Handed Over')
+                : (isNl ? 'Alles klopt — bevestigen' : 'Everything correct — confirm')}
             </button>
 
             <button
               type="button"
               onClick={() => {
-                setFeedbackToast('Aftercare ticket created. Tim & Bram will contact you within 24h.');
+                setFeedbackToast(
+                  isNl
+                    ? 'Nazorgticket aangemaakt. Tim & Bram nemen binnen 24 uur contact met je op.'
+                    : 'Aftercare ticket created. Tim & Bram will contact you within 24h.'
+                );
                 setTimeout(() => setFeedbackToast(''), 3500);
               }}
               className="px-3.5 py-1.5 bg-white text-dark/70 border border-[#D6CFC2] text-xs font-bold rounded-xl hover:bg-gray-50 transition-all cursor-pointer shadow-2xs"
             >
-              Something is not right
+              {isNl ? 'Er klopt iets niet' : 'Something is not right'}
             </button>
           </div>
         </div>
@@ -184,10 +203,12 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
         <div className="lg:col-span-1 bg-[#EAE6DD] border border-[#C8C2B4] p-3.5 sm:p-4 rounded-2xl shadow-xs space-y-2 flex flex-col justify-between">
           <div className="space-y-1">
             <span className="text-[9px] uppercase font-mono font-bold tracking-wider text-[#70624F] block">
-              WARRANTY & AFTERCARE
+              {isNl ? 'GARANTIE & NAZORG' : 'WARRANTY & AFTERCARE'}
             </span>
             <p className="text-[11px] sm:text-xs text-dark/70 leading-relaxed font-medium">
-              Warranty on structure and finish, plus aftercare post delivery. Something loosened or a question about maintenance? One message is enough.
+              {isNl
+                ? 'Garantie op constructie en afwerking, plus nazorg na oplevering. Iets losgeraakt of vraag over onderhoud? Eén berichtje volstaat.'
+                : 'Warranty on structure and finish, plus aftercare post delivery. Something loosened or a question about maintenance? One message is enough.'}
             </p>
           </div>
 
@@ -197,18 +218,20 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
               onClick={handleDownloadWarranty}
               className="w-full py-1.5 px-2 bg-white text-dark/80 border border-[#C8C2B4] text-[11px] font-bold rounded-xl hover:bg-gray-50 transition-all cursor-pointer shadow-2xs text-center block font-medium truncate"
             >
-              Download warranty certificate
+              {isNl ? 'Download garantiecertificaat' : 'Download warranty certificate'}
             </button>
 
             <button
               type="button"
               onClick={() => {
-                setFeedbackToast('Aftercare request sent to Tim & Bram!');
+                setFeedbackToast(
+                  isNl ? 'Nazorgaanvraag verzonden naar Tim & Bram!' : 'Aftercare request sent to Tim & Bram!'
+                );
                 setTimeout(() => setFeedbackToast(''), 3500);
               }}
               className="w-full py-1.5 px-2 bg-white text-dark/80 border border-[#C8C2B4] text-[11px] font-bold rounded-xl hover:bg-gray-50 transition-all cursor-pointer shadow-2xs text-center block font-medium truncate"
             >
-              Request aftercare
+              {isNl ? 'Nazorg aanvragen' : 'Request aftercare'}
             </button>
           </div>
         </div>
@@ -222,7 +245,7 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
         <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-3.5 sm:p-4 rounded-2xl shadow-xs flex flex-col justify-between space-y-2">
           <div className="space-y-2">
             <h4 className="font-heading font-bold text-primary text-xs sm:text-sm">
-              Maintenance in three steps
+              {isNl ? 'Onderhoud in drie stappen' : 'Maintenance in three steps'}
             </h4>
 
             {/* 3 Numbered Steps List */}
@@ -230,21 +253,27 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
               <div className="flex items-start gap-2">
                 <span className="font-bold font-heading text-primary text-xs font-mono min-w-[12px]">1</span>
                 <p className="leading-relaxed">
-                  Cleaning with water and a soft cloth — no aggressive chemicals.
+                  {isNl
+                    ? 'Schoonmaken met water en een zachte doek — geen agressieve middelen.'
+                    : 'Cleaning with water and a soft cloth — no aggressive chemicals.'}
                 </p>
               </div>
 
               <div className="flex items-start gap-2">
                 <span className="font-bold font-heading text-primary text-xs font-mono min-w-[12px]">2</span>
                 <p className="leading-relaxed">
-                  Lightly sand and oil once a year, preferably in spring.
+                  {isNl
+                    ? '1× per jaar licht opschuren en oliën, bij voorkeur in het voorjaar.'
+                    : 'Lightly sand and oil once a year, preferably in spring.'}
                 </p>
               </div>
 
               <div className="flex items-start gap-2">
                 <span className="font-bold font-heading text-primary text-xs font-mono min-w-[12px]">3</span>
                 <p className="leading-relaxed">
-                  Cover worktop during prolonged frost or extreme heat.
+                  {isNl
+                    ? 'Werkblad afdekken bij langdurige vorst of extreme hitte.'
+                    : 'Cover worktop during prolonged frost or extreme heat.'}
                 </p>
               </div>
             </div>
@@ -259,7 +288,7 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
                 onChange={(e) => setSpringReminder(e.target.checked)}
                 className="w-3.5 h-3.5 rounded text-primary border-[#D6CFC2] focus:ring-primary accent-[#2B3827]"
               />
-              <span>Send me a maintenance reminder in spring</span>
+              <span>{isNl ? 'Stuur mij in het voorjaar een onderhoudsherinnering' : 'Send me a maintenance reminder in spring'}</span>
             </label>
           </div>
         </div>
@@ -268,10 +297,12 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
         <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-3.5 sm:p-4 rounded-2xl shadow-xs flex flex-col justify-between space-y-2">
           <div className="space-y-1.5">
             <h4 className="font-heading font-bold text-primary text-xs sm:text-sm">
-              Would you like to help us?
+              {isNl ? 'Wil je ons helpen?' : 'Would you like to help us?'}
             </h4>
             <p className="text-[11px] text-dark/70 leading-relaxed font-medium">
-              Word-of-mouth is everything to us. A short review helps the next customer enormously — and us even more.
+              {isNl
+                ? 'Mond-tot-mondreclame is alles voor ons. Een korte review helpt de volgende klant enorm — en ons nog meer.'
+                : 'Word-of-mouth is everything to us. A short review helps the next customer enormously — and us even more.'}
             </p>
           </div>
 
@@ -282,7 +313,7 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
               rel="noopener noreferrer"
               className="w-full py-1.5 px-2 bg-[#2B3827] text-white text-[11px] font-bold rounded-xl text-center block hover:bg-[#1F291C] transition-all shadow-xs truncate"
             >
-              Leave review on Google
+              {isNl ? 'Laat een review achter op Google' : 'Leave review on Google'}
             </a>
 
             <a
@@ -291,7 +322,7 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
               rel="noopener noreferrer"
               className="w-full py-1.5 px-2 bg-white text-dark/80 border border-[#D6CFC2] text-[11px] font-bold rounded-xl hover:bg-gray-50 transition-all shadow-2xs text-center block truncate font-medium"
             >
-              Share photo on Instagram
+              {isNl ? 'Deel een foto op Instagram' : 'Share photo on Instagram'}
             </a>
           </div>
         </div>
@@ -300,10 +331,12 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
         <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-3.5 sm:p-4 rounded-2xl shadow-xs flex flex-col justify-between items-start space-y-2">
           <div className="space-y-1.5">
             <h4 className="font-heading font-bold text-primary text-xs sm:text-sm">
-              Build further in your garden?
+              {isNl ? 'Verder bouwen in je tuin?' : 'Build further in your garden?'}
             </h4>
             <p className="text-[11px] text-dark/70 leading-relaxed font-medium">
-              Many customers continue after their outdoor kitchen with a canopy or garden room. Returning customer? We offer sharp pricing.
+              {isNl
+                ? 'Veel klanten gaan na hun buitenkeuken door met een overkapping of buitenverblijf. Terugkerende klant? We rekenen een scherpe prijs.'
+                : 'Many customers continue after their outdoor kitchen with a canopy or garden room. Returning customer? We offer sharp pricing.'}
             </p>
           </div>
 
@@ -311,12 +344,16 @@ export default function OutdoorKitchenHandoverView({ project = null }) {
             <button
               type="button"
               onClick={() => {
-                setFeedbackToast('Price indication requested! We will reach out with a custom proposal.');
+                setFeedbackToast(
+                  isNl
+                    ? 'Prijsindicatie aangevraagd! We nemen contact op met een passend voorstel.'
+                    : 'Price indication requested! We will reach out with a custom proposal.'
+                );
                 setTimeout(() => setFeedbackToast(''), 4000);
               }}
               className="w-full py-1.5 px-2 bg-white text-dark/80 border border-[#D6CFC2] text-[11px] font-bold rounded-xl hover:bg-gray-50 transition-all cursor-pointer shadow-2xs text-center block truncate font-medium"
             >
-              Request price indication
+              {isNl ? 'Vrijblijvende prijsindicatie' : 'Request price indication'}
             </button>
           </div>
         </div>

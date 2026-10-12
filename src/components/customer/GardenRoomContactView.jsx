@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Sparkles, Send, Paperclip, ChevronDown, ChevronUp, Check, Phone, Mail, Package } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import api from '../../api/apiClient';
 
 /**
  * GardenRoomContactView Component (1-to-1 implementation of Client Mockup PDF Garden Rooms Screen 8 & Screenshots 1 & 2)
  */
 export default function GardenRoomContactView({ project = null }) {
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
   const [feedbackToast, setFeedbackToast] = useState('');
   
   const defaultGardenMsgs = [
@@ -13,40 +16,40 @@ export default function GardenRoomContactView({ project = null }) {
       id: 1,
       sender: 'T&B',
       senderName: 'Bram (Admin)',
-      time: 'Yesterday 16:40',
-      text: "Hi Sander, render version 2 is in your portal — sliding doors on the south side and the wider overhang are included. Take a look to see if this is it.",
+      time: isNl ? 'Gisteren 16:40' : 'Yesterday 16:40',
+      text: isNl ? "Hoi Sander, render versie 2 staat in je portaal — schuifpui op het zuiden en het bredere overstek zijn verwerkt. Kijk even of dit hem is." : "Hi Sander, render version 2 is in your portal — sliding doors on the south side and the wider overhang are included. Take a look to see if this is it.",
       type: 'incoming'
     },
     {
       id: 2,
       sender: 'SV',
       senderName: 'Sander',
-      time: 'Yesterday 19:12 · read',
-      text: "Looks great! One question: can the flooring in the poolhouse be slightly darker?",
+      time: isNl ? 'Gisteren 19:12 · gelezen' : 'Yesterday 19:12 · read',
+      text: isNl ? "Ziet er heel strak uit! Eén vraag: kan de tegelvloer in het poolhouse iets donkerder?" : "Looks great! One question: can the flooring in the poolhouse be slightly darker?",
       type: 'outgoing'
     },
     {
       id: 3,
       sender: 'T&B',
       senderName: 'Bram (Admin)',
-      time: 'Yesterday 19:30',
-      text: "Certainly — the 60x60 tiles are also available in anthracite. Same price. I will put two examples in the next render so you can choose visually.",
+      time: isNl ? 'Gisteren 19:30' : 'Yesterday 19:30',
+      text: isNl ? "Zeker — de 60x60 tegels zijn er ook in antraciet. Zelfde prijs. Ik zet twee voorbeelden in de volgende render zodat je visueel kunt kiezen." : "Certainly — the 60x60 tiles are also available in anthracite. Same price. I will put two examples in the next render so you can choose visually.",
       type: 'incoming'
     },
     {
       id: 4,
       sender: 'SV',
       senderName: 'Sander',
-      time: 'Today 08:55 · read',
-      text: "Perfect. And the site survey on Thursday: my wife will be home then, is that okay?",
+      time: isNl ? 'Vandaag 08:55 · gelezen' : 'Today 08:55 · read',
+      text: isNl ? "Top. En de schouw op donderdag: mijn vrouw is dan thuis, is dat akkoord?" : "Perfect. And the site survey on Thursday: my wife will be home then, is that okay?",
       type: 'outgoing'
     },
     {
       id: 5,
       sender: 'T&B',
       senderName: 'Bram (Admin)',
-      time: 'Today 09:02',
-      text: "Totally fine — as long as someone can unlock the backyard it will be good. Please approve the proposal under Planning & Build so it's confirmed.",
+      time: isNl ? 'Vandaag 09:02' : 'Today 09:02',
+      text: isNl ? "Helemaal prima — als iemand de achtertuin open kan doen is het goed. Keur het voorstel even goed onder Planning & Bouw, dan staat hij vast." : "Totally fine — as long as someone can unlock the backyard it will be good. Please approve the proposal under Planning & Build so it's confirmed.",
       type: 'incoming'
     }
   ];
@@ -134,35 +137,35 @@ export default function GardenRoomContactView({ project = null }) {
       console.warn('Could not post message:', err);
     }
 
-    setFeedbackToast('Message sent to Tim & Bram!');
+    setFeedbackToast(isNl ? 'Bericht verstuurd naar Tim & Bram!' : 'Message sent to Tim & Bram!');
     setTimeout(() => setFeedbackToast(''), 3500);
   };
 
   const handleSampleRequest = () => {
-    setFeedbackToast('Free Douglas timber sample kit requested! Shipping within 24h.');
+    setFeedbackToast(isNl ? 'Gratis Douglas houtstalenpakket aangevraagd! Verzending binnen 24 uur.' : 'Free Douglas timber sample kit requested! Shipping within 24h.');
     setTimeout(() => setFeedbackToast(''), 3500);
   };
 
   const faqItems = [
     {
-      question: "Do I need a permit?",
-      answer: "Permit-free construction has been established for your specific garden room. You can download the official permit check under Documents."
+      question: isNl ? "Heb ik een vergunning nodig?" : "Do I need a permit?",
+      answer: isNl ? "Voor jouw specifieke buitenverblijf is vergunningsvrij bouwen vastgesteld. De officiële vergunningscheck kun je downloaden onder Documenten." : "Permit-free construction has been established for your specific garden room. You can download the official permit check under Documents."
     },
     {
-      question: "How long does construction take?",
-      answer: "The total assembly time in your garden is 5 to 10 working days. In our workshop we prepare everything down to the millimeter."
+      question: isNl ? "Hoe lang duurt de bouw?" : "How long does construction take?",
+      answer: isNl ? "De totale montagetijd in jouw tuin is 5 tot 10 werkdagen. In de werkplaats bereiden we alles tot op de millimeter voor." : "The total assembly time in your garden is 5 to 10 working days. In our workshop we prepare everything down to the millimeter."
     },
     {
-      question: "Do I need to stay home during construction?",
-      answer: "Only on the first day for alignment and at handover at the end. In between, our master carpenters keep construction on track independently."
+      question: isNl ? "Moet ik thuisblijven tijdens de bouw?" : "Do I need to stay home during construction?",
+      answer: isNl ? "Alleen de eerste dag voor afstemming en bij de oplevering aan het eind. Tussendoor kunnen onze meestertimmerlieden zelfstandig doorwerken." : "Only on the first day for alignment and at handover at the end. In between, our master carpenters keep construction on track independently."
     },
     {
-      question: "How do I maintain Douglas timber?",
-      answer: "Douglas wood ages naturally under sun and rain. With our special UV-protective oil you preserve its warm natural color."
+      question: isNl ? "Hoe onderhoud ik Douglas hout?" : "How do I maintain Douglas timber?",
+      answer: isNl ? "Douglas hout vergrijst natuurlijk onder invloed van zon en regen. Met onze speciale UV-beschermende olie behoud je de warme natuurlijke houtkleur." : "Douglas wood ages naturally under sun and rain. With our special UV-protective oil you preserve its warm natural color."
     },
     {
-      question: "Can I still change something?",
-      answer: "Until the final working drawing is approved, you can request changes for free. Once pre-fabrication starts in the workshop, changes are no longer possible."
+      question: isNl ? "Kan ik nog iets wijzigen?" : "Can I still change something?",
+      answer: isNl ? "Tot de definitieve werktekening is goedgekeurd kun je kosteloos aanpassingen doorgeven. Zodra de prefabricage start in de werkplaats kan dit niet meer." : "Until the final working drawing is approved, you can request changes for free. Once pre-fabrication starts in the workshop, changes are no longer possible."
     }
   ];
 
@@ -179,7 +182,7 @@ export default function GardenRoomContactView({ project = null }) {
       {/* 1. TOP HEADER TAG BAR (1-to-1 Client Mockup Screenshot 1) */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-dark/60">
         <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-md font-bold">
-          Custom Garden Room — project {projectCode}
+          {isNl ? `Buitenverblijf op maat — project ${projectCode}` : `Custom Garden Room — project ${projectCode}`}
         </span>
         <div className="flex items-center gap-2">
           <span className="bg-cream border border-[#D6CFC2] px-2 py-0.5 rounded-md font-bold text-[11px]">
@@ -192,7 +195,7 @@ export default function GardenRoomContactView({ project = null }) {
             className="bg-primary text-cream px-3 py-1 rounded-xl text-xs font-bold hover:bg-primary/90 transition-all flex items-center gap-1 shadow-xs"
           >
             <MessageSquare className="w-3.5 h-3.5 text-accent" />
-            <span>WhatsApp us</span>
+            <span>{isNl ? 'WhatsApp ons' : 'WhatsApp us'}</span>
           </a>
         </div>
       </div>
@@ -200,10 +203,10 @@ export default function GardenRoomContactView({ project = null }) {
       {/* 2. PAGE TITLE & SUBTITLE */}
       <div className="space-y-0.5">
         <h1 className="text-xl sm:text-2xl font-heading font-bold text-primary">
-          Messages & Contact
+          {isNl ? 'Berichten & Contact' : 'Messages & Contact'}
         </h1>
         <p className="text-xs text-dark/70 font-medium">
-          You are not texting a company. You are texting us. Usually answered within 2 hours, also in the evenings.
+          {isNl ? 'Je appt niet met een bedrijf. Je appt met ons. Meestal binnen 2 uur antwoord, ook in het weekend en \'s avonds.' : 'You are not texting a company. You are texting us. Usually answered within 2 hours, also in the evenings.'}
         </p>
       </div>
 
@@ -216,11 +219,11 @@ export default function GardenRoomContactView({ project = null }) {
           {/* Chat Header */}
           <div className="flex justify-between items-center pb-2 border-b border-[#D6CFC2]/60">
             <h3 className="font-heading font-bold text-primary text-sm sm:text-base">
-              Your conversation with Tim & Bram
+              {isNl ? 'Je gesprek met Tim & Bram' : 'Your conversation with Tim & Bram'}
             </h3>
             <span className="bg-[#E5F0E3] text-[#2D5A27] font-mono text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
               <Check className="w-3 h-3 text-[#2D5A27]" />
-              <span>All read</span>
+              <span>{isNl ? 'Alles gelezen' : 'All read'}</span>
             </span>
           </div>
 
@@ -263,27 +266,27 @@ export default function GardenRoomContactView({ project = null }) {
               type="text"
               value={inputMsg}
               onChange={(e) => setInputMsg(e.target.value)}
-              placeholder="Type your message..."
+              placeholder={isNl ? "Typ je bericht..." : "Type your message..."}
               className="flex-1 bg-white border border-[#D6CFC2] px-3.5 py-2 rounded-xl text-xs font-medium focus:outline-none focus:border-primary text-dark"
             />
 
             <button
               type="button"
               onClick={() => {
-                setFeedbackToast('Photo upload ready! Select a file.');
+                setFeedbackToast(isNl ? 'Foto-upload gereed! Selecteer een bestand.' : 'Photo upload ready! Select a file.');
                 setTimeout(() => setFeedbackToast(''), 3000);
               }}
               className="px-3 py-2 bg-white border border-[#D6CFC2] text-dark/80 text-xs font-bold rounded-xl hover:bg-gray-50 transition-all flex items-center gap-1 cursor-pointer flex-shrink-0"
             >
               <Paperclip className="w-3.5 h-3.5 text-accent" />
-              <span>Photo</span>
+              <span>{isNl ? 'Foto' : 'Photo'}</span>
             </button>
 
             <button
               type="submit"
               className="px-4 py-2 bg-[#2B3827] text-white text-xs font-bold rounded-xl hover:bg-[#1F291C] transition-all cursor-pointer flex-shrink-0 shadow-xs"
             >
-              Send
+              {isNl ? 'Versturen' : 'Send'}
             </button>
           </form>
 
@@ -295,13 +298,13 @@ export default function GardenRoomContactView({ project = null }) {
           {/* Sidebar Card 1: DIRECT CONTACT */}
           <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-4 rounded-2xl shadow-xs space-y-2.5">
             <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-accent block">
-              DIRECT CONTACT
+              {isNl ? 'DIRECT CONTACT' : 'DIRECT CONTACT'}
             </span>
             <h4 className="font-heading font-bold text-primary text-sm">
               Tim & Bram
             </h4>
             <p className="text-xs text-dark/70 leading-relaxed font-medium">
-              Dedicated contacts for your entire project — from initial sketch to aftercare, including build week.
+              {isNl ? 'Vaste contactpersonen voor je hele project — van eerste schets tot nazorg en bouwweek.' : 'Dedicated contacts for your entire project — from initial sketch to aftercare, including build week.'}
             </p>
 
             <div className="space-y-1.5 pt-1">
@@ -311,14 +314,14 @@ export default function GardenRoomContactView({ project = null }) {
                 rel="noopener noreferrer"
                 className="w-full py-2 bg-[#2B3827] text-white text-xs font-bold rounded-xl text-center block hover:bg-[#1F291C] transition-all shadow-xs"
               >
-                WhatsApp us
+                {isNl ? 'WhatsApp ons' : 'WhatsApp us'}
               </a>
 
               <a
                 href="tel:0682008025"
                 className="w-full py-2 bg-white text-dark/80 border border-[#D6CFC2] text-xs font-bold rounded-xl text-center block hover:bg-gray-50 transition-all shadow-2xs"
               >
-                Call 06 82 00 80 25
+                {isNl ? 'Bel 06 82 00 80 25' : 'Call 06 82 00 80 25'}
               </a>
 
               <a
@@ -333,10 +336,10 @@ export default function GardenRoomContactView({ project = null }) {
           {/* Sidebar Card 2: WE WORK WITHOUT SHOWROOM */}
           <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-4 rounded-2xl shadow-xs space-y-2.5">
             <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-accent block">
-              WE WORK WITHOUT SHOWROOM
+              {isNl ? 'WIJ WERKEN ZONDER SHOWROOM' : 'WE WORK WITHOUT SHOWROOM'}
             </span>
             <p className="text-xs text-dark/70 leading-relaxed font-medium">
-              Conscious choice: no showroom means lower overhead and a better price for you. Want to see or feel Douglas timber in real life? We send free samples.
+              {isNl ? 'Bewuste keuze: geen showroom betekent minder overhead en een scherpere prijs voor jou. Wil je het Douglas hout eerst in het echt zien en voelen? We sturen je graag gratis houtstalen op.' : 'Conscious choice: no showroom means lower overhead and a better price for you. Want to see or feel Douglas timber in real life? We send free samples.'}
             </p>
 
             <button
@@ -344,14 +347,14 @@ export default function GardenRoomContactView({ project = null }) {
               onClick={handleSampleRequest}
               className="px-4 py-2 bg-[#9B7A38] text-white text-xs font-bold rounded-xl hover:bg-[#8A6B2F] transition-all shadow-xs inline-block"
             >
-              Send me wood samples
+              {isNl ? 'Stuur mij houtstalen' : 'Send me wood samples'}
             </button>
           </div>
 
           {/* Sidebar Card 3: WHO BUILDS YOUR GARDEN ROOM */}
           <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-4 rounded-2xl shadow-xs space-y-2">
             <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-accent block">
-              WHO BUILDS YOUR GARDEN ROOM
+              {isNl ? 'WIE BOUWT JOUW BUITENVERBLIJF' : 'WHO BUILDS YOUR GARDEN ROOM'}
             </span>
 
             <div className="flex items-center gap-2 pt-0.5">
@@ -359,12 +362,12 @@ export default function GardenRoomContactView({ project = null }) {
                 VS
               </div>
               <h5 className="font-heading font-bold text-primary text-xs">
-                A craftsman from our network
+                {isNl ? 'Een vakman uit ons netwerk' : 'A craftsman from our network'}
               </h5>
             </div>
 
             <p className="text-xs text-dark/70 leading-relaxed font-medium">
-              Certified and specialized in timber construction. Everything arranged via us — including during build week.
+              {isNl ? 'Gecertificeerd en gespecialiseerd in houtbouw. Alles geregeld via ons — ook tijdens de bouwweek.' : 'Certified and specialized in timber construction. Everything arranged via us — including during build week.'}
             </p>
           </div>
 
@@ -375,7 +378,7 @@ export default function GardenRoomContactView({ project = null }) {
       {/* 4. SECTION 2: FAQ ACCORDION (1-to-1 Screenshot 2) */}
       <div className="space-y-2 pt-2">
         <h3 className="font-heading font-bold text-primary text-base sm:text-lg">
-          Frequently Asked Questions
+          {isNl ? 'Veelgestelde vragen' : 'Frequently Asked Questions'}
         </h3>
 
         <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-4 rounded-2xl shadow-xs divide-y divide-[#D6CFC2]/60 space-y-2">

@@ -5,6 +5,7 @@ import Button from '../../components/Button';
 import { Calendar as CalendarIcon, Clock, CheckCircle2, Circle, Plus, Filter, MapPin, User, ChevronLeft, ChevronRight, X, Sliders } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../hooks/useAuth';
 
 import api from '../../api/apiClient';
 import PartnerWorkloadAvailabilityCard from '../../components/partner/PartnerWorkloadAvailabilityCard';
@@ -52,14 +53,35 @@ function mapBackendToPartnerEvent(item) {
 
 export default function PartnerPlanning() {
   const { language } = useLanguage();
+  const { user } = useAuth();
   const [events, setEvents] = useState([]);
   const [filterType, setFilterType] = useState('All');
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [newEvent, setNewEvent] = useState({ title: '', client: '', location: '', time: '10:00 - 11:30', type: 'Site Visit' });
+
+  const calYear = calendarMonth.getFullYear();
+  const calMonth = calendarMonth.getMonth();
+
+  const monthNamesNL = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'];
+  const monthNamesEN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const currentMonthName = (language === 'NL' ? monthNamesNL : monthNamesEN)[calMonth];
+
+  const firstDayOfMonth = new Date(calYear, calMonth, 1);
+  const daysInCalMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const startDayOffset = (firstDayOfMonth.getDay() + 6) % 7;
+
+  const handlePrevMonth = () => {
+    setCalendarMonth(new Date(calYear, calMonth - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCalendarMonth(new Date(calYear, calMonth + 1, 1));
+  };
 
   // Fetch planning events from real backend API
   const loadEvents = async () => {
@@ -78,6 +100,12 @@ export default function PartnerPlanning() {
 
   useEffect(() => {
     loadEvents();
+    window.addEventListener('app_data_changed', loadEvents);
+    window.addEventListener('focus', loadEvents);
+    return () => {
+      window.removeEventListener('app_data_changed', loadEvents);
+      window.removeEventListener('focus', loadEvents);
+    };
   }, []);
 
   const showToast = (msg) => {
@@ -103,6 +131,7 @@ export default function PartnerPlanning() {
         await api.patch(`/planning/events/${target.backendId}`, {
           status: nextStatus === 'Completed' ? 'completed' : 'scheduled'
         });
+        window.dispatchEvent(new Event('app_data_changed'));
       } catch (err) {
         console.warn('Failed to update event status on backend:', err);
       }
@@ -135,7 +164,8 @@ export default function PartnerPlanning() {
         startTime: startIso,
         endTime: endIso,
         location: newEvent.location || 'Werkplaats',
-        description: newEvent.client ? `Klant: ${newEvent.client}` : 'Geplande taak'
+        description: newEvent.client ? `Klant: ${newEvent.client}` : 'Geplande taak',
+        partnerId: user?.profileId || null
       });
 
       if (res.success && res.data) {
@@ -370,12 +400,36 @@ export default function PartnerPlanning() {
 
         {/* Right Col: Interactive Calendar Widget */}
         <div>
-          <Card title={language === 'NL' ? 'Augustus 2026 Agenda' : 'August 2026 Calendar'} icon={CalendarIcon}>
+          <Card
+            title={`${currentMonthName} ${calYear} ${language === 'NL' ? 'Agenda' : 'Calendar'}`}
+            icon={CalendarIcon}
+          >
             <div className="space-y-4 mt-2">
-              <div className="flex justify-between items-center text-xs font-bold text-primary font-mono border-b border-[#D6CFC2] pb-2">
-                <span>AUGUST 2026</span>
-                <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-md">
-                  {events.length} {language === 'NL' ? 'Taken' : 'Tasks'}
+              <div className="flex justify-between items-center text-xs font-bold text-primary border-b border-[#D6CFC2] pb-2">
+                <div className="flex items-center gap-1.5 font-mono">
+                  <button
+                    type="button"
+                    onClick={handlePrevMonth}
+                    className="p-1 hover:bg-white rounded-md text-dark/70 hover:text-dark transition-colors cursor-pointer"
+                    title={language === 'NL' ? 'Vorige maand' : 'Previous month'}
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="uppercase">{currentMonthName} {calYear}</span>
+                  <button
+                    type="button"
+                    onClick={handleNextMonth}
+                    className="p-1 hover:bg-white rounded-md text-dark/70 hover:text-dark transition-colors cursor-pointer"
+                    title={language === 'NL' ? 'Volgende maand' : 'Next month'}
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-md font-sans">
+                  {events.filter(e => {
+                    const [y, m] = e.date.split('-');
+                    return parseInt(y, 10) === calYear && parseInt(m, 10) === calMonth + 1;
+                  }).length} {language === 'NL' ? 'Taken' : 'Tasks'}
                 </span>
               </div>
 
@@ -384,41 +438,56 @@ export default function PartnerPlanning() {
                 <span>MO</span><span>TU</span><span>WE</span><span>TH</span><span>FR</span><span>SA</span><span>SU</span>
               </div>
 
-              {/* Days Grid */}
+              {/* Dynamic Days Grid */}
               <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                {/* Blank offsets for Aug 1 (Sat) */}
-                <span className="p-2 text-dark/20"></span><span className="p-2 text-dark/20"></span><span className="p-2 text-dark/20"></span><span className="p-2 text-dark/20"></span><span className="p-2 text-dark/20"></span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">1</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">2</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">3</span>
-                <span className="p-1.5 rounded-lg bg-green-100 text-green-800 font-bold border border-green-300 cursor-pointer" title="Handover Complete">4</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">5</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">6</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">7</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">8</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">9</span>
-                <span className="p-1.5 rounded-lg bg-primary text-white font-bold shadow-xs cursor-pointer" title="Site Measurement">10</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">11</span>
-                <span className="p-1.5 rounded-lg bg-amber-100 text-amber-900 font-bold border border-amber-300 cursor-pointer" title="Wood Delivery">12</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">13</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">14</span>
-                <span className="p-1.5 rounded-lg bg-primary text-white font-bold shadow-xs cursor-pointer" title="Assembly Day">15</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">16</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">17</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">18</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">19</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">20</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">21</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">22</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">23</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">24</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">25</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">26</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">27</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">28</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">29</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">30</span>
-                <span className="p-1.5 rounded-lg hover:bg-white text-dark/60 font-semibold cursor-pointer">31</span>
+                {/* Blank offsets before first day of month */}
+                {Array.from({ length: startDayOffset }, (_, i) => (
+                  <span key={`blank-${i}`} className="p-2 text-dark/10"></span>
+                ))}
+
+                {/* Actual Month Days */}
+                {Array.from({ length: daysInCalMonth }, (_, i) => {
+                  const dayNum = i + 1;
+                  const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                  const dayEvents = events.filter((e) => e.date === dateStr);
+                  const isToday = new Date().toDateString() === new Date(calYear, calMonth, dayNum).toDateString();
+                  const isSelected = selectedDate === dateStr;
+
+                  const hasCompleted = dayEvents.some((e) => e.status === 'Completed');
+                  const hasDelivery = dayEvents.some((e) => e.type === 'Delivery' && e.status !== 'Completed');
+                  const hasOther = dayEvents.some((e) => e.type !== 'Delivery' && e.status !== 'Completed');
+
+                  return (
+                    <button
+                      type="button"
+                      key={dayNum}
+                      onClick={() => {
+                        setSelectedDate(dateStr);
+                      }}
+                      className={`p-1.5 rounded-lg text-xs font-semibold relative transition-all flex flex-col items-center justify-center min-h-[32px] cursor-pointer ${
+                        isSelected
+                          ? 'bg-primary text-white shadow-xs'
+                          : isToday
+                          ? 'bg-primary/10 text-primary font-bold border border-primary/30'
+                          : 'hover:bg-white text-dark/70'
+                      }`}
+                      title={
+                        dayEvents.length > 0
+                          ? `${dayEvents.length} ${language === 'NL' ? 'taken' : 'tasks'}: ${dayEvents.map((e) => e.title).join(', ')}`
+                          : undefined
+                      }
+                    >
+                      <span className={isSelected ? 'text-white' : ''}>{dayNum}</span>
+                      {dayEvents.length > 0 && (
+                        <div className="flex items-center gap-0.5 mt-0.5">
+                          {hasCompleted && <span className="w-1.5 h-1.5 rounded-full bg-green-600 shrink-0" />}
+                          {hasDelivery && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />}
+                          {hasOther && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="p-3 bg-[#F8F7F4] rounded-xl border border-[#D6CFC2]/60 text-xs space-y-1.5">

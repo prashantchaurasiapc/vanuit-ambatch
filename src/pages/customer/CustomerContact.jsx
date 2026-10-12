@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useLanguage } from '../../context/LanguageContext';
 import GardenRoomContactView from '../../components/customer/GardenRoomContactView';
 import OutdoorKitchenContactView from '../../components/customer/OutdoorKitchenContactView';
 import api from '../../api/apiClient';
 
 export default function CustomerContact() {
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
   const [activeProject, setActiveProject] = useState(null);
   const [activeType, setActiveType] = useState('outdoor_kitchen');
 
@@ -72,7 +75,7 @@ export default function CustomerContact() {
       <div className="bg-[#FAF7F2] border border-[#E4DED4] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
         <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-accent" />
-          <span>Testing Contact View Switcher:</span>
+          <span>{isNl ? 'Contact Weergave Switcher:' : 'Testing Contact View Switcher:'}</span>
         </span>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
@@ -84,7 +87,7 @@ export default function CustomerContact() {
                 : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
             }`}
           >
-            Outdoor Kitchen (Messages & Contact)
+            {isNl ? 'Buitenkeuken (Berichten & Contact)' : 'Outdoor Kitchen (Messages & Contact)'}
           </button>
 
           <button
@@ -96,7 +99,7 @@ export default function CustomerContact() {
                 : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
             }`}
           >
-            Garden Room / Poolhouse (Messages & Contact)
+            {isNl ? 'Buitenverblijf / Poolhouse (Berichten & Contact)' : 'Garden Room / Poolhouse (Messages & Contact)'}
           </button>
         </div>
       </div>

@@ -350,7 +350,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               {coverPhotos.map((pImg, idx) => (
                 <div
                   key={idx}
-                  className="relative h-full w-full rounded-xl overflow-hidden bg-[#2D3A27] shadow-xs"
+                  className="relative h-full w-full rounded-xl overflow-hidden bg-[#2D3A27] shadow-xs flex items-center justify-center"
                 >
                   <img
                     src={pImg || (idx === 0 ? '/cover_img1.png' : idx === 1 ? '/cover_img2.png' : '/cover_img3.png')}
@@ -359,7 +359,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                       e.target.onerror = null;
                       e.target.src = idx === 0 ? '/cover_img1.png' : idx === 1 ? '/cover_img2.png' : '/cover_img3.png';
                     }}
-                    className="absolute inset-0 w-full h-full object-cover object-center"
+                    className="w-full h-full object-contain object-center"
                   />
                 </div>
               ))}

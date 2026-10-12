@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MessageSquare, Sparkles, Check, Download, ShieldCheck, Star, ExternalLink, Calendar, RefreshCw } from 'lucide-react';
 import { downloadDirectPdfFile } from '../../utils/pdfGenerator';
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * GardenRoomHandoverView Component (1-to-1 exact implementation of Client Mockup PDF Garden Rooms Page 14)
@@ -14,6 +15,9 @@ import { downloadDirectPdfFile } from '../../utils/pdfGenerator';
  * - Section 3: Bottom 3 Cards Grid (3-Month Checkup + Google Review/Instagram + Complete Your Outdoor Living cross-sell)
  */
 export default function GardenRoomHandoverView({ project = null }) {
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
+
   const [feedbackToast, setFeedbackToast] = useState('');
   const [checklist, setChecklist] = useState({
     drawing: true,
@@ -25,8 +29,7 @@ export default function GardenRoomHandoverView({ project = null }) {
   const [confirmed, setConfirmed] = useState(false);
   const [seasonalReminder, setSeasonalReminder] = useState(true);
 
-  // Use 2026-021 to match Client PDF Page 14 1-to-1
-  const projectCode = project?.projectNumber || project?.id || '';
+  const projectCode = project?.projectNumber || project?.id || 'PRJ-2026-021';
 
   const toggleCheck = (key) => {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -34,13 +37,19 @@ export default function GardenRoomHandoverView({ project = null }) {
 
   const handleConfirmHandover = () => {
     setConfirmed(true);
-    setFeedbackToast('Handover confirmed! Final invoice & warranty certificate activated.');
+    setFeedbackToast(
+      isNl
+        ? 'Oplevering bevestigd! Eindfactuur & garantiecertificaat zijn geactiveerd.'
+        : 'Handover confirmed! Final invoice & warranty certificate activated.'
+    );
     setTimeout(() => setFeedbackToast(''), 4000);
   };
 
   const handleDownloadWarranty = () => {
     downloadDirectPdfFile('warranty-certificate-garden-room');
-    setFeedbackToast('Downloaded Warranty Certificate (PDF)!');
+    setFeedbackToast(
+      isNl ? 'Garantiecertificaat (PDF) gedownload!' : 'Downloaded Warranty Certificate (PDF)!'
+    );
     setTimeout(() => setFeedbackToast(''), 3500);
   };
 
@@ -57,11 +66,11 @@ export default function GardenRoomHandoverView({ project = null }) {
       {/* 1. TOP HEADER TAG BAR */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-dark/60">
         <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-md font-bold text-[11px]">
-          Custom Garden Room — project {projectCode}
+          {isNl ? 'Maatwerk Buitenverblijf' : 'Custom Garden Room'} — project {projectCode}
         </span>
         <div className="flex items-center gap-2">
           <span className="bg-cream border border-[#D6CFC2] px-2 py-0.5 rounded-md font-bold text-[10px]">
-            Updates 3
+            {isNl ? '3 Updates' : 'Updates 3'}
           </span>
           <a
             href="https://wa.me/31682008025"
@@ -70,7 +79,7 @@ export default function GardenRoomHandoverView({ project = null }) {
             className="bg-primary text-cream px-2.5 py-0.5 rounded-xl text-xs font-bold hover:bg-primary/90 transition-all flex items-center gap-1 shadow-xs"
           >
             <MessageSquare className="w-3 h-3 text-accent" />
-            <span>WhatsApp us</span>
+            <span>{isNl ? 'WhatsApp ons' : 'WhatsApp us'}</span>
           </a>
         </div>
       </div>
@@ -78,10 +87,12 @@ export default function GardenRoomHandoverView({ project = null }) {
       {/* 2. PAGE TITLE & SUBTITLE */}
       <div className="space-y-0.5">
         <h1 className="text-lg sm:text-xl font-heading font-bold text-primary">
-          Handover & Aftercare
+          {isNl ? 'Oplevering & Nazorg' : 'Handover & Aftercare'}
         </h1>
         <p className="text-[11px] sm:text-xs text-dark/70 font-medium">
-          Handed over on 16 October 2026. Enjoy your garden room — and we remain reachable.
+          {isNl
+            ? 'Opgeleverd op 16 oktober 2026. Veel plezier met je buitenverblijf — en we blijven bereikbaar.'
+            : 'Handed over on 16 October 2026. Enjoy your garden room — and we remain reachable.'}
         </p>
       </div>
 
@@ -92,7 +103,7 @@ export default function GardenRoomHandoverView({ project = null }) {
                backgroundImage: `repeating-linear-gradient(90deg, #B69661, #B69661 14px, #A58450 14px, #A58450 16px, #C2A36C 16px, #C2A36C 28px)`
              }}>
           <div className="bg-[#4E3D2C]/85 backdrop-blur-xs text-white font-mono text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow-sm">
-            YOUR GARDEN ROOM · 16 OCTOBER 2026
+            {isNl ? 'JOUW BUITENVERBLIJF · 16 OKTOBER 2026' : 'YOUR GARDEN ROOM · 16 OCTOBER 2026'}
           </div>
         </div>
       </div>
@@ -104,10 +115,12 @@ export default function GardenRoomHandoverView({ project = null }) {
         <div className="lg:col-span-2 bg-[#FAF8F5] border border-[#D8D2C5] p-3.5 sm:p-4 rounded-2xl shadow-xs space-y-2.5 flex flex-col justify-between">
           <div className="space-y-1.5">
             <h3 className="font-heading font-bold text-primary text-sm sm:text-base">
-              Is everything correct?
+              {isNl ? 'Klopt alles naar wens?' : 'Is everything correct?'}
             </h3>
             <p className="text-[11px] sm:text-xs text-dark/70 leading-relaxed font-medium">
-              We went through the handover together. Confirm below — after that the final term (20%) follows. Notice something later? Aftercare is always available.
+              {isNl
+                ? 'We hebben samen de oplevering nagelopen. Bevestig hieronder — daarna volgt de slottermijn (20%). Merk je later toch iets op? Nazorg blijft altijd mogelijk.'
+                : 'We went through the handover together. Confirm below — after that the final term (20%) follows. Notice something later? Aftercare is always available.'}
             </p>
 
             {/* Checkbox List */}
@@ -119,7 +132,7 @@ export default function GardenRoomHandoverView({ project = null }) {
                   onChange={() => toggleCheck('drawing')}
                   className="w-3.5 h-3.5 rounded text-primary border-[#D6CFC2] focus:ring-primary accent-[#2B3827]"
                 />
-                <span className="truncate">Built according to drawing and render</span>
+                <span className="truncate">{isNl ? 'Gebouwd conform werktekening en render' : 'Built according to drawing and render'}</span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer text-[11px] sm:text-xs font-medium text-dark/80 hover:text-primary">
@@ -129,7 +142,7 @@ export default function GardenRoomHandoverView({ project = null }) {
                   onChange={() => toggleCheck('roof')}
                   className="w-3.5 h-3.5 rounded text-primary border-[#D6CFC2] focus:ring-primary accent-[#2B3827]"
                 />
-                <span className="truncate">Roof, gutters and drainage inspected</span>
+                <span className="truncate">{isNl ? 'Dak, boeidelen en hemelwaterafvoer gecontroleerd' : 'Roof, gutters and drainage inspected'}</span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer text-[11px] sm:text-xs font-medium text-dark/80 hover:text-primary">
@@ -139,7 +152,7 @@ export default function GardenRoomHandoverView({ project = null }) {
                   onChange={() => toggleCheck('slidingDoors')}
                   className="w-3.5 h-3.5 rounded text-primary border-[#D6CFC2] focus:ring-primary accent-[#2B3827]"
                 />
-                <span className="truncate">Sliding doors, electrics and lighting working</span>
+                <span className="truncate">{isNl ? 'Schuifwanden, elektra en verlichting functioneren' : 'Sliding doors, electrics and lighting working'}</span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer text-[11px] sm:text-xs font-medium text-dark/80 hover:text-primary">
@@ -149,7 +162,7 @@ export default function GardenRoomHandoverView({ project = null }) {
                   onChange={() => toggleCheck('gardenClean')}
                   className="w-3.5 h-3.5 rounded text-primary border-[#D6CFC2] focus:ring-primary accent-[#2B3827]"
                 />
-                <span className="truncate">Garden and build site left clean and tidy</span>
+                <span className="truncate">{isNl ? 'Tuin en bouwplaats netjes en schoon achtergelaten' : 'Garden and build site left clean and tidy'}</span>
               </label>
             </div>
           </div>
@@ -165,18 +178,24 @@ export default function GardenRoomHandoverView({ project = null }) {
                   : 'bg-[#2B3827] text-white hover:bg-[#1F291C]'
               }`}
             >
-              {confirmed ? '✓ Confirmed & Handed Over' : 'Everything correct — confirm'}
+              {confirmed 
+                ? (isNl ? '✓ Bevestigd & Opgeleverd' : '✓ Confirmed & Handed Over')
+                : (isNl ? 'Alles klopt — bevestigen' : 'Everything correct — confirm')}
             </button>
 
             <button
               type="button"
               onClick={() => {
-                setFeedbackToast('Aftercare ticket created. Tim & Bram will contact you within 24h.');
+                setFeedbackToast(
+                  isNl
+                    ? 'Nazorgticket aangemaakt. Tim & Bram nemen binnen 24 uur contact met je op.'
+                    : 'Aftercare ticket created. Tim & Bram will contact you within 24h.'
+                );
                 setTimeout(() => setFeedbackToast(''), 3500);
               }}
               className="px-3.5 py-1.5 bg-white text-dark/70 border border-[#D6CFC2] text-xs font-bold rounded-xl hover:bg-gray-50 transition-all cursor-pointer shadow-2xs"
             >
-              Something is not right
+              {isNl ? 'Er klopt iets niet' : 'Something is not right'}
             </button>
           </div>
         </div>
@@ -185,10 +204,12 @@ export default function GardenRoomHandoverView({ project = null }) {
         <div className="lg:col-span-1 bg-[#EAE6DD] border border-[#C8C2B4] p-3.5 sm:p-4 rounded-2xl shadow-xs space-y-2 flex flex-col justify-between">
           <div className="space-y-1">
             <span className="text-[9px] uppercase font-mono font-bold tracking-wider text-[#70624F] block">
-              WARRANTY & AFTERCARE
+              {isNl ? 'GARANTIE & NAZORG' : 'WARRANTY & AFTERCARE'}
             </span>
             <p className="text-[11px] sm:text-xs text-dark/70 leading-relaxed font-medium">
-              Warranty on structure and roof, plus aftercare post handover. And in three months we will contact you for the 3-month checkup.
+              {isNl
+                ? 'Garantie op constructie en dak, plus nazorg na oplevering. En over drie maanden nemen we contact op voor de 3-maandencheck.'
+                : 'Warranty on structure and roof, plus aftercare post handover. And in three months we will contact you for the 3-month checkup.'}
             </p>
           </div>
 
@@ -198,18 +219,20 @@ export default function GardenRoomHandoverView({ project = null }) {
               onClick={handleDownloadWarranty}
               className="w-full py-1.5 px-2 bg-white text-dark/80 border border-[#C8C2B4] text-[11px] font-bold rounded-xl hover:bg-gray-50 transition-all cursor-pointer shadow-2xs text-center block font-medium truncate"
             >
-              Download warranty certificate
+              {isNl ? 'Download garantiecertificaat' : 'Download warranty certificate'}
             </button>
 
             <button
               type="button"
               onClick={() => {
-                setFeedbackToast('Aftercare request sent to Tim & Bram!');
+                setFeedbackToast(
+                  isNl ? 'Nazorgaanvraag verzonden naar Tim & Bram!' : 'Aftercare request sent to Tim & Bram!'
+                );
                 setTimeout(() => setFeedbackToast(''), 3500);
               }}
               className="w-full py-1.5 px-2 bg-white text-dark/80 border border-[#C8C2B4] text-[11px] font-bold rounded-xl hover:bg-gray-50 transition-all cursor-pointer shadow-2xs text-center block font-medium truncate"
             >
-              Request aftercare
+              {isNl ? 'Nazorg aanvragen' : 'Request aftercare'}
             </button>
           </div>
         </div>
@@ -220,10 +243,12 @@ export default function GardenRoomHandoverView({ project = null }) {
       <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-3.5 sm:p-4 rounded-2xl shadow-xs space-y-2.5">
         <div className="space-y-0.5">
           <h3 className="font-heading font-bold text-primary text-xs sm:text-sm">
-            Maintenance Calendar
+            {isNl ? 'Onderhoudskalender' : 'Maintenance Calendar'}
           </h3>
           <p className="text-[11px] text-dark/70 font-medium">
-            Little effort, great results. We send a short reminder every season — if you wish.
+            {isNl
+              ? 'Weinig moeite, groot plezier. Elk seizoen sturen we een korte herinnering — als je dat wilt.'
+              : 'Little effort, great results. We send a short reminder every season — if you wish.'}
           </p>
         </div>
 
@@ -233,52 +258,60 @@ export default function GardenRoomHandoverView({ project = null }) {
           {/* Spring */}
           <div className="bg-[#F5F2EC] border border-[#D6CFC2] p-3 rounded-xl space-y-1 shadow-2xs">
             <span className="text-[9px] uppercase font-mono font-bold tracking-wider text-[#70624F] block">
-              SPRING
+              {isNl ? 'LENTE' : 'SPRING'}
             </span>
             <h5 className="font-heading font-bold text-primary text-xs">
-              Treat timber
+              {isNl ? 'Hout behandelen' : 'Treat timber'}
             </h5>
             <p className="text-[10px] sm:text-[11px] text-dark/70 leading-relaxed font-medium">
-              Clean the Douglas wood and apply one coat of stain or oil. Half a day's work.
+              {isNl
+                ? 'Douglas hout reinigen en één laag beits of olie aanbrengen. Half dagje werk.'
+                : 'Clean the Douglas wood and apply one coat of stain or oil. Half a day\'s work.'}
             </p>
           </div>
 
           {/* Summer */}
           <div className="bg-[#F5F2EC] border border-[#D6CFC2] p-3 rounded-xl space-y-1 shadow-2xs">
             <span className="text-[9px] uppercase font-mono font-bold tracking-wider text-[#70624F] block">
-              SUMMER
+              {isNl ? 'ZOMER' : 'SUMMER'}
             </span>
             <h5 className="font-heading font-bold text-primary text-xs">
-              Nothing — enjoy
+              {isNl ? 'Niets — genieten' : 'Nothing — enjoy'}
             </h5>
             <p className="text-[10px] sm:text-[11px] text-dark/70 leading-relaxed font-medium">
-              At most sweep the sliding door tracks clean.
+              {isNl
+                ? 'Hooguit de rails van de schuifdeuren schoonvegen.'
+                : 'At most sweep the sliding door tracks clean.'}
             </p>
           </div>
 
           {/* Autumn */}
           <div className="bg-[#F5F2EC] border border-[#D6CFC2] p-3 rounded-xl space-y-1 shadow-2xs">
             <span className="text-[9px] uppercase font-mono font-bold tracking-wider text-[#70624F] block">
-              AUTUMN
+              {isNl ? 'HERFST' : 'AUTUMN'}
             </span>
             <h5 className="font-heading font-bold text-primary text-xs">
-              Roof & drain clear
+              {isNl ? 'Dak & afvoer vrij' : 'Roof & drain clear'}
             </h5>
             <p className="text-[10px] sm:text-[11px] text-dark/70 leading-relaxed font-medium">
-              Clear leaves from the EPDM roof and drain outlet. 15 minutes.
+              {isNl
+                ? 'Bladeren van het EPDM-dak en afvoerputje halen. Kwartiertje.'
+                : 'Clear leaves from the EPDM roof and drain outlet. 15 minutes.'}
             </p>
           </div>
 
           {/* Winter */}
           <div className="bg-[#F5F2EC] border border-[#D6CFC2] p-3 rounded-xl space-y-1 shadow-2xs">
             <span className="text-[9px] uppercase font-mono font-bold tracking-wider text-[#70624F] block">
-              WINTER
+              {isNl ? 'WINTER' : 'WINTER'}
             </span>
             <h5 className="font-heading font-bold text-primary text-xs">
-              Nothing needed
+              {isNl ? 'Niets nodig' : 'Nothing needed'}
             </h5>
             <p className="text-[10px] sm:text-[11px] text-dark/70 leading-relaxed font-medium">
-              Douglas and EPDM withstand frost easily.
+              {isNl
+                ? 'Douglas en EPDM kunnen prima tegen vorst.'
+                : 'Douglas and EPDM withstand frost easily.'}
             </p>
           </div>
 
@@ -293,7 +326,7 @@ export default function GardenRoomHandoverView({ project = null }) {
               onChange={(e) => setSeasonalReminder(e.target.checked)}
               className="w-3.5 h-3.5 rounded text-primary border-[#D6CFC2] focus:ring-primary accent-[#2B3827]"
             />
-            <span>Send me a seasonal maintenance reminder</span>
+            <span>{isNl ? 'Stuur mij per seizoen een onderhoudsherinnering' : 'Send me a seasonal maintenance reminder'}</span>
           </label>
         </div>
       </div>
@@ -305,16 +338,18 @@ export default function GardenRoomHandoverView({ project = null }) {
         <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-3.5 sm:p-4 rounded-2xl shadow-xs space-y-2 flex flex-col justify-between">
           <div className="space-y-1">
             <h4 className="font-heading font-bold text-primary text-xs sm:text-sm">
-              The 3-month check
+              {isNl ? 'De 3-maandencheck' : 'The 3-month check'}
             </h4>
             <p className="text-[11px] text-dark/70 leading-relaxed font-medium">
-              In January we get in touch: is everything still tight, electrics working, are you satisfied? Small points fixed immediately.
+              {isNl
+                ? 'In januari nemen we contact op: zit alles nog strak, werkt elektra, ben je tevreden? Kleine puntjes direct verholpen.'
+                : 'In January we get in touch: is everything still tight, electrics working, are you satisfied? Small points fixed immediately.'}
             </p>
           </div>
 
           <div className="pt-0.5">
             <span className="bg-[#EAE6DD] text-[#70624F] font-mono text-[9px] font-bold px-2 py-0.5 rounded-md inline-block">
-              Scheduled · January 2027
+              {isNl ? 'Ingepland · Januari 2027' : 'Scheduled · January 2027'}
             </span>
           </div>
         </div>
@@ -323,10 +358,12 @@ export default function GardenRoomHandoverView({ project = null }) {
         <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-3.5 sm:p-4 rounded-2xl shadow-xs space-y-2 flex flex-col justify-between">
           <div className="space-y-1">
             <h4 className="font-heading font-bold text-primary text-xs sm:text-sm">
-              Would you like to help us?
+              {isNl ? 'Wil je ons helpen?' : 'Would you like to help us?'}
             </h4>
             <p className="text-[11px] text-dark/70 leading-relaxed font-medium">
-              Word-of-mouth is everything to us. A short review helps the next customer enormously — and us even more.
+              {isNl
+                ? 'Mond-tot-mondreclame is alles voor ons. Een korte review helpt de volgende klant enorm — en ons nog meer.'
+                : 'Word-of-mouth is everything to us. A short review helps the next customer enormously — and us even more.'}
             </p>
           </div>
 
@@ -337,7 +374,7 @@ export default function GardenRoomHandoverView({ project = null }) {
               rel="noopener noreferrer"
               className="w-full py-1.5 px-2 bg-[#2B3827] text-white text-[11px] font-bold rounded-xl text-center block hover:bg-[#1F291C] transition-all shadow-xs truncate"
             >
-              Leave review on Google
+              {isNl ? 'Laat een review achter op Google' : 'Leave review on Google'}
             </a>
 
             <a
@@ -346,7 +383,7 @@ export default function GardenRoomHandoverView({ project = null }) {
               rel="noopener noreferrer"
               className="w-full py-1.5 px-2 bg-white text-dark/80 border border-[#D6CFC2] text-[11px] font-bold rounded-xl hover:bg-gray-50 transition-all shadow-2xs text-center block truncate font-medium"
             >
-              Share photo on Instagram
+              {isNl ? 'Deel een foto op Instagram' : 'Share photo on Instagram'}
             </a>
           </div>
         </div>
@@ -355,10 +392,12 @@ export default function GardenRoomHandoverView({ project = null }) {
         <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-3.5 sm:p-4 rounded-2xl shadow-xs space-y-2 flex flex-col justify-between items-start">
           <div className="space-y-1">
             <h4 className="font-heading font-bold text-primary text-xs sm:text-sm">
-              Complete your outdoor living?
+              {isNl ? 'Buitenleven compleet maken?' : 'Complete your outdoor living?'}
             </h4>
             <p className="text-[11px] text-dark/70 leading-relaxed font-medium">
-              Many customers combine their garden room with an outdoor kitchen under the canopy. Returning customer? We offer sharp pricing.
+              {isNl
+                ? 'Veel klanten combineren hun buitenverblijf met een buitenkeuken onder de overkapping. Terugkerende klant? We rekenen een scherpe prijs.'
+                : 'Many customers combine their garden room with an outdoor kitchen under the canopy. Returning customer? We offer sharp pricing.'}
             </p>
           </div>
 
@@ -366,12 +405,16 @@ export default function GardenRoomHandoverView({ project = null }) {
             <button
               type="button"
               onClick={() => {
-                setFeedbackToast('Price indication requested! We will reach out with a custom proposal.');
+                setFeedbackToast(
+                  isNl
+                    ? 'Prijsindicatie aangevraagd! We nemen contact op met een passend voorstel.'
+                    : 'Price indication requested! We will reach out with a custom proposal.'
+                );
                 setTimeout(() => setFeedbackToast(''), 4000);
               }}
               className="w-full py-1.5 px-2 bg-white text-dark/80 border border-[#D6CFC2] text-[11px] font-bold rounded-xl hover:bg-gray-50 transition-all cursor-pointer shadow-2xs text-center block truncate font-medium"
             >
-              Request price indication
+              {isNl ? 'Vrijblijvende prijsindicatie' : 'Request price indication'}
             </button>
           </div>
         </div>

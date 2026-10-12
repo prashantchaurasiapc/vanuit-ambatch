@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, Sparkles, Smartphone, Check, ChevronRight, Calendar, ArrowRight, Eye } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import timberSlatRender from '../../assets/wood_texture.png';
 
 /**
@@ -13,6 +14,8 @@ import timberSlatRender from '../../assets/wood_texture.png';
  * - 3 Side-by-Side Interactive Phone Device Mockups (Overview, Render Viewer, Week Schedule)
  */
 export default function GardenRoomMobileView({ project = null }) {
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
   const [feedbackToast, setFeedbackToast] = useState('');
 
   const projectCode = project?.projectNumber || project?.id || '';
@@ -30,7 +33,7 @@ export default function GardenRoomMobileView({ project = null }) {
       {/* 1. TOP HEADER TAG BAR */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-dark/60">
         <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-md font-bold text-[11px]">
-          Custom Garden Room — project {projectCode}
+          {isNl ? `Buitenverblijf op maat — project ${projectCode}` : `Custom Garden Room — project ${projectCode}`}
         </span>
         <div className="flex items-center gap-2">
           <span className="bg-cream border border-[#D6CFC2] px-2 py-0.5 rounded-md font-bold text-[10px]">
@@ -43,7 +46,7 @@ export default function GardenRoomMobileView({ project = null }) {
             className="bg-primary text-cream px-2.5 py-0.5 rounded-xl text-xs font-bold hover:bg-primary/90 transition-all flex items-center gap-1 shadow-xs"
           >
             <MessageSquare className="w-3 h-3 text-accent" />
-            <span>WhatsApp us</span>
+            <span>{isNl ? 'WhatsApp ons' : 'WhatsApp us'}</span>
           </a>
         </div>
       </div>
@@ -52,10 +55,10 @@ export default function GardenRoomMobileView({ project = null }) {
       <div className="space-y-0.5">
         <h1 className="text-lg sm:text-xl font-heading font-bold text-primary flex items-center gap-2">
           <Smartphone className="w-5 h-5 text-primary" />
-          <span>Mobile View</span>
+          <span>{isNl ? 'Mobiele Weergave' : 'Mobile View'}</span>
         </h1>
         <p className="text-[11px] sm:text-xs text-dark/70 font-medium">
-          Same content, different priority: actions at the top, full-width renders with swipe, week bar compact.
+          {isNl ? 'Dezelfde inhoud, andere prioriteit: acties bovenaan, renderviewer paginabreed met swipe, weekbalk compact.' : 'Same content, different priority: actions at the top, full-width renders with swipe, week bar compact.'}
         </p>
       </div>
 
@@ -78,42 +81,46 @@ export default function GardenRoomMobileView({ project = null }) {
             <div className="space-y-2">
               {/* Greeting */}
               <h4 className="font-heading font-bold text-primary text-xs">
-                Hoi Sander
+                {isNl ? 'Hoi Sander' : 'Hi Sander'}
               </h4>
 
               {/* Actions Block (Bronze/Orange Action Card) */}
               <div className="bg-[#FFFBF2] border border-[#E8D4B0] p-2 rounded-lg space-y-2 shadow-2xs">
                 <span className="bg-[#B8860B] text-white text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-full inline-block">
-                  • 2 actions from you
+                  {isNl ? '• 2 acties van jou' : '• 2 actions from you'}
                 </span>
 
                 {/* Action 1 */}
                 <div className="space-y-1 border-b border-[#E8D4B0]/60 pb-1.5">
                   <h5 className="font-heading font-bold text-primary text-[10px]">
-                    Schouwvoorstel goedkeuren
+                    {isNl ? 'Schouwvoorstel goedkeuren' : 'Approve survey proposal'}
                   </h5>
-                  <p className="text-[9px] text-dark/60 font-mono">do 27 aug · rond 10:00</p>
+                  <p className="text-[9px] text-dark/60 font-mono">
+                    {isNl ? 'do 27 aug · rond 10:00' : 'Thu 27 Aug · around 10:00'}
+                  </p>
                   <button
                     type="button"
-                    onClick={() => setFeedbackToast('Opened Survey Proposal on Mobile')}
+                    onClick={() => setFeedbackToast(isNl ? 'Schouwvoorstel geopend op mobiel' : 'Opened Survey Proposal on Mobile')}
                     className="w-full py-1 bg-[#B69661] text-white font-bold rounded text-[9px] hover:bg-[#A38250] transition-all shadow-xs"
                   >
-                    Voorstel bekijken
+                    {isNl ? 'Voorstel bekijken' : 'View proposal'}
                   </button>
                 </div>
 
                 {/* Action 2 */}
                 <div className="space-y-1 pt-0.5">
                   <h5 className="font-heading font-bold text-primary text-[10px]">
-                    Render versie 2 bekijken
+                    {isNl ? 'Render versie 2 bekijken' : 'View render version 2'}
                   </h5>
-                  <p className="text-[9px] text-dark/60">schuifpui verplaatst</p>
+                  <p className="text-[9px] text-dark/60">
+                    {isNl ? 'schuifpui verplaatst' : 'sliding door relocated'}
+                  </p>
                   <button
                     type="button"
-                    onClick={() => setFeedbackToast('Opened Render Version 2 on Mobile')}
+                    onClick={() => setFeedbackToast(isNl ? 'Render versie 2 geopend op mobiel' : 'Opened Render Version 2 on Mobile')}
                     className="w-full py-1 bg-[#B69661] text-white font-bold rounded text-[9px] hover:bg-[#A38250] transition-all shadow-xs"
                   >
-                    Render bekijken
+                    {isNl ? 'Render bekijken' : 'View render'}
                   </button>
                 </div>
               </div>
@@ -121,12 +128,14 @@ export default function GardenRoomMobileView({ project = null }) {
               {/* Build Week Block */}
               <div className="bg-white border border-[#D8D2C5] p-2 rounded-lg space-y-1.5 shadow-2xs">
                 <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-accent block">
-                  BOUWWEEK
+                  {isNl ? 'BOUWWEEK' : 'BUILD WEEK'}
                 </span>
                 <h5 className="font-heading font-bold text-primary text-[10px]">
                   Week 41 & 42
                 </h5>
-                <p className="text-[9px] text-dark/60 font-mono">○ Voorlopig — definitief na de schouw</p>
+                <p className="text-[9px] text-dark/60 font-mono">
+                  {isNl ? '○ Voorlopig — definitief na de schouw' : '○ Provisional — final after site survey'}
+                </p>
 
                 {/* Render Thumbnail */}
                 <div className="h-16 w-full rounded-md overflow-hidden bg-[#B69661] border border-[#A4824D]/40 flex items-end p-1.5"
@@ -137,14 +146,14 @@ export default function GardenRoomMobileView({ project = null }) {
                 </div>
 
                 <span className="font-heading font-bold text-[10px] text-primary block">
-                  Jouw buitenverblijf
+                  {isNl ? 'Jouw buitenverblijf' : 'Your garden room'}
                 </span>
               </div>
             </div>
 
             {/* Bottom Mobile Tab Bar */}
             <div className="bg-[#2B3827] text-white p-1.5 flex justify-around items-center text-[8px] font-mono font-bold">
-              <span className="text-amber-300 underline">Overzicht</span>
+              <span className="text-amber-300 underline">{isNl ? 'Overzicht' : 'Overview'}</span>
               <span className="opacity-70">Renders</span>
               <span className="opacity-70">Planning</span>
               <span className="opacity-70">Updates</span>
@@ -168,15 +177,17 @@ export default function GardenRoomMobileView({ project = null }) {
           <div className="p-2.5 space-y-2 text-dark text-[11px] flex-1 flex flex-col justify-between">
             <div className="space-y-1.5">
               <h4 className="font-heading font-bold text-primary text-[11px]">
-                Jouw ontwerp
+                {isNl ? 'Jouw ontwerp' : 'Your design'}
               </h4>
-              <p className="text-[9px] text-dark/60 font-mono">Versie 2 · swipe voor alle aanzichten</p>
+              <p className="text-[9px] text-dark/60 font-mono">
+                {isNl ? 'Versie 2 · swipe voor alle aanzichten' : 'Version 2 · swipe for all views'}
+              </p>
 
               {/* Full-width Timber Render Image */}
               <div className="h-24 w-full rounded-md overflow-hidden bg-[#B69661] border border-[#A4824D]/40 flex items-end p-1.5 shadow-inner"
                    style={{ backgroundImage: `repeating-linear-gradient(90deg, #B69661, #B69661 10px, #A58450 10px, #A58450 12px)` }}>
                 <span className="bg-black/70 text-white font-mono text-[7px] font-bold px-1.5 py-0.5 rounded uppercase">
-                  VOORAANICHT
+                  {isNl ? 'VOORAANZICHT' : 'FRONT VIEW'}
                 </span>
               </div>
 
@@ -190,33 +201,35 @@ export default function GardenRoomMobileView({ project = null }) {
               {/* What's New Card */}
               <div className="bg-white border border-[#D8D2C5] p-2 rounded-lg space-y-0.5 shadow-2xs">
                 <h5 className="font-heading font-bold text-primary text-[10px]">
-                  Wat is er nieuw in versie 2?
+                  {isNl ? 'Wat is er nieuw in versie 2?' : 'What is new in version 2?'}
                 </h5>
-                <p className="text-[9px] text-dark/70">Schuifpui op zuid · overstek +40 cm</p>
+                <p className="text-[9px] text-dark/70">
+                  {isNl ? 'Schuifpui op zuid · overstek +40 cm' : 'Sliding door on south · overhang +40 cm'}
+                </p>
               </div>
 
               {/* Action Buttons Row */}
               <div className="flex gap-1 pt-0.5">
                 <button
                   type="button"
-                  onClick={() => setFeedbackToast('Viewing All Mobile Views')}
+                  onClick={() => setFeedbackToast(isNl ? 'Alle mobiele aanzichten geopend' : 'Viewing All Mobile Views')}
                   className="flex-1 py-1 bg-[#2B3827] text-white font-bold rounded text-[9px] text-center shadow-xs"
                 >
-                  Alle aanzichten
+                  {isNl ? 'Alle aanzichten' : 'All views'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFeedbackToast('Leave Mobile Comment')}
+                  onClick={() => setFeedbackToast(isNl ? 'Opmerking achtergelaten' : 'Leave Mobile Comment')}
                   className="flex-1 py-1 bg-white text-dark/80 border border-[#D6CFC2] font-bold rounded text-[9px] text-center shadow-2xs"
                 >
-                  Opmerking
+                  {isNl ? 'Opmerking' : 'Comment'}
                 </button>
               </div>
             </div>
 
             {/* Bottom Mobile Tab Bar */}
             <div className="bg-[#2B3827] text-white p-1.5 flex justify-around items-center text-[8px] font-mono font-bold">
-              <span className="opacity-70">Overzicht</span>
+              <span className="opacity-70">{isNl ? 'Overzicht' : 'Overview'}</span>
               <span className="text-amber-300 underline">Renders</span>
               <span className="opacity-70">Planning</span>
               <span className="opacity-70">Updates</span>
@@ -233,60 +246,72 @@ export default function GardenRoomMobileView({ project = null }) {
               <div className="w-2 h-2 rounded-full bg-amber-400" />
               <span className="font-heading font-bold tracking-wider text-[10px] uppercase">PLANNING</span>
             </div>
-            <span className="text-[8px] font-mono text-amber-300 bg-black/30 px-1.5 py-0.5 rounded font-bold">WEEK BY WEEK</span>
+            <span className="text-[8px] font-mono text-amber-300 bg-black/30 px-1.5 py-0.5 rounded font-bold">
+              {isNl ? 'WEEK VOOR WEEK' : 'WEEK BY WEEK'}
+            </span>
           </div>
 
           {/* Phone Screen Body Content */}
           <div className="p-2.5 space-y-2 text-dark text-[11px] flex-1 flex flex-col justify-between">
             <div className="space-y-1.5">
               <h4 className="font-heading font-bold text-primary text-[11px]">
-                Week voor week
+                {isNl ? 'Week voor week' : 'Week by week'}
               </h4>
-              <p className="text-[9px] text-dark/60 font-mono">◇ Voorlopig — definitief na de schouw</p>
+              <p className="text-[9px] text-dark/60 font-mono">
+                {isNl ? '◇ Voorlopig — definitief na de schouw' : '◇ Provisional — final after site survey'}
+              </p>
 
               {/* Active Action Week Card */}
               <div className="bg-[#FFFBF2] border border-[#E8D4B0] p-2 rounded-lg space-y-1.5 shadow-2xs">
                 <div className="space-y-0.5">
                   <h5 className="font-heading font-bold text-primary text-[10px]">
-                    Wk 35 · Schouw
+                    {isNl ? 'Wk 35 · Schouw' : 'Wk 35 · Site Survey'}
                   </h5>
-                  <p className="text-[9px] text-dark/70 font-mono">do 27 aug · wacht op jouw akkoord</p>
+                  <p className="text-[9px] text-dark/70 font-mono">
+                    {isNl ? 'do 27 aug · wacht op jouw akkoord' : 'Thu 27 Aug · awaiting approval'}
+                  </p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setFeedbackToast('Agreed Schedule on Mobile')}
+                  onClick={() => setFeedbackToast(isNl ? 'Planning goedgekeurd op mobiel' : 'Agreed Schedule on Mobile')}
                   className="w-full py-1 bg-[#B69661] text-white font-bold rounded text-[9px] text-center shadow-xs"
                 >
-                  Akkoord — plan in
+                  {isNl ? 'Akkoord — plan in' : 'Approve — schedule'}
                 </button>
               </div>
 
               {/* Timeline Week Cards */}
               <div className="bg-white border border-[#D8D2C5] p-1.5 rounded space-y-0.5 shadow-2xs">
                 <h6 className="font-heading font-bold text-primary text-[10px]">
-                  Wk 39 · Voorbereiding
+                  {isNl ? 'Wk 39 · Voorbereiding' : 'Wk 39 · Preparation'}
                 </h6>
-                <p className="text-[8.5px] text-dark/60">grondwerk & poeren</p>
+                <p className="text-[8.5px] text-dark/60">
+                  {isNl ? 'grondwerk & poeren' : 'groundwork & piers'}
+                </p>
               </div>
 
               <div className="bg-white border border-[#D8D2C5] p-1.5 rounded space-y-0.5 shadow-2xs">
                 <h6 className="font-heading font-bold text-primary text-[10px]">
-                  Wk 40 · Materialen
+                  {isNl ? 'Wk 40 · Materialen' : 'Wk 40 · Materials'}
                 </h6>
-                <p className="text-[8.5px] text-dark/60">levering Douglas pakket</p>
+                <p className="text-[8.5px] text-dark/60">
+                  {isNl ? 'levering Douglas pakket' : 'Douglas timber delivery'}
+                </p>
               </div>
 
               <div className="bg-[#2B3827] text-white p-2 rounded space-y-0.5 shadow-xs">
                 <h6 className="font-heading font-bold text-amber-300 text-[10px]">
-                  Wk 41-42 · De bouw
+                  {isNl ? 'Wk 41-42 · De bouw' : 'Wk 41-42 · Construction'}
                 </h6>
-                <p className="text-[8.5px] text-white/80">oplevering eind wk 42</p>
+                <p className="text-[8.5px] text-white/80">
+                  {isNl ? 'oplevering eind wk 42' : 'completion end of wk 42'}
+                </p>
               </div>
             </div>
 
             {/* Bottom Mobile Tab Bar */}
             <div className="bg-[#2B3827] text-white p-1.5 flex justify-around items-center text-[8px] font-mono font-bold">
-              <span className="opacity-70">Overzicht</span>
+              <span className="opacity-70">{isNl ? 'Overzicht' : 'Overview'}</span>
               <span className="opacity-70">Renders</span>
               <span className="text-amber-300 underline">Planning</span>
               <span className="opacity-70">Updates</span>
@@ -299,7 +324,7 @@ export default function GardenRoomMobileView({ project = null }) {
 
       {/* FOOTNOTE CAPTION */}
       <p className="text-[11px] text-dark/60 italic text-center pt-1">
-        Mobile designs: overview, render viewer and week schedule in phone view.
+        {isNl ? 'Mobiele weergaves: overzicht, render viewer en weekschema in telefoonweergave.' : 'Mobile designs: overview, render viewer and week schedule in phone view.'}
       </p>
     </div>
   );

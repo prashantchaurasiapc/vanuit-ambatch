@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, FileText } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useLanguage } from '../../context/LanguageContext';
 import GardenRoomDocumentsView from '../../components/customer/GardenRoomDocumentsView';
 import OutdoorKitchenDocumentsView from '../../components/customer/OutdoorKitchenDocumentsView';
 import api from '../../api/apiClient';
 
 export default function CustomerDocuments() {
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
   const [activeProject, setActiveProject] = useState(null);
   const [activeType, setActiveType] = useState('outdoor_kitchen');
 
@@ -64,7 +67,7 @@ export default function CustomerDocuments() {
       <div className="bg-[#FAF7F2] border border-[#E4DED4] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
         <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-accent" />
-          <span>Testing Documents View Switcher:</span>
+          <span>{isNl ? 'Documenten Weergave Switcher:' : 'Testing Documents View Switcher:'}</span>
         </span>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
@@ -76,7 +79,7 @@ export default function CustomerDocuments() {
                 : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
             }`}
           >
-            Outdoor Kitchen (Documents)
+            {isNl ? 'Buitenkeuken (Documenten)' : 'Outdoor Kitchen (Documents)'}
           </button>
 
           <button
@@ -88,7 +91,7 @@ export default function CustomerDocuments() {
                 : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
             }`}
           >
-            Garden Room / Poolhouse (Documents)
+            {isNl ? 'Buitenverblijf / Poolhouse (Documenten)' : 'Garden Room / Poolhouse (Documents)'}
           </button>
         </div>
       </div>

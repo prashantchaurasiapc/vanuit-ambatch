@@ -107,6 +107,34 @@ export default function Partners() {
     setTimeout(() => setToastMsg(''), 3000);
   };
 
+  // Partner Rating State & Handler (Admin Quality Audit)
+  const [isRatingPartner, setIsRatingPartner] = useState(false);
+  const [hoverRating, setHoverRating] = useState(0);
+
+  const handleRatePartner = async (partnerId, newRating) => {
+    if (!partnerId || isRatingPartner) return;
+    setIsRatingPartner(true);
+    try {
+      const numericVal = Math.min(5, Math.max(1, parseFloat(newRating) || 5));
+      const res = await api.post(`/partners/${partnerId}/rate`, { rating: numericVal });
+      if (res.success) {
+        const formatted = numericVal.toFixed(2);
+        setDetailModalPartner(prev => prev ? { ...prev, rating: formatted } : null);
+        setPartners(prev => prev.map(p => p.id === partnerId ? { ...p, rating: formatted } : p));
+        showToast(language === 'NL' 
+          ? `Beoordeling succesvol bijgewerkt naar ${formatted} ⭐` 
+          : `Partner rating updated to ${formatted} ⭐`
+        );
+      } else {
+        showToast(res.error?.message || (language === 'NL' ? 'Fout bij bijwerken beoordeling' : 'Failed to update rating'));
+      }
+    } catch (err) {
+      showToast(language === 'NL' ? 'Fout bij bijwerken beoordeling' : 'Failed to update rating');
+    } finally {
+      setIsRatingPartner(false);
+    }
+  };
+
   // ─── Normalise backend partner record ────────────────────────────────────
   const normalise = (p) => ({
     id: p.id,
@@ -300,7 +328,7 @@ export default function Partners() {
     try {
       const res = await api.get('/partner-candidates');
       if (res?.success) {
-        const list = res.data?.candidates || res.data || [];
+        const list = res.data?.items || res.data?.candidates || (Array.isArray(res.data) ? res.data : []);
         setCandidates(Array.isArray(list) ? list : []);
       }
     } catch (err) {
@@ -1234,7 +1262,11 @@ export default function Partners() {
                     </div>
                     <p className="text-xs font-bold text-accent">{detailModalPartner.company} — <span className="font-mono text-dark/60">{detailModalPartner.kvk || (language === 'NL' ? 'KVK-Geregistreerd' : 'CoC Registered')}</span></p>
                     <p className="text-[11px] text-dark/60 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3" /> {detailModalPartner.region}</p>
-                    <p className="text-[11px] text-amber-600 flex items-center gap-0.5 mt-0.5"><Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {detailModalPartner.rating} / 5.00</p>
+                    <p className="text-[11px] text-amber-700 flex items-center gap-1 mt-0.5 font-semibold">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                      <span>{Number(detailModalPartner.rating || 5).toFixed(2)}</span>
+                      <span className="text-dark/40 font-normal">/ 5.00</span>
+                    </p>
                   </div>
                 </div>
                 <button onClick={() => setDetailModalPartner(null)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
@@ -1252,6 +1284,86 @@ export default function Partners() {
                 <a href={`mailto:${detailModalPartner.email}`} className="flex items-center gap-1 px-3 py-1.5 bg-[#3E4E36] text-white rounded-lg font-bold text-[11px]">
                   <Mail className="w-3.5 h-3.5" /> {language === 'NL' ? 'E-mail' : 'Email'} ({detailModalPartner.email})
                 </a>
+              </div>
+
+              {/* Rating & Craftsmanship Audit (Admin Control) */}
+              <div className="space-y-2.5 pt-3 border-t border-[#D6CFC2]">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-heading font-bold text-primary text-sm flex items-center gap-2">
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+                    {language === 'NL' ? 'Kwaliteitsbeoordeling (Admin Audit)' : 'Quality Rating (Admin Audit)'}
+                  </h4>
+                  <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-900 px-2.5 py-0.5 rounded-full border border-amber-500/20 font-bold font-mono text-xs">
+                    <span>{Number(detailModalPartner.rating || 5).toFixed(2)}</span>
+                    <span className="text-amber-700/60 text-[10px]">/ 5.00</span>
+                  </div>
+                </div>
+
+                <div className="bg-white/80 p-3 rounded-xl border border-[#D6CFC2]/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                  <div>
+                    <p className="text-[11px] text-dark/70 font-medium">
+                      {language === 'NL' 
+                        ? 'Selecteer sterren om de officiële score van deze vakman bij te werken:' 
+                        : 'Select stars to update official craftsmanship score for this partner:'}
+                    </p>
+                    {/* Interactive 5 Stars */}
+                    <div className="flex items-center gap-1 mt-1.5">
+                      {[1, 2, 3, 4, 5].map((starNum) => {
+                        const currentVal = Number(detailModalPartner.rating || 5);
+                        const isFilled = (hoverRating || currentVal) >= starNum;
+                        return (
+                          <button
+                            key={starNum}
+                            type="button"
+                            disabled={isRatingPartner}
+                            onMouseEnter={() => setHoverRating(starNum)}
+                            onMouseLeave={() => setHoverRating(0)}
+                            onClick={() => handleRatePartner(detailModalPartner.id, starNum)}
+                            className="p-1 rounded-md hover:bg-amber-100 transition-all transform hover:scale-110 disabled:opacity-50 cursor-pointer"
+                            title={`${starNum} ${language === 'NL' ? 'sterren' : 'stars'}`}
+                          >
+                            <Star
+                              className={`w-5 h-5 transition-colors ${
+                                isFilled
+                                  ? 'fill-amber-400 text-amber-500'
+                                  : 'fill-transparent text-[#C4BEB3]'
+                              }`}
+                            />
+                          </button>
+                        );
+                      })}
+                      {isRatingPartner && (
+                        <div className="flex items-center gap-1 ml-2 text-accent text-[11px] font-bold">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>{language === 'NL' ? 'Opslaan...' : 'Saving...'}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Quick Fine-Tuning Presets */}
+                  <div className="flex items-center gap-1.5 flex-wrap sm:justify-end">
+                    <span className="text-[10px] uppercase font-bold text-dark/50 mr-0.5">{language === 'NL' ? 'Snel:' : 'Quick:'}</span>
+                    {[5.0, 4.8, 4.5, 4.0, 3.5].map((preset) => {
+                      const isSelected = Math.abs(Number(detailModalPartner.rating || 5) - preset) < 0.05;
+                      return (
+                        <button
+                          key={preset}
+                          type="button"
+                          disabled={isRatingPartner}
+                          onClick={() => handleRatePartner(detailModalPartner.id, preset)}
+                          className={`px-2 py-1 rounded-md text-[11px] font-mono font-bold transition-all border cursor-pointer ${
+                            isSelected
+                              ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                              : 'bg-[#F8F7F4] text-dark/70 border-[#D6CFC2] hover:bg-amber-100/60'
+                          }`}
+                        >
+                          {preset.toFixed(1)} ★
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
               {/* Product Types */}

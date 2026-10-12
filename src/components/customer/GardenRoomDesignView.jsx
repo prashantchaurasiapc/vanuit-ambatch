@@ -2,55 +2,49 @@ import React, { useState } from 'react';
 import { Sparkles, Sun, Moon, Check, MessageSquare, Download, Eye, ChevronRight } from 'lucide-react';
 import { downloadDirectPdfFile } from '../../utils/pdfGenerator';
 import woodTexture from '../../assets/wood_texture.png';
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * GardenRoomDesignView Component (1-to-1 implementation of Client Mockup PDF Garden Rooms Page 8)
- * 
- * Clean Balanced Layout & Zero Empty Gaps:
- * - 4 Interactive View Angles (Front View, Side View, Interior Poolhouse, From the Garden)
- * - Interactive Day / Night Light Switch (Warm night spotlight render lighting effects)
- * - Material & finishing details card (Douglas timber, EPDM flat roof, Ceramic 60x60 tiles, Layout diagram)
- * - About Douglas Timber card (Left column bottom for exact vertical balance)
- * - 2x2 Specs Grid Cards (DIMENSIONS 8.00x4.00, TIMBER Douglas, ROOF Flat, BUILD TIME 2 weeks)
- * - Your Selections Card (Checklist of selected options)
- * - Versions of your design section (Version 2 Current, Version 1 Initial)
  */
 export default function GardenRoomDesignView({ project = null }) {
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
   const [activeAngle, setActiveAngle] = useState('front');
   const [isNightMode, setIsNightMode] = useState(false);
   const [feedbackToast, setFeedbackToast] = useState('');
 
-  const projectCode = project?.id || '2026-021';
+  const projectCode = project?.projectNumber || project?.id || '2026-021';
 
   const viewAngles = [
     {
       id: 'front',
-      name: 'Front View',
-      badge: 'RENDER · FRONT VIEW · VERSION 2',
+      name: isNl ? 'Vooraanzicht' : 'Front View',
+      badge: isNl ? 'RENDER · VOORAANZICHT · VERSIE 2' : 'RENDER · FRONT VIEW · VERSION 2',
       thumbGradient: 'from-[#8B7355] via-[#A68A64] to-[#6E5A42]',
       nightGradient: 'from-[#1A2218] via-[#2A3528] to-[#121811]',
       spotlight: 'radial-gradient(ellipse at 50% 30%, rgba(255, 210, 150, 0.45) 0%, rgba(255, 180, 100, 0.15) 50%, transparent 80%)'
     },
     {
       id: 'side',
-      name: 'Side View',
-      badge: 'RENDER · SIDE VIEW · VERSION 2',
+      name: isNl ? 'Zijaanzicht' : 'Side View',
+      badge: isNl ? 'RENDER · ZIJAANZICHT · VERSIE 2' : 'RENDER · SIDE VIEW · VERSION 2',
       thumbGradient: 'from-[#7A6448] via-[#947A58] to-[#5C4B36]',
       nightGradient: 'from-[#161D14] via-[#242E22] to-[#0E130D]',
       spotlight: 'radial-gradient(ellipse at 30% 40%, rgba(255, 210, 150, 0.45) 0%, rgba(255, 180, 100, 0.15) 50%, transparent 80%)'
     },
     {
       id: 'interior',
-      name: 'Interior Poolhouse',
-      badge: 'RENDER · INTERIOR POOLHOUSE · VERSION 2',
+      name: isNl ? 'Interieur Poolhouse' : 'Interior Poolhouse',
+      badge: isNl ? 'RENDER · INTERIEUR POOLHOUSE · VERSIE 2' : 'RENDER · INTERIOR POOLHOUSE · VERSION 2',
       thumbGradient: 'from-[#6E5A42] via-[#8B7355] to-[#4E3D2C]',
       nightGradient: 'from-[#1B2019] via-[#2D382B] to-[#141813]',
       spotlight: 'radial-gradient(ellipse at 70% 30%, rgba(255, 220, 170, 0.5) 0%, rgba(255, 190, 110, 0.2) 50%, transparent 80%)'
     },
     {
       id: 'garden',
-      name: 'From the Garden',
-      badge: 'RENDER · FROM THE GARDEN · VERSION 2',
+      name: isNl ? 'Vanuit de tuin' : 'From the Garden',
+      badge: isNl ? 'RENDER · VANUIT DE TUIN · VERSIE 2' : 'RENDER · FROM THE GARDEN · VERSION 2',
       thumbGradient: 'from-[#5C4B36] via-[#7A6448] to-[#3E3022]',
       nightGradient: 'from-[#121711] via-[#1F271D] to-[#0A0E0A]',
       spotlight: 'radial-gradient(ellipse at 50% 50%, rgba(255, 210, 150, 0.4) 0%, rgba(255, 180, 100, 0.15) 50%, transparent 80%)'
@@ -61,7 +55,7 @@ export default function GardenRoomDesignView({ project = null }) {
 
   const handleDownloadSpecs = () => {
     downloadDirectPdfFile('working-drawing');
-    setFeedbackToast('Downloaded Working Drawing Version 2 (PDF)!');
+    setFeedbackToast(isNl ? 'Werktekening Versie 2 (PDF) gedownload!' : 'Downloaded Working Drawing Version 2 (PDF)!');
     setTimeout(() => setFeedbackToast(''), 3500);
   };
 
@@ -75,14 +69,14 @@ export default function GardenRoomDesignView({ project = null }) {
         </div>
       )}
 
-      {/* 1. TOP HEADER TAG BAR (1-to-1 Client Mockup PDF Page 8) */}
+      {/* 1. TOP HEADER TAG BAR */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-dark/60">
         <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-md font-bold">
-          Custom Garden Room — project {projectCode}
+          {isNl ? 'Maatwerk Buitenverblijf' : 'Custom Garden Room'} — project {projectCode}
         </span>
         <div className="flex items-center gap-2">
           <span className="bg-cream border border-[#D6CFC2] px-2 py-0.5 rounded-md font-bold text-[11px]">
-            Updates 3
+            {isNl ? '3 Updates' : 'Updates 3'}
           </span>
           <a
             href="https://wa.me/31682008025"
@@ -91,7 +85,7 @@ export default function GardenRoomDesignView({ project = null }) {
             className="bg-primary text-cream px-3 py-1 rounded-xl text-xs font-bold hover:bg-primary/90 transition-all flex items-center gap-1 shadow-xs"
           >
             <MessageSquare className="w-3.5 h-3.5 text-accent" />
-            <span>WhatsApp us</span>
+            <span>{isNl ? 'WhatsApp ons' : 'WhatsApp us'}</span>
           </a>
         </div>
       </div>
@@ -99,10 +93,12 @@ export default function GardenRoomDesignView({ project = null }) {
       {/* 2. PAGE TITLE & SUBTITLE */}
       <div className="space-y-0.5">
         <h1 className="text-xl sm:text-2xl font-heading font-bold text-primary">
-          Design & renders
+          {isNl ? 'Ontwerp & renders' : 'Design & renders'}
         </h1>
         <p className="text-xs text-dark/70 font-medium">
-          This is how your garden room will look. View all angles — and see it at night too.
+          {isNl
+            ? "Zo komt jouw buitenverblijf eruit te zien. Bekijk alle hoeken — ook 's avonds."
+            : 'This is how your garden room will look. View all angles — and see it at night too.'}
         </p>
       </div>
 
@@ -111,13 +107,13 @@ export default function GardenRoomDesignView({ project = null }) {
         {/* Render Viewer Toolbar */}
         <div className="flex flex-wrap justify-between items-center gap-2 pb-1">
           <h3 className="font-heading font-bold text-primary text-sm sm:text-base">
-            Render viewer
+            {isNl ? 'Render viewer' : 'Render viewer'}
           </h3>
 
           {/* Controls: Date Tag + Day/Night Toggle Switch */}
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-mono text-dark/60 bg-cream px-2.5 py-1 rounded-lg border border-[#D6CFC2] font-bold">
-              • Version 2 · 14 August
+              • {isNl ? 'Versie 2 · 14 augustus' : 'Version 2 · 14 August'}
             </span>
 
             {/* Day / Night Mode Switcher */}
@@ -132,7 +128,7 @@ export default function GardenRoomDesignView({ project = null }) {
                 }`}
               >
                 <Sun className="w-3.5 h-3.5 text-amber-500" />
-                <span>Day</span>
+                <span>{isNl ? 'Dag' : 'Day'}</span>
               </button>
 
               <button
@@ -145,7 +141,7 @@ export default function GardenRoomDesignView({ project = null }) {
                 }`}
               >
                 <Moon className="w-3.5 h-3.5 text-amber-300" />
-                <span>Night</span>
+                <span>{isNl ? 'Nacht' : 'Night'}</span>
               </button>
             </div>
           </div>
@@ -181,7 +177,7 @@ export default function GardenRoomDesignView({ project = null }) {
 
             {/* Active Render Badge */}
             <div className="relative z-10 self-start bg-[#232B20]/85 text-cream px-3 py-1.5 rounded-md text-[10px] font-mono tracking-wider uppercase font-bold backdrop-blur-xs shadow-xs border border-white/10">
-              {currentView.badge} {isNightMode ? '· NIGHT' : ''}
+              {currentView.badge} {isNightMode ? (isNl ? '· NACHT' : '· NIGHT') : ''}
             </div>
           </div>
         </div>
@@ -235,20 +231,22 @@ export default function GardenRoomDesignView({ project = null }) {
 
         {/* Footnote Caption */}
         <p className="text-[11px] text-dark/60 italic pt-1">
-          Impression based on your choices. Color and wood grain may vary in reality — wood is natural material.
+          {isNl
+            ? 'Impressie op basis van jouw keuzes. Kleur en houtnerf kunnen in werkelijkheid licht afwijken — hout is een natuurproduct.'
+            : 'Impression based on your choices. Color and wood grain may vary in reality — wood is natural material.'}
         </p>
       </div>
 
-      {/* 4. MAIN CONTENT GRID (Balanced Left vs Right Columns) */}
+      {/* 4. MAIN CONTENT GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
         
-        {/* LEFT COLUMN (2 Columns wide) */}
+        {/* LEFT COLUMN */}
         <div className="lg:col-span-2 space-y-4">
           
           {/* Material & Finishing Details Card */}
           <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-4 sm:p-5 rounded-2xl shadow-xs space-y-4">
             <h3 className="text-base font-heading font-bold text-primary">
-              Material & finishing in detail
+              {isNl ? 'Materiaal & afwerking in detail' : 'Material & finishing in detail'}
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
@@ -266,10 +264,12 @@ export default function GardenRoomDesignView({ project = null }) {
                   </span>
                 </div>
                 <h4 className="font-heading font-bold text-primary text-xs">
-                  Douglas, fine-sawn
+                  {isNl ? 'Douglas, fijnbezaagd' : 'Douglas, fine-sawn'}
                 </h4>
                 <p className="text-[11px] text-dark/70 leading-relaxed">
-                  Warm reddish brown, grays nicely. Lifespan 10-15 years, longer with maintenance.
+                  {isNl
+                    ? 'Warm roodbruin, vergrijst prachtig. Levensduur 10-15 jaar, langer met onderhoud.'
+                    : 'Warm reddish brown, grays nicely. Lifespan 10-15 years, longer with maintenance.'}
                 </p>
               </div>
 
@@ -277,14 +277,16 @@ export default function GardenRoomDesignView({ project = null }) {
               <div className="bg-white border border-[#D6CFC2] p-3.5 rounded-xl space-y-2">
                 <div className="w-full h-20 bg-[#363F47] rounded-lg border border-[#232930] flex items-end p-2">
                   <span className="bg-dark/70 text-cream text-[9px] font-mono uppercase font-bold px-1.5 py-0.5 rounded-xs">
-                    FLAT ROOF
+                    {isNl ? 'PLAT DAK' : 'FLAT ROOF'}
                   </span>
                 </div>
                 <h4 className="font-heading font-bold text-primary text-xs">
-                  EPDM roof & aluminum trim
+                  {isNl ? 'EPDM dak & aluminium trim' : 'EPDM roof & aluminum trim'}
                 </h4>
                 <p className="text-[11px] text-dark/70 leading-relaxed">
-                  Low maintenance and 100% waterproof, sleek anthracite edge.
+                  {isNl
+                    ? 'Onderhoudsarm en 100% waterdicht, strakke antraciet dakrand.'
+                    : 'Low maintenance and 100% waterproof, sleek anthracite edge.'}
                 </p>
               </div>
 
@@ -292,33 +294,35 @@ export default function GardenRoomDesignView({ project = null }) {
               <div className="bg-white border border-[#D6CFC2] p-3.5 rounded-xl space-y-2">
                 <div className="w-full h-20 bg-[#9C9488] rounded-lg border border-[#827A6F] flex items-end p-2">
                   <span className="bg-dark/70 text-cream text-[9px] font-mono uppercase font-bold px-1.5 py-0.5 rounded-xs">
-                    FLOOR
+                    {isNl ? 'VLOER' : 'FLOOR'}
                   </span>
                 </div>
                 <h4 className="font-heading font-bold text-primary text-xs">
-                  Ceramic tiles 60×60
+                  {isNl ? 'Keramische tegels 60×60' : 'Ceramic tiles 60×60'}
                 </h4>
                 <p className="text-[11px] text-dark/70 leading-relaxed">
-                  In the poolhouse section, greige color — cool in summer, easy to clean.
+                  {isNl
+                    ? 'In het poolhouse deel, greige tint — koel in de zomer, makkelijk schoon te houden.'
+                    : 'In the poolhouse section, greige color — cool in summer, easy to clean.'}
                 </p>
               </div>
             </div>
 
-            {/* Layout Diagram Bar (To Scale) */}
+            {/* Layout Diagram Bar */}
             <div className="pt-3 border-t border-[#D6CFC2]/60 space-y-2">
               <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-accent block">
-                LAYOUT · LEFT TO RIGHT
+                {isNl ? 'INDELING · LINKS NAAR RECHTS' : 'LAYOUT · LEFT TO RIGHT'}
               </span>
 
               <div className="space-y-1.5">
                 <div className="flex w-full h-12 rounded-xl overflow-hidden border border-[#D6CFC2] font-mono text-xs font-bold">
                   {/* Left 3m: Enclosed Poolhouse */}
                   <div className="w-[37.5%] bg-[#3E4E36] text-cream flex items-center justify-center p-2 text-center text-[11px]">
-                    poolhouse enclosed 3.00 m
+                    {isNl ? 'poolhouse dicht 3,00 m' : 'poolhouse enclosed 3.00 m'}
                   </div>
                   {/* Right 5m: Covered Lounge */}
                   <div className="w-[62.5%] bg-white text-primary flex items-center justify-center p-2 text-center text-[11px]">
-                    lounge covered 5.00 m
+                    {isNl ? 'lounge overkapt 5,00 m' : 'lounge covered 5.00 m'}
                   </div>
                 </div>
 
@@ -330,79 +334,89 @@ export default function GardenRoomDesignView({ project = null }) {
             </div>
           </div>
 
-          {/* About Douglas Timber Info Card (Placed here in left column for exact vertical balance!) */}
+          {/* About Douglas Timber Info Card */}
           <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-4 sm:p-5 rounded-2xl space-y-2 text-xs text-dark/80 shadow-xs">
             <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold tracking-wider text-accent block">
-              ABOUT DOUGLAS TIMBER
+              {isNl ? 'OVER DOUGLAS HOUT' : 'ABOUT DOUGLAS TIMBER'}
             </span>
             <p className="leading-relaxed text-xs text-dark/70 font-medium">
-              Strong European softwood with a warm appearance. Untreated it turns silver-gray; an annual maintenance preserves its reddish-brown glow.
+              {isNl
+                ? 'Sterk Europees naaldhout met een warme uitstraling. Onbehandeld kleurt het zilvergrijs; jaarlijks onderhoud behoudt de roodbruine gloed.'
+                : 'Strong European softwood with a warm appearance. Untreated it turns silver-gray; an annual maintenance preserves its reddish-brown glow.'}
             </p>
           </div>
 
         </div>
 
-        {/* RIGHT COLUMN (1 Column wide) */}
+        {/* RIGHT COLUMN */}
         <div className="space-y-4">
           
           {/* 2x2 Specs Grid Cards */}
           <div className="grid grid-cols-2 gap-3.5">
             <div className="bg-[#EDE9E3] border border-[#D8D2C5] p-4 rounded-2xl space-y-1">
-              <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold text-accent tracking-wider block">DIMENSIONS</span>
+              <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold text-accent tracking-wider block">
+                {isNl ? 'AFMETINGEN' : 'DIMENSIONS'}
+              </span>
               <div className="text-base sm:text-lg font-bold text-primary font-heading">8.00 × 4.00</div>
-              <div className="text-xs font-medium text-dark/70">meter, height 2.60 m</div>
+              <div className="text-xs font-medium text-dark/70">{isNl ? 'meter, hoogte 2,60 m' : 'meter, height 2.60 m'}</div>
             </div>
 
             <div className="bg-[#E3E8DF] border border-[#C8D2C2] p-4 rounded-2xl space-y-1">
-              <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold text-accent tracking-wider block">TIMBER TYPE</span>
+              <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold text-accent tracking-wider block">
+                {isNl ? 'HOUTSOORT' : 'TIMBER TYPE'}
+              </span>
               <div className="text-base sm:text-lg font-bold text-primary font-heading">Douglas</div>
-              <div className="text-xs font-medium text-dark/70">fine-sawn, treated</div>
+              <div className="text-xs font-medium text-dark/70">{isNl ? 'fijnbezaagd, behandeld' : 'fine-sawn, treated'}</div>
             </div>
 
             <div className="bg-[#EDE9E3] border border-[#D8D2C5] p-4 rounded-2xl space-y-1">
-              <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold text-accent tracking-wider block">ROOF</span>
-              <div className="text-base sm:text-lg font-bold text-primary font-heading">Flat roof</div>
-              <div className="text-xs font-medium text-dark/70">EPDM · aluminum trim</div>
+              <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold text-accent tracking-wider block">
+                {isNl ? 'DAKTYPE' : 'ROOF'}
+              </span>
+              <div className="text-base sm:text-lg font-bold text-primary font-heading">{isNl ? 'Plat dak' : 'Flat roof'}</div>
+              <div className="text-xs font-medium text-dark/70">{isNl ? 'EPDM · aluminium trim' : 'EPDM · aluminum trim'}</div>
             </div>
 
             <div className="bg-[#E3E8DF] border border-[#C8D2C2] p-4 rounded-2xl space-y-1">
-              <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold text-accent tracking-wider block">BUILD TIME</span>
-              <div className="text-base sm:text-lg font-bold text-primary font-heading">2 weeks</div>
-              <div className="text-xs font-medium text-dark/70">week 41 & 42 (tentative)</div>
+              <span className="text-[10px] sm:text-[11px] uppercase font-mono font-bold text-accent tracking-wider block">
+                {isNl ? 'BOUWDUUR' : 'BUILD TIME'}
+              </span>
+              <div className="text-base sm:text-lg font-bold text-primary font-heading">{isNl ? '2 weken' : '2 weeks'}</div>
+              <div className="text-xs font-medium text-dark/70">{isNl ? 'week 41 & 42 (onder voorbehoud)' : 'week 41 & 42 (tentative)'}</div>
             </div>
           </div>
 
           {/* Your Selections Card */}
           <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-4 sm:p-5 rounded-2xl shadow-xs space-y-3">
             <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-accent block">
-              YOUR SELECTIONS
+              {isNl ? 'JOUW SELECTIES' : 'YOUR SELECTIONS'}
             </span>
 
             <ul className="space-y-2 text-xs text-dark/80">
               <li className="flex items-start gap-2">
                 <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                <span>Enclosed poolhouse (3.00 m) with sliding glass door on south side</span>
+                <span>{isNl ? 'Afgesloten poolhouse (3,00 m) met glazen schuifwand aan zuidzijde' : 'Enclosed poolhouse (3.00 m) with sliding glass door on south side'}</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                <span>Covered lounge (5.00 m) with open sides</span>
+                <span>{isNl ? 'Overkapte lounge (5,00 m) met open zijdes' : 'Covered lounge (5.00 m) with open sides'}</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                <span>Electrical package: 4 spots, wall socket, switch*</span>
+                <span>{isNl ? 'Elektrapakket: 4 spots, wandcontactdoos, schakelaar*' : 'Electrical package: 4 spots, wall socket, switch*'}</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                <span>Ceramic floor tiles in poolhouse section</span>
+                <span>{isNl ? 'Keramische vloertegels in het poolhouse deel' : 'Ceramic floor tiles in poolhouse section'}</span>
               </li>
               <li className="flex items-start gap-2 text-dark/50 italic">
                 <span className="w-4 h-4 border border-dark/30 rounded-full flex-shrink-0 mt-0.5 inline-block" />
-                <span>Outdoor kitchen in lounge — not selected | want to know the price?</span>
+                <span>{isNl ? 'Buitenkeuken in lounge — niet gekozen | prijs weten?' : 'Outdoor kitchen in lounge — not selected | want to know the price?'}</span>
               </li>
             </ul>
 
             <p className="text-[10px] text-dark/50 italic border-t border-[#D6CFC2]/60 pt-2">
-              * provisional sum — definitive after site survey
+              {isNl ? '* stelpost — definitief na schouw' : '* provisional sum — definitive after site survey'}
             </p>
           </div>
 
@@ -413,10 +427,10 @@ export default function GardenRoomDesignView({ project = null }) {
       <div className="bg-[#FAF8F5] border border-[#D8D2C5] p-4 sm:p-5 rounded-2xl shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[#D6CFC2]/60 pb-3">
           <h3 className="text-base font-heading font-bold text-primary">
-            Versions of your design
+            {isNl ? 'Versies van jouw ontwerp' : 'Versions of your design'}
           </h3>
           <span className="text-xs text-dark/60 font-medium">
-            See exactly what changed per version
+            {isNl ? 'Bekijk precies wat er per versie is gewijzigd' : 'See exactly what changed per version'}
           </span>
         </div>
 
@@ -426,14 +440,16 @@ export default function GardenRoomDesignView({ project = null }) {
             <div className="space-y-1 max-w-2xl">
               <div className="flex items-center gap-2">
                 <h4 className="font-heading font-bold text-primary text-sm">
-                  Version 2
+                  {isNl ? 'Versie 2' : 'Version 2'}
                 </h4>
                 <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                  Current
+                  {isNl ? 'Huidig' : 'Current'}
                 </span>
               </div>
               <p className="text-xs text-dark/70 leading-relaxed font-medium">
-                14 August 2026 · sliding door moved to south side, overhang widened 40 cm — following your feedback on afternoon sun.
+                {isNl 
+                  ? '14 augustus 2026 · schuifpui verplaatst naar zuidzijde, overstek met 40 cm verbreed — naar aanleiding van jouw feedback op middagzon.'
+                  : '14 August 2026 · sliding door moved to south side, overhang widened 40 cm — following your feedback on afternoon sun.'}
               </p>
             </div>
 
@@ -442,7 +458,7 @@ export default function GardenRoomDesignView({ project = null }) {
               onClick={handleDownloadSpecs}
               className="px-3.5 py-1.5 bg-white text-dark/80 border border-[#D6CFC2] text-xs font-bold rounded-lg hover:bg-gray-50 transition-all cursor-pointer flex-shrink-0 shadow-2xs"
             >
-              View
+              {isNl ? 'Bekijken' : 'View'}
             </button>
           </div>
 
@@ -450,10 +466,10 @@ export default function GardenRoomDesignView({ project = null }) {
           <div className="bg-white border border-[#D6CFC2] p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-2xs">
             <div className="space-y-1 max-w-2xl">
               <h4 className="font-heading font-bold text-primary text-sm">
-                Version 1
+                {isNl ? 'Versie 1' : 'Version 1'}
               </h4>
               <p className="text-xs text-dark/70 leading-relaxed font-medium">
-                6 August 2026 · initial design based on quote.
+                {isNl ? '6 augustus 2026 · eerste opzet op basis van offerte.' : '6 August 2026 · initial design based on quote.'}
               </p>
             </div>
 
@@ -462,7 +478,7 @@ export default function GardenRoomDesignView({ project = null }) {
               onClick={handleDownloadSpecs}
               className="px-3.5 py-1.5 bg-white text-dark/80 border border-[#D6CFC2] text-xs font-bold rounded-lg hover:bg-gray-50 transition-all cursor-pointer flex-shrink-0 shadow-2xs"
             >
-              View
+              {isNl ? 'Bekijken' : 'View'}
             </button>
           </div>
         </div>
@@ -470,3 +486,4 @@ export default function GardenRoomDesignView({ project = null }) {
     </div>
   );
 }
+

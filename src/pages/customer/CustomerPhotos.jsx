@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Camera } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useLanguage } from '../../context/LanguageContext';
 import GardenRoomPhotosView from '../../components/customer/GardenRoomPhotosView';
 import OutdoorKitchenPhotosView from '../../components/customer/OutdoorKitchenPhotosView';
 import api from '../../api/apiClient';
 
 export default function CustomerPhotos() {
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const isNl = language === 'NL';
   const [activeProject, setActiveProject] = useState(null);
   const [activeType, setActiveType] = useState('outdoor_kitchen');
 
@@ -64,7 +67,7 @@ export default function CustomerPhotos() {
       <div className="bg-[#FAF7F2] border border-[#E4DED4] p-1.5 sm:p-2 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] shadow-xs">
         <span className="font-bold text-primary font-heading px-1 flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-accent" />
-          <span>Testing Photos View Switcher:</span>
+          <span>{isNl ? 'Foto Weergave Switcher:' : 'Testing Photos View Switcher:'}</span>
         </span>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
@@ -76,7 +79,7 @@ export default function CustomerPhotos() {
                 : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
             }`}
           >
-            Outdoor Kitchen (Photos from Workshop)
+            {isNl ? 'Buitenkeuken (Foto\'s uit werkplaats)' : 'Outdoor Kitchen (Photos from Workshop)'}
           </button>
 
           <button
@@ -88,7 +91,7 @@ export default function CustomerPhotos() {
                 : 'bg-white text-dark/70 hover:bg-gray-50 border border-[#D6CFC2]'
             }`}
           >
-            Garden Room / Poolhouse (Photos & Updates)
+            {isNl ? 'Buitenverblijf / Poolhouse (Foto\'s & Updates)' : 'Garden Room / Poolhouse (Photos & Updates)'}
           </button>
         </div>
       </div>
