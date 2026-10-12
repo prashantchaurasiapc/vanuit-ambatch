@@ -107,17 +107,73 @@ export default function AdminPhotos() {
     }
   ];
 
+  const resolvePhotoUrl = (photo) => {
+    if (!photo) return projectImg;
+    // 1. Cached in localStorage (instant, offline-first)
+    if (photo.id && typeof window !== 'undefined') {
+      const cached = localStorage.getItem(`va_photo_${photo.id}`);
+      if (cached && (cached.startsWith('data:image') || cached.startsWith('http'))) {
+        return cached;
+      }
+    }
+    // 2. Direct data URI or absolute HTTP/HTTPS URL
+    const raw = photo.img || photo.photoUrl || photo.url;
+    if (raw && (raw.startsWith('data:image') || raw.startsWith('http://') || raw.startsWith('https://'))) {
+      return raw;
+    }
+    // 3. Backend streaming endpoint if photo ID exists
+    if (photo.id) {
+      return `${BASE_URL}/photos/${photo.id}/file`;
+    }
+    return projectImg;
+  };
+
+  const getProjectDisplayName = (photo) => {
+    if (!photo) return 'Project';
+    const proj = projectsList.find((p) => p.id === photo.projectId);
+    return proj?.name || photo.projectName || (photo.projectId ? `Project #${photo.projectId.slice(0, 8)}` : 'Project');
+  };
+
+  const getCustomerDisplayName = (photo) => {
+    if (!photo) return '';
+    const proj = projectsList.find((p) => p.id === photo.projectId);
+    return proj?.customerName || proj?.customer || photo.customer || '';
+  };
+
   // Load photos and projects from real API
   const loadData = async () => {
     // Load global photos
     const photosRes = await api.get('/photos?limit=100');
+    let backendPhotos = [];
     if (photosRes.success && Array.isArray(photosRes.data)) {
-      const sanitized = photosRes.data.map(p => ({
-        ...p,
-        img: p.photoUrl || p.img || p.url || projectImg
-      }));
-      setPhotosList(sanitized);
+      backendPhotos = photosRes.data.map(p => {
+        const resolved = resolvePhotoUrl(p);
+        return {
+          ...p,
+          img: resolved,
+          photoUrl: resolved
+        };
+      });
     }
+
+    // Also merge partner custom uploaded photos from local storage
+    let customPhotos = [];
+    try {
+      const rawCustom = JSON.parse(localStorage.getItem('va_custom_photos') || '[]');
+      if (Array.isArray(rawCustom)) {
+        customPhotos = rawCustom.map((p) => ({
+          ...p,
+          img: resolvePhotoUrl(p),
+          photoUrl: resolvePhotoUrl(p)
+        }));
+      }
+    } catch (e) {}
+
+    const merged = [
+      ...customPhotos.filter((cp) => !backendPhotos.some((bp) => bp.id === cp.id)),
+      ...backendPhotos
+    ];
+    setPhotosList(merged);
 
     // Load projects for dropdowns
     const projRes = await api.get('/projects?limit=100');
@@ -131,6 +187,8 @@ export default function AdminPhotos() {
 
   useEffect(() => {
     loadData();
+    window.addEventListener('app_data_changed', loadData);
+    return () => window.removeEventListener('app_data_changed', loadData);
   }, []);
 
   // Filtered Photos by Selected Project & Search Query
@@ -211,29 +269,59 @@ export default function AdminPhotos() {
 
     const targetProjObj = projectsList.find(p => p.id === uploadForm.projectId) || projectsList[0];
     const finalProjId = targetProjObj ? targetProjObj.id : uploadForm.projectId;
+    const finalProjName = targetProjObj ? targetProjObj.name : uploadForm.projectName;
     const finalCustomer = targetProjObj ? (targetProjObj.customerName || targetProjObj.customer) : uploadForm.customer;
 
     let successCount = 0;
+    const newlyCreated = [];
+
     for (const fileObj of selectedFiles) {
-      const res = await api.post(`/projects/${finalProjId}/photos`, {
+      const payload = {
         photoUrl: fileObj.src,
         title: uploadForm.title.trim() || fileObj.name.replace(/\.[^/.]+$/, ''),
-        phase: uploadForm.phase || new Date().toLocaleDateString('default', { day: 'numeric', month: 'short' }),
+        phase: uploadForm.phase || new Date().toLocaleDateString('default', { day: 'numeric', month: 'short', year: 'numeric' }),
         caption: uploadForm.description.trim() || (language === 'EN' ? 'Project update photo shared by Admin.' : 'Projectfoto update gedeeld door beheerder.'),
         craftsman: uploadForm.craftsman || 'Tim & Bram (Admin)',
         tag: 'admin',
         visibleToCustomer: uploadForm.isShared
-      });
-      if (res.success) successCount++;
+      };
+
+      const res = await api.post(`/projects/${finalProjId}/photos`, payload);
+      if (res.success && res.data) {
+        successCount++;
+        const createdPhoto = res.data;
+        if (createdPhoto.id) {
+          try {
+            localStorage.setItem(`va_photo_${createdPhoto.id}`, fileObj.src);
+          } catch (err) {}
+        }
+        newlyCreated.push({
+          ...createdPhoto,
+          img: fileObj.src,
+          photoUrl: fileObj.src,
+          projectId: finalProjId,
+          projectName: finalProjName,
+          customer: finalCustomer,
+          uploaderRole: 'admin',
+          tag: 'admin',
+          craftsman: uploadForm.craftsman || 'Tim & Bram (Admin)',
+          isShared: uploadForm.isShared,
+          visibleToCustomer: uploadForm.isShared
+        });
+      }
     }
 
     if (successCount > 0) {
       showToast(
         language === 'EN'
-          ? `Successfully uploaded ${successCount} photo(s) to Project ${finalProjId}!`
-          : `Succesvol ${successCount} foto('s) geüpload naar Project ${finalProjId}!`
+          ? `Successfully uploaded ${successCount} photo(s) to ${finalProjName}!`
+          : `Succesvol ${successCount} foto('s) geüpload naar ${finalProjName}!`
       );
-      await loadData();
+      setPhotosList(prev => [
+        ...newlyCreated,
+        ...prev.filter(p => !newlyCreated.some(n => n.id === p.id))
+      ]);
+      loadData();
     } else {
       showToast('⚠ Failed to upload photos. Please try again.');
     }
@@ -246,6 +334,9 @@ export default function AdminPhotos() {
   const handleDeletePhoto = async (photoId) => {
     const res = await api.delete(`/photos/${photoId}`);
     if (res.success) {
+      try {
+        localStorage.removeItem(`va_photo_${photoId}`);
+      } catch (err) {}
       setPhotosList(prev => prev.filter(p => p.id !== photoId));
       showToast(language === 'EN' ? 'Photo deleted from gallery and customer portal.' : 'Foto verwijderd uit de galerij en het klantenportaal.');
     } else {
@@ -297,12 +388,16 @@ export default function AdminPhotos() {
 
     try {
       const newImgSrc = await compressImage(file, 1200, 0.82);
-      const updatedList = photosList.map(p => p.id === editingPhoto.id ? { ...p, img: newImgSrc } : p);
+      if (editingPhoto.id) {
+        try {
+          localStorage.setItem(`va_photo_${editingPhoto.id}`, newImgSrc);
+        } catch (err) {}
+      }
+      const updatedList = photosList.map(p => p.id === editingPhoto.id ? { ...p, img: newImgSrc, photoUrl: newImgSrc } : p);
       setPhotosList(updatedList);
-      setEditingPhoto(prev => ({ ...prev, img: newImgSrc }));
-      // Update photo URL in backend if possible
+      setEditingPhoto(prev => ({ ...prev, img: newImgSrc, photoUrl: newImgSrc }));
       if (editingPhoto?.id) {
-        api.patch(`/photos/${editingPhoto.id}`, { photoUrl: newImgSrc }).catch(() => {});
+        await api.patch(`/photos/${editingPhoto.id}`, { photoUrl: newImgSrc });
       }
       showToast(language === 'EN' ? 'Photo image file replaced successfully!' : 'Fotobestand succesvol vervangen!');
     } catch (err) {
@@ -424,17 +519,20 @@ export default function AdminPhotos() {
                 {/* Photo Image & Badge Overlay */}
                 <div className="relative h-48 bg-cream-dark/20 overflow-hidden cursor-pointer" onClick={() => setPreviewPhoto(photo)}>
                   <img
-                    src={photo.img || projectImg}
+                    src={resolvePhotoUrl(photo)}
                     alt={photo.title}
-                    onError={(e) => { e.currentTarget.src = projectImg; }}
+                    onError={(e) => { if (e.currentTarget.src !== projectImg) e.currentTarget.src = projectImg; }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent"></div>
 
                   {/* Project ID & Customer Badge */}
-                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg border border-[#D6CFC2] text-[10px] font-bold text-primary flex items-center gap-1 shadow-xs max-w-[70%] truncate">
+                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg border border-[#D6CFC2] text-[10px] font-bold text-primary flex items-center gap-1.5 shadow-xs max-w-[70%] truncate">
                     <Briefcase className="w-3 h-3 text-accent flex-shrink-0" />
-                    <span className="truncate">[{photo.projectId || 'PRJ-101'}] {photo.customer || 'John Miller'}</span>
+                    <span className="truncate">
+                      {getProjectDisplayName(photo)}
+                      {getCustomerDisplayName(photo) ? ` • ${getCustomerDisplayName(photo)}` : ''}
+                    </span>
                   </div>
 
                   {/* Customer Sharing Status Indicator Badge */}
@@ -461,9 +559,16 @@ export default function AdminPhotos() {
                   <p className="text-dark/70 line-clamp-2">{photo.description}</p>
                   <div className="pt-2 border-t border-[#D6CFC2]/40 flex justify-between items-center text-[10px] text-dark/50 font-mono">
                     <span>{language === 'EN' ? 'Uploader:' : 'Vakman:'} <strong className="text-primary">{photo.craftsman}</strong></span>
-                    <Badge variant={photo.uploaderRole === 'admin' ? 'primary' : 'success'}>
-                      {photo.uploaderRole === 'admin' ? 'Admin Upload' : 'Partner Upload'}
-                    </Badge>
+                    {(() => {
+                      const isAdmin = photo.uploaderRole === 'admin' ||
+                        photo.tag === 'admin' ||
+                        (photo.craftsman && photo.craftsman.toLowerCase().includes('admin'));
+                      return (
+                        <Badge variant={isAdmin ? 'primary' : 'success'}>
+                          {isAdmin ? (language === 'EN' ? 'Admin Upload' : 'Beheerder Upload') : (language === 'EN' ? 'Partner Upload' : 'Partner Upload')}
+                        </Badge>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -693,7 +798,12 @@ export default function AdminPhotos() {
 
               {/* Current Image & Replace Option */}
               <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-[#D6CFC2]">
-                <img src={editingPhoto.img} alt="Current" className="w-16 h-16 object-cover rounded-lg border border-[#D6CFC2]" />
+                <img
+                  src={resolvePhotoUrl(editingPhoto)}
+                  alt="Current"
+                  onError={(e) => { if (e.currentTarget.src !== projectImg) e.currentTarget.src = projectImg; }}
+                  className="w-16 h-16 object-cover rounded-lg border border-[#D6CFC2]"
+                />
                 <div className="space-y-1">
                   <p className="font-bold text-dark text-xs">{editingPhoto.title}</p>
                   <button
@@ -789,11 +899,13 @@ export default function AdminPhotos() {
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative max-w-3xl w-full bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-5 shadow-2xl z-[100000] font-body space-y-4 my-auto">
               <div className="flex justify-between items-start border-b border-[#D6CFC2] pb-3">
                 <div>
-                  <span className="text-[10px] font-mono font-bold text-accent">{previewPhoto.phase} • Client: {previewPhoto.customer}</span>
+                  <span className="text-[10px] font-mono font-bold text-accent">
+                    {previewPhoto.phase} • Client: {getCustomerDisplayName(previewPhoto) || previewPhoto.customer || 'Client'}
+                  </span>
                   <h3 className="text-lg sm:text-xl font-heading font-bold text-primary leading-tight mt-0.5">{previewPhoto.title}</h3>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="primary">{previewPhoto.projectId}</Badge>
+                  <Badge variant="primary">{getProjectDisplayName(previewPhoto)}</Badge>
                   <button onClick={() => setPreviewPhoto(null)} className="p-1.5 text-dark/50 hover:text-dark hover:bg-dark/10 rounded-full transition-colors">
                     <X className="w-5 h-5" />
                   </button>
@@ -802,7 +914,12 @@ export default function AdminPhotos() {
 
               {/* Ultra-Crisp Centered Image Frame */}
               <div className="rounded-xl overflow-hidden max-h-[52vh] sm:max-h-[58vh] bg-black/90 border border-[#D6CFC2] flex items-center justify-center p-2 shadow-inner">
-                <img src={previewPhoto.img} alt={previewPhoto.title} className="max-h-[50vh] sm:max-h-[55vh] w-auto max-w-full object-contain mx-auto rounded-lg" />
+                <img
+                  src={resolvePhotoUrl(previewPhoto)}
+                  alt={previewPhoto.title}
+                  onError={(e) => { if (e.currentTarget.src !== projectImg) e.currentTarget.src = projectImg; }}
+                  className="max-h-[50vh] sm:max-h-[55vh] w-auto max-w-full object-contain mx-auto rounded-lg"
+                />
               </div>
 
               <div className="p-3 bg-white rounded-xl border border-[#D6CFC2]/70 text-xs text-dark/80 space-y-1">

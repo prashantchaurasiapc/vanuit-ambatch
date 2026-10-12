@@ -25,7 +25,6 @@ import Bank from './pages/admin/Bank';
 import Taxes from './pages/admin/Taxes';
 import ProfitLoss from './pages/admin/ProfitLoss';
 import Customers from './pages/admin/Customers';
-import AdminPhotos from './pages/admin/AdminPhotos';
 
 // Partner Pages
 import PartnerDashboard from './pages/partner/PartnerDashboard';
@@ -103,7 +102,7 @@ function App() {
         <Route path="taxes" element={<Taxes />} />
         <Route path="profit-loss" element={<ProfitLoss />} />
         <Route path="planning" element={<Planning />} />
-        <Route path="photos" element={<AdminPhotos />} />
+        <Route path="photos" element={<Navigate to="/admin/documents?tab=photos" replace />} />
         <Route path="tasks" element={<Tasks />} />
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />
