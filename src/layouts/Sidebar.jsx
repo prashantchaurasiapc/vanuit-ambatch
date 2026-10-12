@@ -110,9 +110,8 @@ export default function Sidebar({ role }) {
     },
     { name: t('common.partners') || 'Partners', path: '/admin/partners', icon: UserSquare },
     { name: t('common.planning') || 'Planning', path: '/admin/planning', icon: Calendar },
-    { name: t('common.photosMedia') || 'Photos & Media', path: '/admin/photos', icon: Camera },
+    { name: t('common.documentsMedia') || t('common.documents') || 'Documents & Media', path: '/admin/documents', icon: Folder },
     { name: t('common.tasks') || 'Tasks', path: '/admin/tasks', icon: FileText },
-    { name: t('common.documents') || 'Documents', path: '/admin/documents', icon: Folder },
     { name: t('common.settings') || 'Settings', path: '/admin/settings', icon: Settings },
   ];
 

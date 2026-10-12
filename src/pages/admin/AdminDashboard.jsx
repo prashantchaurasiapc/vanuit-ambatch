@@ -456,7 +456,7 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button
               onClick={() => {
-                navigate('/admin/photos', { state: { projectId: partnerNotifs[0].projectId } });
+                navigate('/admin/documents?tab=photos', { state: { projectId: partnerNotifs[0].projectId } });
               }}
               className="px-3.5 py-1.5 bg-primary text-cream rounded-xl text-xs font-bold shadow-xs hover:bg-primary/90 transition-all flex items-center gap-1.5 whitespace-nowrap"
             >
