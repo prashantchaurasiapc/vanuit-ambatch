@@ -55,6 +55,8 @@ export default function PartnerProjects() {
       if (res.success && Array.isArray(res.data) && res.data.length > 0) {
         const enriched = res.data.map((p, idx) => ({
           ...p,
+          progress: p.progressPercentage ?? p.progress ?? 0,
+          status: (p.status || '').toLowerCase().includes('completed') ? 'Completed' : (p.status || '').toLowerCase().includes('progress') ? 'In Progress' : (p.status || 'In Progress'),
           customer: p.customer || p.customerName || 'Klant',
           customerName: p.customerName || p.customer || 'Klant',
           deliveryAddress: p.deliveryAddress || p.city || 'Address TBC',
@@ -154,17 +156,36 @@ export default function PartnerProjects() {
     e.preventDefault();
     if (!editProject) return;
 
-    const res = await api.patch(`/projects/${editProject.id}/status`, {
-      orderStatus: editProject.status === 'Completed' ? 'voltooid' : 'in_productie',
-      progressPercentage: Number(editProject.progress) || 0
+    const progressVal = Number(editProject.progress) || 0;
+    const isCompleted = editProject.status === 'Completed';
+
+    // 1. Call dedicated partner progress endpoint (saves status & progressPercentage)
+    const partnerRes = await api.patch(`/partner/projects/${editProject.id}/progress`, {
+      status: editProject.status,
+      progress: progressVal
     });
-    if (res.success) {
-      setProjects(prev => prev.map(p => p.id === editProject.id ? editProject : p));
-      showToast(`Project "${editProject.name}" progress updated!`);
-    } else {
-      showToast(`⚠ ${res.error?.message || 'Failed to update progress'}`);
-    }
+
+    // 2. Also sync top-level project status
+    await api.patch(`/projects/${editProject.id}/status`, {
+      status: isCompleted ? 'completed' : 'in_progress',
+      orderStatus: isCompleted ? 'voltooid' : 'in_productie',
+      progressPercentage: progressVal
+    }).catch(() => {});
+
+    // 3. Immediately update UI state so user sees instant feedback
+    setProjects(prev => prev.map(p => p.id === editProject.id ? {
+      ...p,
+      status: editProject.status,
+      progress: progressVal,
+      progressPercentage: progressVal
+    } : p));
+
+    showToast(`Project "${editProject.name}" progress updated!`);
     setEditProject(null);
+
+    // 4. Trigger global reload so all components and backend stay 100% in sync
+    window.dispatchEvent(new Event('app_data_changed'));
+    setTimeout(() => loadProjects(), 300);
   };
 
   // Device File Upload Handler for Partner
