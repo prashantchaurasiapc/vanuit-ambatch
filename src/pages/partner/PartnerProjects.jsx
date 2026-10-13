@@ -55,6 +55,8 @@ export default function PartnerProjects() {
       if (res.success && Array.isArray(res.data) && res.data.length > 0) {
         const enriched = res.data.map((p, idx) => ({
           ...p,
+          progress: p.progressPercentage ?? p.progress ?? 0,
+          status: (p.status || '').toLowerCase().includes('completed') ? 'Completed' : (p.status || '').toLowerCase().includes('progress') ? 'In Progress' : (p.status || 'In Progress'),
           customer: p.customer || p.customerName || 'Klant',
           customerName: p.customerName || p.customer || 'Klant',
           deliveryAddress: p.deliveryAddress || p.city || 'Address TBC',
@@ -78,22 +80,31 @@ export default function PartnerProjects() {
     return () => window.removeEventListener('app_data_changed', loadProjects);
   }, []);
 
-  // Default Partner Messages
+  // Default Partner Messages (Bilingual EN/NL)
   const defaultPartnerMsgs = [
     {
       id: 1,
       sender: 'Sven Hoek',
       initials: 'SH',
       role: 'partner',
+      textEN: 'Slab is ready for cutting. Any changes before I begin?',
+      textNL: 'Blad ligt klaar om te zagen. Nog wijzigingen voor ik start?',
       text: 'Slab is ready for cutting. Any changes before I begin?',
+      timeEN: 'today 09:52',
+      timeNL: 'vandaag 09:52',
       time: 'today 09:52'
     },
     {
       id: 2,
       sender: 'Tim (Admin)',
+      senderNL: 'Tim (Beheerder)',
       initials: 'T',
       role: 'admin',
+      textEN: 'Yes — sink 15 cm to the left compared to drawing v2 (customer request). Work order updated. Will you send a photo of the marking before cutting?',
+      textNL: 'Ja — spoelbak 15 cm naar links t.o.v. tekening v2 (klantverzoek). Werkbon is bijgewerkt. Stuur je een foto van het aftekenen voor je zaagt?',
       text: 'Yes — sink 15 cm to the left compared to drawing v2 (customer request). Work order updated. Will you send a photo of the marking before cutting?',
+      timeEN: 'Tim · 09:55 · ✓ read',
+      timeNL: 'Tim · 09:55 · ✓ gelezen',
       time: 'Tim · 09:55 · ✓ read'
     },
     {
@@ -101,7 +112,11 @@ export default function PartnerProjects() {
       sender: 'Sven Hoek',
       initials: 'SH',
       role: 'partner',
+      textEN: 'Great, on it. 📷 follows around 14:00.',
+      textNL: 'Top, ga ik regelen. 📷 volgt rond 14:00 uur.',
       text: 'Great, on it. 📷 follows around 14:00.',
+      timeEN: 'today 09:57',
+      timeNL: 'vandaag 09:57',
       time: 'today 09:57'
     }
   ];
@@ -141,17 +156,36 @@ export default function PartnerProjects() {
     e.preventDefault();
     if (!editProject) return;
 
-    const res = await api.patch(`/projects/${editProject.id}/status`, {
-      orderStatus: editProject.status === 'Completed' ? 'voltooid' : 'in_productie',
-      progressPercentage: Number(editProject.progress) || 0
+    const progressVal = Number(editProject.progress) || 0;
+    const isCompleted = editProject.status === 'Completed';
+
+    // 1. Call dedicated partner progress endpoint (saves status & progressPercentage)
+    const partnerRes = await api.patch(`/partner/projects/${editProject.id}/progress`, {
+      status: editProject.status,
+      progress: progressVal
     });
-    if (res.success) {
-      setProjects(prev => prev.map(p => p.id === editProject.id ? editProject : p));
-      showToast(`Project "${editProject.name}" progress updated!`);
-    } else {
-      showToast(`⚠ ${res.error?.message || 'Failed to update progress'}`);
-    }
+
+    // 2. Also sync top-level project status
+    await api.patch(`/projects/${editProject.id}/status`, {
+      status: isCompleted ? 'completed' : 'in_progress',
+      orderStatus: isCompleted ? 'voltooid' : 'in_productie',
+      progressPercentage: progressVal
+    }).catch(() => {});
+
+    // 3. Immediately update UI state so user sees instant feedback
+    setProjects(prev => prev.map(p => p.id === editProject.id ? {
+      ...p,
+      status: editProject.status,
+      progress: progressVal,
+      progressPercentage: progressVal
+    } : p));
+
+    showToast(`Project "${editProject.name}" progress updated!`);
     setEditProject(null);
+
+    // 4. Trigger global reload so all components and backend stay 100% in sync
+    window.dispatchEvent(new Event('app_data_changed'));
+    setTimeout(() => loadProjects(), 300);
   };
 
   // Device File Upload Handler for Partner
@@ -837,14 +871,14 @@ export default function PartnerProjects() {
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="font-mono text-[10px] font-bold text-[#A25A0B] uppercase bg-[#FDF2E3] border border-[#F6DCB8] px-2 py-0.5 rounded-md">
-                      Partner Channel · WhatsApp Mirror
+                      {label('Partner Channel · WhatsApp Mirror', 'Partnerkanaal · WhatsApp Koppeling')}
                     </span>
                   </div>
                   <h3 className="text-lg font-heading font-bold text-[#1C1C1A] mt-1">
-                    Chat with Vanuit Ambacht (Tim & Bram)
+                    {label('Chat with Vanuit Ambacht (Tim & Bram)', 'Chat met Vanuit Ambacht (Tim & Bram)')}
                   </h3>
                   <p className="text-xs text-[#555046]">
-                    {selectedProject ? `${selectedProject.projectNumber || selectedProject.id} · ${selectedProject.title || selectedProject.name || ''}` : 'Direct Partner Channel'}
+                    {selectedProject ? `${selectedProject.projectNumber || selectedProject.id} · ${selectedProject.title || selectedProject.name || ''}` : label('Direct Partner Channel', 'Direct Partnerkanaal')}
                   </p>
                 </div>
                 <button onClick={() => setPartnerChatOpen(false)} className="text-[#555046] hover:text-[#1C1C1A] p-1 cursor-pointer">
@@ -854,23 +888,26 @@ export default function PartnerProjects() {
 
               {/* Notice Banner */}
               <div className="p-3 bg-[#EDE8DF]/70 rounded-xl border border-[#D6CFC2] text-[11px] text-[#4F4B44] leading-relaxed flex-shrink-0">
-                <p className="font-bold text-[#1C1C1A]">🔒 Partner-Only Channel (Never visible to customer):</p>
-                <p>All technical work orders, dimensions, and wood cutting specifications are discussed here and mirrored to WhatsApp.</p>
+                <p className="font-bold text-[#1C1C1A]">{label('🔒 Partner-Only Channel (Never visible to customer):', '🔒 Alleen voor partners (Nooit zichtbaar voor klant):')}</p>
+                <p>{label('All technical work orders, dimensions, and wood cutting specifications are discussed here and mirrored to WhatsApp.', 'Alle technische werkbonnen, afmetingen en houtzaagspecificaties worden hier besproken en gesynchroniseerd met WhatsApp.')}</p>
               </div>
 
               {/* Message List */}
               <div className="flex-1 overflow-y-auto space-y-3 p-3 bg-white rounded-xl border border-[#D6CFC2] min-h-[220px]">
                 {partnerMessages.map((msg) => {
                   const isAdmin = msg.role === 'admin' || (msg.sender && msg.sender.includes('Tim'));
+                  const msgText = language === 'NL' && msg.textNL ? msg.textNL : (msg.text || msg.textEN);
+                  const msgTime = language === 'NL' && msg.timeNL ? msg.timeNL : (msg.time || msg.timeEN);
+                  const senderDisplay = language === 'NL' && msg.senderNL ? msg.senderNL : (msg.sender || (isAdmin ? label('Tim (Admin)', 'Tim (Beheerder)') : 'Sven Hoek'));
                   return (
                     <div
                       key={msg.id}
                       className={`flex flex-col ${isAdmin ? 'items-start' : 'items-end'}`}
                     >
                       <div className="flex items-center gap-1.5 mb-0.5 text-[10px] font-bold text-[#555046]">
-                        <span>{msg.sender || (isAdmin ? 'Tim (Admin)' : 'Sven Hoek')}</span>
+                        <span>{senderDisplay}</span>
                         <span>·</span>
-                        <span className="font-normal font-mono">{msg.time}</span>
+                        <span className="font-normal font-mono">{msgTime}</span>
                       </div>
                       <div
                         className={`p-3 rounded-2xl max-w-[85%] text-xs font-medium leading-snug shadow-xs ${
@@ -879,7 +916,7 @@ export default function PartnerProjects() {
                             : 'bg-[#EDE8DF] text-[#1C1C1A] rounded-tr-xs border border-[#D6CFC2]'
                         }`}
                       >
-                        {msg.text}
+                        {msgText}
                       </div>
                     </div>
                   );
@@ -890,7 +927,7 @@ export default function PartnerProjects() {
               <form onSubmit={handleSendPartnerReply} className="flex gap-2 flex-shrink-0 pt-1">
                 <input
                   type="text"
-                  placeholder="Type reply to Tim & Bram (e.g. #workorder v3 confirmed)..."
+                  placeholder={label('Type reply to Tim & Bram (e.g. #workorder v3 confirmed)...', 'Typ een reactie aan Tim & Bram (bijv. #werkbon v3 akkoord)...')}
                   value={inputPartnerReply}
                   onChange={(e) => setInputPartnerReply(e.target.value)}
                   className="flex-1 px-3.5 py-2.5 bg-white border border-[#D6CFC2] rounded-xl text-xs font-semibold text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#283523]/20"
@@ -900,7 +937,7 @@ export default function PartnerProjects() {
                   className="px-4 py-2.5 bg-[#283523] hover:bg-[#1E291B] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>Send</span>
+                  <span>{label('Send', 'Verzenden')}</span>
                 </button>
               </form>
             </motion.div>
@@ -914,7 +951,7 @@ export default function PartnerProjects() {
         className="fixed bottom-6 right-6 z-[9990] bg-[#283523] hover:bg-[#1E291B] text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-bold transition-all transform hover:scale-105 border border-white/20 cursor-pointer"
       >
         <MessageSquare className="w-4 h-4 text-emerald-400" />
-        <span>Chat with Vanuit Ambacht</span>
+        <span>{label('Chat with Vanuit Ambacht', 'Chat met Vanuit Ambacht')}</span>
         <span className="bg-emerald-500 text-black text-[10px] font-bold px-1.5 py-0.2 rounded-full">
           {partnerMessages.length}
         </span>
