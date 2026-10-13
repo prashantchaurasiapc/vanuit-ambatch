@@ -94,7 +94,7 @@ export default function Sidebar({ role }) {
   const ADMIN_LINKS = [
     { name: t('common.dashboard') || 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: t('common.leads') || 'Leads', path: '/admin/leads', icon: Users },
-    { name: t('common.projects') || 'Projects', path: '/admin/projects', icon: Briefcase, badge: '2' },
+    { name: t('common.projects') || 'Projects', path: '/admin/projects', icon: Briefcase },
     { 
       name: t('common.bookkeeping') || 'Bookkeeping', 
       icon: PieChart, 

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import Card from '../Card';
 import Button from '../Button';
 import Badge from '../Badge';
-import { Check, Calendar, Activity, CheckCircle2, Clock, AlertTriangle, ShieldAlert, Sparkles } from 'lucide-react';
+import { Check, Calendar, Activity, CheckCircle2, Clock, AlertTriangle, ShieldAlert, X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import api from '../../api/apiClient';
 
@@ -45,7 +44,7 @@ function getUpcomingWeeks(count = 14) {
   return weeks;
 }
 
-export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
+export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange, onClose }) {
   const { language } = useLanguage();
   const isNL = language === 'NL';
 
@@ -54,12 +53,31 @@ export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const [workloadStatus, setWorkloadStatus] = useState('available');
-  const [selectedWeeks, setSelectedWeeks] = useState([]);
+  const [workloadStatus, setWorkloadStatus] = useState(() => {
+    try {
+      const draft = sessionStorage.getItem('partner_workload_draft');
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        if (parsed.workloadStatus) return parsed.workloadStatus;
+      }
+    } catch {}
+    return 'available';
+  });
+
+  const [selectedWeeks, setSelectedWeeks] = useState(() => {
+    try {
+      const draft = sessionStorage.getItem('partner_workload_draft');
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        if (Array.isArray(parsed.selectedWeeks)) return parsed.selectedWeeks;
+      }
+    } catch {}
+    return [];
+  });
 
   const upcomingWeeks = getUpcomingWeeks(14);
 
-  // Load current availability from backend
+  // Load current availability from backend if not drafting
   useEffect(() => {
     let isMounted = true;
     async function loadData() {
@@ -67,8 +85,11 @@ export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
         setLoading(true);
         const res = await api.get('/partner/workload');
         if (isMounted && res.success && res.data) {
-          setWorkloadStatus(res.data.workloadStatus || 'available');
-          setSelectedWeeks(Array.isArray(res.data.availableWeeks) ? res.data.availableWeeks : []);
+          const draft = sessionStorage.getItem('partner_workload_draft');
+          if (!draft) {
+            setWorkloadStatus(res.data.workloadStatus || 'available');
+            setSelectedWeeks(Array.isArray(res.data.availableWeeks) ? res.data.availableWeeks : []);
+          }
         }
       } catch (err) {
         console.warn('Could not load partner workload directly, falling back:', err);
@@ -79,6 +100,15 @@ export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
     loadData();
     return () => { isMounted = false; };
   }, []);
+
+  // Sync draft state to sessionStorage so page refresh retains work
+  useEffect(() => {
+    if (!loading) {
+      try {
+        sessionStorage.setItem('partner_workload_draft', JSON.stringify({ workloadStatus, selectedWeeks }));
+      } catch {}
+    }
+  }, [workloadStatus, selectedWeeks, loading]);
 
   const toggleWeek = (weekNum) => {
     setSelectedWeeks(prev => {
@@ -119,6 +149,7 @@ export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
       });
 
       if (res.success) {
+        try { sessionStorage.removeItem('partner_workload_draft'); } catch {}
         setSuccessMsg(isNL 
           ? 'Beschikbaarheid en werkdruk succesvol opgeslagen!' 
           : 'Workload and available weeks saved successfully!'
@@ -143,10 +174,10 @@ export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
       id: 'available',
       labelNL: 'Beschikbaar',
       labelEN: 'Available',
-      descNL: 'Open voor nieuwe projectaanvragen',
+      descNL: 'Open voor nieuwe projecten',
       descEN: 'Open for new projects',
-      color: 'border-emerald-500 bg-emerald-50/70 text-emerald-800',
-      activeRing: 'ring-2 ring-emerald-600',
+      color: 'border-emerald-500 bg-emerald-50/80 text-emerald-900',
+      activeRing: 'ring-2 ring-emerald-600 shadow-xs',
       icon: CheckCircle2,
       iconColor: 'text-emerald-600',
     },
@@ -154,10 +185,10 @@ export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
       id: 'busy',
       labelNL: 'Druk',
       labelEN: 'Busy',
-      descNL: 'Beperkte capaciteit voor nieuwe projecten',
+      descNL: 'Beperkte capaciteit',
       descEN: 'Limited capacity',
-      color: 'border-amber-500 bg-amber-50/70 text-amber-800',
-      activeRing: 'ring-2 ring-amber-600',
+      color: 'border-amber-500 bg-amber-50/80 text-amber-900',
+      activeRing: 'ring-2 ring-amber-600 shadow-xs',
       icon: Clock,
       iconColor: 'text-amber-600',
     },
@@ -165,10 +196,10 @@ export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
       id: 'fully_booked',
       labelNL: 'Volgeboekt',
       labelEN: 'Fully Booked',
-      descNL: 'Geen ruimte voor nieuwe projecten',
+      descNL: 'Geen ruimte beschikbaar',
       descEN: 'No current capacity',
-      color: 'border-rose-500 bg-rose-50/70 text-rose-800',
-      activeRing: 'ring-2 ring-rose-600',
+      color: 'border-rose-500 bg-rose-50/80 text-rose-900',
+      activeRing: 'ring-2 ring-rose-600 shadow-xs',
       icon: AlertTriangle,
       iconColor: 'text-rose-600',
     },
@@ -176,35 +207,40 @@ export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
       id: 'inactive',
       labelNL: 'Inactief',
       labelEN: 'Inactive',
-      descNL: 'Tijdelijk gepauzeerd / afwezig',
+      descNL: 'Tijdelijk gepauzeerd',
       descEN: 'Temporarily inactive',
-      color: 'border-stone-400 bg-stone-100 text-stone-700',
-      activeRing: 'ring-2 ring-stone-500',
+      color: 'border-stone-400 bg-stone-100 text-stone-800',
+      activeRing: 'ring-2 ring-stone-500 shadow-xs',
       icon: ShieldAlert,
       iconColor: 'text-stone-500',
     },
   ];
 
+  const currentBadgeVariant = workloadStatus === 'available' 
+    ? 'success' 
+    : workloadStatus === 'busy' 
+      ? 'warning' 
+      : 'danger';
+
   return (
-    <Card 
-      className="border border-[#C4BEB3]/60 bg-white/95 shadow-sm overflow-hidden" 
-      noPadding
-    >
-      {/* Header Banner */}
-      <div className="p-4 sm:p-5 border-b border-[#E3DEC3] bg-gradient-to-r from-[#F5F2EB] to-[#ECE7DE]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-              <Activity className="w-5 h-5" />
+    <div className="bg-[#FAF8F5] rounded-2xl shadow-2xl border border-[#C4BEB3]/80 overflow-hidden flex flex-col h-full max-h-[90vh] sm:max-h-[85vh] w-full text-dark">
+      {/* Header Banner - Sticky Top */}
+      <div className="p-3.5 sm:p-5 border-b border-[#E3DEC3] bg-gradient-to-r from-[#F5F2EB] to-[#ECE7DE] shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+              <Activity className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h3 className="font-heading font-bold text-base sm:text-lg text-primary flex items-center gap-2">
-                {isNL ? 'Mijn Werkdruk & Beschikbaarheid' : 'My Workload & Availability'}
-                <Badge variant={workloadStatus === 'available' ? 'success' : workloadStatus === 'busy' ? 'warning' : 'danger'}>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-heading font-bold text-sm sm:text-base md:text-lg text-primary leading-tight">
+                  {isNL ? 'Mijn Werkdruk & Beschikbaarheid' : 'My Workload & Availability'}
+                </h3>
+                <Badge variant={currentBadgeVariant}>
                   {statusOptions.find(s => s.id === workloadStatus)?.[isNL ? 'labelNL' : 'labelEN']}
                 </Badge>
-              </h3>
-              <p className="text-xs text-dark/60 font-body mt-0.5">
+              </div>
+              <p className="text-[11px] sm:text-xs text-dark/60 font-body mt-0.5 line-clamp-1 sm:line-clamp-none">
                 {isNL 
                   ? 'Geef aan wanneer u nieuwe projecten kunt aannemen zodat de beheerder u direct kan inplannen.'
                   : 'Specify when you can accept new projects so admins can schedule work accurately.'}
@@ -212,50 +248,41 @@ export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-center">
-            <Button 
-              size="sm" 
-              onClick={handleSave} 
-              disabled={saving || loading}
-              className="bg-primary hover:bg-primary-dark text-white font-semibold text-xs px-4 py-2 shadow-xs"
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-black/5 hover:bg-black/15 text-dark/70 hover:text-dark flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              aria-label="Close"
             >
-              {saving ? (
-                <span className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                  {isNL ? 'Opslaan...' : 'Saving...'}
-                </span>
-              ) : (
-                <span className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5" />
-                  {isNL ? 'Wijzigingen Opslaan' : 'Save Changes'}
-                </span>
-              )}
-            </Button>
-          </div>
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Feedback alerts */}
         {successMsg && (
-          <div className="mt-3 p-2.5 rounded-lg bg-emerald-100/90 border border-emerald-300 text-emerald-800 text-xs font-medium flex items-center gap-2 animate-fadeIn">
+          <div className="mt-2.5 p-2 sm:p-2.5 rounded-lg bg-emerald-100/90 border border-emerald-300 text-emerald-800 text-xs font-medium flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-            <span>{successMsg}</span>
+            <span className="truncate">{successMsg}</span>
           </div>
         )}
         {errorMsg && (
-          <div className="mt-3 p-2.5 rounded-lg bg-rose-100/90 border border-rose-300 text-rose-800 text-xs font-medium flex items-center gap-2">
+          <div className="mt-2.5 p-2 sm:p-2.5 rounded-lg bg-rose-100/90 border border-rose-300 text-rose-800 text-xs font-medium flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
-            <span>{errorMsg}</span>
+            <span className="truncate">{errorMsg}</span>
           </div>
         )}
       </div>
 
-      <div className="p-4 sm:p-5 space-y-5">
+      {/* Scrollable Content Body */}
+      <div className="p-3.5 sm:p-5 md:p-6 space-y-4 sm:space-y-6 overflow-y-auto flex-1 min-h-0 overscroll-contain">
         {/* Step 1: Workload Status selection */}
         <div>
-          <label className="block text-xs font-heading font-bold text-dark/80 uppercase tracking-wider mb-2.5">
+          <label className="block text-[11px] sm:text-xs font-heading font-bold text-dark/80 uppercase tracking-wider mb-2">
             {isNL ? '1. Actuele Werkdruk Status' : '1. Current Workload Status'}
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5">
             {statusOptions.map((opt) => {
               const IconComp = opt.icon;
               const isSelected = workloadStatus === opt.id;
@@ -264,20 +291,20 @@ export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
                   key={opt.id}
                   type="button"
                   onClick={() => { setWorkloadStatus(opt.id); setSuccessMsg(''); }}
-                  className={`p-3 rounded-xl border text-left transition-all duration-150 flex flex-col justify-between ${
+                  className={`p-2.5 sm:p-3 rounded-xl border text-left transition-all duration-150 flex flex-col justify-between cursor-pointer ${
                     isSelected 
-                      ? `${opt.color} ${opt.activeRing} shadow-xs font-semibold` 
-                      : 'border-[#D6CFC2]/70 bg-[#FAF8F5] hover:bg-white text-dark/70'
+                      ? `${opt.color} ${opt.activeRing}` 
+                      : 'border-[#D6CFC2]/70 bg-white/70 hover:bg-white text-dark/70 hover:border-primary/30'
                   }`}
                 >
-                  <div className="flex items-center justify-between w-full mb-1.5">
-                    <span className="text-xs font-heading font-bold flex items-center gap-1.5">
-                      <IconComp className={`w-3.5 h-3.5 ${opt.iconColor}`} />
-                      {isNL ? opt.labelNL : opt.labelEN}
+                  <div className="flex items-center justify-between w-full mb-1">
+                    <span className="text-xs font-heading font-bold flex items-center gap-1.5 truncate">
+                      <IconComp className={`w-3.5 h-3.5 shrink-0 ${opt.iconColor}`} />
+                      <span className="truncate">{isNL ? opt.labelNL : opt.labelEN}</span>
                     </span>
-                    {isSelected && <Check className="w-4 h-4 text-emerald-700" />}
+                    {isSelected && <Check className="w-3.5 h-3.5 text-emerald-700 shrink-0" />}
                   </div>
-                  <p className="text-[11px] opacity-80 font-body leading-snug">
+                  <p className="text-[10px] sm:text-[11px] opacity-75 font-body leading-snug line-clamp-1 sm:line-clamp-none">
                     {isNL ? opt.descNL : opt.descEN}
                   </p>
                 </button>
@@ -287,13 +314,13 @@ export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
         </div>
 
         {/* Step 2: Available Calendar Weeks */}
-        <div className="pt-2 border-t border-[#EAE5D9]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+        <div className="pt-3 sm:pt-4 border-t border-[#EAE5D9]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2 sm:mb-3">
             <div>
-              <label className="block text-xs font-heading font-bold text-dark/80 uppercase tracking-wider">
+              <label className="block text-[11px] sm:text-xs font-heading font-bold text-dark/80 uppercase tracking-wider">
                 {isNL ? '2. Weken waarin u nieuwe projecten kunt aannemen' : '2. Weeks When You Can Accept New Projects'}
               </label>
-              <p className="text-[11px] text-dark/50 font-body mt-0.5">
+              <p className="text-[10px] sm:text-[11px] text-dark/50 font-body mt-0.5">
                 {isNL 
                   ? 'Klik op een kalenderweek om deze aan of uit te zetten. Geselecteerde weken worden getoond aan de beheerder.' 
                   : 'Click a week to toggle availability. Selected weeks indicate open project capacity to the admin.'}
@@ -305,29 +332,29 @@ export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
               <button
                 type="button"
                 onClick={handleSelectNext4Weeks}
-                className="px-2.5 py-1 text-[11px] font-medium bg-[#EFECE6] hover:bg-[#E3DEC3] text-dark/80 rounded-md transition-colors"
+                className="px-2.5 py-1 text-[10px] sm:text-[11px] font-medium bg-[#EFECE6] hover:bg-[#E3DEC3] text-dark/80 rounded-md transition-colors cursor-pointer"
               >
                 {isNL ? '+ Komende 4 Weken' : '+ Next 4 Weeks'}
               </button>
               <button
                 type="button"
                 onClick={handleSelectAll}
-                className="px-2.5 py-1 text-[11px] font-medium bg-[#EFECE6] hover:bg-[#E3DEC3] text-dark/80 rounded-md transition-colors"
+                className="px-2.5 py-1 text-[10px] sm:text-[11px] font-medium bg-[#EFECE6] hover:bg-[#E3DEC3] text-dark/80 rounded-md transition-colors cursor-pointer"
               >
                 {isNL ? 'Alles Selecteren' : 'Select All'}
               </button>
               <button
                 type="button"
                 onClick={handleClearWeeks}
-                className="px-2.5 py-1 text-[11px] font-medium text-dark/50 hover:text-dark hover:bg-[#EFECE6] rounded-md transition-colors"
+                className="px-2.5 py-1 text-[10px] sm:text-[11px] font-medium text-dark/50 hover:text-dark hover:bg-[#EFECE6] rounded-md transition-colors cursor-pointer"
               >
                 {isNL ? 'Wissen' : 'Clear'}
               </button>
             </div>
           </div>
 
-          {/* Week chips grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 pt-1">
+          {/* Week chips grid - fully responsive from 2 to 7 cols */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 sm:gap-2 pt-1">
             {upcomingWeeks.map((w) => {
               const isSelected = selectedWeeks.includes(w.weekNum);
               return (
@@ -335,19 +362,12 @@ export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
                   key={`${w.year}-${w.weekNum}`}
                   type="button"
                   onClick={() => toggleWeek(w.weekNum)}
-                  className={`p-2 rounded-lg border text-center transition-all duration-150 flex flex-col items-center justify-center relative ${
+                  className={`p-2 rounded-xl border text-center transition-all duration-150 flex flex-col items-center justify-center relative cursor-pointer min-h-[54px] sm:min-h-[58px] ${
                     isSelected
-                      ? 'bg-primary text-white border-primary shadow-xs ring-1 ring-primary/40'
-                      : 'bg-white/80 hover:bg-white border-[#D6CFC2] text-dark hover:border-primary/40'
+                      ? 'bg-primary text-white border-primary shadow-xs ring-1 ring-primary/40 font-semibold'
+                      : 'bg-white/90 hover:bg-white border-[#D6CFC2] text-dark hover:border-primary/40'
                   }`}
                 >
-                  {w.isCurrent && (
-                    <span className={`absolute -top-1.5 -right-1.5 text-[8px] font-bold px-1 py-0.2 rounded-full uppercase tracking-tighter ${
-                      isSelected ? 'bg-amber-400 text-dark' : 'bg-primary text-white'
-                    }`}>
-                      {isNL ? 'Nu' : 'Now'}
-                    </span>
-                  )}
                   <div className="flex items-center gap-1 font-heading font-bold text-xs">
                     {isSelected && <Check className="w-3 h-3 text-emerald-300" />}
                     <span>Week {w.weekNum}</span>
@@ -361,38 +381,60 @@ export default function PartnerWorkloadAvailabilityCard({ onWorkloadChange }) {
               );
             })}
           </div>
-
-          {/* Selected Weeks Summary Footer */}
-          <div className="mt-3.5 pt-3 border-t border-[#EAE5D9]/70 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-dark/60 gap-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-dark/80">
-                {isNL ? 'Geselecteerde capaciteit:' : 'Selected capacity:'}
-              </span>
-              {selectedWeeks.length === 0 ? (
-                <span className="text-amber-700 font-medium">
-                  {isNL ? 'Geen weken geselecteerd (geen nieuwe projecten aannemen)' : 'No weeks selected (not accepting new projects)'}
-                </span>
-              ) : (
-                <span className="text-primary font-bold">
-                  {selectedWeeks.length} {isNL ? 'weken beschikbaar' : 'weeks available'} 
-                  <span className="text-dark/50 font-normal ml-1">
-                    ({selectedWeeks.map(w => `Wk ${w}`).join(', ')})
-                  </span>
-                </span>
-              )}
-            </div>
-
-            <Button 
-              size="sm" 
-              onClick={handleSave} 
-              disabled={saving || loading}
-              className="bg-primary hover:bg-primary-dark text-white font-semibold text-xs px-3 py-1.5 shadow-xs self-end sm:self-auto"
-            >
-              {saving ? (isNL ? 'Opslaan...' : 'Saving...') : (isNL ? 'Opslaan' : 'Save')}
-            </Button>
-          </div>
         </div>
       </div>
-    </Card>
+
+      {/* Selected Weeks Summary & Action Footer - Sticky Bottom */}
+      <div className="border-t border-[#EAE5D9] bg-[#F5F2EB] p-3 sm:p-4 px-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-dark/70 gap-2.5 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+          <span className="font-semibold text-dark/80 whitespace-nowrap">
+            {isNL ? 'Geselecteerde capaciteit:' : 'Selected capacity:'}
+          </span>
+          {selectedWeeks.length === 0 ? (
+            <span className="text-amber-700 font-medium">
+              {isNL ? 'Geen weken geselecteerd (geen nieuwe projecten aannemen)' : 'No weeks selected (not accepting new projects)'}
+            </span>
+          ) : (
+            <span className="text-primary font-bold truncate">
+              {selectedWeeks.length} {isNL ? 'weken beschikbaar' : 'weeks available'} 
+              <span className="text-dark/50 font-normal ml-1 hidden md:inline">
+                ({selectedWeeks.map(w => `Wk ${w}`).join(', ')})
+              </span>
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+          {onClose && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onClose}
+              className="text-xs px-3 sm:px-3.5 py-1.5 border-[#C4BEB3] text-dark/70 hover:text-dark hover:bg-black/5"
+            >
+              {isNL ? 'Annuleren' : 'Close'}
+            </Button>
+          )}
+          <Button 
+            size="sm" 
+            onClick={handleSave} 
+            disabled={saving || loading}
+            className="bg-primary hover:bg-primary-dark text-white font-semibold text-xs px-3.5 sm:px-4 py-1.5 shadow-xs"
+          >
+            {saving ? (
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                {isNL ? 'Opslaan...' : 'Saving...'}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" />
+                {isNL ? 'Wijzigingen Opslaan' : 'Save Changes'}
+              </span>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

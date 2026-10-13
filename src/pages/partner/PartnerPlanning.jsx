@@ -6,6 +6,8 @@ import { Calendar as CalendarIcon, Clock, CheckCircle2, Circle, Plus, Filter, Ma
 import { useLanguage } from '../../context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
+import { useSearchParams } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 
 import api from '../../api/apiClient';
 import PartnerWorkloadAvailabilityCard from '../../components/partner/PartnerWorkloadAvailabilityCard';
@@ -59,7 +61,21 @@ export default function PartnerPlanning() {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const showAvailabilityModal = searchParams.get('modal') === 'workload';
+
+  const handleOpenAvailabilityModal = () => {
+    const next = new URLSearchParams(searchParams);
+    next.set('modal', 'workload');
+    setSearchParams(next, { replace: true });
+  };
+
+  const handleCloseAvailabilityModal = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('modal');
+    setSearchParams(next, { replace: true });
+  };
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [newEvent, setNewEvent] = useState({ title: '', client: '', location: '', time: '10:00 - 11:30', type: 'Site Visit' });
@@ -248,7 +264,7 @@ export default function PartnerPlanning() {
           <Button 
             variant="outline" 
             icon={Sliders} 
-            onClick={() => setShowAvailabilityModal(true)}
+            onClick={handleOpenAvailabilityModal}
             className="text-xs bg-white/80 border-[#C4BEB3] hover:border-primary text-primary font-semibold"
           >
             {language === 'NL' ? 'Werkdruk & Beschikbaarheid' : 'Workload & Availability'}
@@ -621,31 +637,31 @@ export default function PartnerPlanning() {
             </motion.div>
           </div>
         )}
-
-        {/* Availability & Workload Modal */}
-        {showAvailabilityModal && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-4xl relative my-auto"
-            >
-              <button 
-                onClick={() => setShowAvailabilityModal(false)}
-                className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 text-dark flex items-center justify-center transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <PartnerWorkloadAvailabilityCard 
-                onWorkloadChange={() => {
-                  showToast(language === 'NL' ? '✓ Beschikbaarheid opgeslagen' : '✓ Availability updated');
-                }} 
-              />
-            </motion.div>
-          </div>
-        )}
       </AnimatePresence>
+
+      {/* Availability & Workload Modal — mounted in document.body for true viewport centering */}
+      {showAvailabilityModal && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-3 sm:p-5 md:p-6 sm:pl-56 md:pl-60 overflow-y-auto"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', margin: 0 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCloseAvailabilityModal();
+          }}
+        >
+          <div
+            className="w-full max-w-3xl lg:max-w-4xl relative my-auto max-h-[92vh] sm:max-h-[86vh] flex flex-col shadow-2xl mx-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <PartnerWorkloadAvailabilityCard 
+              onClose={handleCloseAvailabilityModal}
+              onWorkloadChange={() => {
+                showToast(language === 'NL' ? '✓ Beschikbaarheid opgeslagen' : '✓ Availability updated');
+              }} 
+            />
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

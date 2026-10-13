@@ -7,22 +7,38 @@ import { useLanguage } from '../context/LanguageContext';
 import { User, Mail, Phone, Lock, Save, Camera, CheckCircle, Globe, Loader2 } from 'lucide-react';
 import api from '../api/apiClient';
 
+const normalizeLangCode = (val) => {
+  if (!val) return 'nl';
+  const low = String(val).toLowerCase();
+  if (low.startsWith('nl') || low.includes('dutch')) return 'nl';
+  if (low.startsWith('en') || low.includes('english')) return 'en';
+  if (low.startsWith('de') || low.includes('german')) return 'de';
+  return 'nl';
+};
+
+const getLanguageLabel = (val, currentAppLang) => {
+  const code = normalizeLangCode(val);
+  if (code === 'nl') return currentAppLang === 'EN' ? 'Dutch' : 'Nederlands';
+  if (code === 'de') return currentAppLang === 'EN' ? 'German' : 'Duits';
+  return currentAppLang === 'EN' ? 'English' : 'Engels';
+};
+
 export default function Profile() {
   const { user } = useAuth();
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const [toastMsg, setToastMsg] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [savingInfo, setSavingInfo] = useState(false);
   const [savingPwd, setSavingPwd] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
-  const [personalInfo, setPersonalInfo] = useState({
-    name: user?.name || 'User',
-    email: user?.email || (user?.role === 'admin' ? 'admin@vanuitambacht.nl' : 'partner@vanuitambacht.nl'),
-    phone: '+31 6 98765432',
-    language: 'English',
-    timezone: 'Europe/Amsterdam'
-  });
+  const [personalInfo, setPersonalInfo] = useState(() => ({
+    name: user?.name || user?.fullName || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    language: normalizeLangCode(user?.language || (language === 'EN' ? 'en' : 'nl')),
+    timezone: user?.timezone || 'Europe/Amsterdam'
+  }));
 
   const [passwords, setPasswords] = useState({
     current: '',
@@ -39,10 +55,10 @@ export default function Profile() {
     api.get('/users/profile').then(res => {
       if (isMounted && res.success && res.data) {
         setPersonalInfo({
-          name: res.data.fullName || user?.name || 'User',
+          name: res.data.fullName || user?.name || user?.fullName || '',
           email: res.data.email || user?.email || '',
-          phone: res.data.phone || '+31 6 98765432',
-          language: res.data.language || 'English',
+          phone: res.data.phone || user?.phone || '',
+          language: normalizeLangCode(res.data.language || user?.language || (language === 'EN' ? 'en' : 'nl')),
           timezone: res.data.timezone || 'Europe/Amsterdam'
         });
         if (res.data.avatarUrl) {
@@ -56,7 +72,7 @@ export default function Profile() {
     });
 
     return () => { isMounted = false; };
-  }, [user]);
+  }, [user?.id]);
 
   const showToast = (msg) => {
     setToastMsg(msg);
@@ -71,14 +87,19 @@ export default function Profile() {
     e.preventDefault();
     setSavingInfo(true);
     try {
+      const normalizedLang = normalizeLangCode(personalInfo.language);
       const res = await api.patch('/users/profile', {
         fullName: personalInfo.name,
         phone: personalInfo.phone,
-        language: personalInfo.language,
+        language: normalizedLang,
         timezone: personalInfo.timezone
       });
       if (res.success) {
         showToast(language === 'EN' ? '✓ Profile information saved to database!' : '✓ Profielgegevens succesvol opgeslagen in database!');
+        const targetAppLang = normalizedLang === 'nl' ? 'NL' : 'EN';
+        if (targetAppLang !== language) {
+          setLanguage(targetAppLang);
+        }
       } else {
         showToast(`⚠ ${res.error?.message || 'Failed to update profile'}`);
       }
@@ -153,6 +174,17 @@ export default function Profile() {
     reader.readAsDataURL(file);
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[350px] gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="text-xs text-dark/60 font-body">
+          {language === 'EN' ? 'Loading profile details...' : 'Profielgegevens laden...'}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 relative">
       {/* Toast Notification */}
@@ -188,7 +220,7 @@ export default function Profile() {
                 <img src={avatar} alt="Avatar" className="w-full h-full rounded-full object-cover border-4 border-cream-dark" />
               ) : (
                 <div className="w-full h-full rounded-full bg-accent text-[#F2EDE4] flex items-center justify-center text-4xl font-bold font-body">
-                  {personalInfo.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  {(personalInfo.name || 'U').split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                 </div>
               )}
               <label className="absolute bottom-0 right-0 p-2 bg-primary text-[#F2EDE4] rounded-full cursor-pointer hover:bg-primary/90 transition-colors shadow-md">
@@ -206,11 +238,11 @@ export default function Profile() {
               </div>
               <div className="flex items-center gap-3 text-xs text-dark/70 font-body">
                 <Phone className="w-4 h-4 text-accent flex-shrink-0" />
-                <span>{personalInfo.phone}</span>
+                <span>{personalInfo.phone || (language === 'EN' ? 'Not set' : 'Niet ingesteld')}</span>
               </div>
               <div className="flex items-center gap-3 text-xs text-dark/70 font-body">
                 <Globe className="w-4 h-4 text-accent flex-shrink-0" />
-                <span>{personalInfo.language} ({personalInfo.timezone})</span>
+                <span>{getLanguageLabel(personalInfo.language, language)} ({personalInfo.timezone})</span>
               </div>
             </div>
           </Card>
@@ -254,6 +286,7 @@ export default function Profile() {
                     type="text"
                     value={personalInfo.phone}
                     onChange={(e) => handleInfoChange('phone', e.target.value)}
+                    placeholder=""
                     className="w-full px-3 py-2 bg-[#EDE8DF] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
                   />
                 </div>
@@ -262,13 +295,13 @@ export default function Profile() {
                     {language === 'EN' ? 'Language' : 'Taal'}
                   </label>
                   <select
-                    value={personalInfo.language}
+                    value={normalizeLangCode(personalInfo.language)}
                     onChange={(e) => handleInfoChange('language', e.target.value)}
                     className="w-full px-3 py-2 bg-[#EDE8DF] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
                   >
-                    <option value="English">English</option>
-                    <option value="Dutch">Nederlands (Dutch)</option>
-                    <option value="German">German</option>
+                    <option value="nl">{language === 'EN' ? 'Dutch (Nederlands)' : 'Nederlands (Dutch)'}</option>
+                    <option value="en">{language === 'EN' ? 'English' : 'Engels (English)'}</option>
+                    <option value="de">{language === 'EN' ? 'German (Deutsch)' : 'Duits (German)'}</option>
                   </select>
                 </div>
               </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
@@ -18,7 +19,49 @@ export default function PartnerPriceRequests() {
   const [submitted, setSubmitted] = useState([]);
   const [open, setOpen] = useState([]);
   const [toastMsg, setToastMsg] = useState('');
-  const [activeTab, setActiveTab] = useState('open');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+
+  const resolveInitialTab = () => {
+    if (urlTab) {
+      const lower = urlTab.toLowerCase();
+      if (lower === 'open') return 'open';
+      if (lower === 'submitted') return 'submitted';
+    }
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('partner_price_requests_tab') : null;
+    if (saved) return saved;
+    return 'open';
+  };
+
+  const [activeTab, setActiveTabState] = useState(resolveInitialTab);
+
+  const setActiveTab = (tab) => {
+    setActiveTabState(tab);
+    localStorage.setItem('partner_price_requests_tab', tab);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      return next;
+    }, { replace: true });
+  };
+
+  useEffect(() => {
+    if (urlTab) {
+      const lower = urlTab.toLowerCase();
+      const target = lower === 'submitted' ? 'submitted' : 'open';
+      if (activeTab !== target) {
+        setActiveTabState(target);
+        localStorage.setItem('partner_price_requests_tab', target);
+      }
+    } else {
+      const current = localStorage.getItem('partner_price_requests_tab') || activeTab;
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', current);
+        return next;
+      }, { replace: true });
+    }
+  }, [urlTab, activeTab, setSearchParams]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
@@ -23,7 +24,50 @@ export default function Tasks() {
   const [leadsList, setLeadsList] = useState([]);
   
   // Filter & Search State
-  const [activeTab, setActiveTab] = useState('All'); // 'All' | 'Pending' | 'Completed'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+
+  const resolveInitialTab = () => {
+    if (urlTab) {
+      const lower = urlTab.toLowerCase();
+      if (lower === 'all') return 'All';
+      if (lower === 'pending') return 'Pending';
+      if (lower === 'completed') return 'Completed';
+    }
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('admin_tasks_active_tab') : null;
+    if (saved) return saved;
+    return 'All';
+  };
+
+  const [activeTab, setActiveTabState] = useState(resolveInitialTab);
+
+  const setActiveTab = useCallback((tab) => {
+    setActiveTabState(tab);
+    localStorage.setItem('admin_tasks_active_tab', tab);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab.toLowerCase());
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  useEffect(() => {
+    if (urlTab) {
+      const lower = urlTab.toLowerCase();
+      const target = lower === 'pending' ? 'Pending' : lower === 'completed' ? 'Completed' : 'All';
+      if (activeTab !== target) {
+        setActiveTabState(target);
+        localStorage.setItem('admin_tasks_active_tab', target);
+      }
+    } else {
+      const current = localStorage.getItem('admin_tasks_active_tab') || activeTab;
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', current.toLowerCase());
+        return next;
+      }, { replace: true });
+    }
+  }, [urlTab, activeTab, setSearchParams]);
   const [assigneeFilter, setAssigneeFilter] = useState('All'); // 'All' | 'Tim' | 'Bram'
   const [searchQuery, setSearchQuery] = useState('');
   

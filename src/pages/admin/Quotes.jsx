@@ -282,11 +282,12 @@ export default function Quotes() {
         handleOpenEditModal({ backendId: urlQuoteId, id: urlQuoteId }, urlStep);
       }
     } else {
-      // Check saved session in localStorage
-      const savedSession = JSON.parse(localStorage.getItem('vanuit_active_quote_session') || 'null');
-      if (savedSession && savedSession.quoteId && (!activeEditorQuote || (activeEditorQuote.backendId !== savedSession.quoteId && activeEditorQuote.id !== savedSession.quoteId))) {
-        setSearchParams({ quoteId: savedSession.quoteId, step: String(savedSession.step || 1) });
+      // User navigated to Quotes list overview (/admin/quotes without quoteId)
+      // ALWAYS display the Quotes table overview and do NOT auto-redirect to an old session
+      if (activeEditorQuote) {
+        setActiveEditorQuote(null);
       }
+      localStorage.removeItem('vanuit_active_quote_session');
     }
   }, [searchParams, leadsList]);
 

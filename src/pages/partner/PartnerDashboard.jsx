@@ -8,7 +8,6 @@ import { useLanguage } from '../../context/LanguageContext';
 import projectImg from '../../assets/outdoor_project_card.png';
 import heroBg from '/dasbordes images.png';
 import api from '../../api/apiClient';
-import PartnerWorkloadAvailabilityCard from '../../components/partner/PartnerWorkloadAvailabilityCard';
 
 export default function PartnerDashboard() {
   const navigate = useNavigate();
@@ -140,10 +139,6 @@ export default function PartnerDashboard() {
         ))}
       </div>
 
-      {/* Partner Workload & Availability Control Card */}
-      <div id="workload-availability-card">
-        <PartnerWorkloadAvailabilityCard onWorkloadChange={() => fetchDashboardData()} />
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Project Cards */}

@@ -71,10 +71,31 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   // Extract dynamic customer & header properties
   const custObj = typeof quote?.customer === 'object' ? quote.customer : null;
   const customerInfo = quote?.activeVersion?.optionsConfig?.customerInfo || quote?.configuration?.options?.customerInfo;
-  const rawCustName = custObj?.name || customerInfo?.name || quote?.customer || quote?.customerName;
-  const customerName = (rawCustName && rawCustName !== 'Onbekend' && rawCustName !== 'Nieuwe Klant') ? rawCustName : (language === 'EN' ? 'Client' : 'Klant');
-  const firstName = custObj?.firstName || customerInfo?.firstName || (customerName && customerName !== 'Client' && customerName !== 'Klant' ? customerName.trim().split(' ')[0] : (language === 'EN' ? 'Client' : 'Klant'));
-  const city = custObj?.city || customerInfo?.city || quote?.deliveryLocation || quote?.city || '';
+  const rawCustName = (typeof custObj?.name === 'string' && custObj.name.trim())
+    ? custObj.name.trim()
+    : (typeof customerInfo?.name === 'string' && customerInfo.name.trim())
+    ? customerInfo.name.trim()
+    : (typeof quote?.customer === 'string' && quote.customer.trim())
+    ? quote.customer.trim()
+    : (typeof quote?.customerName === 'string' && quote.customerName.trim())
+    ? quote.customerName.trim()
+    : '';
+
+  const customerName = (rawCustName && rawCustName !== 'Onbekend' && rawCustName !== 'Nieuwe Klant')
+    ? rawCustName
+    : (language === 'EN' ? 'Client' : 'Klant');
+
+  const rawFirstName = custObj?.firstName || customerInfo?.firstName;
+  const firstName = (typeof rawFirstName === 'string' && rawFirstName.trim())
+    ? rawFirstName.trim()
+    : (typeof customerName === 'string' && customerName !== 'Client' && customerName !== 'Klant'
+      ? customerName.trim().split(' ')[0]
+      : (language === 'EN' ? 'Client' : 'Klant'));
+
+  const city = (typeof custObj?.city === 'string' ? custObj.city : '') ||
+    (typeof customerInfo?.city === 'string' ? customerInfo.city : '') ||
+    (typeof quote?.deliveryLocation === 'string' ? quote.deliveryLocation : '') ||
+    (typeof quote?.city === 'string' ? quote.city : '') || '';
   const quoteId = quote?.id || quote?.quoteNumber || 'OF-2026-032';
   const quoteDate = quote?.date || quote?.issueDate || new Date().toISOString().split('T')[0];
   const validUntil = quote?.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];

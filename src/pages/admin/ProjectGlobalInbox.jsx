@@ -9,7 +9,7 @@ import {
   Lock, Check, ChevronDown, FolderOpen
 } from 'lucide-react';
 import { downloadBlueprintPdf } from '../../utils/pdfGenerator';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { compressImage } from '../../utils/storageHelper';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../context/LanguageContext';
@@ -37,7 +37,50 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
   });
 
   // Search & Filters State
-  const [activeTab, setActiveTab] = useState('All');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+
+  const resolveInitialTab = () => {
+    if (urlTab) {
+      const lower = urlTab.toLowerCase();
+      if (lower === 'all') return 'All';
+      if (lower.includes('kitchen')) return 'Outdoor Kitchens';
+      if (lower.includes('living') || lower.includes('garden')) return 'Outdoor Living Spaces';
+    }
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('admin_projects_active_tab') : null;
+    if (saved) return saved;
+    return 'All';
+  };
+
+  const [activeTab, setActiveTabState] = useState(resolveInitialTab);
+
+  const setActiveTab = (tab) => {
+    setActiveTabState(tab);
+    localStorage.setItem('admin_projects_active_tab', tab);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab === 'Outdoor Kitchens' ? 'kitchens' : tab === 'Outdoor Living Spaces' ? 'living-spaces' : 'all');
+      return next;
+    }, { replace: true });
+  };
+
+  useEffect(() => {
+    if (urlTab) {
+      const lower = urlTab.toLowerCase();
+      const target = lower.includes('kitchen') ? 'Outdoor Kitchens' : (lower.includes('living') || lower.includes('garden')) ? 'Outdoor Living Spaces' : 'All';
+      if (activeTab !== target) {
+        setActiveTabState(target);
+        localStorage.setItem('admin_projects_active_tab', target);
+      }
+    } else {
+      const current = localStorage.getItem('admin_projects_active_tab') || activeTab;
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', current === 'Outdoor Kitchens' ? 'kitchens' : current === 'Outdoor Living Spaces' ? 'living-spaces' : 'all');
+        return next;
+      }, { replace: true });
+    }
+  }, [urlTab, activeTab, setSearchParams]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy] = useState('deadline');

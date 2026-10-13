@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Card from '../../components/Card';
 import Table from '../../components/Table';
 import Badge from '../../components/Badge';
@@ -36,7 +37,50 @@ const API_TO_WORKLOAD_NL = {
 
 export default function Partners() {
   const { t, language } = useLanguage();
-  const [activeTab, setActiveTab] = useState('Active');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+
+  const resolveInitialTab = () => {
+    if (urlTab) {
+      const lower = urlTab.toLowerCase();
+      if (lower === 'pipeline' || lower === 'kanban' || lower === 'candidates') return 'Pipeline';
+      if (lower === 'active' || lower === 'partners') return 'Active';
+    }
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('admin_partners_active_tab') : null;
+    if (saved === 'Pipeline' || saved === 'Active') return saved;
+    return 'Active';
+  };
+
+  const [activeTab, setActiveTabState] = useState(resolveInitialTab);
+
+  const setActiveTab = useCallback((tab) => {
+    setActiveTabState(tab);
+    localStorage.setItem('admin_partners_active_tab', tab);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab.toLowerCase());
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  // Keep state in sync with URL and ensure URL query param is present on mount/refresh
+  useEffect(() => {
+    if (urlTab) {
+      const lower = urlTab.toLowerCase();
+      const target = (lower === 'pipeline' || lower === 'kanban' || lower === 'candidates') ? 'Pipeline' : 'Active';
+      if (activeTab !== target) {
+        setActiveTabState(target);
+        localStorage.setItem('admin_partners_active_tab', target);
+      }
+    } else {
+      const current = localStorage.getItem('admin_partners_active_tab') || activeTab;
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', current.toLowerCase());
+        return next;
+      }, { replace: true });
+    }
+  }, [urlTab, activeTab, setSearchParams]);
   const [partners, setPartners] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -66,9 +110,9 @@ export default function Partners() {
     companyName: '',
     phone: '',
     email: '',
-    region: 'Noord-Holland',
+    region: language === 'EN' ? 'North Holland' : 'Noord-Holland',
     stage: 'interested',
-    productTypes: 'Buitenkeukens, Kliko-ombouw',
+    productTypes: language === 'EN' ? 'Outdoor kitchens, Bin storage' : 'Buitenkeukens, Kliko-ombouw',
     kvkNumber: '',
     btwNumber: '',
     notes: '',
@@ -95,8 +139,8 @@ export default function Partners() {
     companyName: '',
     email: '',
     phone: '',
-    region: 'Noord-Holland',
-    productTypes: 'Buitenkeukens, Kliko-ombouw',
+    region: language === 'EN' ? 'North Holland' : 'Noord-Holland',
+    productTypes: language === 'EN' ? 'Outdoor kitchens, Bin storage' : 'Buitenkeukens, Kliko-ombouw',
     workloadStatus: 'available',
     kvkNumber: '',
     btwNumber: '',
@@ -187,8 +231,8 @@ export default function Partners() {
       companyName: '',
       email: '',
       phone: '',
-      region: 'Noord-Holland',
-      productTypes: 'Buitenkeukens, Kliko-ombouw',
+      region: language === 'EN' ? 'North Holland' : 'Noord-Holland',
+      productTypes: language === 'EN' ? 'Outdoor kitchens, Bin storage' : 'Buitenkeukens, Kliko-ombouw',
       workloadStatus: 'available',
       kvkNumber: '',
       btwNumber: '',
@@ -466,9 +510,9 @@ export default function Partners() {
       companyName: '',
       phone: '',
       email: '',
-      region: 'Noord-Holland',
+      region: language === 'EN' ? 'North Holland' : 'Noord-Holland',
       stage: 'interested',
-      productTypes: 'Buitenkeukens, Kliko-ombouw',
+      productTypes: language === 'EN' ? 'Outdoor kitchens, Bin storage' : 'Buitenkeukens, Kliko-ombouw',
       kvkNumber: '',
       btwNumber: '',
       notes: '',
@@ -487,7 +531,7 @@ export default function Partners() {
       stage: cand.stage || 'interested',
       productTypes: Array.isArray(cand.productTypes)
         ? cand.productTypes.join(', ')
-        : (cand.productTypes || 'Buitenkeukens, Kliko-ombouw'),
+        : (cand.productTypes || (language === 'EN' ? 'Outdoor kitchens, Bin storage' : 'Buitenkeukens, Kliko-ombouw')),
       kvkNumber: cand.kvkNumber || '',
       btwNumber: cand.btwNumber || '',
       notes: cand.notes || '',
@@ -575,7 +619,7 @@ export default function Partners() {
     setCandidateToConvert(candidate);
     const types = Array.isArray(candidate.productTypes)
       ? candidate.productTypes.join(', ')
-      : (candidate.productTypes || 'Buitenkeukens, Kliko-ombouw');
+      : (candidate.productTypes || (language === 'EN' ? 'Outdoor kitchens, Bin storage' : 'Buitenkeukens, Kliko-ombouw'));
 
     setConvertForm({
       password: generateSecurePassword(),
@@ -1470,17 +1514,17 @@ export default function Partners() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold text-dark/60 mb-1 uppercase">KVK Nummer</label>
+                    <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Chamber of Commerce (KVK)' : 'KVK Nummer'}</label>
                     <input type="text" value={form.kvkNumber} onChange={e => setForm(p => ({ ...p, kvkNumber: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="88776655" />
                   </div>
                   <div>
-                    <label className="block font-semibold text-dark/60 mb-1 uppercase">BTW Nummer</label>
+                    <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'VAT Number (BTW)' : 'BTW Nummer'}</label>
                     <input type="text" value={form.btwNumber} onChange={e => setForm(p => ({ ...p, btwNumber: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="NL88776655B01" />
                   </div>
                 </div>
                 <div>
                   <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'NL' ? 'Product Specialismen (komma gescheiden)' : 'Product Specialties (comma separated)'}</label>
-                  <input type="text" value={form.productTypes} onChange={e => setForm(p => ({ ...p, productTypes: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="Buitenkeukens, Kliko-ombouw" />
+                  <input type="text" value={form.productTypes} onChange={e => setForm(p => ({ ...p, productTypes: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder={language === 'EN' ? 'Outdoor kitchens, Bin storage' : 'Buitenkeukens, Kliko-ombouw'} />
                 </div>
                 <div className="flex justify-end gap-2 pt-3 border-t border-cream-dark/60">
                   <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>{t('common.cancel')}</Button>
@@ -1661,7 +1705,7 @@ export default function Partners() {
                       value={convertForm.productTypes}
                       onChange={e => setConvertForm(p => ({ ...p, productTypes: e.target.value }))}
                       className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg"
-                      placeholder="Buitenkeukens, Kliko-ombouw"
+                      placeholder={language === 'EN' ? 'Outdoor kitchens, Bin storage' : 'Buitenkeukens, Kliko-ombouw'}
                     />
                   </div>
                 </div>
@@ -1669,7 +1713,9 @@ export default function Partners() {
                 {/* KVK & BTW */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold text-dark/60 mb-1 uppercase">KVK Nummer</label>
+                    <label className="block font-semibold text-dark/60 mb-1 uppercase">
+                      {language === 'EN' ? 'Chamber of Commerce (KVK)' : 'KVK Nummer'}
+                    </label>
                     <input
                       type="text"
                       value={convertForm.kvkNumber}
@@ -1679,7 +1725,9 @@ export default function Partners() {
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-dark/60 mb-1 uppercase">BTW Nummer</label>
+                    <label className="block font-semibold text-dark/60 mb-1 uppercase">
+                      {language === 'EN' ? 'VAT Number (BTW)' : 'BTW Nummer'}
+                    </label>
                     <input
                       type="text"
                       value={convertForm.btwNumber}
@@ -1813,11 +1861,11 @@ export default function Partners() {
                       onChange={e => setCandidateForm(p => ({ ...p, stage: e.target.value }))}
                       className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-bold"
                     >
-                      <option value="interested">🟡 1. Interested (Geïnteresseerd)</option>
-                      <option value="in_discussion">🔵 2. In Discussion (In gesprek)</option>
-                      <option value="trial_project">🟣 3. Trial Project (Proefproject)</option>
-                      <option value="active">🟢 4. Active Partner (Actief)</option>
-                      <option value="rejected">⚪ 5. Rejected (Afgewezen)</option>
+                      <option value="interested">{language === 'EN' ? '🟡 1. Interested' : '🟡 1. Geïnteresseerd'}</option>
+                      <option value="in_discussion">{language === 'EN' ? '🔵 2. In Discussion' : '🔵 2. In gesprek'}</option>
+                      <option value="trial_project">{language === 'EN' ? '🟣 3. Trial Project' : '🟣 3. Proefproject'}</option>
+                      <option value="active">{language === 'EN' ? '🟢 4. Active Partner' : '🟢 4. Actief'}</option>
+                      <option value="rejected">{language === 'EN' ? '⚪ 5. Rejected' : '⚪ 5. Afgewezen'}</option>
                     </select>
                   </div>
                 </div>
@@ -1830,12 +1878,14 @@ export default function Partners() {
                     value={candidateForm.productTypes}
                     onChange={e => setCandidateForm(p => ({ ...p, productTypes: e.target.value }))}
                     className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg"
-                    placeholder="Buitenkeukens, Kliko-ombouw"
+                    placeholder={language === 'EN' ? 'Outdoor kitchens, Bin storage' : 'Buitenkeukens, Kliko-ombouw'}
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold text-dark/60 mb-1 uppercase">KVK Nummer</label>
+                    <label className="block font-semibold text-dark/60 mb-1 uppercase">
+                      {language === 'EN' ? 'Chamber of Commerce (KVK)' : 'KVK Nummer'}
+                    </label>
                     <input
                       type="text"
                       value={candidateForm.kvkNumber}
@@ -1845,7 +1895,9 @@ export default function Partners() {
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-dark/60 mb-1 uppercase">BTW Nummer</label>
+                    <label className="block font-semibold text-dark/60 mb-1 uppercase">
+                      {language === 'EN' ? 'VAT Number (BTW)' : 'BTW Nummer'}
+                    </label>
                     <input
                       type="text"
                       value={candidateForm.btwNumber}

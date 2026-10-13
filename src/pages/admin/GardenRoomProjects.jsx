@@ -244,7 +244,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
 
   const stepsList = [
     { key: 'akkoord', name: isEn ? 'Agreement & Design' : 'Akkoord & ontwerp', aliases: ['Agreement & Design', 'Akkoord & ontwerp'] },
-    { key: 'schouw', name: isEn ? 'Survey (Schouw)' : 'Schouw', aliases: ['Survey (Schouw)', 'Schouw'] },
+    { key: 'schouw', name: isEn ? 'Site Survey' : 'Schouw', aliases: ['Site Survey', 'Survey (Schouw)', 'Schouw'] },
     { key: 'voorbereiding', name: isEn ? 'Preparation' : 'Voorbereiding', aliases: ['Preparation', 'Voorbereiding'] },
     { key: 'materialen', name: isEn ? 'Materials' : 'Materialen', aliases: ['Materials', 'Materialen'] },
     { key: 'bouw', name: isEn ? 'Construction' : 'De bouw', aliases: ['Construction', 'De bouw'] },
@@ -436,7 +436,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
             {isEn ? 'PROJECT 2026-021 — GARDEN ROOM & CANOPY' : 'PROJECT 2026-021 — BUITENVERBLIJF'}
           </span>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#33422C] mt-0.5">
-            Sander de Vries — Overkapping met poolhouse
+            {projectData?.name || (isEn ? 'Sander de Vries — Canopy with Poolhouse' : 'Sander de Vries — Overkapping met poolhouse')}
           </h1>
           <p className="text-xs sm:text-sm text-dark/70 font-body mt-1">
             {isEn ? 'Oisterwijk · Quote OF-2026418 · Approved Aug 3 · € 37,950.00 incl. VAT · 40/40/20' : 'Oisterwijk · offerte OF-2026418 · akkoord 3 aug · € 37.950,00 incl. btw · 40/40/20'}

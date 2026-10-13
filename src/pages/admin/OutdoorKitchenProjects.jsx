@@ -794,13 +794,13 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
         <div>
           <span className="text-[11px] font-mono font-bold text-dark/50 uppercase tracking-widest block">
-            PROJECT 2026-014 — OUTDOOR KITCHEN
+            {isEn ? 'PROJECT 2026-014 — OUTDOOR KITCHEN' : 'PROJECT 2026-014 — BUITENKEUKEN'}
           </span>
           <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#33422C] mt-0.5">
-            Sander de Vries — Thermo Fraké 240 cm
+            {projectData?.name || (isEn ? 'Sander de Vries — Luxury Outdoor Kitchen 240 cm' : 'Sander de Vries — Luxe Buitenkeuken 240 cm')}
           </h1>
           <p className="text-xs text-dark/70 font-body mt-1">
-            Oisterwijk · Quote OF-2026325 · Approved Aug 11 · € 3,920.00 incl. VAT
+            {isEn ? 'Oisterwijk · Quote OF-2026325 · Approved Aug 11 · € 3,920.00 incl. VAT' : 'Oisterwijk · offerte OF-2026325 · akkoord 11 aug · € 3.920,00 incl. btw'}
           </p>
         </div>
 

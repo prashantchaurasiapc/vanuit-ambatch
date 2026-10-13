@@ -36,8 +36,14 @@ export default function FactuurPDFTemplate({ invoice, companyDetails }) {
 
   // Dynamic Props Extraction with Fallbacks
   const invId = invoice?.id || invoice?.invoiceNumber || 'F-2026-108';
-  const customerName = invoice?.customer || invoice?.customerName || 'Bjorn Valk';
-  const firstName = invoice?.firstName || (customerName ? customerName.trim().split(' ')[0] : 'Bjorn');
+  const customerName = (typeof invoice?.customer === 'string' && invoice.customer.trim())
+    ? invoice.customer.trim()
+    : (typeof invoice?.customer?.name === 'string' && invoice.customer.name.trim())
+    ? invoice.customer.name.trim()
+    : (typeof invoice?.customerName === 'string' && invoice.customerName.trim())
+    ? invoice.customerName.trim()
+    : 'Bjorn Valk';
+  const firstName = invoice?.firstName || (typeof customerName === 'string' ? customerName.trim().split(' ')[0] : 'Bjorn');
   
   const addressLine1 = invoice?.address || 'Dangeheuvel 3';
   const addressLine2 = invoice?.zipCity || '5101 WE Dongen';
