@@ -8,8 +8,12 @@
  *  - Global 401 → redirect to /login
  *  - Global 403 → console warn (caller handles UI)
  */
-
-export const BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://feisty-beauty-production-2f61.up.railway.app/api').replace(/\/+$/, '');
+export const BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? '/api'
+    : 'https://feisty-beauty-production-2f61.up.railway.app/api')
+).replace(/\/+$/, '');
 
 async function request(method, path, body = null, isFormData = false) {
   const headers = {};
@@ -18,8 +22,12 @@ async function request(method, path, body = null, isFormData = false) {
     headers['Content-Type'] = 'application/json';
   }
 
-  // Attach Authorization header if token is stored (works seamlessly cross-origin or via proxy)
-  const token = sessionStorage.getItem('va_token') || localStorage.getItem('va_token');
+  // Attach Authorization header if token is stored (works seamlessly cross-origin, local, or via proxy)
+  const token =
+    sessionStorage.getItem('va_token') ||
+    localStorage.getItem('va_token') ||
+    sessionStorage.getItem('auth_token') ||
+    localStorage.getItem('auth_token');
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -27,7 +35,7 @@ async function request(method, path, body = null, isFormData = false) {
   const options = {
     method,
     headers,
-    credentials: 'include', // Always send/receive HttpOnly JWT cookie
+    credentials: 'include', // Also send/receive HttpOnly JWT cookie when on same origin
   };
 
   if (body) {
@@ -39,10 +47,13 @@ async function request(method, path, body = null, isFormData = false) {
   // Handle 401 globally — session expired or not logged in
   if (response.status === 401) {
     sessionStorage.removeItem('auth_user');
+    localStorage.removeItem('auth_user');
     sessionStorage.removeItem('va_token');
     localStorage.removeItem('va_token');
-    // Avoid redirect loop on the login page itself
-    if (!window.location.pathname.includes('/login')) {
+    sessionStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_token');
+    // Avoid redirect loop on the login page or public offerte pages
+    if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/offerte/')) {
       window.location.href = '/login';
     }
     return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired. Please log in again.' } };

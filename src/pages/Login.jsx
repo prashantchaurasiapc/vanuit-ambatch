@@ -40,7 +40,7 @@ export default function Login() {
       });
 
       if (res.success && res.data?.user) {
-        login(res.data.user, res.data.token); // useAuth stores user & token from backend
+        login(res.data.user, res.data.token);
       } else {
         setError(
           language === 'EN'

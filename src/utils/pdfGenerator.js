@@ -4,6 +4,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import Offerte6PagePDF from '../components/Offerte6PagePDF.jsx';
 import FactuurPDFTemplate from '../components/FactuurPDFTemplate.jsx';
+import { getDisplayLineItemTitle, getDisplayLineItemDesc } from './translator.js';
 
 // ─────────────────────────────────────────────────────────────────
 // VANUIT AMBACHT — Unified Real PDF Generator
@@ -310,7 +311,9 @@ export function downloadQuotePdfFallback(quote) {
 
     let subtotal = 0;
     items.forEach((item, idx) => {
-      const desc  = String(item.description || item.title || '—');
+      const titleStr = getDisplayLineItemTitle(item.title || item.description || '', activeLang);
+      const descStr  = getDisplayLineItemDesc(item.description || '', activeLang);
+      const desc     = descStr && descStr !== titleStr ? `${titleStr} - ${descStr}` : (titleStr || '—');
       const qty   = Number(item.quantity) || 1;
       const price = Number(item.unitPrice || item.priceInclVat) || 0;
       const total = qty * price;
