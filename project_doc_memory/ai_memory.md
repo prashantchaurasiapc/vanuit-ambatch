@@ -3187,6 +3187,24 @@ This file tracks all modifications, additions, and updates made to the **Vanuit 
      - Added automatic validity check safeguard ensuring proposals maintain at least a 30-day active validity window from creation.
   2. Verified production build with Vite (`✓ built in 7.91s` with 0 errors).
 * **Result**: All public quote approval URLs render active with the green 'Approve Quote' CTA button and zero false-positive expired warnings.
-
-
-
+## 100. Lead Assignee (Tim & Bram) Database Persistence & Modal Selector (Completed 2026-10-14)
+* **Goal**: Provide Assignee selection (Tim / Bram) in "Add New Lead" and "Edit Lead" modal, and ensure lead assignee is permanently stored in PostgreSQL database and synced when toggling in the leads table.
+* **Root Cause**:
+  1. "Add New Lead" modal previously had no Assignee field in the UI form.
+  2. The DB only had a single generic admin user `admin@vanuitambacht.nl` ("Tim & Bram Admin").
+  3. Clicking assignee in the table previously only toggled local React state without calling backend API.
+* **Changes**:
+  1. **Database & Seeds**:
+     - Added distinct admin users for Tim (`tim@vanuitambacht.nl`, `fullName: 'Tim'`) and Bram (`bram@vanuitambacht.nl`, `fullName: 'Bram'`) in `backend/src/db/seed.ts` and `backend/clean_db.cjs`.
+     - Seeded them directly into PostgreSQL and updated existing leads to Tim.
+  2. **Backend**:
+     - Updated `createLeadSchema` and `updateLeadSchema` in `backend/src/modules/leads/lead.schema.ts` to accept `assignee` and `assignedTo`.
+     - Added `resolveAssigneeUserId` in `backend/src/modules/leads/lead.service.ts` to map string names ('Tim' / 'Bram') to their actual UUIDs in the `users` table.
+     - Updated `create` and `update` methods to store `assignedToUserId` in the database, and return `assignedTo` and `assignedToName`.
+     - Verified all 31/31 automated tests pass.
+  3. **Frontend**:
+     - Added Assignee Selector (interactive buttons for `[T] Tim` & `[B] Bram`) in "Add New Lead" / "Edit Lead" modal in `src/pages/admin/Leads.jsx`.
+     - Updated `executeSubmit` to include `assignedTo: form.assignedTo` in POST and PATCH payloads.
+     - Updated `handleToggleAssignee` to call `api.patch('/leads/:id', { assignedTo: nextOwner })` with optimistic UI and error rollback.
+     - Verified clean Vite production build (`✓ built in 18.63s`).
+* **Result**: Leads can now be assigned to Tim or Bram during creation, edited later, or toggled directly in the table, and all changes persist 100% in the PostgreSQL database.

@@ -199,6 +199,7 @@ export default function Leads() {
     size: '',
     source: 'Direct',
     status: 'Nieuw',
+    assignedTo: 'Tim',
     notes: ''
   });
 
@@ -211,6 +212,11 @@ export default function Leads() {
   const normaliseLead = useCallback((l) => {
     const backendStatus = l.status || 'new';
     const backendProductType = l.productType || 'outdoor_kitchen';
+
+    // Resolve assignedTo strictly: check assignedTo or assignedToName
+    const rawAssignee = l.assignedTo || l.assignedToName || '';
+    const isBram = typeof rawAssignee === 'string' && rawAssignee.toLowerCase().includes('bram') && !rawAssignee.toLowerCase().includes('tim');
+    const resolvedOwner = isBram ? 'Bram' : 'Tim';
 
     return {
       id: l.id,
@@ -228,7 +234,7 @@ export default function Leads() {
       status: mapBackendStatusToUI(backendStatus),
       backendStatus: backendStatus,
       workflowStep: l.workflowStep || 1,
-      assignedTo: (l.assignedToName && l.assignedToName.includes('Bram') && !l.assignedToName.includes('Tim')) ? 'Bram' : 'Tim',
+      assignedTo: resolvedOwner,
       assignedToUserId: l.assignedToUserId,
       lastContactDate: l.updatedAt
         ? l.updatedAt.split('T')[0]
@@ -327,7 +333,7 @@ export default function Leads() {
 
   const handleOpenAddModal = () => {
     setSelectedLead(null);
-    setForm({ name: '', phone: '', email: '', location: '', productType: 'buitenkeuken', size: '', source: 'Direct', status: 'Nieuw', notes: '' });
+    setForm({ name: '', phone: '', email: '', location: '', productType: 'buitenkeuken', size: '', source: 'Direct', status: 'Nieuw', assignedTo: 'Tim', notes: '' });
     setModalOpen(true);
   };
 
@@ -342,6 +348,7 @@ export default function Leads() {
       size: lead.size && lead.size !== '-' ? lead.size : '',
       source: lead.source || 'Direct',
       status: lead.status || 'Nieuw',
+      assignedTo: lead.assignedTo || 'Tim',
       notes: lead.notes || lead.intakeNotes || ''
     });
     setModalOpen(true);
@@ -399,8 +406,27 @@ export default function Leads() {
     const lead = leads.find(l => l.id === leadId);
     if (!lead) return;
     const nextOwner = lead.assignedTo === 'Bram' ? 'Tim' : 'Bram';
+    const prevOwner = lead.assignedTo;
+
+    // Optimistically update UI
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, assignedTo: nextOwner } : l));
     showToast(language === 'NL' ? `Toegewezen aan ${nextOwner}` : `Assigned to ${nextOwner}`);
+
+    try {
+      const res = await api.patch(`/leads/${leadId}`, {
+        assignedTo: nextOwner,
+        assignee: nextOwner,
+      });
+      if (!res.success) {
+        // Revert on server error
+        setLeads(prev => prev.map(l => l.id === leadId ? { ...l, assignedTo: prevOwner } : l));
+        showToast(res.error?.message || 'Failed to update assignee on server.');
+      }
+    } catch {
+      // Revert on network error
+      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, assignedTo: prevOwner } : l));
+      showToast('Network error while updating assignee.');
+    }
   };
 
   // Follow-up handler
@@ -467,6 +493,8 @@ export default function Leads() {
           dimensionsInquiry: finalForm.size?.trim() || null,
           source: finalForm.source || 'Direct',
           status: mapUIToBackendStatus(finalForm.status),
+          assignedTo: finalForm.assignedTo || 'Tim',
+          assignee: finalForm.assignedTo || 'Tim',
           notes: finalForm.notes?.trim() || null,
         };
         const res = await api.patch(`/leads/${selectedLead.id}`, payload);
@@ -491,6 +519,8 @@ export default function Leads() {
           dimensionsInquiry: finalForm.size?.trim() || null,
           source: finalForm.source || 'Direct',
           status: mapUIToBackendStatus(finalForm.status),
+          assignedTo: finalForm.assignedTo || 'Tim',
+          assignee: finalForm.assignedTo || 'Tim',
           workflowStep: 1,
           notes: finalForm.notes?.trim() || null,
         };
@@ -1471,6 +1501,46 @@ export default function Leads() {
                         </div>
                       </>
                     )}
+                  </div>
+                </div>
+
+                {/* ASSIGNEE SELECTOR (Tim / Bram) */}
+                <div>
+                  <label className="block text-xs font-semibold text-dark/60 mb-1.5 font-body uppercase tracking-wider">
+                    {language === 'EN' ? 'Assignee / Lead Owner' : 'Toegewezen aan (Eigenaar)'}
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, assignedTo: 'Tim' }))}
+                      className={`flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold border transition-all cursor-pointer ${
+                        form.assignedTo === 'Tim'
+                          ? 'bg-primary text-white border-primary shadow-sm ring-2 ring-primary/20'
+                          : 'bg-[#F8F7F4] text-[#4A4A43] border-[#D6CFC2] hover:bg-primary/5'
+                      }`}
+                    >
+                      <span className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-bold ${form.assignedTo === 'Tim' ? 'bg-white text-primary' : 'bg-primary text-white'}`}>
+                        T
+                      </span>
+                      <span>Tim</span>
+                      {form.assignedTo === 'Tim' && <CheckCircle className="w-3.5 h-3.5 ml-auto text-white/90" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, assignedTo: 'Bram' }))}
+                      className={`flex items-center justify-center gap-2.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold border transition-all cursor-pointer ${
+                        form.assignedTo === 'Bram'
+                          ? 'bg-primary text-white border-primary shadow-sm ring-2 ring-primary/20'
+                          : 'bg-[#F8F7F4] text-[#4A4A43] border-[#D6CFC2] hover:bg-primary/5'
+                      }`}
+                    >
+                      <span className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-bold ${form.assignedTo === 'Bram' ? 'bg-white text-primary' : 'bg-primary text-white'}`}>
+                        B
+                      </span>
+                      <span>Bram</span>
+                      {form.assignedTo === 'Bram' && <CheckCircle className="w-3.5 h-3.5 ml-auto text-white/90" />}
+                    </button>
                   </div>
                 </div>
 
