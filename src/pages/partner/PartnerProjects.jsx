@@ -11,7 +11,7 @@ import projectImg from '../../assets/outdoor_project_card.png';
 import heroImg from '/dasbordes images.png';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../context/LanguageContext';
-import api from '../../api/apiClient';
+import api, { BASE_URL } from '../../api/apiClient';
 
 export default function PartnerProjects() {
   const { t, language } = useLanguage();
@@ -25,6 +25,7 @@ export default function PartnerProjects() {
   const [photoForm, setPhotoForm] = useState({ title: '', desc: '', img: projectImg });
   const [toastMsg, setToastMsg] = useState('');
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   
   // Default active logged-in partner name
   const currentPartnerName = 'Sven Hoek';
@@ -32,20 +33,21 @@ export default function PartnerProjects() {
   // Helper to resolve project card image from local storage or project data
   const resolveProjectCardImage = (project) => {
     if (!project) return projectImg;
-    // 1. Check local storage for project's latest photo
-    if (typeof window !== 'undefined' && project.id) {
-      const cached = localStorage.getItem(`va_proj_photo_${project.id}`);
-      if (cached && (cached.startsWith('data:image') || cached.startsWith('http'))) {
-        return cached;
-      }
-    }
-    // 2. Direct photo properties on project object
+    // 1. Direct photo properties on project object
     if (project.img && (project.img.startsWith('data:image') || project.img.startsWith('http'))) return project.img;
     if (project.photoUrl && (project.photoUrl.startsWith('data:image') || project.photoUrl.startsWith('http'))) return project.photoUrl;
     if (Array.isArray(project.photos) && project.photos.length > 0) {
       const ph = project.photos[0];
       const url = ph.photoUrl || ph.img || ph.url;
       if (url && (url.startsWith('data:image') || url.startsWith('http'))) return url;
+      if (ph.id) return `${BASE_URL}/photos/${ph.id}/file`;
+    }
+    // 2. Cached photo ID fallback
+    if (typeof window !== 'undefined' && project.id) {
+      const cached = localStorage.getItem(`va_proj_photo_${project.id}`);
+      if (cached && (cached.startsWith('data:image') || cached.startsWith('http'))) {
+        return cached;
+      }
     }
     return projectImg;
   };
@@ -121,29 +123,144 @@ export default function PartnerProjects() {
     }
   ];
 
-  // Partner Messages — in-memory, loaded once from API
+  // Partner Messages — loaded from backend & synchronized store
   const [partnerMessages, setPartnerMessages] = useState(defaultPartnerMsgs);
-
   const [partnerChatOpen, setPartnerChatOpen] = useState(false);
   const [inputPartnerReply, setInputPartnerReply] = useState('');
+  const [partnerConversationId, setPartnerConversationId] = useState(null);
 
-  const handleSendPartnerReply = (e) => {
+  const activeChatProjectId = selectedProject?.id || selectedProject?.projectNumber || (projects.length > 0 ? (projects[0].id || projects[0].projectNumber) : 'PRJ-2026-001');
+
+  // Load chat messages from backend and sync store
+  useEffect(() => {
+    let isMounted = true;
+    try {
+      const stored = localStorage.getItem(`va_partner_chat_${activeChatProjectId}`);
+      if (stored) {
+        setPartnerMessages(JSON.parse(stored));
+      } else {
+        localStorage.setItem(`va_partner_chat_${activeChatProjectId}`, JSON.stringify(defaultPartnerMsgs));
+      }
+    } catch (err) {}
+
+    // Load from real backend conversation API
+    api.get(`/conversations/project/${activeChatProjectId}`)
+      .then(res => {
+        if (!isMounted || !res.success || !res.data) return;
+        const partCh = res.data.partnerChannel;
+        if (partCh?.id) {
+          setPartnerConversationId(partCh.id);
+          api.get(`/conversations/${partCh.id}/messages`).then(msgRes => {
+            if (!isMounted || !msgRes.success || !Array.isArray(msgRes.data)) return;
+            if (msgRes.data.length > 0) {
+              const mapped = msgRes.data.map(m => ({
+                id: m.id,
+                sender: m.senderName,
+                senderNL: m.senderName,
+                initials: m.senderInitials || 'SH',
+                role: m.senderRole || (m.senderName?.includes('Tim') ? 'admin' : 'partner'),
+                text: m.content,
+                textEN: m.content,
+                textNL: m.content,
+                time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                timeEN: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                timeNL: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              }));
+              setPartnerMessages(mapped);
+              try {
+                localStorage.setItem(`va_partner_chat_${activeChatProjectId}`, JSON.stringify(mapped));
+              } catch (e) {}
+            }
+          }).catch(() => {});
+        }
+      })
+      .catch(() => {});
+
+    // Real-time listener for incoming messages from Admin
+    const handleIncomingChatMessage = (e) => {
+      const detail = e.detail;
+      if (!detail) return;
+      if (detail.projectId === activeChatProjectId || !detail.projectId) {
+        if (detail.message) {
+          setPartnerMessages(prev => {
+            if (prev.some(m => m.id === detail.message.id)) return prev;
+            return [...prev, detail.message];
+          });
+        }
+      }
+    };
+
+    const handleStorageUpdate = (e) => {
+      if (e.key === `va_partner_chat_${activeChatProjectId}`) {
+        try {
+          if (e.newValue) {
+            setPartnerMessages(JSON.parse(e.newValue));
+          }
+        } catch (err) {}
+      }
+    };
+
+    window.addEventListener('app_chat_message', handleIncomingChatMessage);
+    window.addEventListener('storage', handleStorageUpdate);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('app_chat_message', handleIncomingChatMessage);
+      window.removeEventListener('storage', handleStorageUpdate);
+    };
+  }, [activeChatProjectId, partnerChatOpen]);
+
+  const handleSendPartnerReply = async (e) => {
     if (e) e.preventDefault();
     if (!inputPartnerReply.trim()) return;
 
+    const text = inputPartnerReply.trim();
+    setInputPartnerReply('');
+
     const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newMsg = {
-      id: Date.now(),
-      sender: 'Sven Hoek (Partner)',
+      id: `msg-${Date.now()}`,
+      sender: currentPartnerName || 'Sven Hoek',
+      senderNL: currentPartnerName || 'Sven Hoek',
       initials: 'SH',
       role: 'partner',
-      text: inputPartnerReply.trim(),
-      time: `today ${timeNow}`
+      text: text,
+      textEN: text,
+      textNL: text,
+      time: `today ${timeNow}`,
+      timeEN: `today ${timeNow}`,
+      timeNL: `vandaag ${timeNow}`,
+      createdAt: new Date().toISOString()
     };
 
-    // Optimistic in-memory update; real message sending via conversations API
-    setPartnerMessages(prev => [...prev, newMsg]);
-    setInputPartnerReply('');
+    const nextMsgs = [...partnerMessages, newMsg];
+    setPartnerMessages(nextMsgs);
+
+    // Save to shared localStorage so Admin receives it immediately
+    try {
+      localStorage.setItem(`va_partner_chat_${activeChatProjectId}`, JSON.stringify(nextMsgs));
+    } catch (err) {}
+
+    // Dispatch global events for real-time reactivity in Admin drawer
+    window.dispatchEvent(new CustomEvent('app_chat_message', { detail: { projectId: activeChatProjectId, message: newMsg } }));
+    window.dispatchEvent(new Event('app_data_changed'));
+
+    // Post to backend database
+    try {
+      if (partnerConversationId) {
+        await api.post(`/conversations/${partnerConversationId}/messages`, { content: text });
+      } else {
+        const convRes = await api.get(`/conversations/project/${activeChatProjectId}`);
+        const cId = convRes.data?.partnerChannel?.id;
+        if (cId) {
+          setPartnerConversationId(cId);
+          await api.post(`/conversations/${cId}/messages`, { content: text });
+        }
+      }
+    } catch (err) {
+      console.warn('Backend message sync note:', err);
+    }
+
     showToast(label('✓ Message sent to Vanuit Ambacht (Tim & Bram)!', '✓ Bericht verzonden naar Vanuit Ambacht (Tim & Bram)!'));
   };
 
@@ -202,7 +319,7 @@ export default function PartnerProjects() {
     }
   };
 
-  // REVERSE FLOW: Partner uploads photo -> Updates Project Card, Notifies Admin & Updates Customer Portal Photos
+  // REVERSE FLOW: Partner uploads photo -> Updates Project Card, Saves to Backend & Notifies Admin
   const handleUploadPartnerPhoto = async (e) => {
     e.preventDefault();
     if (!uploadPhotoProject) return;
@@ -212,17 +329,10 @@ export default function PartnerProjects() {
     const photoTitle = photoForm.title.trim() || `${uploadPhotoProject.name} - Werkplaatsvoortgang`;
     const photoDesc = photoForm.desc.trim() || 'Kwaliteitscontrole en montage in werkplaats voltooid.';
 
-    // 1. Update project state IMMEDIATELY so the card image updates right before the user's eyes!
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, img: finalPhoto, photoUrl: finalPhoto } : p));
+    setIsUploadingPhoto(true);
 
-    // 2. Persist in local storage for this project so page reload maintains the image
     try {
-      localStorage.setItem(`va_proj_photo_${projectId}`, finalPhoto);
-    } catch (err) {}
-
-    // 3. Post to backend API
-    let createdPhoto = null;
-    try {
+      // 1. Post directly to backend API (saves to PostgreSQL database table projectPhotos and disk file)
       let res = await api.post(`/partner/projects/${projectId}/photos`, {
         photoUrl: finalPhoto,
         title: photoTitle,
@@ -234,7 +344,7 @@ export default function PartnerProjects() {
       });
 
       if (!res.success) {
-        // Fallback to /projects/:id/photos if partner route was forbidden or restricted
+        // Fallback to /projects/:id/photos if partner endpoint was restricted
         res = await api.post(`/projects/${projectId}/photos`, {
           photoUrl: finalPhoto,
           title: photoTitle,
@@ -247,49 +357,42 @@ export default function PartnerProjects() {
       }
 
       if (res.success && res.data) {
-        createdPhoto = res.data;
-        if (createdPhoto.id) {
-          try {
-            localStorage.setItem(`va_photo_${createdPhoto.id}`, finalPhoto);
-          } catch (err) {}
-        }
+        const createdPhoto = res.data;
+        const resolvedUrl = createdPhoto.photoUrl || finalPhoto;
+
+        // 2. Update local state with the server-returned photo
+        setProjects(prev => prev.map(p => p.id === projectId ? {
+          ...p,
+          img: resolvedUrl,
+          photoUrl: resolvedUrl,
+          photos: [createdPhoto, ...(p.photos || [])]
+        } : p));
+
+        // 3. Remove bulk base64 from localStorage to prevent QuotaExceededError
+        try {
+          localStorage.removeItem(`va_proj_photo_${projectId}`);
+          localStorage.removeItem(`va_photo_${createdPhoto.id}`);
+          localStorage.removeItem('va_custom_photos');
+        } catch (err) {}
+
+        // 4. Notify Admin Photos, Documents & Customer Photos in real time
+        window.dispatchEvent(new Event('app_data_changed'));
+
+        showToast(language === 'EN'
+          ? `📸 Photo saved to server for ${uploadPhotoProject.name}! Admin & Customer notified!`
+          : `📸 Foto opgeslagen op de server voor ${uploadPhotoProject.name}! Beheerder en klant geïnformeerd!`);
+
+        setUploadPhotoProject(null);
+        setPhotoForm({ title: '', desc: '', img: null });
+      } else {
+        showToast(res.error?.message || (language === 'EN' ? 'Failed to upload photo to server' : 'Foto uploaden mislukt'));
       }
     } catch (err) {
-      console.warn('Backend photo upload network error:', err);
+      console.error('Backend photo upload network error:', err);
+      showToast(err.message || (language === 'EN' ? 'Network error uploading photo' : 'Netwerkfout bij foto uploaden'));
+    } finally {
+      setIsUploadingPhoto(false);
     }
-
-    // 4. Save to va_custom_photos so Admin Photos & Documents galleries see it immediately!
-    try {
-      const customPhotos = JSON.parse(localStorage.getItem('va_custom_photos') || '[]');
-      const newPhotoEntry = {
-        id: createdPhoto?.id || `ph-p-${Date.now()}`,
-        projectId: projectId,
-        projectName: uploadPhotoProject.name,
-        customer: uploadPhotoProject.customer || uploadPhotoProject.customerName || '',
-        title: photoTitle,
-        phase: `Workshop Phase · ${new Date().toLocaleDateString('default', { day: 'numeric', month: 'short', year: 'numeric' })}`,
-        description: photoDesc,
-        caption: photoDesc,
-        craftsman: currentPartnerName || 'Sven Hoek',
-        uploaderRole: 'partner',
-        isShared: true,
-        visibleToCustomer: true,
-        img: finalPhoto,
-        photoUrl: finalPhoto,
-        createdAt: new Date().toISOString()
-      };
-      // Prepend so it appears first in Admin galleries
-      localStorage.setItem('va_custom_photos', JSON.stringify([newPhotoEntry, ...customPhotos.filter(cp => cp.id !== newPhotoEntry.id)]));
-      // Notify all tabs / components in realtime
-      window.dispatchEvent(new Event('app_data_changed'));
-    } catch (err) {}
-
-    showToast(language === 'EN'
-      ? `📸 Photo updated for ${uploadPhotoProject.name}! Card updated & Admin notified!`
-      : `📸 Foto bijgewerkt voor ${uploadPhotoProject.name}! Projectkaart aangepast & beheerder geïnformeerd!`);
-
-    setUploadPhotoProject(null);
-    setPhotoForm({ title: '', desc: '', img: null });
   };
 
   // Real PDF Blueprint download via jsPDF — direct file, no popup
@@ -445,7 +548,7 @@ export default function PartnerProjects() {
               <Button size="sm" variant="custom" icon={Camera} className="bg-[#555046] text-cream hover:bg-[#3E3A33] text-xs justify-center whitespace-nowrap px-2.5" onClick={() => { setUploadPhotoProject(project); setPhotoForm({ title: `${project.name} - Werkplaatsvoortgang`, desc: 'Kwaliteitscontrole en montage in werkplaats voltooid.', img: projectImg }); }}>
                 <span>📸 {label('Photo', 'Foto')}</span>
               </Button>
-              <Button size="sm" variant="custom" icon={MessageSquare} className="bg-[#283523] text-white hover:bg-[#1E291B] text-xs justify-center whitespace-nowrap px-2.5 font-bold shadow-xs cursor-pointer" onClick={() => setPartnerChatOpen(true)}>
+              <Button size="sm" variant="custom" icon={MessageSquare} className="bg-[#283523] text-white hover:bg-[#1E291B] text-xs justify-center whitespace-nowrap px-2.5 font-bold shadow-xs cursor-pointer" onClick={() => { setSelectedProject(project); setPartnerChatOpen(true); }}>
                 <span>💬 Chat ({partnerMessages.length})</span>
               </Button>
               <Button size="sm" icon={Eye} className="flex-1 text-xs justify-center whitespace-nowrap" onClick={() => setSelectedProject(project)}>
@@ -847,7 +950,9 @@ export default function PartnerProjects() {
                 {/* Sticky Modal Footer */}
                 <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2] flex-shrink-0 mt-2">
                   <Button type="button" variant="outline" onClick={() => setUploadPhotoProject(null)}>{label('Cancel', 'Annuleren')}</Button>
-                  <Button type="submit" icon={Upload} className="bg-primary text-cream font-bold cursor-pointer">{label('Upload Photo & Notify →', 'Foto Uploaden & Melden →')}</Button>
+                  <Button type="submit" disabled={isUploadingPhoto} icon={Upload} className="bg-primary text-cream font-bold cursor-pointer">
+                    {isUploadingPhoto ? label('Uploading to server...', 'Uploaden naar server...') : label('Upload Photo & Notify →', 'Foto Uploaden & Melden →')}
+                  </Button>
                 </div>
               </form>
             </motion.div>
@@ -947,7 +1052,10 @@ export default function PartnerProjects() {
 
       {/* FLOATING PARTNER CHAT BUTTON */}
       <button
-        onClick={() => setPartnerChatOpen(true)}
+        onClick={() => {
+          if (!selectedProject && projects.length > 0) setSelectedProject(projects[0]);
+          setPartnerChatOpen(true);
+        }}
         className="fixed bottom-6 right-6 z-[9990] bg-[#283523] hover:bg-[#1E291B] text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-bold transition-all transform hover:scale-105 border border-white/20 cursor-pointer"
       >
         <MessageSquare className="w-4 h-4 text-emerald-400" />

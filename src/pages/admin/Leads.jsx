@@ -154,6 +154,8 @@ export default function Leads() {
   const [productTypeDropdownOpen, setProductTypeDropdownOpen] = useState(false);
   const [sourceDropdownOpen, setSourceDropdownOpen] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [isCustomSize, setIsCustomSize] = useState(false);
+  const [customSizeValue, setCustomSizeValue] = useState('');
 
   // React Portal Status Dropdown state
   const [statusPortalPos, setStatusPortalPos] = useState(null);
@@ -333,19 +335,29 @@ export default function Leads() {
 
   const handleOpenAddModal = () => {
     setSelectedLead(null);
+    setIsCustomSize(false);
+    setCustomSizeValue('');
     setForm({ name: '', phone: '', email: '', location: '', productType: 'buitenkeuken', size: '', source: 'Direct', status: 'Nieuw', assignedTo: 'Tim', notes: '' });
     setModalOpen(true);
   };
 
   const handleOpenEditModal = (lead) => {
     setSelectedLead(lead);
+    const standardSizes = [
+      '1x2m', '2x2m', '2x3m', '3x2m', '3x3m', '3x4m', '4x3m', '4x4m', '5x3m', '5x4m', '6x4m', '8x4m', '10x4m',
+      '1 × 2 m', '2 × 2 m', '2 × 3 m', '3 × 2 m', '3 × 3 m', '3 × 4 m', '4 × 3 m', '4 × 4 m', '5 × 3 m', '5 × 4 m', '6 × 4 m', '8 × 4 m', '10 × 4 m'
+    ];
+    const rawSize = lead.size && lead.size !== '-' ? lead.size : '';
+    const isCustom = Boolean(rawSize && !standardSizes.includes(rawSize));
+    setIsCustomSize(isCustom);
+    setCustomSizeValue(isCustom ? rawSize.replace(/^(Custom|Op maat)\s*:\s*/i, '') : '');
     setForm({
       name: lead.name,
       phone: lead.phone && lead.phone !== '-' ? lead.phone : '',
       email: lead.email && lead.email !== '-' ? lead.email : '',
       location: lead.location || lead.city || '',
       productType: lead.productType || 'buitenkeuken',
-      size: lead.size && lead.size !== '-' ? lead.size : '',
+      size: rawSize,
       source: lead.source || 'Direct',
       status: lead.status || 'Nieuw',
       assignedTo: lead.assignedTo || 'Tim',
@@ -1295,25 +1307,40 @@ export default function Leads() {
                       onClick={() => setCityDropdownOpen(!cityDropdownOpen)}
                       className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs sm:text-sm font-body focus:outline-none text-[#4A4A43] flex items-center justify-between shadow-xs cursor-pointer"
                     >
-                      <span className="truncate">{form.location || (language === 'EN' ? '— Select City —' : '— Selecteer Stad —')}</span>
+                      <span className="truncate">
+                        {form.location === 'Other' || form.location === 'Anders' || form.location === 'Anders / Other'
+                          ? (language === 'EN' ? 'Other' : 'Anders')
+                          : (form.location || (language === 'EN' ? '— Select City —' : '— Selecteer Stad —'))}
+                      </span>
                       <ChevronDown className={`w-4 h-4 text-dark/40 transition-transform ${cityDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
                     {cityDropdownOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setCityDropdownOpen(false)} />
                         <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-[#EDE8DF]">
-                          {['', 'Amsterdam', 'Rotterdam', 'Den Haag', 'Utrecht', 'Eindhoven', 'Haarlem', 'Groningen', 'Breda', 'Tilburg', 'Almere', 'Nijmegen', 'Arnhem', 'Apeldoorn', 'Zwolle', 'Maastricht', 'Delft', 'Leiden', 'Dordrecht', 'Anders / Other'].map((city, idx) => (
-                            <div
-                              key={idx}
-                              onClick={() => {
-                                setForm(prev => ({ ...prev, location: city }));
-                                setCityDropdownOpen(false);
-                              }}
-                              className={`px-3 py-2 text-xs cursor-pointer hover:bg-primary/10 transition-colors ${form.location === city ? 'bg-primary/15 font-bold text-primary' : 'text-dark'}`}
-                            >
-                              {city === '' ? (language === 'EN' ? '— Select City —' : '— Selecteer Stad —') : city}
-                            </div>
-                          ))}
+                          {['', 'Amsterdam', 'Rotterdam', 'Den Haag', 'Utrecht', 'Eindhoven', 'Haarlem', 'Groningen', 'Breda', 'Tilburg', 'Almere', 'Nijmegen', 'Arnhem', 'Apeldoorn', 'Zwolle', 'Maastricht', 'Delft', 'Leiden', 'Dordrecht', '__other__'].map((city, idx) => {
+                            const isOther = city === '__other__';
+                            const label = city === ''
+                              ? (language === 'EN' ? '— Select City —' : '— Selecteer Stad —')
+                              : isOther
+                                ? (language === 'EN' ? 'Other' : 'Anders')
+                                : city;
+                            const isSelected = isOther
+                              ? (form.location === 'Other' || form.location === 'Anders' || form.location === 'Anders / Other')
+                              : form.location === city;
+                            return (
+                              <div
+                                key={idx}
+                                onClick={() => {
+                                  setForm(prev => ({ ...prev, location: isOther ? (language === 'EN' ? 'Other' : 'Anders') : city }));
+                                  setCityDropdownOpen(false);
+                                }}
+                                className={`px-3 py-2 text-xs cursor-pointer hover:bg-primary/10 transition-colors ${isSelected ? 'bg-primary/15 font-bold text-primary' : 'text-dark'}`}
+                              >
+                                {label}
+                              </div>
+                            );
+                          })}
                         </div>
                       </>
                     )}
@@ -1375,7 +1402,13 @@ export default function Leads() {
                       onClick={() => setSizeDropdownOpen(!sizeDropdownOpen)}
                       className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs sm:text-sm font-body focus:outline-none text-[#4A4A43] flex items-center justify-between shadow-xs cursor-pointer"
                     >
-                      <span className="truncate">{form.size || (language === 'EN' ? '— Select Size —' : '— Selecteer Maat —')}</span>
+                      <span className="truncate">
+                        {isCustomSize
+                          ? (customSizeValue
+                              ? (language === 'EN' ? `Custom: ${customSizeValue}` : `Op maat: ${customSizeValue}`)
+                              : (language === 'EN' ? 'Custom Size' : 'Op maat'))
+                          : (form.size || (language === 'EN' ? '— Select Size —' : '— Selecteer Maat —'))}
+                      </span>
                       <ChevronDown className={`w-4 h-4 text-dark/40 transition-transform ${sizeDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
                     {sizeDropdownOpen && (
@@ -1384,34 +1417,64 @@ export default function Leads() {
                         <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-[#EDE8DF]">
                           {[
                             { val: '', label: language === 'EN' ? '— Select Size —' : '— Selecteer Maat —' },
-                            { val: '1x2m', label: '1 × 2 m' },
-                            { val: '2x2m', label: '2 × 2 m' },
-                            { val: '2x3m', label: '2 × 3 m' },
-                            { val: '3x2m', label: '3 × 2 m' },
-                            { val: '3x3m', label: '3 × 3 m' },
-                            { val: '3x4m', label: '3 × 4 m' },
-                            { val: '4x3m', label: '4 × 3 m' },
-                            { val: '4x4m', label: '4 × 4 m' },
-                            { val: '5x3m', label: '5 × 3 m' },
-                            { val: '5x4m', label: '5 × 4 m' },
-                            { val: '6x4m', label: '6 × 4 m' },
-                            { val: '8x4m', label: '8 × 4 m' },
-                            { val: '10x4m', label: '10 × 4 m' },
-                            { val: 'Op maat / Custom', label: 'Op maat / Custom' }
+                            { val: '1 × 2 m', label: '1 × 2 m' },
+                            { val: '2 × 2 m', label: '2 × 2 m' },
+                            { val: '2 × 3 m', label: '2 × 3 m' },
+                            { val: '3 × 2 m', label: '3 × 2 m' },
+                            { val: '3 × 3 m', label: '3 × 3 m' },
+                            { val: '3 × 4 m', label: '3 × 4 m' },
+                            { val: '4 × 3 m', label: '4 × 3 m' },
+                            { val: '4 × 4 m', label: '4 × 4 m' },
+                            { val: '5 × 3 m', label: '5 × 3 m' },
+                            { val: '5 × 4 m', label: '5 × 4 m' },
+                            { val: '6 × 4 m', label: '6 × 4 m' },
+                            { val: '8 × 4 m', label: '8 × 4 m' },
+                            { val: '10 × 4 m', label: '10 × 4 m' },
+                            { val: '__custom__', label: language === 'EN' ? 'Custom Size (Enter dimensions...)' : 'Op maat (Zelf opgeven...)' }
                           ].map((sz, idx) => (
                             <div
                               key={idx}
                               onClick={() => {
-                                setForm(prev => ({ ...prev, size: sz.val }));
+                                if (sz.val === '__custom__') {
+                                  setIsCustomSize(true);
+                                  setForm(prev => ({
+                                    ...prev,
+                                    size: customSizeValue || (language === 'EN' ? 'Custom' : 'Op maat')
+                                  }));
+                                } else {
+                                  setIsCustomSize(false);
+                                  setForm(prev => ({ ...prev, size: sz.val }));
+                                }
                                 setSizeDropdownOpen(false);
                               }}
-                              className={`px-3 py-2 text-xs cursor-pointer hover:bg-primary/10 transition-colors ${form.size === sz.val ? 'bg-primary/15 font-bold text-primary' : 'text-dark'}`}
+                              className={`px-3 py-2 text-xs cursor-pointer hover:bg-primary/10 transition-colors ${(isCustomSize && sz.val === '__custom__') || (!isCustomSize && form.size === sz.val) ? 'bg-primary/15 font-bold text-primary' : 'text-dark'}`}
                             >
                               {sz.label}
                             </div>
                           ))}
                         </div>
                       </>
+                    )}
+
+                    {/* DEDICATED INPUT FIELD WHEN CUSTOM SIZE IS SELECTED */}
+                    {isCustomSize && (
+                      <div className="mt-2">
+                        <input
+                          type="text"
+                          autoFocus
+                          value={customSizeValue}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCustomSizeValue(val);
+                            setForm(prev => ({
+                              ...prev,
+                              size: val ? val.trim() : (language === 'EN' ? 'Custom' : 'Op maat')
+                            }));
+                          }}
+                          placeholder={language === 'EN' ? 'e.g. 7.5 × 3 m' : 'b.v. 7.5 × 3 m'}
+                          className="w-full px-3 py-2 bg-[#F8F7F4] border border-primary/40 focus:border-primary rounded-lg text-xs sm:text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1425,7 +1488,14 @@ export default function Leads() {
                       onClick={() => setSourceDropdownOpen(!sourceDropdownOpen)}
                       className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs sm:text-sm font-body focus:outline-none text-[#4A4A43] flex items-center justify-between shadow-xs cursor-pointer"
                     >
-                      <span className="truncate">{form.source || 'Google Ads'}</span>
+                      <span className="truncate">
+                        {form.source === 'Direct' ? (language === 'EN' ? 'Direct / Phone' : 'Direct / Telefonisch') :
+                         form.source === 'Referral' ? (language === 'EN' ? 'Referral' : 'Referral / Aanbeveling') :
+                         form.source === 'Email' ? (language === 'EN' ? 'Email Campaign' : 'E-mail Campagne') :
+                         form.source === 'Beurs' ? (language === 'EN' ? 'Trade Fair / Event' : 'Beurs / Event') :
+                         form.source === 'Anders' ? (language === 'EN' ? 'Other' : 'Anders') :
+                         (form.source || 'Google Ads')}
+                      </span>
                       <ChevronDown className={`w-4 h-4 text-dark/40 transition-transform ${sourceDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
                     {sourceDropdownOpen && (
@@ -1435,12 +1505,12 @@ export default function Leads() {
                           {[
                             { val: 'Google Ads', label: 'Google Ads' },
                             { val: 'Facebook', label: 'Facebook / Instagram' },
-                            { val: 'Direct', label: 'Direct / Telefonisch' },
-                            { val: 'Referral', label: 'Referral / Aanbeveling' },
-                            { val: 'Website', label: 'Website Contact Form' },
-                            { val: 'Email', label: 'Email Campagne' },
-                            { val: 'Beurs', label: 'Beurs / Event' },
-                            { val: 'Anders', label: 'Anders / Other' }
+                            { val: 'Direct', label: language === 'EN' ? 'Direct / Phone' : 'Direct / Telefonisch' },
+                            { val: 'Referral', label: language === 'EN' ? 'Referral' : 'Referral / Aanbeveling' },
+                            { val: 'Website', label: language === 'EN' ? 'Website Contact Form' : 'Website Contactformulier' },
+                            { val: 'Email', label: language === 'EN' ? 'Email Campaign' : 'E-mail Campagne' },
+                            { val: 'Beurs', label: language === 'EN' ? 'Trade Fair / Event' : 'Beurs / Event' },
+                            { val: 'Anders', label: language === 'EN' ? 'Other' : 'Anders' }
                           ].map((src, idx) => (
                             <div
                               key={idx}

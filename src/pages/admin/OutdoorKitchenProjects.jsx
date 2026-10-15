@@ -2238,9 +2238,10 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       <ProjectChatDrawer
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
-        projectCode="2026-014"
-        clientName="Sander"
-        partnerName="Sven"
+        projectCode={projectData?.projectNumber || "PRJ-2026-001"}
+        projectId={projectId || projectData?.id || "PRJ-2026-001"}
+        clientName={projectData?.customer?.name || projectData?.customerName || "Sander"}
+        partnerName={projectData?.partner?.companyName || projectData?.partnerName || "Sven Hoek"}
         onShowToast={showToast}
       />
 

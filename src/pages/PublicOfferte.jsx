@@ -181,50 +181,25 @@ export default function PublicOfferte() {
     }
   };
 
+  const [submitError, setSubmitError] = useState(null);
+  const [rejectError, setRejectError] = useState(null);
+
   // Handle Digital Approval Submission via backend API
   const handleApproveSubmit = async (e) => {
     e.preventDefault();
     if (!signerName.trim() || !agreedTerms) return;
 
     setIsSubmitting(true);
+    setSubmitError(null);
+
     try {
-      // Create project in local cache for immediate display in Projects
-      try {
-        const projId = `PRJ-${String(quote?.id || '101').replace(/[^0-9]/g, '').slice(-4) || '101'}`;
-        const newProj = {
-          id: projId,
-          projectNumber: projId,
-          name: `${quote?.productType ? quote.productType.replace(/_/g, ' ') : 'Buitenkeuken'} — ${quote?.customer?.name || signerName.trim()}`,
-          customer: quote?.customer?.name || signerName.trim(),
-          customerEmail: quote?.customer?.email,
-          customerPhone: quote?.customer?.phone,
-          projectType: (quote?.productType || 'outdoor_kitchen').includes('garden') ? 'garden_room' : 'outdoor_kitchen',
-          status: 'In execution',
-          progress: 25,
-          deadline: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          quoteId: quote?.id,
-          orderStatus: 'in_voorbereiding',
-          createdAt: new Date().toISOString()
-        };
-        const existingProjects = JSON.parse(localStorage.getItem('app_projects_v2') || '[]');
-        const filteredP = existingProjects.filter(p => p.id !== projId && p.quoteId !== quote?.id);
-        localStorage.setItem('app_projects_v2', JSON.stringify([newProj, ...filteredP]));
-
-        const existingQuotes = JSON.parse(localStorage.getItem('app_quotes_v2') || '[]');
-        const updatedQuotes = existingQuotes.map(q => (q.id === quote?.id || q.publicToken === token) ? { ...q, status: 'approved' } : q);
-        localStorage.setItem('app_quotes_v2', JSON.stringify(updatedQuotes));
-        window.dispatchEvent(new Event('app_data_changed'));
-      } catch (e) {
-        console.warn('Local approval project sync notice:', e);
-      }
-
       const res = await api.post(`/offerte/${token}/approve`, {
         signerName: signerName.trim(),
         agreedTerms: true,
       });
 
-      if (res.success) {
-        const approvedAt = res.data?.approvedAt || new Date().toISOString();
+      if (res.success && res.data) {
+        const approvedAt = res.data.approvedAt || new Date().toISOString();
         const updatedApproval = {
           signerName: signerName.trim(),
           date: new Date(approvedAt).toLocaleString('nl-NL', {
@@ -246,47 +221,25 @@ export default function PublicOfferte() {
         }));
         setIsApprovedSuccess(true);
         setShowApprovalModal(false);
+
+        // Keep local cache synced if present
+        try {
+          const existingQuotes = JSON.parse(localStorage.getItem('app_quotes_v2') || '[]');
+          const updatedQuotes = existingQuotes.map(q => (q.id === quote?.id || q.publicToken === token) ? { ...q, status: 'approved' } : q);
+          localStorage.setItem('app_quotes_v2', JSON.stringify(updatedQuotes));
+        } catch (e) {}
+
+        // Notify other windows/tabs in real time
         window.dispatchEvent(new Event('app_data_changed'));
       } else {
-        // Fallback for local demo approval
-        const approvedAt = new Date().toISOString();
-        setApprovalDetails({
-          signerName: signerName.trim(),
-          date: new Date(approvedAt).toLocaleString('nl-NL', {
-            day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-          }),
-          ip: 'Digitally Verified'
-        });
-        setQuote(prev => ({
-          ...prev,
-          status: 'Akkoord',
-          signerName: signerName.trim(),
-          approvedAt
-        }));
-        setIsApprovedSuccess(true);
-        setShowApprovalModal(false);
-        window.dispatchEvent(new Event('app_data_changed'));
+        // Real validation / business logic error from Backend API
+        const msg = res.error?.message || (language === 'EN' ? 'Approval failed. Please check the proposal link or contact support.' : 'Goedkeuring mislukt. Controleer de link of neem contact op.');
+        setSubmitError(msg);
       }
     } catch (err) {
-      console.warn('Approval request note:', err);
-      // Fallback for offline demo approval
-      const approvedAt = new Date().toISOString();
-      setApprovalDetails({
-        signerName: signerName.trim(),
-        date: new Date(approvedAt).toLocaleString('nl-NL', {
-          day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-        }),
-        ip: 'Digitally Verified'
-      });
-      setQuote(prev => ({
-        ...prev,
-        status: 'Akkoord',
-        signerName: signerName.trim(),
-        approvedAt
-      }));
-      setIsApprovedSuccess(true);
-      setShowApprovalModal(false);
-      window.dispatchEvent(new Event('app_data_changed'));
+      console.error('Approval request failed:', err);
+      const networkMsg = err.message || (language === 'EN' ? 'Network error during approval. Please try again.' : 'Netwerkfout bij het goedkeuren. Probeer het opnieuw.');
+      setSubmitError(networkMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -298,6 +251,8 @@ export default function PublicOfferte() {
     if (!rejectReason.trim()) return;
 
     setIsSubmitting(true);
+    setRejectError(null);
+
     try {
       const res = await api.post(`/offerte/${token}/reject`, {
         reason: rejectReason.trim(),
@@ -308,11 +263,22 @@ export default function PublicOfferte() {
         setIsDeclined(true);
         setQuote(prev => ({ ...prev, status: 'Afgewezen' }));
         setShowRejectModal(false);
+
+        // Keep local cache synced if present
+        try {
+          const existingQuotes = JSON.parse(localStorage.getItem('app_quotes_v2') || '[]');
+          const updatedQuotes = existingQuotes.map(q => (q.id === quote?.id || q.publicToken === token) ? { ...q, status: 'declined' } : q);
+          localStorage.setItem('app_quotes_v2', JSON.stringify(updatedQuotes));
+        } catch (e) {}
+
+        window.dispatchEvent(new Event('app_data_changed'));
       } else {
-        alert(res.error?.message || 'Failed to submit decline response');
+        const msg = res.error?.message || (language === 'EN' ? 'Failed to submit decline response.' : 'Kon afwijzing niet verzenden.');
+        setRejectError(msg);
       }
     } catch (err) {
-      alert(err.message || 'Error declining proposal');
+      const networkMsg = err.message || (language === 'EN' ? 'Error declining proposal.' : 'Fout bij het afwijzen van de offerte.');
+      setRejectError(networkMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -384,7 +350,7 @@ export default function PublicOfferte() {
             {!(isApprovedSuccess || quote.status === 'Akkoord' || isDeclined || isExpired) && (
               <>
                 <button
-                  onClick={() => setShowRejectModal(true)}
+                  onClick={() => { setRejectError(null); setShowRejectModal(true); }}
                   className="px-3 py-1.5 bg-red-800/80 hover:bg-red-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer border border-red-700/50"
                   title="Decline or request changes"
                 >
@@ -393,7 +359,7 @@ export default function PublicOfferte() {
                 </button>
 
                 <button
-                  onClick={() => setShowApprovalModal(true)}
+                  onClick={() => { setSubmitError(null); setShowApprovalModal(true); }}
                   className="px-4 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-bold flex items-center gap-1.5 transition-colors shadow-lg cursor-pointer tracking-wide border border-emerald-600/50"
                 >
                   <CheckCircle className="w-4 h-4 stroke-[2.5]" />
@@ -534,6 +500,12 @@ export default function PublicOfferte() {
               </div>
 
               <form onSubmit={handleApproveSubmit} className="space-y-4">
+                {submitError && (
+                  <div className="p-3 bg-red-50 border border-red-300 rounded-xl text-xs text-red-700 flex items-start gap-2 shadow-xs">
+                    <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                    <span className="font-semibold leading-relaxed">{submitError}</span>
+                  </div>
+                )}
                 <div className="p-3 bg-[#EDE8DF] rounded-xl border border-[#C4BEB3] space-y-1">
                   <p className="text-xs font-bold text-primary">Quote Summary:</p>
                   <p className="text-xs text-dark/80">Customer: <strong>{quote.customer?.name}</strong></p>
@@ -633,6 +605,12 @@ export default function PublicOfferte() {
               </div>
 
               <form onSubmit={handleRejectSubmit} className="space-y-4">
+                {rejectError && (
+                  <div className="p-3 bg-red-50 border border-red-300 rounded-xl text-xs text-red-700 flex items-start gap-2 shadow-xs">
+                    <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                    <span className="font-semibold leading-relaxed">{rejectError}</span>
+                  </div>
+                )}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-dark">
                     {language === 'EN' ? 'Reason for decline' : 'Reden van afwijzing'} <span className="text-red-500">*</span>

@@ -1052,9 +1052,10 @@ export default function GardenRoomProjects({ onBackToOverview }) {
       <ProjectChatDrawer
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
-        projectCode="2026-021"
-        clientName="Sander"
-        partnerName="Lars"
+        projectCode={projectData?.projectNumber || "2026-021"}
+        projectId={projectData?.id || "PRJ-2026-002"}
+        clientName={projectData?.customer?.name || projectData?.customerName || "Sander"}
+        partnerName={projectData?.partner?.companyName || projectData?.partnerName || "Lars"}
         onShowToast={showToast}
       />
 

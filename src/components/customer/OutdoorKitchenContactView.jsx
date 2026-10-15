@@ -33,49 +33,104 @@ export default function OutdoorKitchenContactView({ project = null }) {
   const [messages, setMessages] = useState(defaultCustMsgs);
   const [activeConvId, setActiveConvId] = useState(null);
 
-  // Load messages from backend conversations API
+  const activeChatProjectId = project?.id || project?.projectNumber || 'PRJ-2026-001';
+
+  // Load messages from backend conversations API & synchronized local storage
   useEffect(() => {
-    const pid = project?.id;
-    if (!pid || pid === '2026-014' || pid === '2026-021') return;
+    let isMounted = true;
+    try {
+      const stored = localStorage.getItem(`va_customer_chat_${activeChatProjectId}`);
+      if (stored) {
+        setMessages(JSON.parse(stored));
+      } else {
+        localStorage.setItem(`va_customer_chat_${activeChatProjectId}`, JSON.stringify(defaultCustMsgs));
+      }
+    } catch (e) {}
 
     const loadChat = async () => {
       try {
-        const res = await api.get(`/conversations/project/${pid}`);
+        const res = await api.get(`/conversations/project/${activeChatProjectId}`);
         const customerChan = res?.data?.customerChannel;
         const convId = customerChan?.id || (res?.data?.id ? res.data.id : null);
-        if (convId) {
+        if (convId && isMounted) {
           setActiveConvId(convId);
           const msgRes = await api.get(`/conversations/${convId}/messages`);
-          if (msgRes.success && Array.isArray(msgRes.data) && msgRes.data.length > 0) {
-            setMessages(msgRes.data.map(m => ({
+          if (msgRes.success && Array.isArray(msgRes.data) && msgRes.data.length > 0 && isMounted) {
+            const mapped = msgRes.data.map(m => ({
               id: m.id,
-              sender: m.senderRole === 'customer' ? 'SV' : 'T\u0026B',
+              sender: m.senderRole === 'customer' ? 'SV' : 'T&B',
               senderName: m.senderName || (m.senderRole === 'customer' ? 'Bjorn' : 'Tim'),
               time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today',
               text: m.content || m.message || m.text,
-              type: m.senderRole === 'customer' ? 'outgoing' : 'incoming'
-            })));
+              type: m.senderRole === 'customer' ? 'outgoing' : 'incoming',
+              role: m.senderRole || 'customer'
+            }));
+            setMessages(mapped);
+            try {
+              localStorage.setItem(`va_customer_chat_${activeChatProjectId}`, JSON.stringify(mapped));
+            } catch (err) {}
           }
         }
       } catch (err) {
         try {
-          const directRes = await api.get(`/conversations/${pid}/messages`);
-          if (directRes.success && Array.isArray(directRes.data) && directRes.data.length > 0) {
-            setMessages(directRes.data.map(m => ({
+          const directRes = await api.get(`/conversations/${activeChatProjectId}/messages`);
+          if (directRes.success && Array.isArray(directRes.data) && directRes.data.length > 0 && isMounted) {
+            const mapped = directRes.data.map(m => ({
               id: m.id,
-              sender: m.senderRole === 'customer' ? 'SV' : 'T\u0026B',
+              sender: m.senderRole === 'customer' ? 'SV' : 'T&B',
               senderName: m.senderName || (m.senderRole === 'customer' ? 'Bjorn' : 'Tim'),
               time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today',
               text: m.content || m.message || m.text,
-              type: m.senderRole === 'customer' ? 'outgoing' : 'incoming'
-            })));
+              type: m.senderRole === 'customer' ? 'outgoing' : 'incoming',
+              role: m.senderRole || 'customer'
+            }));
+            setMessages(mapped);
+            try {
+              localStorage.setItem(`va_customer_chat_${activeChatProjectId}`, JSON.stringify(mapped));
+            } catch (err) {}
           }
         } catch (e2) {}
       }
     };
 
     loadChat();
-  }, [project?.id]);
+
+    // Real-time listener for incoming messages from Admin (Customer Channel)
+    const handleIncomingChatMessage = (e) => {
+      const detail = e.detail;
+      if (!detail) return;
+      if (detail.projectId === activeChatProjectId || !detail.projectId) {
+        if (detail.message) {
+          setMessages(prev => {
+            if (prev.some(m => m.id === detail.message.id)) return prev;
+            return [...prev, {
+              ...detail.message,
+              type: detail.message.role === 'admin' ? 'incoming' : 'outgoing'
+            }];
+          });
+        }
+      }
+    };
+
+    const handleStorageUpdate = (e) => {
+      if (e.key === `va_customer_chat_${activeChatProjectId}`) {
+        try {
+          if (e.newValue) {
+            setMessages(JSON.parse(e.newValue));
+          }
+        } catch (err) {}
+      }
+    };
+
+    window.addEventListener('app_chat_message', handleIncomingChatMessage);
+    window.addEventListener('storage', handleStorageUpdate);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('app_chat_message', handleIncomingChatMessage);
+      window.removeEventListener('storage', handleStorageUpdate);
+    };
+  }, [activeChatProjectId]);
 
   const [inputMsg, setInputMsg] = useState('');
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
@@ -87,27 +142,46 @@ export default function OutdoorKitchenContactView({ project = null }) {
     if (!inputMsg.trim()) return;
 
     const messageText = inputMsg.trim();
+    setInputMsg('');
+
     const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const optimisticMsg = {
-      id: Date.now(),
+      id: `msg-${Date.now()}`,
       sender: 'SV',
-      senderName: 'Bjorn',
-      time: `Today ${timeNow}`,
+      senderName: project?.customerName || project?.customer || 'Sander',
+      time: isNl ? `Vandaag ${timeNow}` : `Today ${timeNow}`,
       text: messageText,
-      type: 'outgoing'
+      type: 'outgoing',
+      role: 'customer',
+      createdAt: new Date().toISOString()
     };
 
-    // Optimistic update
-    setMessages(prev => [...prev, optimisticMsg]);
-    setInputMsg('');
+    const nextMessages = [...messages, optimisticMsg];
+    setMessages(nextMessages);
+
+    // Save to shared localStorage so Admin receives it immediately
+    try {
+      localStorage.setItem(`va_customer_chat_${activeChatProjectId}`, JSON.stringify(nextMessages));
+    } catch (err) {}
+
+    // Dispatch global events for real-time reactivity in Admin ProjectChatDrawer
+    window.dispatchEvent(new CustomEvent('app_chat_message', { detail: { projectId: activeChatProjectId, channel: 'customer', message: optimisticMsg } }));
+    window.dispatchEvent(new Event('app_data_changed'));
 
     // Post to conversations API
     try {
-      const targetId = activeConvId || (project?.id && project.id !== '2026-014' && project.id !== '2026-021' ? project.id : null);
+      const targetId = activeConvId;
       if (targetId) {
         await api.post(`/conversations/${targetId}/messages`, {
           content: messageText
         });
+      } else {
+        const convRes = await api.get(`/conversations/project/${activeChatProjectId}`);
+        const cId = convRes?.data?.customerChannel?.id;
+        if (cId) {
+          setActiveConvId(cId);
+          await api.post(`/conversations/${cId}/messages`, { content: messageText });
+        }
       }
     } catch (err) {
       console.warn('Could not post message:', err);
