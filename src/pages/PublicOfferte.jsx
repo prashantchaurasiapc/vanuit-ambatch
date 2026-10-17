@@ -25,6 +25,7 @@ export default function PublicOfferte() {
   const [rejectReason, setRejectReason] = useState('');
   const [rejectChanges, setRejectChanges] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   // Load quote proposal data from backend API
   useEffect(() => {
@@ -170,14 +171,16 @@ export default function PublicOfferte() {
   // Check if quote is expired (validUntil check vs real-time current date)
   const isExpired = quote && quote.validUntil ? new Date(quote.validUntil) < new Date() : false;
 
-  // Handle PDF download via backend or client fallback
-  const handleDownloadPdf = () => {
+  // Handle PDF download via client 6-page generator matching client reference template
+  const handleDownloadPdf = async () => {
+    if (!quote || isDownloadingPdf) return;
+    setIsDownloadingPdf(true);
     try {
-      window.open(`${BASE_URL}/offerte/${token}/pdf`, '_blank');
-    } catch {
-      if (quote) {
-        downloadDirectPdfFile(quote);
-      }
+      await downloadDirectPdfFile({ ...quote, language });
+    } catch (err) {
+      console.error('[PublicOfferte] Error generating 6-page PDF:', err);
+    } finally {
+      setIsDownloadingPdf(false);
     }
   };
 
@@ -341,10 +344,13 @@ export default function PublicOfferte() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleDownloadPdf}
-              className="px-3 py-1 bg-[#70624F] hover:bg-[#5e5241] text-[#FDFBF7] rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-colors print:hidden cursor-pointer"
+              disabled={isDownloadingPdf}
+              className="px-3 py-1 bg-[#70624F] hover:bg-[#5e5241] text-[#FDFBF7] rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-colors print:hidden cursor-pointer disabled:opacity-50"
             >
               <Download className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Download PDF</span>
+              <span className="hidden sm:inline">
+                {isDownloadingPdf ? (language === 'EN' ? 'Generating...' : 'Bezig...') : 'Download PDF'}
+              </span>
             </button>
 
             {!(isApprovedSuccess || quote.status === 'Akkoord' || isDeclined || isExpired) && (
@@ -463,7 +469,7 @@ export default function PublicOfferte() {
         )}
 
         {/* 6-PAGE DOCUMENT CONTAINER MATCHING PDF EXACTLY */}
-        <Offerte6PagePDF quote={quote} />
+        <Offerte6PagePDF quote={quote} language={language} />
 
       </main>
 
@@ -664,7 +670,7 @@ export default function PublicOfferte() {
       {/* 100% CLEAN PDF PRINT PORTAL ATTACHED DIRECTLY TO DOCUMENT BODY */}
       {quote && createPortal(
         <div id="printable-offerte-portal">
-          <Offerte6PagePDF quote={quote} />
+          <Offerte6PagePDF quote={quote} language={language} />
         </div>,
         document.body
       )}

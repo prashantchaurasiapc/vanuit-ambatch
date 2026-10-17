@@ -3735,14 +3735,13 @@ export default function QuoteEditor({
                   <button
                     type="button"
                     onClick={async () => {
-                      const targetId = quote?.backendId || quote?.id;
-                      if (targetId && String(targetId).includes('-')) {
-                        window.open(`/api/quotes/${targetId}/pdf`, '_blank');
-                        showToast(language === 'EN' ? '✅ Official PDF proposal downloading...' : '✅ Officiële PDF offerte wordt gedownload...');
-                      } else {
-                        showToast(language === 'EN' ? '⏳ Generating 6-page PDF proposal...' : '⏳ 6-pagina offerte PDF wordt gegenereerd...');
-                        const fileName = await generateFull6PagePdf(quote);
+                      showToast(language === 'EN' ? '⏳ Generating 6-page PDF proposal...' : '⏳ 6-pagina offerte PDF wordt gegenereerd...');
+                      try {
+                        const fileName = await generateFull6PagePdf({ ...quote, language });
                         showToast(language === 'EN' ? `✅ PDF downloaded: ${fileName}` : `✅ PDF gedownload: ${fileName}`);
+                      } catch (err) {
+                        console.error('Error generating 6-page PDF:', err);
+                        showToast(language === 'EN' ? '❌ Failed to generate PDF' : '❌ PDF genereren mislukt');
                       }
                     }}
                     className="px-4 py-2.5 bg-[#33422C] text-[#FDFBF7] font-bold text-xs rounded-xl shadow-xs hover:bg-[#283523] transition-all cursor-pointer font-mono flex items-center gap-2"

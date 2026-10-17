@@ -1,0 +1,292 @@
+/* =====================================================================
+   Vanuit Ambacht — Offerte-sjabloon (A4, 6 pagina's)
+   Gereconstrueerd uit Offerte-OF-2026325-Bjorn-Valk-nieuw-ontwerp_5.pdf
+   Eenheden: CSS-px op 96 dpi. A4 = 794 × 1123 px.
+   Render: Chromium headless, printBackground: true, preferCSSPageSize: true.
+   ===================================================================== */
+
+/* ---------- Fonts (lokaal, OFL-licentie) ---------- */
+@font-face { font-family: 'Montserrat'; font-weight: 300; font-style: normal; src: url('assets/fonts/montserrat-latin-300-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Montserrat'; font-weight: 400; font-style: normal; src: url('assets/fonts/montserrat-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Montserrat'; font-weight: 500; font-style: normal; src: url('assets/fonts/montserrat-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Montserrat'; font-weight: 600; font-style: normal; src: url('assets/fonts/montserrat-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Playfair Display'; font-weight: 400; font-style: italic; src: url('assets/fonts/playfair-display-latin-400-italic.woff2') format('woff2'); }
+@font-face { font-family: 'Playfair Display'; font-weight: 500; font-style: normal; src: url('assets/fonts/playfair-display-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Playfair Display'; font-weight: 600; font-style: normal; src: url('assets/fonts/playfair-display-latin-600-normal.woff2') format('woff2'); }
+
+/* ---------- Tokens ---------- */
+:root {
+  --green: #3E4E36;  --green-2: #49593F;  --green-ink: #33412C;
+  --cream: #F3EFE7;  --sand: #D6CFC2;     --taupe: #70624F;
+  --ink: #2E2E29;    --body: #4A4A43;     --muted: #9A938A;  --muted-2: #8A847B;
+  --card: #F7F4EE;   --line: #E3DDD2;     --pill: #EAE5DC;
+
+  --serif: 'Playfair Display', Georgia, serif;
+  --sans: 'Montserrat', Arial, sans-serif;
+
+  --radius: 8px;
+  --radius-lg: 10px;
+  --shadow: 0 7.5px 23px rgba(46, 46, 41, 0.14);
+  --shadow-sm: 0 6px 19px rgba(46, 46, 41, 0.15);
+}
+
+/* ---------- Pagina ---------- */
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { background: #d9d6cf; font-family: var(--sans); color: var(--body); -webkit-font-smoothing: antialiased; }
+p, h1, h2, h3, ul { margin: 0; padding: 0; }
+ul { list-style: none; }
+img { display: block; }
+svg { display: block; }
+
+.page {
+  position: relative;
+  width: 794px; height: 1123px;
+  overflow: hidden;
+  background: #fff;
+  break-after: page; page-break-after: always;
+}
+.page:last-child { break-after: auto; page-break-after: auto; }
+@media screen { .page { margin: 24px auto; box-shadow: 0 4px 24px rgba(0,0,0,.12); } }
+
+.abs { position: absolute; }
+
+/* ---------- Typografie ---------- */
+.eyebrow {
+  font: 600 10.13px/1 var(--sans);
+  letter-spacing: .2em; text-transform: uppercase; color: var(--taupe);
+}
+.eyebrow .dot { margin: 0 .48em; }
+.h2 { font: 500 28px/1.2 var(--serif); color: var(--green); }
+.sans-strong { font-weight: 600; }
+
+/* ---------- Header / footer (p2–p6) ---------- */
+.page-header .logo { position: absolute; left: 68px; top: 42px; width: 105px; height: 39px; }
+.page-header .meta {
+  position: absolute; right: 68px; top: 46px; text-align: right;
+  font: 500 9.33px/15px var(--sans); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--muted);
+}
+.page-header .meta strong { font-weight: 600; color: var(--taupe); }
+
+.page-footer {
+  position: absolute; left: 68px; right: 68px; top: 1063px;
+  border-top: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding-top: 13px;
+  font: 9.07px/1.2 var(--sans);
+}
+.page-footer .brand { font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--taupe); }
+.page-footer .ref   { font-weight: 400; letter-spacing: .06em; color: var(--muted); }
+.page-footer .num   { font-weight: 600; letter-spacing: .06em; color: var(--taupe); }
+
+/* ---------- Sectiekop ---------- */
+.section-head { position: absolute; left: 68px; top: 129px; }
+.section-head .eyebrow, .why-head .eyebrow, .pay-head { letter-spacing: .28em; }
+.section-head .h2 { margin-top: 8px; }
+
+/* ---------- Kaarten ---------- */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+.card-white { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); }
+.card-dark { background: var(--green); border-radius: var(--radius); color: var(--cream); }
+
+/* ---------- Vinklijst ---------- */
+.checks li { position: relative; padding-left: 22px; }
+.checks li svg { position: absolute; left: 0; top: 2px; width: 12px; height: 12px; stroke: var(--green); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+/* =====================================================================
+   PAGINA 1 — COVER
+   ===================================================================== */
+.cover { background: var(--green); color: var(--cream); }
+.cover .watermark { position: absolute; left: 340px; top: 129px; width: 567px; height: 729px; opacity: .047; }
+.cover .logo { position: absolute; left: 317px; top: 60px; width: 160px; height: 61px; }
+.cover .badge {
+  position: absolute; left: 610px; top: 60px; width: 116px; height: 34px;
+  border: 1px solid rgba(214, 207, 194, .5); border-radius: 17px;
+  display: flex; align-items: center; justify-content: center;
+  font: 500 10px/1 var(--sans); letter-spacing: .3em; text-transform: uppercase; color: var(--sand);
+  padding-left: 1px;
+}
+.cover .eyebrow-cover { position: absolute; left: 68px; top: 214px; color: var(--sand); letter-spacing: .28em; }
+.cover .eyebrow-cover .dot { margin: 0 1.11em; }
+.cover .accent { position: absolute; left: 68px; top: 251px; width: 83px; height: 2px; background: var(--taupe); }
+.cover h1 {
+  position: absolute; left: 68px; top: 279px;
+  font: 500 45.33px/53px var(--serif); color: var(--cream);
+}
+.cover h1 em { display: block; font-style: italic; font-weight: 400; color: var(--sand); }
+.cover .subline {
+  position: absolute; left: 68px; top: 409px;
+  font: 300 12.67px/1.3 var(--sans); letter-spacing: .06em; color: var(--cream);
+}
+.cover .subline b { font-weight: 500; color: var(--sand); letter-spacing: .06em; }
+.cover .rule { position: absolute; left: 68px; top: 775px; width: 658px; height: 1px; background: rgba(214, 207, 194, .35); }
+.cover .facts { position: absolute; left: 68px; top: 784px; display: grid; grid-template-columns: repeat(4, 170px); }
+.cover .facts dt { font: 500 9.07px/1 var(--sans); letter-spacing: .24em; text-transform: uppercase; color: var(--sand); }
+.cover .facts dd { margin: 9px 0 0; font: 500 13.33px/1.3 var(--sans); color: var(--cream); }
+.cover .photos { position: absolute; left: 0; top: 882.5px; width: 794px; height: 198px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3px; }
+.cover .photos img { width: 100%; height: 100%; object-fit: cover; }
+.cover .cover-foot {
+  position: absolute; left: 68px; right: 68px; top: 1095px;
+  display: flex; justify-content: space-between;
+  font: 500 9.33px/1.2 var(--sans); letter-spacing: .22em; text-transform: uppercase; color: var(--sand);
+}
+
+/* =====================================================================
+   PAGINA 2 — PERSOONLIJK WOORD
+   ===================================================================== */
+.p2 .section-head { top: 115px; }
+.p2 .salutation { font: 500 25.33px/1.2 var(--serif); color: var(--green); margin-top: 10px; }
+.p2 .letter { position: absolute; left: 68px; top: 186px; width: 403.5px; }
+.p2 .lead { font: 400 13.33px/22px var(--sans); color: var(--ink); }
+.p2 .body { margin-top: 14.5px; font: 400 11.73px/19px var(--sans); color: var(--body); }
+.p2 .body p + p { margin-top: 13px; }
+.p2 .sign { position: absolute; left: 68px; top: 541px; }
+.p2 .sign .name { font: italic 400 17.33px/1.2 var(--serif); color: var(--green); }
+.p2 .sign .eyebrow { font-size: 9.87px; letter-spacing: .18em; margin-top: 6px; }
+.p2 .photo-card { position: absolute; left: 506px; top: 188px; width: 220px; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.p2 .photo-card img { width: 220px; height: 114px; object-fit: cover; }
+.p2 .photo-card figcaption { height: 72px; background: var(--card); padding: 13.5px 17.5px 0; font: 500 10.13px/15px var(--sans); color: var(--taupe); }
+.p2 .why-head { position: absolute; left: 68px; top: 609px; }
+.p2 .why-head .h2 { font-size: 22.67px; margin-top: 8px; }
+.p2 .why { position: absolute; left: 68px; top: 673px; width: 658px; display: grid; grid-template-columns: 320px 321px; column-gap: 17px; row-gap: 17px; }
+.p2 .why .card { height: 156px; padding: 19px 20px 0 21px; }
+.p2 .why .icon-dot + h3 { padding-top: 2px; }
+.p2 .why .card:nth-child(n+3) { height: 157px; }
+.p2 .icon-dot { width: 34px; height: 34px; border-radius: 50%; background: var(--green); display: flex; align-items: center; justify-content: center; }
+.p2 .icon-dot svg { width: 13px; height: 13px; stroke: var(--sand); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.p2 .why h3 { margin-top: 9px; font: 600 12.67px/1.3 var(--sans); letter-spacing: .01em; color: var(--green); }
+.p2 .why p { margin-top: 5px; font: 400 10.8px/17px var(--sans); color: var(--body); }
+
+/* =====================================================================
+   PAGINA 3 — CONFIGURATIE
+   ===================================================================== */
+.p3 .tiles { position: absolute; left: 68px; top: 210px; display: grid; grid-template-columns: 153px 153px 153px 153px; column-gap: 15px; }
+.p3 .tiles > div:nth-child(4) { margin-left: 1px; }
+.p3 .tile { height: 107px; border-radius: var(--radius); background: var(--green); padding: 23px 14px 0 19px; }
+.p3 .tile:nth-child(even) { background: var(--green-2); }
+.p3 .tile .label { font: 600 8.8px/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--sand); }
+.p3 .tile .value { margin-top: 9px; font: 500 17.33px/1.2 var(--serif); color: var(--cream); }
+.p3 .tile .sub { margin-top: 4px; font: 400 9.33px/11px var(--sans); color: var(--cream); opacity: .8; }
+
+.p3 .spec { position: absolute; left: 68px; top: 360px; width: 389px; }
+.p3 .spec-group + .spec-group { margin-top: 23px; }
+.p3 .spec-group:last-child { margin-top: 25px; }
+.p3 .spec-title { display: flex; align-items: center; gap: 11px; font: 600 10.67px/1.2 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--taupe); }
+.p3 .spec-title::after { content: ''; flex: 1; height: 1px; background: var(--line); margin-top: -2px; }
+.p3 .checks { margin-top: 12px; }
+.p3 .checks li { font: 400 11.47px/17.25px var(--sans); color: var(--body); }
+.p3 .checks li + li { margin-top: 9px; }
+
+.p3 .photo { position: absolute; left: 491px; top: 351px; width: 235px; height: 159px; border-radius: var(--radius); object-fit: cover; box-shadow: var(--shadow-sm); }
+.p3 .front { position: absolute; left: 491px; top: 529px; width: 235px; height: 190px; padding: 24px 23px 0; }
+.p3 .front .eyebrow { letter-spacing: .18em; }
+.p3 .units { margin-top: 18px; display: flex; gap: 5.5px; }
+.p3 .unit { position: relative; width: 40px; height: 91px; border: 1px solid var(--green); border-radius: 4px; background: #fff; font: 600 8.8px/11px var(--sans); color: var(--green); text-align: center; letter-spacing: .04em; }
+.p3 .unit .door { position: absolute; left: 6px; top: 19px; width: 26px; height: 34px; border: 1px solid var(--green); }
+.p3 .unit .door::after { content: ''; position: absolute; left: 11.5px; top: 0; width: 1px; height: 32px; background: var(--green); }
+.p3 .unit .lbl { position: absolute; left: 0; right: 0; top: 58px; }
+.p3 .unit.egg { width: 51px; background: var(--green); color: var(--sand); }
+.p3 .unit.egg .ring { position: absolute; left: 3.5px; top: 5.5px; width: 42px; height: 42px; border: 2px solid var(--sand); border-radius: 50%; }
+.p3 .unit.egg .lbl { top: 51px; }
+.p3 .scale { margin-top: 14px; white-space: nowrap; display: flex; align-items: center; gap: 8px; font: 500 9.33px/1 var(--sans); letter-spacing: .08em; color: var(--taupe); }
+.p3 .scale .bar { position: relative; width: 125px; height: 10px; }
+.p3 .scale .bar::before { content: ''; position: absolute; left: 0; right: 0; top: 4px; height: 1px; background: var(--taupe); }
+.p3 .scale .bar::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 10px; border-left: 1px solid var(--taupe); border-right: 2px solid var(--taupe); }
+.p3 .wood { position: absolute; left: 491px; top: 738px; width: 235px; height: 162px; padding: 25px 23px 0; }
+.p3 .wood h3 { font: 500 14.67px/1.2 var(--serif); color: var(--sand); }
+.p3 .wood p { margin-top: 10px; width: 192px; font: 400 10.67px/17.25px var(--sans); color: var(--cream); }
+
+/* =====================================================================
+   PAGINA 4 — INVESTERING
+   ===================================================================== */
+.p4 .lines { position: absolute; left: 68px; top: 207px; width: 658px; border-collapse: collapse; }
+.p4 .lines th { font: 600 9.33px/1 var(--sans); letter-spacing: .22em; text-transform: uppercase; color: var(--taupe); text-align: left; padding: 4px 0 13px; border-bottom: 1px solid var(--green); }
+.p4 .lines th:first-child, .p4 .lines td:first-child { padding-left: 15px; width: 462px; }
+.p4 .lines th:nth-child(2), .p4 .lines td:nth-child(2) { width: 82px; padding-left: 15px; }
+.p4 .lines th:last-child, .p4 .lines td:last-child { text-align: right; padding-right: 16px; }
+.p4 .lines th:last-child { padding-right: calc(17.5px - .22em); }
+.p4 .lines td { vertical-align: top; padding-top: 20px; padding-bottom: 0; border-bottom: 1px solid var(--line); }
+.p4 .lines tr.r1 td { height: 117px; }
+.p4 .lines tr.r2 td { height: 82px; }
+.p4 .lines .title { font: 600 12.8px/1.3 var(--sans); color: var(--ink); }
+.p4 .lines .desc { margin-top: 7px; width: 400px; font: 400 10.67px/17px var(--sans); color: var(--body); }
+.p4 .lines .qty { font: 400 16px/1 var(--sans); color: var(--ink); padding-top: 22px; }
+.p4 .lines .amount { font: 600 12.8px/1.3 var(--sans); color: var(--ink); }
+.p4 .lines tr.r2 .desc { margin-top: 5px; }
+.p4 .lines .included { font: 600 11.47px/1.3 var(--sans); letter-spacing: .06em; color: var(--green); }
+
+.p4 .incl { position: absolute; left: 68px; top: 459px; width: 355px; height: 200px; padding: 24px 23px 0; }
+.p4 .incl .eyebrow { font-size: 10.4px; }
+.p4 .incl .checks { margin-top: 16px; }
+.p4 .incl .checks li { font: 400 11.47px/17px var(--sans); color: var(--body); padding-left: 22px; margin-left: 0; }
+.p4 .incl .checks li + li { margin-top: 10px; }
+
+.p4 .total { position: absolute; left: 454px; top: 459px; width: 272px; height: 191px; border-radius: var(--radius-lg); padding: 34px 27px 0 26px; }
+.p4 .total .row { display: flex; justify-content: space-between; font: 400 11.73px/1.3 var(--sans); color: var(--cream); opacity: .85; }
+.p4 .total .row + .row { margin-top: 14px; }
+.p4 .total hr { border: 0; height: 1px; background: rgba(214, 207, 194, .4); margin: 16px 0 0; }
+.p4 .total .grand { display: flex; justify-content: space-between; align-items: baseline; margin-top: 16px; }
+.p4 .total .grand span { font: 600 12.67px/1 var(--sans); letter-spacing: .04em; color: var(--sand); }
+.p4 .total .grand strong { font: 600 22.67px/1.2 var(--serif); color: #fff; }
+.p4 .total .note { margin-top: 17px; text-align: right; font: 400 9.2px/1.2 var(--sans); color: var(--cream); opacity: .7; }
+.p4 .valid { position: absolute; left: 454px; top: 669px; width: 272px; height: 55px; border-radius: 7px; background: var(--pill); display: flex; align-items: center; gap: 12px; padding-left: 19px; }
+.p4 .valid svg { flex: none; width: 10px; height: 10px; stroke: var(--taupe); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.p4 .valid p { width: 200px; font: 500 10.93px/14px var(--sans); color: var(--taupe); }
+.p4 .valid strong { font-weight: 600; }
+.p4 .pay-head { position: absolute; left: 68px; top: 757px; }
+.p4 .terms { position: absolute; left: 68px; top: 787px; width: 658px; display: grid; grid-template-columns: 319px 320px; column-gap: 19px; }
+.p4 .term { height: 95px; padding: 15px 16px 0 23px; display: flex; gap: 16px; }
+.p4 .term .pct { font: 600 22.67px/1.2 var(--serif); color: var(--green); width: 42px; flex: none; padding-top: 2px; }
+.p4 .term .t { padding-top: 5px; font: 600 11.47px/1.3 var(--sans); color: var(--ink); }
+.p4 .term p { margin-top: 5px; font: 400 10.4px/16px var(--sans); color: var(--body); }
+
+/* =====================================================================
+   PAGINA 5 — AKKOORD
+   ===================================================================== */
+.p5 .cta { position: absolute; left: 68px; top: 210px; width: 658px; height: 230px; border-radius: var(--radius-lg); overflow: hidden; padding: 36px 0 0 34px; }
+.p5 .cta .watermark { position: absolute; left: 476px; top: -30px; width: 227px; height: 292px; opacity: .047; }
+.p5 .cta h2 { position: relative; font: 500 22.67px/1.2 var(--serif); color: #fff; }
+.p5 .cta p { position: relative; margin-top: 13px; width: 455px; font: 400 11.73px/19.5px var(--sans); color: var(--cream); }
+.p5 .btns { position: relative; display: flex; gap: 15px; margin-top: 22px; }
+.p5 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 11px; height: 41px; border-radius: 6px; font: 600 11.73px/1 var(--sans); letter-spacing: .02em; text-decoration: none; }
+.p5 .btn svg { width: 11px; height: 11px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.p5 .btn-primary { width: 232px; background: var(--sand); color: var(--green-ink); }
+.p5 .btn-primary svg { stroke: var(--green-ink); }
+.p5 .btn-ghost { width: 212px; border: 1px solid rgba(214, 207, 194, .55); color: var(--sand); }
+.p5 .btn-ghost svg { stroke: var(--sand); }
+.p5 .signs { position: absolute; left: 68px; top: 471px; width: 658px; display: grid; grid-template-columns: 318px 318px; column-gap: 22px; }
+.p5 .sign-card { position: relative; height: 268px; }
+.p5 .sign-card .eyebrow { position: absolute; left: 25px; top: 24px; letter-spacing: .2em; }
+.p5 .sign-card .val { position: absolute; left: 25px; top: 65px; font: italic 400 14.67px/1.2 var(--serif); color: var(--green); }
+.p5 .sign-card .line { position: absolute; left: 25px; width: 266px; height: 1px; background: var(--body); }
+.p5 .sign-card .lbl { position: absolute; left: 25px; font: 400 9.33px/1 var(--sans); color: var(--muted); }
+.p5 .sign-card .l1 { top: 86px; }  .p5 .sign-card .b1 { top: 96px; }
+.p5 .sign-card .l2 { top: 155px; } .p5 .sign-card .b2 { top: 165px; }
+.p5 .sign-card .l3 { top: 224px; } .p5 .sign-card .b3 { top: 234px; }
+.p5 .conditions { position: absolute; left: 68px; top: 765px; font: 400 10.13px/17px var(--sans); color: var(--muted-2); white-space: nowrap; }
+.p5 .company { position: absolute; left: 68px; top: 831px; width: 658px; border-top: 1px solid var(--green); display: grid; grid-template-columns: 227px 227px 1fr; padding-top: 22px; }
+.p5 .company .eyebrow { font-size: 9.07px; }
+.p5 .company p { margin-top: 10px; font: 400 11.2px/19px var(--sans); color: var(--body); }
+
+/* =====================================================================
+   PAGINA 6 — STAPPEN
+   ===================================================================== */
+.p6 .steps { position: absolute; left: 62px; top: 212px; width: 620px; }
+.p6 .steps::before { content: ''; position: absolute; left: 26px; top: 29px; width: 2px; height: 393px; background: var(--sand); }
+.p6 .step { position: relative; display: flex; gap: 20px; }
+.p6 .step:nth-child(1), .p6 .step:nth-child(2) { height: 93px; }
+.p6 .step:nth-child(3), .p6 .step:nth-child(4) { height: 95px; }
+.p6 .step .num { flex: none; width: 42px; height: 42px; margin: 6px; border-radius: 50%; box-shadow: 0 0 0 6px #fff; background: var(--green); display: flex; align-items: center; justify-content: center; font: 600 16px/1 var(--serif); color: var(--sand); padding-bottom: 1px; }
+.p6 .step h3 { display: flex; align-items: center; gap: 21px; margin-top: 6px; font: 600 14px/1.3 var(--sans); color: var(--green); }
+.p6 .pill { display: inline-flex; align-items: center; height: 20px; padding: 0 13px 0 13.5px; border-radius: 10px; background: var(--pill); font: 600 9.07px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--taupe); }
+.p6 .step p { width: 480px; margin-top: 7px; font: 400 11.73px/19px var(--sans); color: var(--body); }
+.p6 .quote { position: absolute; left: 68px; top: 672px; width: 658px; height: 131px; background: var(--card); border-left: 4px solid var(--green); border-radius: 0 var(--radius) var(--radius) 0; padding: 26px 0 0 30px; }
+.p6 .quote blockquote { margin: 0; font: italic 400 18.67px/28px var(--serif); color: var(--green); }
+.p6 .quote .eyebrow { margin-top: 12px; }
+.p6 .info { position: absolute; left: 68px; top: 837px; width: 658px; display: grid; grid-template-columns: 319px 320px; column-gap: 19px; }
+.p6 .info .card-white { height: 119px; padding: 20px 22px 0 23px; }
+.p6 .info h3 { display: flex; align-items: center; gap: 9px; padding-left: 2px; font: 600 12px/1.3 var(--sans); color: var(--green); }
+.p6 .info h3 svg { width: 11px; height: 11px; stroke: var(--green); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.p6 .info p { margin-top: 8px; font: 400 10.93px/17.5px var(--sans); color: var(--body); }

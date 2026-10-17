@@ -118,12 +118,12 @@ export async function generateFull6PagePdf(quoteData) {
   const quote = quoteData?.quote || quoteData || {};
   const quoteId = quote.id || quote.quoteId || 'OF-2026331';
 
-  // Determine active language: quote.language -> localStorage -> default 'EN'
-  let activeLang = quote.language;
+  // Determine active language: quoteData.language -> quote.language -> localStorage -> default 'NL'
+  let activeLang = quoteData?.language || quote?.language;
   if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
     activeLang = window.localStorage.getItem('app_language');
   }
-  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
+  activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
 
   const custObj = typeof quote.customer === 'object' ? quote.customer : null;
   const customerName = custObj?.name || quote.customer || quote.customerName || (activeLang === 'EN' ? 'Client' : 'Klant');
@@ -240,11 +240,11 @@ export async function generateFull6PagePdf(quoteData) {
  */
 export function downloadQuotePdf(quote) {
   const quoteObj = quote?.quote || quote || {};
-  let activeLang = quoteObj.language;
+  let activeLang = quote?.language || quoteObj?.language;
   if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
     activeLang = window.localStorage.getItem('app_language');
   }
-  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
+  activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
 
   const quoteId = quoteObj.id || quoteObj.quoteId || 'OF-2026331';
   const custObj = typeof quoteObj.customer === 'object' ? quoteObj.customer : null;
@@ -403,11 +403,11 @@ export function downloadQuotePdfFallback(quote) {
  */
 export async function downloadDirectPdfFile(quoteData = {}) {
   const quoteObj = quoteData?.quote || quoteData || {};
-  let activeLang = quoteObj.language;
+  let activeLang = quoteData?.language || quoteObj?.language;
   if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
     activeLang = window.localStorage.getItem('app_language');
   }
-  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
+  activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
 
   try {
     return await generateFull6PagePdf({ ...quoteObj, language: activeLang });
@@ -420,11 +420,11 @@ export async function downloadDirectPdfFile(quoteData = {}) {
 export function downloadDirectPdfFileFallback(quoteData = {}) {
   // Extract properties supporting both raw params or full quote object
   const quote = quoteData.quote || quoteData;
-  let activeLang = quote?.language;
+  let activeLang = quoteData?.language || quote?.language;
   if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
     activeLang = window.localStorage.getItem('app_language');
   }
-  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
+  activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
 
   const quoteId = quote.id || quote.quoteId || 'OF-2026331';
   

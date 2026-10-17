@@ -281,12 +281,13 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
 
     company: existingQuote?.company || {
       name: 'Vanuit Ambacht',
-      address: 'Industrieweg 14, Dongen',
-      kvk: 'KVK 84729102',
-      vat: 'BTW NL863492817B01',
-      iban: 'NL91 ABNA 0412 8892 10',
+      address: 'Koningshof 33, 3451 LM Vleuten',
+      kvk: 'KVK 93067429',
+      vat: 'BTW NL866264863B01',
+      iban: 'IBAN NL27 ABNA 0132 2698 56',
       email: 'info@vanuitambacht.nl',
-      phone: '+31 6 12345678'
+      phone: '06 82 00 80 25',
+      website: 'vanuitambacht.nl'
     }
   };
 }
