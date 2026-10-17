@@ -141,6 +141,8 @@ export async function generateFull6PagePdf(quoteData) {
   tempDiv.style.opacity = '1';
   tempDiv.style.pointerEvents = 'none';
   tempDiv.style.backgroundColor = '#FFFFFF';
+  tempDiv.style.letterSpacing = 'normal';
+  tempDiv.style.fontVariantLigatures = 'none';
   document.body.appendChild(tempDiv);
 
   let root = null;
@@ -161,9 +163,11 @@ export async function generateFull6PagePdf(quoteData) {
     if (document.fonts) {
       await Promise.all([
         document.fonts.load('400 16px "Playfair Display"').catch(() => {}),
+        document.fonts.load('500 17px "Playfair Display"').catch(() => {}),
         document.fonts.load('600 16px "Playfair Display"').catch(() => {}),
         document.fonts.load('italic 16px "Playfair Display"').catch(() => {}),
         document.fonts.load('400 14px "Montserrat"').catch(() => {}),
+        document.fonts.load('500 14px "Montserrat"').catch(() => {}),
         document.fonts.load('600 14px "Montserrat"').catch(() => {}),
         document.fonts.load('700 14px "Montserrat"').catch(() => {}),
         document.fonts.ready
@@ -200,12 +204,19 @@ export async function generateFull6PagePdf(quoteData) {
       for (let i = 0; i < pageElements.length; i++) {
         const el = pageElements[i];
         const canvas = await html2canvas(el, {
-          scale: 3, // 300 DPI high-resolution razor-sharp typography
+          scale: 2.5, // 250 DPI razor-sharp brand typography without canvas aspect distortion
           useCORS: true,
           allowTaint: false,
           backgroundColor: el.classList.contains('bg-[#33422C]') ? '#33422C' : '#FDFBF7',
           logging: false,
-          windowWidth: 794
+          width: 794,
+          height: 1123,
+          windowWidth: 794,
+          windowHeight: 1123,
+          x: 0,
+          y: 0,
+          scrollX: 0,
+          scrollY: 0
         });
 
         const imgData = canvas.toDataURL('image/png'); // Lossless PNG: zero compression blur
