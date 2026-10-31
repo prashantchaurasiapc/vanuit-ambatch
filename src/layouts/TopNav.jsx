@@ -77,21 +77,43 @@ export default function TopNav() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
-  const [notifications, setNotifications] = useState(() => {
-    return user?.role === 'admin' ? ADMIN_NOTIFS : PARTNER_NOTIFS;
-  });
+  const getInitialNotifications = () => {
+    const base = user?.role === 'admin' ? ADMIN_NOTIFS : PARTNER_NOTIFS;
+    try {
+      const stored = JSON.parse(localStorage.getItem('va_admin_notifications') || '[]');
+      if (Array.isArray(stored) && stored.length > 0) {
+        const merged = [...stored];
+        base.forEach(b => {
+          if (!merged.some(m => m.id === b.id)) merged.push(b);
+        });
+        return merged;
+      }
+    } catch (e) {}
+    return base;
+  };
 
-  // Listen to live notifications
+  const [notifications, setNotifications] = useState(getInitialNotifications);
+
+  // Listen to live notifications from customer & partner actions
   useEffect(() => {
-    const syncNotifs = () => {
-      if (user?.role === 'admin') {
-        setNotifications(ADMIN_NOTIFS);
+    const handleNewNotif = (e) => {
+      if (e.detail) {
+        setNotifications(prev => [e.detail, ...prev.filter(n => n.id !== e.detail.id)]);
       }
     };
 
+    const syncNotifs = () => {
+      setNotifications(getInitialNotifications());
+    };
+
+    window.addEventListener('app_new_notification', handleNewNotif);
     window.addEventListener('app_data_changed', syncNotifs);
+    window.addEventListener('storage', syncNotifs);
+
     return () => {
+      window.removeEventListener('app_new_notification', handleNewNotif);
       window.removeEventListener('app_data_changed', syncNotifs);
+      window.removeEventListener('storage', syncNotifs);
     };
   }, [user]);
 
@@ -135,11 +157,23 @@ export default function TopNav() {
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+    setNotifications(prev => {
+      const updated = prev.map(n => ({ ...n, unread: false }));
+      try {
+        localStorage.setItem('va_admin_notifications', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
   };
 
   const handleNotifClick = (notif) => {
-    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, unread: false } : n));
+    setNotifications(prev => {
+      const updated = prev.map(n => n.id === notif.id ? { ...n, unread: false } : n);
+      try {
+        localStorage.setItem('va_admin_notifications', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
     setNotifOpen(false);
     if (notif.link) navigate(notif.link);
   };

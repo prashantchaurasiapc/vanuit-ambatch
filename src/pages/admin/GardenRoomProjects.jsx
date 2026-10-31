@@ -130,27 +130,46 @@ export default function GardenRoomProjects({ onBackToOverview }) {
     setTimeout(() => setToastMsg(''), 3500);
   };
 
-  // Load live garden room project from backend on mount
+  // Load live garden room project and logbook on mount and on updates
   useEffect(() => {
-    api.get('/projects?type=garden_room&limit=1').then(res => {
-      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-        const proj = res.data[0];
-        setProjectId(proj.id);
-        setProjectData(proj);
-        if (proj.orderStatus) setActiveStep(proj.orderStatus);
-        if (proj.deliverySlot?.proposedDate) {
-          setSchouwDag(proj.deliverySlot.proposedDate);
-          if (proj.deliverySlot.timeWindow) setSchouwTijd(proj.deliverySlot.timeWindow);
+    const loadData = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem(`va_project_logbook_${projectId || 'garden-room'}`) || 'null');
+        const gen = JSON.parse(localStorage.getItem('va_general_logbook') || 'null');
+        const custom = stored || gen;
+        if (custom && custom.length > 0) {
+          setLogbook(custom);
         }
-        if (Array.isArray(proj.weekPlanning) && proj.weekPlanning.length > 0) {
-          setPlanningRows(proj.weekPlanning);
+      } catch (e) {}
+
+      api.get('/projects?type=garden_room&limit=1').then(res => {
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const proj = res.data[0];
+          setProjectId(proj.id);
+          setProjectData(proj);
+          if (proj.orderStatus) setActiveStep(proj.orderStatus);
+          if (proj.deliverySlot?.proposedDate) {
+            setSchouwDag(proj.deliverySlot.proposedDate);
+            if (proj.deliverySlot.timeWindow) setSchouwTijd(proj.deliverySlot.timeWindow);
+          }
+          if (Array.isArray(proj.weekPlanning) && proj.weekPlanning.length > 0) {
+            setPlanningRows(proj.weekPlanning);
+          }
+          if (Array.isArray(proj.renderVersions) && proj.renderVersions.length > 0) {
+            setRenderVersions(proj.renderVersions);
+          }
         }
-        if (Array.isArray(proj.renderVersions) && proj.renderVersions.length > 0) {
-          setRenderVersions(proj.renderVersions);
-        }
-      }
-    });
-  }, []);
+      });
+    };
+
+    loadData();
+    window.addEventListener('app_data_changed', loadData);
+    window.addEventListener('storage', loadData);
+    return () => {
+      window.removeEventListener('app_data_changed', loadData);
+      window.removeEventListener('storage', loadData);
+    };
+  }, [projectId]);
 
   const handleConfirmPhaseUpdate = async (e) => {
     e.preventDefault();

@@ -19,8 +19,8 @@ export default function PartnerPriceRequests() {
   const [formData, setFormData] = useState({});
   const [submitted, setSubmitted] = useState([]);
   const [open, setOpen] = useState([]);
-  const [inspectedOffer, setInspectedOffer] = useState(null);
   const [toastMsg, setToastMsg] = useState('');
+  const [inspectedOffer, setInspectedOffer] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get('tab');
 
@@ -80,39 +80,39 @@ export default function PartnerPriceRequests() {
         { id: 'f-mat-2', label: 'Countertop & Finishing (€)', required: true }
       ]
     },
-      {
-        id: 'sec-labor',
-        title: 'Labour Cost (Craftsmanship & Assembly)',
-        icon: '🔨',
-        fields: [
-          { id: 'f-lab-1', label: 'Workshop Fabrication & Hours (€)', required: true }
-        ]
-      },
-      {
-        id: 'sec-transport',
-        title: 'Transport Cost (Delivery & Freight)',
-        icon: '🚚',
-        fields: [
-          { id: 'f-tra-1', label: 'Freight & Delivery Cost (€)', required: true }
-        ]
-      },
-      {
-        id: 'sec-installation',
-        title: 'Installation Cost (Montage & Plaatsing)',
-        icon: '🏗️',
-        fields: [
-          { id: 'f-ins-1', label: 'Montage op Locatie (€)', required: true }
-        ]
-      },
-      {
-        id: 'sec-other',
-        title: 'Other Cost (Overige Kosten & Vergunning)',
-        icon: '💼',
-        fields: [
-          { id: 'f-oth-1', label: 'Overige Werkzaamheden (€)', required: false }
-        ]
-      }
-    ]);
+    {
+      id: 'sec-labor',
+      title: 'Labour Cost (Craftsmanship & Assembly)',
+      icon: '🔨',
+      fields: [
+        { id: 'f-lab-1', label: 'Workshop Fabrication & Hours (€)', required: true }
+      ]
+    },
+    {
+      id: 'sec-transport',
+      title: 'Transport Cost (Delivery & Freight)',
+      icon: '🚚',
+      fields: [
+        { id: 'f-tra-1', label: 'Freight & Delivery Cost (€)', required: true }
+      ]
+    },
+    {
+      id: 'sec-installation',
+      title: 'Installation Cost (Montage & Plaatsing)',
+      icon: '🏗️',
+      fields: [
+        { id: 'f-ins-1', label: 'Montage op Locatie (€)', required: true }
+      ]
+    },
+    {
+      id: 'sec-other',
+      title: 'Other Cost (Overige Kosten & Vergunning)',
+      icon: '💼',
+      fields: [
+        { id: 'f-oth-1', label: 'Overige Werkzaamheden (€)', required: false }
+      ]
+    }
+  ]);
 
   // Load dynamic breakdown schema from Platform Settings
   const loadBreakdownConfig = useCallback(async () => {
@@ -174,8 +174,8 @@ export default function PartnerPriceRequests() {
             : (rawCust
               ? String(rawCust)
               : item.locationAccess?.city
-              ? (language === 'NL' ? `Klant (${item.locationAccess.city})` : `Client (${item.locationAccess.city})`)
-              : (language === 'NL' ? 'Klant' : 'Client'));
+                ? (language === 'NL' ? `Klant (${item.locationAccess.city})` : `Client (${item.locationAccess.city})`)
+                : (language === 'NL' ? 'Klant' : 'Client'));
 
           const baseObj = {
             id: item.requestNumber || item.id,

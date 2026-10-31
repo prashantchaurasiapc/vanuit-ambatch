@@ -35,14 +35,23 @@ export default function OutdoorKitchenOverview({ project = null }) {
   const targetDelivery = project?.expectedDelivery || (isNl ? '15 november 2026' : '15 November 2026');
   const projectCode = project?.projectNumber || project?.id || '2026-014';
 
+  const isReadyForDelivery = project?.orderStatus === 'klaar_voor_levering' || 
+    project?.orderStatus === 'ready_for_delivery' ||
+    (project?.currentPhaseName || '').toLowerCase().includes('delivery') ||
+    (project?.status || '') === 'Ready for delivery' ||
+    Number(project?.productionStep) >= 4 ||
+    Number(project?.progressPercentage) >= 75;
+
+  const isCompletedProject = (project?.status || '').toLowerCase() === 'completed' || Number(project?.productionStep) >= 5;
+
   // 6-Stage Timeline Configuration
   const stages = [
     { key: 'request', label: isNl ? 'Aanvraag' : 'Request', status: 'completed' },
     { key: 'quote', label: isNl ? 'Offerte' : 'Quote', status: 'completed' },
     { key: 'design', label: isNl ? 'Akkoord & ontwerp' : 'Approval & design', status: 'completed' },
-    { key: 'workshop', label: isNl ? 'In de werkplaats' : 'In the workshop', status: 'current' },
-    { key: 'delivery', label: isNl ? 'Levering' : 'Delivery', status: 'upcoming' },
-    { key: 'aftercare', label: isNl ? 'Nazorg' : 'Aftercare', status: 'upcoming' },
+    { key: 'workshop', label: isNl ? 'In de werkplaats' : 'In the workshop', status: isReadyForDelivery || isCompletedProject ? 'completed' : 'current' },
+    { key: 'delivery', label: isNl ? 'Levering' : 'Delivery', status: isCompletedProject ? 'completed' : isReadyForDelivery ? 'current' : 'upcoming' },
+    { key: 'aftercare', label: isNl ? 'Nazorg' : 'Aftercare', status: isCompletedProject ? 'current' : 'upcoming' },
   ];
 
   return (
@@ -133,7 +142,7 @@ export default function OutdoorKitchenOverview({ project = null }) {
 
           {/* Connecting Line Track */}
           <div className="absolute top-[22px] left-[8%] right-[8%] h-0.5 bg-[#D6CFC2] -z-0">
-            <div className="h-full bg-primary transition-all duration-500" style={{ width: '60%' }} />
+            <div className="h-full bg-primary transition-all duration-500" style={{ width: isCompletedProject ? '100%' : isReadyForDelivery ? '80%' : '60%' }} />
           </div>
         </div>
 

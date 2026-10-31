@@ -61,20 +61,56 @@ export default function GardenRoomPlanningView({ project = null }) {
   const handleApproveSchouw = async () => {
     setIsApproving(true);
     setSchouwApproved(true);
-    const pid = project?.id;
-    if (pid) {
+    const pid = project?.id || 'garden-room';
+    const custName = project?.customer || 'Klant';
+    const surveyDate = project?.technicalSpecs?.schouw?.surveyDate || new Date().toISOString().split('T')[0];
+    const timeSlot = project?.technicalSpecs?.schouw?.timeSlot || '09:00 - 11:00';
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if (project?.id) {
       try {
-        const surveyDate = project?.technicalSpecs?.schouw?.surveyDate || new Date().toISOString().split('T')[0];
-        const timeSlot = project?.technicalSpecs?.schouw?.timeSlot || '09:00 - 11:00';
-        await api.post(`/customer/projects/${pid}/schouw/confirm`, {
+        await api.post(`/customer/projects/${project.id}/schouw/confirm`, {
           surveyDate,
           timeSlot
         });
-        window.dispatchEvent(new Event('app_data_changed'));
       } catch (e) {
         console.warn('API schouw confirm:', e);
       }
     }
+
+    // 2. Append to Logbook
+    const newActivity = {
+      id: Date.now(),
+      date: `Today ${timeNow}`,
+      text: `Customer (${custName}) confirmed site survey (schouw) for ${surveyDate} (${timeSlot}) — Customer Portal`
+    };
+    try {
+      const existingLogs = JSON.parse(localStorage.getItem(`va_project_logbook_${pid}`) || '[]');
+      localStorage.setItem(`va_project_logbook_${pid}`, JSON.stringify([newActivity, ...existingLogs]));
+      const generalLogs = JSON.parse(localStorage.getItem('va_general_logbook') || '[]');
+      localStorage.setItem('va_general_logbook', JSON.stringify([newActivity, ...generalLogs]));
+    } catch (e) {}
+
+    // 3. Dispatch Admin Bell Notification
+    const notifItem = {
+      id: `notif-schouw-${Date.now()}`,
+      titleKey: isNl ? 'Schouwafspraak goedgekeurd' : 'Site survey approved',
+      descKey: isNl
+        ? `${custName} heeft schouwafspraak bevestigd (${surveyDate}, ${timeSlot}).`
+        : `${custName} confirmed site survey (${surveyDate}, ${timeSlot}).`,
+      timeKey: 'Zojuist',
+      unread: true,
+      isCustomText: true,
+      link: '/admin/projects',
+      projectId: pid
+    };
+    try {
+      const existingNotifs = JSON.parse(localStorage.getItem('va_admin_notifications') || '[]');
+      localStorage.setItem('va_admin_notifications', JSON.stringify([notifItem, ...existingNotifs]));
+    } catch (e) {}
+    window.dispatchEvent(new CustomEvent('app_new_notification', { detail: notifItem }));
+    window.dispatchEvent(new Event('app_data_changed'));
+
     setFeedbackToast(isNl ? 'Schouwafspraak goedgekeurd & ingepland!' : 'Site survey appointment approved!');
     setIsApproving(false);
     setTimeout(() => setFeedbackToast(''), 4000);
@@ -86,14 +122,52 @@ export default function GardenRoomPlanningView({ project = null }) {
       setTimeout(() => setFeedbackToast(''), 3000);
       return;
     }
-    const pid = project?.id;
-    if (pid) {
+    const pid = project?.id || 'garden-room';
+    const custName = project?.customer || 'Klant';
+    const noteText = customDateNote.trim();
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if (project?.id) {
       try {
-        await api.post(`/conversations/${pid}/messages`, {
-          content: `Preferred site survey date request: ${customDateNote.trim()}`
+        await api.post(`/conversations/${project.id}/messages`, {
+          content: `Preferred site survey date request: ${noteText}`
         });
       } catch (e) {}
     }
+
+    // 2. Append to Logbook
+    const newActivity = {
+      id: Date.now(),
+      date: `Today ${timeNow}`,
+      text: `Customer (${custName}) requested alternative survey date: "${noteText}" — Customer Portal`
+    };
+    try {
+      const existingLogs = JSON.parse(localStorage.getItem(`va_project_logbook_${pid}`) || '[]');
+      localStorage.setItem(`va_project_logbook_${pid}`, JSON.stringify([newActivity, ...existingLogs]));
+      const generalLogs = JSON.parse(localStorage.getItem('va_general_logbook') || '[]');
+      localStorage.setItem('va_general_logbook', JSON.stringify([newActivity, ...generalLogs]));
+    } catch (e) {}
+
+    // 3. Dispatch Admin Bell Notification
+    const notifItem = {
+      id: `notif-schouw-alt-${Date.now()}`,
+      titleKey: isNl ? 'Andere schouwdatum aangevraagd' : 'Alternative survey date requested',
+      descKey: isNl
+        ? `${custName} verzoekt andere datum: "${noteText}"`
+        : `${custName} requested another date: "${noteText}"`,
+      timeKey: 'Zojuist',
+      unread: true,
+      isCustomText: true,
+      link: '/admin/projects',
+      projectId: pid
+    };
+    try {
+      const existingNotifs = JSON.parse(localStorage.getItem('va_admin_notifications') || '[]');
+      localStorage.setItem('va_admin_notifications', JSON.stringify([notifItem, ...existingNotifs]));
+    } catch (e) {}
+    window.dispatchEvent(new CustomEvent('app_new_notification', { detail: notifItem }));
+    window.dispatchEvent(new Event('app_data_changed'));
+
     setFeedbackToast(isNl ? 'Verzoek voor andere datum ingediend! We nemen snel contact op.' : 'Alternative date request submitted! We will contact you shortly.');
     setCustomDateNote('');
     setTimeout(() => setFeedbackToast(''), 4000);

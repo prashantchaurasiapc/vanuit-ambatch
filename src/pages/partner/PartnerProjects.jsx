@@ -279,8 +279,11 @@ export default function PartnerProjects() {
     e.preventDefault();
     if (!editProject) return;
 
-    const progressVal = Number(editProject.progress) || 0;
+    const isReadyForDelivery = editProject.status === 'Ready for delivery';
     const isCompleted = editProject.status === 'Completed';
+    let progressVal = Number(editProject.progress) || 0;
+    if (isReadyForDelivery && progressVal < 75) progressVal = 75;
+    if (isCompleted) progressVal = 100;
 
     // 1. Call dedicated partner progress endpoint (saves status & progressPercentage)
     const partnerRes = await api.patch(`/partner/projects/${editProject.id}/progress`, {
@@ -288,14 +291,46 @@ export default function PartnerProjects() {
       progress: progressVal
     });
 
-    // 2. Also sync top-level project status
+    // 2. Also sync top-level canonical project status in backend
     await api.patch(`/projects/${editProject.id}/status`, {
       status: isCompleted ? 'completed' : 'in_progress',
-      orderStatus: isCompleted ? 'voltooid' : 'in_productie',
+      orderStatus: isCompleted ? 'voltooid' : isReadyForDelivery ? 'klaar_voor_levering' : 'in_productie',
+      productionStep: isCompleted ? 5 : isReadyForDelivery ? 4 : 3,
       progressPercentage: progressVal
     }).catch(() => {});
 
-    // 3. Immediately update UI state so user sees instant feedback
+    // Also update project status-texts so customer sees it
+    if (isReadyForDelivery) {
+      await api.patch(`/projects/${editProject.id}/status-texts`, {
+        currentPhaseName: 'Ready for delivery',
+        heading: 'Klaar voor levering',
+        subheading: 'De vakman heeft de productie afgerond. Uw bestelling is gereed voor transport en montage.',
+        explanation: 'Kwaliteitscontrole voltooid in de werkplaats. We plannen het bezorgmoment in.'
+      }).catch(() => {});
+    }
+
+    // 3. Dispatch an admin notification that partner marked project Ready for delivery!
+    if (isReadyForDelivery) {
+      const notifItem = {
+        id: `notif-part-${Date.now()}`,
+        titleKey: language === 'NL' ? 'Project gereed voor levering' : 'Project ready for delivery',
+        descKey: language === 'NL'
+          ? `Vakman heeft "${editProject.name}" gemarkeerd als klaar voor levering (75%)`
+          : `Partner marked "${editProject.name}" as ready for delivery (75%)`,
+        timeKey: 'Zojuist',
+        unread: true,
+        isCustomText: true,
+        link: '/admin/projects',
+        projectId: editProject.id
+      };
+      try {
+        const existing = JSON.parse(localStorage.getItem('va_admin_notifications') || '[]');
+        localStorage.setItem('va_admin_notifications', JSON.stringify([notifItem, ...existing]));
+      } catch (err) {}
+      window.dispatchEvent(new CustomEvent('app_new_notification', { detail: notifItem }));
+    }
+
+    // 4. Immediately update UI state so user sees instant feedback
     setProjects(prev => prev.map(p => p.id === editProject.id ? {
       ...p,
       status: editProject.status,
@@ -303,10 +338,12 @@ export default function PartnerProjects() {
       progressPercentage: progressVal
     } : p));
 
-    showToast(`Project "${editProject.name}" progress updated!`);
+    showToast(language === 'NL' 
+      ? `Project "${editProject.name}" status bijgewerkt: ${editProject.status}!` 
+      : `Project "${editProject.name}" progress updated!`);
     setEditProject(null);
 
-    // 4. Trigger global reload so all components and backend stay 100% in sync
+    // 5. Trigger global reload so all components and backend stay 100% in sync
     window.dispatchEvent(new Event('app_data_changed'));
     setTimeout(() => loadProjects(), 300);
   };
@@ -421,7 +458,9 @@ export default function PartnerProjects() {
 
   const filteredProjects = statusFilter === 'All' 
     ? projects 
-    : projects.filter(p => p.status === statusFilter);
+    : statusFilter === 'In Progress'
+      ? projects.filter(p => p.status === 'In Progress' || p.status === 'Ready for delivery' || p.status === 'Review Required')
+      : projects.filter(p => p.status === statusFilter);
 
   return (
     <div className="space-y-6 font-body text-[#4A4A43] relative">
@@ -503,8 +542,8 @@ export default function PartnerProjects() {
                     <span className="text-[10px] font-mono text-cream/80 font-bold block">{project.id}</span>
                     <h3 className="font-heading font-bold text-white text-sm sm:text-base leading-snug truncate">{project.name}</h3>
                   </div>
-                  <Badge variant={project.status === 'Completed' ? 'success' : project.status === 'In Progress' ? 'primary' : 'warning'} className="flex-shrink-0 text-[10px]">
-                    {project.status}
+                  <Badge variant={project.status === 'Completed' ? 'success' : project.status === 'Ready for delivery' ? 'accent' : project.status === 'In Progress' ? 'primary' : 'warning'} className="flex-shrink-0 text-[10px]">
+                    {project.status === 'Ready for delivery' ? label('Ready for delivery', 'Klaar voor levering') : project.status}
                   </Badge>
                 </div>
               </div>
@@ -588,11 +627,21 @@ export default function PartnerProjects() {
                   <label className="block text-dark/70 font-semibold mb-1 uppercase">{label('Status', 'Status')}</label>
                   <select
                     value={editProject.status}
-                    onChange={e => setEditProject({ ...editProject, status: e.target.value })}
+                    onChange={e => {
+                      const newStatus = e.target.value;
+                      let newProg = editProject.progress;
+                      if (newStatus === 'Ready for delivery' && Number(newProg) < 75) {
+                        newProg = 75;
+                      } else if (newStatus === 'Completed') {
+                        newProg = 100;
+                      }
+                      setEditProject({ ...editProject, status: newStatus, progress: newProg });
+                    }}
                     className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-lg text-dark font-bold focus:outline-none"
                   >
                     <option value="In Progress">{label('In Progress', 'In Uitvoering')}</option>
                     <option value="Review Required">{label('Review Required', 'Ter Controle')}</option>
+                    <option value="Ready for delivery">{label('Ready for delivery', 'Klaar voor levering')}</option>
                     <option value="Completed">{label('Completed', 'Afgerond')}</option>
                   </select>
                 </div>
