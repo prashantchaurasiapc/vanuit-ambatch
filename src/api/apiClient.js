@@ -9,10 +9,9 @@
  *  - Global 403 → console warn (caller handles UI)
  */
 export const BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ||
-  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
     ? '/api'
-    : 'https://feisty-beauty-production-2f61.up.railway.app/api')
+    : (import.meta.env.VITE_API_BASE_URL || 'https://feisty-beauty-production-2f61.up.railway.app/api')
 ).replace(/\/+$/, '');
 
 async function request(method, path, body = null, isFormData = false) {
@@ -44,19 +43,10 @@ async function request(method, path, body = null, isFormData = false) {
 
   const response = await fetch(`${BASE_URL}${path}`, options);
 
-  // Handle 401 globally — session expired or not logged in
+  // Handle 401 globally — notify caller without violently discarding user session on page refreshes
   if (response.status === 401) {
-    sessionStorage.removeItem('auth_user');
-    localStorage.removeItem('auth_user');
-    sessionStorage.removeItem('va_token');
-    localStorage.removeItem('va_token');
-    sessionStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_token');
-    // Avoid redirect loop on the login page or public offerte pages
-    if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/offerte/')) {
-      window.location.href = '/login';
-    }
-    return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired. Please log in again.' } };
+    console.warn('[apiClient] 401 Unauthorized for route:', path);
+    return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired or unauthenticated.' } };
   }
 
   // Handle 403 globally

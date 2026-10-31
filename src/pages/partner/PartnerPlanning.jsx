@@ -7,6 +7,7 @@ import { Calendar as CalendarIcon, Clock, CheckCircle2, Circle, Plus, Filter, Ma
 import { useLanguage } from '../../context/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
+import { useSearchParams } from 'react-router-dom';
 
 import api from '../../api/apiClient';
 import PartnerWorkloadAvailabilityCard from '../../components/partner/PartnerWorkloadAvailabilityCard';
@@ -60,7 +61,21 @@ export default function PartnerPlanning() {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const showAvailabilityModal = searchParams.get('modal') === 'workload';
+
+  const handleOpenAvailabilityModal = () => {
+    const next = new URLSearchParams(searchParams);
+    next.set('modal', 'workload');
+    setSearchParams(next, { replace: true });
+  };
+
+  const handleCloseAvailabilityModal = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('modal');
+    setSearchParams(next, { replace: true });
+  };
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [newEvent, setNewEvent] = useState({ title: '', client: '', location: '', time: '10:00 - 11:30', type: 'Site Visit' });
@@ -249,7 +264,7 @@ export default function PartnerPlanning() {
           <Button 
             variant="outline" 
             icon={Sliders} 
-            onClick={() => setShowAvailabilityModal(true)}
+            onClick={handleOpenAvailabilityModal}
             className="text-xs bg-white/80 border-[#C4BEB3] hover:border-primary text-primary font-semibold"
           >
             {language === 'NL' ? 'Werkdruk & Beschikbaarheid' : 'Workload & Availability'}
@@ -649,6 +664,7 @@ export default function PartnerPlanning() {
                 <X className="w-4 h-4" />
               </button>
               <PartnerWorkloadAvailabilityCard 
+                onClose={() => setShowAvailabilityModal(false)}
                 onWorkloadChange={() => {
                   showToast(language === 'NL' ? '✓ Beschikbaarheid opgeslagen' : '✓ Availability updated');
                 }} 

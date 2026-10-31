@@ -118,12 +118,12 @@ export async function generateFull6PagePdf(quoteData) {
   const quote = quoteData?.quote || quoteData || {};
   const quoteId = quote.id || quote.quoteId || 'OF-2026331';
 
-  // Determine active language: quote.language -> localStorage -> default 'EN'
-  let activeLang = quote.language;
+  // Determine active language: quoteData.language -> quote.language -> localStorage -> default 'NL'
+  let activeLang = quoteData?.language || quote?.language;
   if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
     activeLang = window.localStorage.getItem('app_language');
   }
-  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
+  activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
 
   const custObj = typeof quote.customer === 'object' && quote.customer !== null ? quote.customer : null;
   const rawCust = custObj?.name || (custObj ? `${custObj.firstName || ''} ${custObj.lastName || ''}`.trim() : null) || (typeof quote.customer === 'string' ? quote.customer : null) || quote.customerName;
@@ -142,6 +142,8 @@ export async function generateFull6PagePdf(quoteData) {
   tempDiv.style.opacity = '1';
   tempDiv.style.pointerEvents = 'none';
   tempDiv.style.backgroundColor = '#FFFFFF';
+  tempDiv.style.letterSpacing = 'normal';
+  tempDiv.style.fontVariantLigatures = 'none';
   document.body.appendChild(tempDiv);
 
   let root = null;
@@ -162,9 +164,11 @@ export async function generateFull6PagePdf(quoteData) {
     if (document.fonts) {
       await Promise.all([
         document.fonts.load('400 16px "Playfair Display"').catch(() => {}),
+        document.fonts.load('500 17px "Playfair Display"').catch(() => {}),
         document.fonts.load('600 16px "Playfair Display"').catch(() => {}),
         document.fonts.load('italic 16px "Playfair Display"').catch(() => {}),
         document.fonts.load('400 14px "Montserrat"').catch(() => {}),
+        document.fonts.load('500 14px "Montserrat"').catch(() => {}),
         document.fonts.load('600 14px "Montserrat"').catch(() => {}),
         document.fonts.load('700 14px "Montserrat"').catch(() => {}),
         document.fonts.ready
@@ -201,12 +205,19 @@ export async function generateFull6PagePdf(quoteData) {
       for (let i = 0; i < pageElements.length; i++) {
         const el = pageElements[i];
         const canvas = await html2canvas(el, {
-          scale: 3, // 300 DPI high-resolution razor-sharp typography
+          scale: 2.5, // 250 DPI razor-sharp brand typography without canvas aspect distortion
           useCORS: true,
           allowTaint: false,
           backgroundColor: el.classList.contains('bg-[#33422C]') ? '#33422C' : '#FDFBF7',
           logging: false,
-          windowWidth: 794
+          width: 794,
+          height: 1123,
+          windowWidth: 794,
+          windowHeight: 1123,
+          x: 0,
+          y: 0,
+          scrollX: 0,
+          scrollY: 0
         });
 
         const imgData = canvas.toDataURL('image/png'); // Lossless PNG: zero compression blur
@@ -241,11 +252,11 @@ export async function generateFull6PagePdf(quoteData) {
  */
 export function downloadQuotePdf(quote) {
   const quoteObj = quote?.quote || quote || {};
-  let activeLang = quoteObj.language;
+  let activeLang = quote?.language || quoteObj?.language;
   if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
     activeLang = window.localStorage.getItem('app_language');
   }
-  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
+  activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
 
   const quoteId = quoteObj.id || quoteObj.quoteId || 'OF-2026331';
   const custObj = typeof quoteObj.customer === 'object' && quoteObj.customer !== null ? quoteObj.customer : null;
@@ -405,11 +416,11 @@ export function downloadQuotePdfFallback(quote) {
  */
 export async function downloadDirectPdfFile(quoteData = {}) {
   const quoteObj = quoteData?.quote || quoteData || {};
-  let activeLang = quoteObj.language;
+  let activeLang = quoteData?.language || quoteObj?.language;
   if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
     activeLang = window.localStorage.getItem('app_language');
   }
-  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
+  activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
 
   try {
     return await generateFull6PagePdf({ ...quoteObj, language: activeLang });
@@ -422,11 +433,11 @@ export async function downloadDirectPdfFile(quoteData = {}) {
 export function downloadDirectPdfFileFallback(quoteData = {}) {
   // Extract properties supporting both raw params or full quote object
   const quote = quoteData.quote || quoteData;
-  let activeLang = quote?.language;
+  let activeLang = quoteData?.language || quote?.language;
   if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
     activeLang = window.localStorage.getItem('app_language');
   }
-  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
+  activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
 
   const quoteId = quote.id || quote.quoteId || 'OF-2026331';
   

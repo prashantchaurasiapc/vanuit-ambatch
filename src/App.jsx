@@ -45,8 +45,26 @@ import PdfPreview from './pages/PdfPreview';
 
 // Protected Route
 function ProtectedRoute({ children, requiredRole }) {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
+  const { user, isLoading } = useAuth();
+
+  // If initial auth verification is running and we don't have a cached user yet, show a clean loading spinner
+  if (!user && isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F9F7F2]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-[#2C3E35] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs text-[#2C3E35]/60 font-medium">Laden...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not logged in -> go to login, preserving the route they were trying to visit
+  if (!user) {
+    const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+    return <Navigate to={`/login?redirect=${returnUrl}`} replace />;
+  }
+
   // Allow Admin to view any portal in preview/impersonation mode
   if (requiredRole && user.role !== requiredRole && user.role !== 'admin') {
     return <Navigate to={`/${user.role}/dashboard`} replace />;
@@ -69,13 +87,45 @@ const PlaceholderPage = ({ title, subtitle }) => (
 
 function App() {
   const { user } = useAuth();
+  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const redirectTarget = searchParams.get('redirect');
+
+  useEffect(() => {
+    // Clear developer prototype mock caches once on app mount for clean testing
+    const resetKey = 'clean_slate_reset_v1';
+    if (!localStorage.getItem(resetKey)) {
+      localStorage.removeItem('app_quotes_v2');
+      localStorage.removeItem('app_leads_v2');
+      localStorage.removeItem('app_projects_v2');
+      localStorage.removeItem('app_pipeline_candidates');
+      localStorage.removeItem('pipeline_candidates_migrated');
+      localStorage.removeItem('app_invoices_v2');
+      localStorage.setItem(resetKey, 'true');
+    }
+  }, []);
+
+  const defaultHome = user
+    ? (redirectTarget && redirectTarget.startsWith('/') ? redirectTarget : `/${user.role}/dashboard`)
+    : '/login';
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to={`/${user.role}/dashboard`} /> : <Login />} />
+      <Route
+        path="/login"
+        element={
+          user ? (
+            <Navigate
+              to={redirectTarget && redirectTarget.startsWith('/') ? redirectTarget : `/${user.role}/dashboard`}
+              replace
+            />
+          ) : (
+            <Login />
+          )
+        }
+      />
       <Route path="/pdf-preview" element={<PdfPreview />} />
       <Route path="/offerte/:token" element={<PublicOfferte />} />
-      <Route path="/" element={user ? <Navigate to={`/${user.role}/dashboard`} replace /> : <Navigate to="/login" replace />} />
+      <Route path="/" element={<Navigate to={defaultHome} replace />} />
 
       {/* Admin */}
       <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><MainLayout role="admin" /></ProtectedRoute>}>

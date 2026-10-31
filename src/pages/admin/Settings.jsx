@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
@@ -10,7 +11,67 @@ import api from '../../api/apiClient';
 export default function Settings() {
   const { t, language } = useLanguage();
   const fileInputRef = useRef(null);
-  const [activeTab, setActiveTab] = useState('Company'); // 'Company' | 'Users' | 'FieldSet' | 'Templates'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+
+  const resolveInitialTab = () => {
+    if (urlTab) {
+      const lower = urlTab.toLowerCase();
+      if (lower === 'company') return 'Company';
+      if (lower === 'categories') return 'Categories';
+      if (lower === 'fieldset') return 'FieldSet';
+      if (lower === 'partnerbreakdown' || lower === 'breakdown') return 'PartnerBreakdown';
+      if (lower === 'profitlossconfig' || lower === 'profitloss') return 'ProfitLossConfig';
+      if (lower === 'users') return 'Users';
+      if (lower === 'templates') return 'Templates';
+      if (lower === 'theme') return 'Theme';
+    }
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('admin_settings_active_tab') : null;
+    if (saved) return saved;
+    return 'Company';
+  };
+
+  const [activeTab, setActiveTabState] = useState(resolveInitialTab);
+
+  const setActiveTab = useCallback((tab) => {
+    setActiveTabState(tab);
+    localStorage.setItem('admin_settings_active_tab', tab);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab.toLowerCase());
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  useEffect(() => {
+    if (urlTab) {
+      const lower = urlTab.toLowerCase();
+      const tabMap = {
+        company: 'Company',
+        categories: 'Categories',
+        fieldset: 'FieldSet',
+        partnerbreakdown: 'PartnerBreakdown',
+        breakdown: 'PartnerBreakdown',
+        profitlossconfig: 'ProfitLossConfig',
+        profitloss: 'ProfitLossConfig',
+        users: 'Users',
+        templates: 'Templates',
+        theme: 'Theme',
+      };
+      const target = tabMap[lower] || 'Company';
+      if (activeTab !== target) {
+        setActiveTabState(target);
+        localStorage.setItem('admin_settings_active_tab', target);
+      }
+    } else {
+      const current = localStorage.getItem('admin_settings_active_tab') || activeTab;
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', current.toLowerCase());
+        return next;
+      }, { replace: true });
+    }
+  }, [urlTab, activeTab, setSearchParams]);
   const [toastMsg, setToastMsg] = useState('');
 
   const getDisplayValue = (key, val) => {

@@ -19,7 +19,8 @@ import {
   getDisplayInfoboxTitle,
   getDisplayInfoboxText,
   getDisplayLineItemTitle,
-  getDisplayLineItemDesc
+  getDisplayLineItemDesc,
+  getDisplaySalutation
 } from '../utils/translator';
 
 export default function Offerte6PagePDF({ quote, activePage = null, highlightField = null, companyDetails = null, language: propLanguage = null }) {
@@ -49,15 +50,15 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   const companyInfo = loadedCompanyInfo || companyDetails || {};
 
   const compName = companyInfo.companyName || companyInfo.name || 'Vanuit Ambacht';
-  const compAddress = companyInfo.address || 'Koningshof 33, 3451 LM Vleuten';
+  const compAddress = (companyInfo.address && !companyInfo.address.includes('Industrieweg')) ? companyInfo.address : 'Koningshof 33, 3451 LM Vleuten';
   const compEmail = companyInfo.email || 'info@vanuitambacht.nl';
-  const compPhone = companyInfo.phone || '06 82 00 80 25';
-  const compKvk = companyInfo.kvkNumber ? `KVK ${companyInfo.kvkNumber}` : companyInfo.kvk || 'KVK 93097429';
-  const compVat = companyInfo.btwNumber ? `BTW ${companyInfo.btwNumber}` : companyInfo.vatNumber || 'BTW NL866264863B01';
-  const compIban = companyInfo.iban || 'NL27 ABNA 0132 2698 56';
-  const compWebsite = companyInfo.website || 'vanuitambacht.nl';
+  const compPhone = (companyInfo.phone && !companyInfo.phone.includes('12345678')) ? companyInfo.phone : '06 82 00 80 25';
+  const compKvk = (companyInfo.kvkNumber ? `KVK ${companyInfo.kvkNumber}` : companyInfo.kvk) && !String(companyInfo.kvk || '').includes('84729102') ? (companyInfo.kvkNumber ? `KVK ${companyInfo.kvkNumber}` : companyInfo.kvk) : 'KVK 93067429';
+  const compVat = (companyInfo.btwNumber ? `BTW ${companyInfo.btwNumber}` : companyInfo.vatNumber) && !String(companyInfo.vat || '').includes('863492817') ? (companyInfo.btwNumber ? `BTW ${companyInfo.btwNumber}` : companyInfo.vatNumber) : 'BTW NL866264863B01';
+  const compIban = (companyInfo.iban && companyInfo.iban.includes('NL27')) ? companyInfo.iban : 'IBAN NL27 ABNA 0132 2698 56';
+  const compWebsite = 'vanuitambacht.nl';
 
-  // Language resolution: prop -> langCtx -> quote.language -> localStorage -> 'EN' default
+  // Language resolution: prop -> langCtx -> quote.language -> localStorage -> 'NL' default
   let currentLang = propLanguage || langCtx?.language || quote?.language;
   if (!currentLang) {
     try {
@@ -66,12 +67,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       }
     } catch (e) {}
   }
-  const language = (currentLang === 'NL' || currentLang === 'nl') ? 'NL' : 'EN';
+  const language = (currentLang === 'EN' || currentLang === 'en') ? 'EN' : 'NL';
 
   // Extract dynamic customer & header properties (safe string resolution preventing customerName.trim crashes)
   const custObj = typeof quote?.customer === 'object' && quote?.customer !== null ? quote.customer : null;
   const customerInfo = quote?.activeVersion?.optionsConfig?.customerInfo || quote?.configuration?.options?.customerInfo;
-  
   let rawCustName = '';
   if (custObj) {
     rawCustName = custObj.name || `${custObj.firstName || ''} ${custObj.lastName || ''}`.trim();
@@ -126,7 +126,10 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   const config = quote?.configuration || {};
   const woodType = config.woodType || quote?.woodType || 'Thermo Fraké';
   const dimensions = config.dimensions || quote?.dimensions || '240 × 80';
-  const cleanDimensions = String(dimensions).replace(/\s*cm$/i, '').trim();
+  const cleanDimensions = String(dimensions)
+    .replace(/\s*cm$/i, '')
+    .trim()
+    .replace(/\s*[\*xX×]\s*/g, ' × ');
 
 
   const categoryTitle = productTypeLower.includes('poolhouse')
@@ -188,7 +191,12 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   }
 
   const displayWood = getDisplayWoodType(woodType, language);
-  const displayCoverOption = getDisplayOptionsTitle(coverOptionStr, language);
+  const rawCoverOption = getDisplayOptionsTitle(coverOptionStr, language);
+  const displayCoverOption = isGardenRoom
+    ? rawCoverOption
+    : (language === 'NL'
+        ? (rawCoverOption.toLowerCase().startsWith('uitsparing') ? rawCoverOption : `uitsparing ${rawCoverOption}`)
+        : rawCoverOption);
 
   const subtitleText = cover.subtitleOverrideEnabled && cover.customSubtitle
     ? cover.customSubtitle
@@ -453,27 +461,39 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               <div className="grid grid-cols-3 gap-5 items-start">
                 <div className="col-span-2 space-y-3 text-[13px] leading-[1.65] text-[#4A4A43]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   <h3 className="text-2xl sm:text-3xl font-normal text-[#33422C]" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
-                    {quote?.letterAndProcess?.salutation ? quote.letterAndProcess.salutation : <>{language === 'EN' ? 'Dear' : 'Beste'} <span className="text-[#3E4E36] capitalize font-semibold">{firstName}</span>,</>}
+                    {getDisplaySalutation(quote?.letterAndProcess?.salutation, firstName, language)}
                   </h3>
-                  {(quote?.letterAndProcess?.letterParagraphs && Array.isArray(quote.letterAndProcess.letterParagraphs) && quote.letterAndProcess.letterParagraphs.length > 0 && quote.letterAndProcess.letterParagraphs.some(p => p && p.trim().length > 0)
-                    ? quote.letterAndProcess.letterParagraphs.filter(p => p && p.trim().length > 0)
-                    : [
-                        language === 'EN'
-                          ? 'Thank you very much for your inquiry and pleasant consultation. We are delighted to present this personalized proposal for your custom outdoor project.'
-                          : 'Hartelijk dank voor je aanvraag en het prettige gesprek. Met veel plezier presenteren wij deze persoonlijke offerte voor jouw maatwerk buitenkeuken.',
-                        language === 'EN'
-                          ? 'At Vanuit Ambacht, we believe in sustainable materials, artisan craftsmanship, and meticulous attention to detail. We handcraft all our builds in our workshop.'
-                          : 'Bij Vanuit Ambacht geloven we in duurzame materialen, ambachtelijke afwerking en oog voor detail. Wij maken al onze buitenkeukens met de hand in onze werkplaats.',
-                        language === 'EN'
-                          ? 'In this document, you will find a comprehensive overview of your chosen configuration, including specifications, technical drawings, and transparent investment breakdown.'
-                          : 'In dit document vind je het volledige overzicht van jouw gekozen configuratie, inclusief specificaties, vooraanzicht tekening en transparante investering.',
-                        language === 'EN'
-                          ? 'Should you have any questions or wish to make adjustments, we are delighted to assist you!'
-                          : 'Heb je vragen of wens je nog aanpassingen? Wij denken graag met je mee!'
-                      ]
-                  ).map((para, idx) => (
-                    <p key={idx}>{para}</p>
-                  ))}
+                  {(() => {
+                    const defaultDutchParas = [
+                      'Hartelijk dank voor je aanvraag en het prettige gesprek. Met veel plezier presenteren wij deze persoonlijke offerte voor jouw maatwerk buitenkeuken.',
+                      'Bij Vanuit Ambacht geloven we in duurzame materialen, ambachtelijke afwerking en oog voor detail. Wij maken al onze buitenkeukens met de hand in onze werkplaats.',
+                      'In dit document vind je het volledige overzicht van jouw gekozen configuratie, inclusief specificaties, vooraanzicht tekening en transparante investering.',
+                      'Heb je vragen of wens je nog aanpassingen? Wij denken graag met je mee!'
+                    ];
+                    const defaultEnglishParas = [
+                      'Thank you very much for your inquiry and pleasant consultation. We are delighted to present this personalized proposal for your custom outdoor kitchen.',
+                      'At Vanuit Ambacht, we believe in sustainable materials, artisan craftsmanship, and meticulous attention to detail. We handcraft all our outdoor kitchens in our workshop.',
+                      'In this document, you will find a comprehensive overview of your chosen configuration, including specifications, front-view diagram, and transparent investment.',
+                      'Should you have any questions or wish to make adjustments, we are delighted to assist you!'
+                    ];
+
+                    const rawParas = quote?.letterAndProcess?.letterParagraphs;
+                    let paras = (rawParas && Array.isArray(rawParas) && rawParas.length > 0 && rawParas.some(p => p && p.trim().length > 0))
+                      ? rawParas.filter(p => p && p.trim().length > 0)
+                      : (language === 'EN' ? defaultEnglishParas : defaultDutchParas);
+
+                    if (language === 'NL') {
+                      const isEnglishDefault = paras.some(p => p && (p.includes('Thank you very much for your inquiry') || p.includes('sustainable materials, artisan craftsmanship')));
+                      if (isEnglishDefault) paras = defaultDutchParas;
+                    } else if (language === 'EN') {
+                      const isDutchDefault = paras.some(p => p && (p.includes('Hartelijk dank voor je aanvraag') || p.includes('duurzame materialen, ambachtelijke afwerking')));
+                      if (isDutchDefault) paras = defaultEnglishParas;
+                    }
+
+                    return paras.map((para, idx) => (
+                      <p key={idx}>{para}</p>
+                    ));
+                  })()}
                   <div className="pt-2">
                     <p className="text-base text-primary font-normal italic" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                       {quote?.letterAndProcess?.signoffName || 'Tim & Bram'}
@@ -615,49 +635,59 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             </div>
 
             {/* 4 Green Stat Tiles */}
-            <div className="grid grid-cols-4 gap-2.5">
-              <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
-                <span className="text-[9px] uppercase tracking-widest text-[#D6CFC2] block font-bold" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+            <div className="grid grid-cols-4 gap-3">
+              <div className="bg-[#3E4E36] rounded-[8px] text-left shadow-sm" style={{ padding: '20px 14px 0 18px', minHeight: '107px', height: '107px', boxSizing: 'border-box' }}>
+                <span className="block uppercase" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8.8px', fontWeight: 600, letterSpacing: '0.2em', color: '#D6CFC2', lineHeight: '1' }}>
                   {language === 'EN' ? 'DIMENSIONS' : 'AFMETING'}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{cleanDimensions}</p>
-                <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
+                <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '17px', fontWeight: 500, color: '#F3EFE7', letterSpacing: 'normal', fontVariantLigatures: 'none', WebkitFontFeatureSettings: '"liga" 0', marginTop: '7px', lineHeight: '1.25' }}>
+                  {cleanDimensions}
+                </p>
+                <span className="block" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: '9.33px', lineHeight: '13px', color: '#F3EFE7', opacity: 0.8, marginTop: '4px', letterSpacing: 'normal' }}>
                   {getDisplayDimensionsUnit(config.dimensionsUnit || 'centimeter', language)}
                 </span>
               </div>
 
-              <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
-                <span className="text-[9px] uppercase tracking-widest text-[#D6CFC2] block font-bold" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+              <div className="bg-[#49593F] rounded-[8px] text-left shadow-sm" style={{ padding: '20px 14px 0 18px', minHeight: '107px', height: '107px', boxSizing: 'border-box' }}>
+                <span className="block uppercase" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8.8px', fontWeight: 600, letterSpacing: '0.2em', color: '#D6CFC2', lineHeight: '1' }}>
                   {language === 'EN' ? 'WOOD TYPE' : 'HOUTSOORT'}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '17px', fontWeight: 500, color: '#F3EFE7', letterSpacing: 'normal', fontVariantLigatures: 'none', WebkitFontFeatureSettings: '"liga" 0', marginTop: '7px', lineHeight: '1.25' }}>
                   {getDisplayWoodType(woodType, language)}
                 </p>
-                <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
+                <span className="block" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: '9.33px', lineHeight: '13px', color: '#F3EFE7', opacity: 0.8, marginTop: '4px', letterSpacing: 'normal' }}>
                   {getDisplayLifespan(config.woodLifespan || woodLifespan, language)}
                 </span>
               </div>
 
-              <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
-                <span className="text-[9px] uppercase tracking-widest text-[#D6CFC2] block font-bold" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+              <div className="bg-[#3E4E36] rounded-[8px] text-left shadow-sm" style={{ padding: '20px 14px 0 18px', minHeight: '107px', height: '107px', boxSizing: 'border-box' }}>
+                <span className="block uppercase" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8.8px', fontWeight: 600, letterSpacing: '0.2em', color: '#D6CFC2', lineHeight: '1' }}>
                   {tile3Title}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal truncate" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-                  {getDisplayOptionsTitle(tile3Value, language)}
-                </p>
-                <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
+                {(() => {
+                  let cleanVal = getDisplayOptionsTitle(tile3Value, language);
+                  if (!isGardenRoom && cleanVal.toLowerCase().includes('big green egg')) {
+                    cleanVal = 'Big Green Egg';
+                  }
+                  return (
+                    <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: cleanVal.length > 18 ? '14.5px' : '17px', fontWeight: 500, color: '#F3EFE7', letterSpacing: 'normal', fontVariantLigatures: 'none', WebkitFontFeatureSettings: '"liga" 0', marginTop: '7px', lineHeight: '1.25' }}>
+                      {cleanVal}
+                    </p>
+                  );
+                })()}
+                <span className="block" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: '9.33px', lineHeight: '13px', color: '#F3EFE7', opacity: 0.8, marginTop: '4px', letterSpacing: 'normal' }}>
                   {getDisplayOptionsSubtext(config.optionsSubtext || tile3Subtext, language)}
                 </span>
               </div>
 
-              <div className="bg-[#35442E] p-3.5 rounded-2xl text-center space-y-1 shadow-sm border border-[#43543A]">
-                <span className="text-[9px] uppercase tracking-widest text-[#D6CFC2] block font-bold" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+              <div className="bg-[#49593F] rounded-[8px] text-left shadow-sm" style={{ padding: '20px 14px 0 18px', minHeight: '107px', height: '107px', boxSizing: 'border-box' }}>
+                <span className="block uppercase" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8.8px', fontWeight: 600, letterSpacing: '0.2em', color: '#D6CFC2', lineHeight: '1' }}>
                   {language === 'EN' ? 'DELIVERY TIME' : 'LEVERTIJD'}
                 </span>
-                <p className="text-lg sm:text-xl font-serif text-[#FDFBF7] leading-tight font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '17px', fontWeight: 500, color: '#F3EFE7', letterSpacing: 'normal', fontVariantLigatures: 'none', WebkitFontFeatureSettings: '"liga" 0', marginTop: '7px', lineHeight: '1.25' }}>
                   {getDisplayDeliveryTime(deliveryTime, language)}
                 </p>
-                <span className="text-[9px] text-[#E5DFD5] block font-body pt-0.5">
+                <span className="block" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: '9.33px', lineHeight: '13px', color: '#F3EFE7', opacity: 0.8, marginTop: '4px', letterSpacing: 'normal' }}>
                   {getDisplayDeliverySubtext(config.deliverySubtext || 'na akkoord op tekening', language)}
                 </span>
               </div>
@@ -748,12 +778,19 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                         return (
                           <div
                             key={sIdx}
-                            style={{ flex: Math.max(1, Number(seg.width) || 50) }}
-                            className={`py-2 px-1 rounded-xl font-bold shadow-xs border ${isDark ? 'bg-[#33422C] text-[#FDFBF7] border-[#33422C]' : 'bg-white text-dark border-[#D6CFC2]'
+                            style={{
+                              flex: Math.max(1, Number(seg.width) || 50),
+                              minHeight: '46px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'center',
+                              alignItems: 'center'
+                            }}
+                            className={`py-1.5 px-1 rounded-xl font-bold shadow-xs border ${isDark ? 'bg-[#33422C] text-[#FDFBF7] border-[#33422C]' : 'bg-white text-dark border-[#D6CFC2]'
                               }`}
                           >
-                            <span className="truncate block max-w-full">{segLabel}</span>
-                            <span className="text-[8px] opacity-70 block">{seg.width} cm</span>
+                            <span className="block max-w-full text-center" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8.5px', lineHeight: '12px', letterSpacing: 'normal', fontVariantLigatures: 'none', whiteSpace: 'nowrap' }}>{segLabel}</span>
+                            <span className="opacity-70 block text-center" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8px', lineHeight: '11px', letterSpacing: 'normal', marginTop: '2px' }}>{seg.width} cm</span>
                           </div>
                         );
                       })}
@@ -809,7 +846,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 04 &nbsp;·&nbsp; {language === 'EN' ? 'INVESTMENT' : 'INVESTERING'}
               </span>
               <h3 className="text-2xl sm:text-3xl text-[#33422C] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
-                {language === 'EN' ? 'Your investment overview' : (quote?.investment?.title && quote.investment.title !== 'Heldere prijs, alles inbegrepen' ? quote.investment.title : 'Uw investering in één overzicht')}
+                {language === 'EN' ? 'Your investment overview' : (quote?.investment?.title && quote.investment.title !== 'Heldere prijs, alles inbegrepen' && quote.investment.title !== 'Uw investering in één overzicht' ? quote.investment.title : 'Heldere prijs, alles inbegrepen')}
               </h3>
             </div>
 
@@ -839,7 +876,14 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                       <td className="py-3 px-3 text-center font-bold text-[#33422C]" style={{ fontFamily: "'Montserrat', sans-serif" }}>{item.quantity || 1}</td>
                       <td className="py-3 px-1 text-right font-bold text-[#2E2E29] text-sm whitespace-nowrap" style={{ fontFamily: "'Montserrat', sans-serif", fontVariantNumeric: 'tabular-nums' }}>
                         {item.isIncluded || Number(item.priceInclVat || item.unitPrice || 0) === 0
-                          ? <span className="font-bold text-[#3E4E36]">{language === 'EN' ? 'Included' : 'Inbegrepen'}</span>
+                          ? (
+                            <span
+                              className="inline-block px-2 py-0.5 rounded text-[10.4px] font-semibold"
+                              style={{ fontFamily: "'Montserrat', sans-serif", background: '#EAE5DC', color: '#3E4E36' }}
+                            >
+                              {language === 'EN' ? 'Included' : 'Inbegrepen'}
+                            </span>
+                          )
                           : formatDecEuro(Number(item.priceInclVat || item.unitPrice || 0) * Number(item.quantity || 1))}
                       </td>
                     </tr>
@@ -903,8 +947,8 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                       <span className="text-sm font-semibold text-[#FDFBF7]">{language === 'EN' ? 'Total incl. VAT' : 'Totaal incl. btw'}</span>
                       <span className="text-2xl sm:text-3xl text-[#FDFBF7] font-serif font-bold" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontVariantNumeric: 'tabular-nums' }}>{formatDecEuro(totalIncl)}</span>
                     </div>
-                    <p className="text-[10px] text-[#D6CFC2] italic text-right block pt-0.5">
-                      {quote?.investment?.vatDisclaimer || (language === 'EN' ? 'All amounts include VAT' : 'Alle bedragen inclusief btw')}
+                    <p className="text-[10px] text-[#D6CFC2] italic text-right block pt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                      {language === 'EN' ? (quote?.investment?.vatDisclaimer || 'All amounts include VAT') : 'Alle bedragen zijn inclusief btw'}
                     </p>
                   </div>
                 </div>
@@ -986,9 +1030,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
       {/* PAGE 5 OF 6: AKKOORD & SIGNATURES */}
       {(!activePage || activePage === 'all' || Number(activePage) === 5) && (
-        <div className="offerte-pdf-page bg-[#FDFBF7] text-dark p-6 sm:p-8 space-y-4 rounded-xl shadow-xl print:rounded-none print:shadow-none h-[1050px] flex flex-col justify-between border border-[#C4BEB3]">
-          <div className="space-y-6">
-            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs">
+        <div className="offerte-pdf-page bg-[#FDFBF7] text-dark p-5 sm:p-6 space-y-2 rounded-xl shadow-xl print:rounded-none print:shadow-none min-h-[1050px] flex flex-col justify-between border border-[#C4BEB3]">
+          <div className="space-y-2.5">
+            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-2 text-xs">
               <div className="flex items-center gap-2">
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
@@ -998,76 +1042,120 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               </div>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <span className="text-[10px] text-[#8A8275] font-semibold uppercase tracking-[0.16em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 05 &nbsp;·&nbsp; {language === 'EN' ? 'APPROVAL' : 'AKKOORD'}
               </span>
               <h3 className="text-2xl font-serif font-bold text-[#33422C]" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-                {quote?.letterAndProcess?.approvalTitle || (language === 'EN' ? 'Shall we craft this for you?' : 'Zullen we hem gaan maken?')}
+                {language === 'EN' ? (quote?.letterAndProcess?.approvalTitle || 'Shall we craft this for you?') : 'Zullen we hem gaan maken?'}
               </h3>
             </div>
 
-            <div className="p-6 sm:p-7 bg-[#35442E] text-[#FDFBF7] rounded-2xl space-y-4 shadow-sm border border-[#43543A] relative overflow-hidden">
-              <div className="relative z-10 space-y-1.5">
-                <h4 className="text-xl font-serif text-[#FDFBF7] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-                  {quote?.letterAndProcess?.approvalSubheading || (language === 'EN' ? 'Approving takes just one minute' : 'Akkoord geven kan in één minuut')}
+            <div className="p-3.5 sm:p-4 bg-[#35442E] text-[#FDFBF7] rounded-xl space-y-2 shadow-sm border border-[#43543A] relative overflow-hidden">
+              <div className="relative z-10 space-y-1">
+                <h4 className="text-lg sm:text-xl font-serif text-[#FDFBF7] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                  {language === 'EN' ? (quote?.letterAndProcess?.approvalSubheading || 'Approving takes just one minute') : 'Akkoord geven kan in één minuut'}
                 </h4>
-                <p className="text-xs text-[#E5DFD5] leading-relaxed max-w-xl" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                  {quote?.letterAndProcess?.approvalText || (language === 'EN'
-                    ? 'Send a quick confirmation via WhatsApp or email, or sign below. You will then receive the final design with technical drawings for confirmation, and we will get right to work.'
-                    : 'Stuur een korte bevestiging per WhatsApp of mail, of onderteken hieronder. Daarna ontvang je het definitieve ontwerp met technische tekening ter bevestiging en gaan we voor je aan de slag.')}
+                <p className="text-[11px] text-[#E5DFD5] leading-relaxed max-w-xl" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                  {language === 'EN'
+                    ? (quote?.letterAndProcess?.approvalText || 'Send a quick confirmation via WhatsApp or email, or sign below. You will then receive the final design with technical drawings for confirmation, and we will get right to work.')
+                    : 'Stuur een korte bevestiging per WhatsApp of mail, of onderteken hieronder. Daarna ontvang je het definitieve ontwerp met technische tekening ter bevestiging en gaan we voor je aan de slag.'}
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-3 pt-2 text-xs relative z-10" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                <a href="https://wa.me/31682008025" target="_blank" rel="noopener noreferrer" className="px-5 py-2.5 bg-[#EAE5DC] text-[#33422C] font-bold rounded-xl shadow-2xs hover:bg-white transition-colors inline-flex items-center gap-2 border border-[#E2DDD3]">
+              <div className="flex flex-wrap gap-2.5 pt-0.5 text-xs relative z-10" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                <a href="https://wa.me/31682008025" target="_blank" rel="noopener noreferrer" className="px-3.5 py-1.5 bg-[#EAE5DC] text-[#33422C] font-bold rounded-lg shadow-2xs hover:bg-white transition-colors inline-flex items-center gap-1.5 border border-[#E2DDD3] text-[11px]">
                   💬 WhatsApp · 06 82 00 80 25
                 </a>
-                <a href="mailto:info@vanuitambacht.nl" className="px-5 py-2.5 bg-[#3E4E36]/80 text-[#FDFBF7] font-bold rounded-xl transition-colors inline-flex items-center gap-2 border border-[#52664A] hover:bg-[#3E4E36]">
+                <a href="mailto:info@vanuitambacht.nl" className="px-3.5 py-1.5 bg-[#3E4E36]/80 text-[#FDFBF7] font-bold rounded-lg transition-colors inline-flex items-center gap-1.5 border border-[#52664A] hover:bg-[#3E4E36] text-[11px]">
                   ✉️ info@vanuitambacht.nl
                 </a>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
-              <div className="p-6 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] space-y-4 shadow-xs">
-                <span className="text-[10px] uppercase font-bold text-[#3E4E36] tracking-widest block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-0.5">
+              <div
+                className="bg-[#F7F4EE] rounded-[8px] shadow-sm flex flex-col justify-between"
+                style={{ padding: '12px 18px', minHeight: '175px' }}
+              >
+                <span style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8.8px', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#70624F' }} className="block">
                   {language === 'EN' ? 'APPROVED BY · CLIENT' : 'VOOR AKKOORD · OPDRACHTGEVER'}
                 </span>
-                <div className="pt-2 space-y-4 font-body">
-                  <div className="relative pb-1 border-b-2 border-[#33422C]">
-                    <span className="font-serif italic text-[#33422C] text-xl font-medium block h-7" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{customerName}</span>
-                    <span className="text-[10px] text-dark/60 block mt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'Name' : 'Naam'}</span>
+
+                <div className="space-y-2.5 pt-1 font-body">
+                  {/* Naam */}
+                  <div>
+                    <span
+                      style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontWeight: 400, fontSize: '15px', lineHeight: '22px', color: '#3E4E36', letterSpacing: 'normal' }}
+                      className="block min-h-[22px]"
+                    >
+                      {customerName}
+                    </span>
+                    <div className="w-full h-[1px] bg-[#4A4A43] mt-0.5"></div>
+                    <span style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: '9px', color: '#9A938A' }} className="block mt-0.5">
+                      {language === 'EN' ? 'Name' : 'Naam'}
+                    </span>
                   </div>
-                  <div className="pb-1 border-b-2 border-[#33422C]">
-                    <span className="block h-6"></span>
-                    <span className="text-[10px] text-dark/60 block mt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'Date' : 'Datum'}</span>
+
+                  {/* Datum */}
+                  <div>
+                    <span className="block min-h-[16px]"></span>
+                    <div className="w-full h-[1px] bg-[#4A4A43] mt-0.5"></div>
+                    <span style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: '9px', color: '#9A938A' }} className="block mt-0.5">
+                      {language === 'EN' ? 'Date' : 'Datum'}
+                    </span>
                   </div>
-                  <div className="pb-1 border-b-2 border-[#33422C]">
-                    <span className="block h-6"></span>
-                    <span className="text-[10px] text-dark/60 block mt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'Signature' : 'Handtekening'}</span>
+
+                  {/* Handtekening */}
+                  <div>
+                    <span className="block min-h-[16px]"></span>
+                    <div className="w-full h-[1px] bg-[#4A4A43] mt-0.5"></div>
+                    <span style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: '9px', color: '#9A938A' }} className="block mt-0.5">
+                      {language === 'EN' ? 'Signature' : 'Handtekening'}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="p-6 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] space-y-4 shadow-xs">
-                <span className="text-[10px] uppercase font-bold text-[#3E4E36] tracking-widest block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+              <div
+                className="bg-[#F7F4EE] rounded-[8px] shadow-sm flex flex-col justify-between"
+                style={{ padding: '12px 18px', minHeight: '175px' }}
+              >
+                <span style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8.8px', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#70624F' }} className="block">
                   {language === 'EN' ? 'ON BEHALF OF VANUIT AMBACHT' : 'NAMENS VANUIT AMBACHT'}
                 </span>
-                <div className="pt-2 space-y-4 font-body">
-                  <div className="relative pb-1 border-b-2 border-[#33422C]">
-                    <span className="font-serif italic text-[#33422C] text-xl font-medium block h-7" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+
+                <div className="space-y-2.5 pt-1 font-body">
+                  {/* Naam */}
+                  <div>
+                    <span
+                      style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontWeight: 400, fontSize: '15px', lineHeight: '22px', color: '#3E4E36', letterSpacing: 'normal' }}
+                      className="block min-h-[22px]"
+                    >
                       {quote?.letterAndProcess?.signoffName || 'Tim & Bram'}
                     </span>
-                    <span className="text-[10px] text-dark/60 block mt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'Name' : 'Naam'} · {quote?.letterAndProcess?.signoffRole || (language === 'EN' ? 'Vanuit Ambacht' : 'Vanuit Ambacht')}</span>
+                    <div className="w-full h-[1px] bg-[#4A4A43] mt-0.5"></div>
+                    <span style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: '9px', color: '#9A938A' }} className="block mt-0.5">
+                      {language === 'EN' ? 'Name' : 'Naam'}
+                    </span>
                   </div>
-                  <div className="pb-1 border-b-2 border-[#33422C]">
-                    <span className="block h-6"></span>
-                    <span className="text-[10px] text-dark/60 block mt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'Date' : 'Datum'}</span>
+
+                  {/* Datum */}
+                  <div>
+                    <span className="block min-h-[16px]"></span>
+                    <div className="w-full h-[1px] bg-[#4A4A43] mt-0.5"></div>
+                    <span style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: '9px', color: '#9A938A' }} className="block mt-0.5">
+                      {language === 'EN' ? 'Date' : 'Datum'}
+                    </span>
                   </div>
-                  <div className="pb-1 border-b-2 border-[#33422C]">
-                    <span className="block h-6"></span>
-                    <span className="text-[10px] text-dark/60 block mt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'Signature' : 'Handtekening'}</span>
+
+                  {/* Handtekening */}
+                  <div>
+                    <span className="block min-h-[16px]"></span>
+                    <div className="w-full h-[1px] bg-[#4A4A43] mt-0.5"></div>
+                    <span style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: '9px', color: '#9A938A' }} className="block mt-0.5">
+                      {language === 'EN' ? 'Signature' : 'Handtekening'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1087,12 +1175,12 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
               if (!isApproved) return null;
               return (
-                <div className="p-3 bg-[#3E4E36]/10 border border-[#3E4E36] rounded-xl flex items-center justify-between text-xs text-[#3E4E36] shadow-xs" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                <div className="p-2 bg-[#3E4E36]/10 border border-[#3E4E36] rounded-lg flex items-center justify-between text-xs text-[#3E4E36] shadow-xs" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-[#3E4E36]" />
                     <span>{language === 'EN' ? 'Officially Digitally Accepted' : 'Officiëel Digitaal Geaccepteerd'} · <strong className="text-dark">{signerName}</strong> ({approvedAtDate})</span>
                   </div>
-                  <span className="text-[10px] font-bold bg-[#3E4E36] text-[#FDFBF7] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                  <span className="text-[10px] font-bold bg-[#3E4E36] text-[#FDFBF7] px-2 py-0.5 rounded-full uppercase tracking-wider">
                     {language === 'EN' ? 'Legally Binding' : 'Rechtsgeldig'}
                   </span>
                 </div>
@@ -1100,35 +1188,48 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             })()}
 
             {/* Authentic Terms & Conditions disclaimer matching client template */}
-            <p className="text-[10px] text-[#70624F] leading-relaxed pt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+            <p className="text-[9.2px] text-[#8A847B] leading-[14px] pt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
               {language === 'EN'
                 ? `Our general terms and conditions apply to this proposal and to all agreements entered into with Vanuit Ambacht. You can find these on vanuitambacht.nl or receive them upon request. This proposal is valid until ${formatDutchDate(validUntil)}.`
                 : `Op deze offerte en op alle overeenkomsten die je met Vanuit Ambacht aangaat, zijn onze algemene voorwaarden van toepassing. Deze vind je op vanuitambacht.nl of ontvang je op aanvraag. Deze offerte is geldig tot en met ${formatDutchDate(validUntil)}.`}
             </p>
 
-            <div className="pt-3 border-t-2 border-[#33422C] grid grid-cols-3 gap-4 text-[10px] text-[#4A4A43]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+            <div className="pt-2 border-t border-[#3E4E36] grid grid-cols-3 gap-4" style={{ fontFamily: "'Montserrat', sans-serif" }}>
               <div>
-                <span className="font-bold uppercase text-[#33422C] block mb-1 tracking-wider">{language === 'EN' ? 'ADDRESS' : 'ADRES'}</span>
-                {quote?.company?.name || compName}<br />
-                {quote?.company?.address || compAddress}
+                <span className="block mb-0.5 uppercase" style={{ fontSize: '8.8px', fontWeight: 600, letterSpacing: '0.2em', color: '#70624F' }}>
+                  {language === 'EN' ? 'ADDRESS' : 'ADRES'}
+                </span>
+                <p style={{ fontSize: '10px', lineHeight: '14.5px', color: '#4A4A43', fontWeight: 400 }}>
+                  Vanuit Ambacht<br />
+                  Koningshof 33<br />
+                  3451 LM Vleuten
+                </p>
               </div>
               <div>
-                <span className="font-bold uppercase text-[#33422C] block mb-1 tracking-wider">{language === 'EN' ? 'CONTACT' : 'CONTACT'}</span>
-                {quote?.company?.phone || compPhone}<br />
-                {quote?.company?.email || compEmail}<br />
-                {quote?.company?.website || compWebsite}
+                <span className="block mb-0.5 uppercase" style={{ fontSize: '8.8px', fontWeight: 600, letterSpacing: '0.2em', color: '#70624F' }}>
+                  {language === 'EN' ? 'CONTACT' : 'CONTACT'}
+                </span>
+                <p style={{ fontSize: '10px', lineHeight: '14.5px', color: '#4A4A43', fontWeight: 400 }}>
+                  06 82 00 80 25<br />
+                  info@vanuitambacht.nl<br />
+                  vanuitambacht.nl
+                </p>
               </div>
               <div>
-                <span className="font-bold uppercase text-[#33422C] block mb-1 tracking-wider">{language === 'EN' ? 'COMPANY DETAILS' : 'GEGEVENS'}</span>
-                {quote?.company?.kvk || compKvk}<br />
-                {quote?.company?.vat || compVat}<br />
-                {quote?.company?.iban || compIban}
+                <span className="block mb-0.5 uppercase" style={{ fontSize: '8.8px', fontWeight: 600, letterSpacing: '0.2em', color: '#70624F' }}>
+                  {language === 'EN' ? 'COMPANY DETAILS' : 'GEGEVENS'}
+                </span>
+                <p style={{ fontSize: '10px', lineHeight: '14.5px', color: '#4A4A43', fontWeight: 400 }}>
+                  KVK 93067429<br />
+                  BTW NL866264863B01<br />
+                  IBAN NL27 ABNA 0132 2698 56
+                </p>
               </div>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+          <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-2 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
             <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#3E4E36]">{quoteId}</strong></span>
             <span className="font-bold">5 / 6</span>

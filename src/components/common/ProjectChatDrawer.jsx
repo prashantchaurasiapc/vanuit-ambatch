@@ -3,17 +3,21 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Paperclip, Send, Check, Image as ImageIcon, FileText } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import api from '../../api/apiClient';
 
 export default function ProjectChatDrawer({
   isOpen,
   onClose,
   projectCode = '2026-014',
+  projectId = null,
   clientName = 'Sander',
   partnerName = 'Sven',
   onShowToast
 }) {
   const { language } = useLanguage();
   const isEn = language !== 'NL';
+
+  const activeProjectId = projectId || projectCode || 'PRJ-2026-001';
 
   // Active channel: 'klant' | 'partner'
   const [activeChannel, setActiveChannel] = useState('klant');
@@ -25,6 +29,8 @@ export default function ProjectChatDrawer({
   // Unread badge counts
   const [klantUnread, setKlantUnread] = useState(2);
   const [partnerUnread, setPartnerUnread] = useState(1);
+  const [partnerConversationId, setPartnerConversationId] = useState(null);
+  const [customerConversationId, setCustomerConversationId] = useState(null);
 
   // Hidden file input ref for paperclip attachment
   const fileInputRef = useRef(null);
@@ -83,8 +89,139 @@ export default function ProjectChatDrawer({
   const saveDrawerStore = (kMsgs, pMsgs) => {
     setKlantMessages(kMsgs);
     setPartnerMessages(pMsgs);
-    // Messages are managed in-memory; persistence is via the conversations API
+    try {
+      localStorage.setItem(`va_partner_chat_${activeProjectId}`, JSON.stringify(pMsgs));
+      localStorage.setItem(`va_customer_chat_${activeProjectId}`, JSON.stringify(kMsgs));
+    } catch (err) {}
   };
+
+  // Load Partner & Customer Messages from backend and synchronized store
+  useEffect(() => {
+    let isMounted = true;
+    try {
+      const storedPartner = localStorage.getItem(`va_partner_chat_${activeProjectId}`);
+      if (storedPartner) {
+        setPartnerMessages(JSON.parse(storedPartner));
+      } else {
+        localStorage.setItem(`va_partner_chat_${activeProjectId}`, JSON.stringify(defaultPartner));
+      }
+
+      const storedCust = localStorage.getItem(`va_customer_chat_${activeProjectId}`);
+      if (storedCust) {
+        setKlantMessages(JSON.parse(storedCust));
+      } else {
+        localStorage.setItem(`va_customer_chat_${activeProjectId}`, JSON.stringify(defaultKlant));
+      }
+    } catch (err) {}
+
+    // Load from backend if available
+    api.get(`/conversations/project/${activeProjectId}`)
+      .then(res => {
+        if (!isMounted || !res.success || !res.data) return;
+        
+        // 1. Partner Channel
+        const partCh = res.data.partnerChannel;
+        if (partCh?.id) {
+          setPartnerConversationId(partCh.id);
+          api.get(`/conversations/${partCh.id}/messages`).then(msgRes => {
+            if (!isMounted || !msgRes.success || !Array.isArray(msgRes.data)) return;
+            if (msgRes.data.length > 0) {
+              const mapped = msgRes.data.map(m => ({
+                id: m.id,
+                sender: m.senderName,
+                initials: m.senderInitials || 'VA',
+                role: m.senderRole || (m.senderName?.includes('Tim') ? 'admin' : 'partner'),
+                text: m.content,
+                time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              }));
+              setPartnerMessages(mapped);
+              try {
+                localStorage.setItem(`va_partner_chat_${activeProjectId}`, JSON.stringify(mapped));
+              } catch (e) {}
+            }
+          }).catch(() => {});
+        }
+
+        // 2. Customer Channel
+        const custCh = res.data.customerChannel;
+        if (custCh?.id) {
+          setCustomerConversationId(custCh.id);
+          api.get(`/conversations/${custCh.id}/messages`).then(msgRes => {
+            if (!isMounted || !msgRes.success || !Array.isArray(msgRes.data)) return;
+            if (msgRes.data.length > 0) {
+              const mappedCust = msgRes.data.map(m => ({
+                id: m.id,
+                sender: m.senderName,
+                senderName: m.senderName,
+                initials: m.senderInitials || (m.senderRole === 'customer' ? 'SV' : 'T'),
+                role: m.senderRole || (m.senderName?.includes('Tim') ? 'admin' : 'klant'),
+                type: m.senderRole === 'customer' ? 'outgoing' : 'incoming',
+                text: m.content,
+                time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              }));
+              setKlantMessages(mappedCust);
+              try {
+                localStorage.setItem(`va_customer_chat_${activeProjectId}`, JSON.stringify(mappedCust));
+              } catch (e) {}
+            }
+          }).catch(() => {});
+        }
+      })
+      .catch(() => {});
+
+    // Listen for live messages from Partner Portal & Customer Portal in realtime
+    const handleLiveMessage = (e) => {
+      const detail = e.detail;
+      if (!detail) return;
+      if (detail.projectId === activeProjectId || !detail.projectId) {
+        if (detail.message) {
+          if (detail.channel === 'customer' || detail.message.role === 'customer' || detail.message.role === 'klant') {
+            setKlantMessages(prev => {
+              if (prev.some(m => m.id === detail.message.id)) return prev;
+              return [...prev, detail.message];
+            });
+            if (activeChannel !== 'klant' || !isOpen) {
+              setKlantUnread(prev => prev + 1);
+            }
+          } else {
+            setPartnerMessages(prev => {
+              if (prev.some(m => m.id === detail.message.id)) return prev;
+              return [...prev, detail.message];
+            });
+            if (activeChannel !== 'partner' || !isOpen) {
+              setPartnerUnread(prev => prev + 1);
+            }
+          }
+        }
+      }
+    };
+
+    const handleStorageUpdate = (e) => {
+      if (e.key === `va_partner_chat_${activeProjectId}`) {
+        try {
+          if (e.newValue) {
+            setPartnerMessages(JSON.parse(e.newValue));
+          }
+        } catch (err) {}
+      }
+      if (e.key === `va_customer_chat_${activeProjectId}`) {
+        try {
+          if (e.newValue) {
+            setKlantMessages(JSON.parse(e.newValue));
+          }
+        } catch (err) {}
+      }
+    };
+
+    window.addEventListener('app_chat_message', handleLiveMessage);
+    window.addEventListener('storage', handleStorageUpdate);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('app_chat_message', handleLiveMessage);
+      window.removeEventListener('storage', handleStorageUpdate);
+    };
+  }, [activeProjectId, isOpen, activeChannel]);
 
   // Auto-scroll to bottom when active channel or messages change
   useEffect(() => {
@@ -95,47 +232,108 @@ export default function ProjectChatDrawer({
     }
   }, [isOpen, activeChannel, klantMessages.length, partnerMessages.length]);
 
-  const handleSendKlant = (e) => {
+  const handleSendKlant = async (e) => {
     if (e) e.preventDefault();
     if (!inputKlantMsg.trim()) return;
 
+    const text = inputKlantMsg.trim();
+    setInputKlantMsg('');
+
     const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newMsg = {
-      id: Date.now(),
+      id: `msg-${Date.now()}`,
       sender: 'Tim (Admin)',
+      senderName: 'Tim (Admin)',
       initials: 'T',
       role: 'admin',
-      text: inputKlantMsg.trim(),
-      time: `Tim · ${timeNow} · ✓ sent`
+      type: 'incoming',
+      text: text,
+      time: `Tim · ${timeNow} · ✓ sent`,
+      createdAt: new Date().toISOString()
     };
 
     const nextKlant = [...klantMessages, newMsg];
-    saveDrawerStore(nextKlant, partnerMessages);
-    setInputKlantMsg('');
+    setKlantMessages(nextKlant);
+
+    try {
+      localStorage.setItem(`va_customer_chat_${activeProjectId}`, JSON.stringify(nextKlant));
+    } catch (err) {}
+
+    window.dispatchEvent(new CustomEvent('app_chat_message', { detail: { projectId: activeProjectId, channel: 'customer', message: newMsg } }));
+    window.dispatchEvent(new Event('app_data_changed'));
+
+    try {
+      if (customerConversationId) {
+        await api.post(`/conversations/${customerConversationId}/messages`, { content: text });
+      } else {
+        const convRes = await api.get(`/conversations/project/${activeProjectId}`);
+        const cId = convRes.data?.customerChannel?.id;
+        if (cId) {
+          setCustomerConversationId(cId);
+          await api.post(`/conversations/${cId}/messages`, { content: text });
+        }
+      }
+    } catch (err) {
+      console.warn('Backend customer message sync note:', err);
+    }
+
     if (onShowToast) {
-      onShowToast('✓ Message sent to customer (visible in customer portal + WhatsApp)');
+      onShowToast(isEn ? '✓ Message sent to customer (visible in customer portal + WhatsApp)' : '✓ Bericht verzonden naar klant (zichtbaar in klantportaal + WhatsApp)');
     }
   };
 
-  const handleSendPartner = (e) => {
+  const handleSendPartner = async (e) => {
     if (e) e.preventDefault();
     if (!inputPartnerMsg.trim()) return;
 
+    const text = inputPartnerMsg.trim();
+    setInputPartnerMsg('');
+
     const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newMsg = {
-      id: Date.now(),
+      id: `msg-${Date.now()}`,
       sender: 'Tim (Admin)',
       initials: 'T',
       role: 'admin',
-      text: inputPartnerMsg.trim(),
-      time: `Tim · ${timeNow} · ✓ sent`
+      text: text,
+      textEN: text,
+      textNL: text,
+      time: `Tim · ${timeNow} · ✓ sent`,
+      timeEN: `Tim · ${timeNow} · ✓ sent`,
+      timeNL: `Tim · ${timeNow} · ✓ verzonden`,
+      createdAt: new Date().toISOString()
     };
 
     const nextPart = [...partnerMessages, newMsg];
     saveDrawerStore(klantMessages, nextPart);
-    setInputPartnerMsg('');
+
+    // Save to shared localStorage so partner portal receives it immediately
+    try {
+      localStorage.setItem(`va_partner_chat_${activeProjectId}`, JSON.stringify(nextPart));
+    } catch (err) {}
+
+    // Dispatch global events for real-time reactivity
+    window.dispatchEvent(new CustomEvent('app_chat_message', { detail: { projectId: activeProjectId, message: newMsg } }));
+    window.dispatchEvent(new Event('app_data_changed'));
+
+    // Post to backend database
+    try {
+      if (partnerConversationId) {
+        await api.post(`/conversations/${partnerConversationId}/messages`, { content: text });
+      } else {
+        const convRes = await api.get(`/conversations/project/${activeProjectId}`);
+        const cId = convRes.data?.partnerChannel?.id;
+        if (cId) {
+          setPartnerConversationId(cId);
+          await api.post(`/conversations/${cId}/messages`, { content: text });
+        }
+      }
+    } catch (err) {
+      console.warn('Backend message sync note:', err);
+    }
+
     if (onShowToast) {
-      onShowToast('✓ Message sent to partner (Never visible to customer!)');
+      onShowToast(isEn ? '✓ Message sent to partner (Never visible to customer!)' : '✓ Bericht verzonden naar partner (Nooit zichtbaar voor klant!)');
     }
   };
 

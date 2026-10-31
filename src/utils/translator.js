@@ -431,20 +431,25 @@ export function getDisplayDimensionsUnit(val, language = 'EN') {
 
 // 7. Lifespan
 export function getDisplayLifespan(val, language = 'EN') {
-  if (!val) return language === 'EN' ? '20 to 25 years' : '20 tot 25 jaar';
-  const n = norm(val);
   const lang = String(language).toUpperCase();
+  const prefix = lang === 'NL' ? 'levensduur ' : 'lifespan ';
+  if (!val) return lang === 'NL' ? 'levensduur 20 tot 25 jaar' : 'lifespan 20 to 25 years';
+  const n = norm(val);
 
-  if (n === '10 tot 15 jaar' || n === '10 to 15 years') {
-    return lang === 'NL' ? '10 tot 15 jaar' : '10 to 15 years';
+  if (n === '10 tot 15 jaar' || n === '10 to 15 years' || n === 'levensduur 10 tot 15 jaar') {
+    return lang === 'NL' ? 'levensduur 10 tot 15 jaar' : 'lifespan 10 to 15 years';
   }
-  if (n === '15 tot 20 jaar' || n === '15 to 20 years') {
-    return lang === 'NL' ? '15 tot 20 jaar' : '15 to 20 years';
+  if (n === '15 tot 20 jaar' || n === '15 to 20 years' || n === 'levensduur 15 tot 20 jaar') {
+    return lang === 'NL' ? 'levensduur 15 tot 20 jaar' : 'lifespan 15 to 20 years';
   }
-  if (n === '20 tot 25 jaar' || n === '20 to 25 years') {
-    return lang === 'NL' ? '20 tot 25 jaar' : '20 to 25 years';
+  if (n === '20 tot 25 jaar' || n === '20 to 25 years' || n === 'levensduur 20 tot 25 jaar') {
+    return lang === 'NL' ? 'levensduur 20 tot 25 jaar' : 'lifespan 20 to 25 years';
   }
-  return val;
+  if (n.startsWith('levensduur ') || n.startsWith('lifespan ')) {
+    const after = val.replace(/^(levensduur|lifespan)\s*/i, '');
+    return lang === 'NL' ? `levensduur ${after}` : `lifespan ${after}`;
+  }
+  return `${prefix}${val}`;
 }
 
 // 8. Cover Titles (Line 1 & Line 2)
