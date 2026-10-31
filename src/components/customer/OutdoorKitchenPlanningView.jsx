@@ -60,20 +60,57 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
   const handleApproveDelivery = async () => {
     setIsApproving(true);
     setDeliveryApproved(true);
-    const pid = project?.id;
-    if (pid) {
+    const pid = project?.id || 'live-project';
+    const custName = project?.customer || 'Klant';
+    const slotDate = project?.deliverySlot?.proposedDate || new Date().toISOString().split('T')[0];
+    const slotTime = project?.deliverySlot?.timeWindow || '13:00 - 16:00';
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // 1. API Call to backend
+    if (project?.id) {
       try {
-        const slotDate = project?.deliverySlot?.proposedDate || new Date().toISOString().split('T')[0];
-        const slotTime = project?.deliverySlot?.timeWindow || '13:00 - 16:00';
-        await api.post(`/customer/projects/${pid}/delivery-slot/confirm`, {
+        await api.post(`/customer/projects/${project.id}/delivery-slot/confirm`, {
           proposedDate: slotDate,
           proposedTimeSlot: slotTime
         });
-        window.dispatchEvent(new Event('app_data_changed'));
       } catch (e) {
         console.warn('API delivery slot confirm:', e);
       }
     }
+
+    // 2. Append to Project Logbook Activity
+    const newActivity = {
+      id: Date.now(),
+      date: `Today ${timeNow}`,
+      text: `Customer (${custName}) confirmed delivery appointment for ${slotDate} (${slotTime}) — Customer Portal`
+    };
+    try {
+      const existingLogs = JSON.parse(localStorage.getItem(`va_project_logbook_${pid}`) || '[]');
+      localStorage.setItem(`va_project_logbook_${pid}`, JSON.stringify([newActivity, ...existingLogs]));
+      const generalLogs = JSON.parse(localStorage.getItem('va_general_logbook') || '[]');
+      localStorage.setItem('va_general_logbook', JSON.stringify([newActivity, ...generalLogs]));
+    } catch (e) {}
+
+    // 3. Dispatch Admin Notification to TopNav Bell
+    const notifItem = {
+      id: `notif-deliv-${Date.now()}`,
+      titleKey: isNl ? 'Bezorgmoment goedgekeurd' : 'Delivery date confirmed',
+      descKey: isNl
+        ? `${custName} heeft het leveringsvoorstel goedgekeurd (${slotDate}, ${slotTime}).`
+        : `${custName} confirmed delivery appointment (${slotDate}, ${slotTime}).`,
+      timeKey: 'Zojuist',
+      unread: true,
+      isCustomText: true,
+      link: '/admin/projects',
+      projectId: pid
+    };
+    try {
+      const existingNotifs = JSON.parse(localStorage.getItem('va_admin_notifications') || '[]');
+      localStorage.setItem('va_admin_notifications', JSON.stringify([notifItem, ...existingNotifs]));
+    } catch (e) {}
+    window.dispatchEvent(new CustomEvent('app_new_notification', { detail: notifItem }));
+    window.dispatchEvent(new Event('app_data_changed'));
+
     setFeedbackToast(isNl ? 'Bezorgmoment goedgekeurd & ingepland!' : 'Delivery appointment approved & scheduled!');
     setIsApproving(false);
     setTimeout(() => setFeedbackToast(''), 4000);
@@ -85,14 +122,53 @@ export default function OutdoorKitchenPlanningView({ project = null }) {
       setTimeout(() => setFeedbackToast(''), 3000);
       return;
     }
-    const pid = project?.id;
-    if (pid) {
+    const pid = project?.id || 'live-project';
+    const custName = project?.customer || 'Klant';
+    const noteText = customDateNote.trim();
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // 1. Send conversation message
+    if (project?.id) {
       try {
-        await api.post(`/conversations/${pid}/messages`, {
-          content: `Preferred delivery date request: ${customDateNote.trim()}`
+        await api.post(`/conversations/${project.id}/messages`, {
+          content: `Preferred delivery date request: ${noteText}`
         });
       } catch (e) {}
     }
+
+    // 2. Append to Project Logbook Activity
+    const newActivity = {
+      id: Date.now(),
+      date: `Today ${timeNow}`,
+      text: `Customer (${custName}) requested alternative delivery date: "${noteText}" — Customer Portal`
+    };
+    try {
+      const existingLogs = JSON.parse(localStorage.getItem(`va_project_logbook_${pid}`) || '[]');
+      localStorage.setItem(`va_project_logbook_${pid}`, JSON.stringify([newActivity, ...existingLogs]));
+      const generalLogs = JSON.parse(localStorage.getItem('va_general_logbook') || '[]');
+      localStorage.setItem('va_general_logbook', JSON.stringify([newActivity, ...generalLogs]));
+    } catch (e) {}
+
+    // 3. Dispatch Admin Notification to TopNav Bell
+    const notifItem = {
+      id: `notif-resched-${Date.now()}`,
+      titleKey: isNl ? 'Ander bezorgmoment aangevraagd' : 'Alternative delivery date requested',
+      descKey: isNl
+        ? `${custName} verzoekt andere datum: "${noteText}"`
+        : `${custName} requested another delivery date: "${noteText}"`,
+      timeKey: 'Zojuist',
+      unread: true,
+      isCustomText: true,
+      link: '/admin/projects',
+      projectId: pid
+    };
+    try {
+      const existingNotifs = JSON.parse(localStorage.getItem('va_admin_notifications') || '[]');
+      localStorage.setItem('va_admin_notifications', JSON.stringify([notifItem, ...existingNotifs]));
+    } catch (e) {}
+    window.dispatchEvent(new CustomEvent('app_new_notification', { detail: notifItem }));
+    window.dispatchEvent(new Event('app_data_changed'));
+
     setFeedbackToast(isNl ? 'Verzoek voor andere datum ingediend! We nemen snel contact op.' : 'Alternative delivery date request submitted! We will contact you shortly.');
     setCustomDateNote('');
     setTimeout(() => setFeedbackToast(''), 4000);

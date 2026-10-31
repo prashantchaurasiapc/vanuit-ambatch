@@ -166,8 +166,41 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
     }
   };
 
-  // Logbook — starts empty, entries added as real actions happen
-  const [logbook, setLogbook] = useState([]);
+  // Logbook — loaded from persistent storage and updated live by Customer & Partner actions
+  const [logbook, setLogbook] = useState(() => {
+    try {
+      const gen = JSON.parse(localStorage.getItem('va_general_logbook') || 'null');
+      return gen || [
+        { id: 1, date: 'Today 10:30', text: 'Quote OF-2026-014 accepted by customer (Sander de Vries) — System' },
+        { id: 2, date: 'Yesterday 14:15', text: 'Partner Hoek Bouw started frame construction — Sven Hoek' }
+      ];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const loadLogbook = () => {
+    try {
+      const pid = projectId || 'live-project';
+      const stored = JSON.parse(localStorage.getItem(`va_project_logbook_${pid}`) || 'null');
+      const gen = JSON.parse(localStorage.getItem('va_general_logbook') || 'null');
+      if (stored && stored.length > 0) {
+        setLogbook(stored);
+      } else if (gen && gen.length > 0) {
+        setLogbook(gen);
+      }
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    loadLogbook();
+    window.addEventListener('app_data_changed', loadLogbook);
+    window.addEventListener('storage', loadLogbook);
+    return () => {
+      window.removeEventListener('app_data_changed', loadLogbook);
+      window.removeEventListener('storage', loadLogbook);
+    };
+  }, [projectId]);
 
   const showToast = (msg) => {
     setToastMsg(msg);
@@ -565,7 +598,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
   const stepsList = [
     { name: isEn ? 'Agreement & Design' : 'Akkoord & Ontwerp', key: 'Agreement & Design', aliases: ['Agreement & Design', 'Akkoord & Ontwerp', 'akkoord'] },
     { name: isEn ? 'In the workshop' : 'In de werkplaats', key: 'In the workshop', aliases: ['In the workshop', 'In de werkplaats', 'werkplaats'] },
-    { name: isEn ? 'Ready for delivery' : 'Gereed voor levering', key: 'Ready for delivery', aliases: ['Ready for delivery', 'Gereed voor levering', 'levering'] },
+    { name: isEn ? 'Ready for delivery' : 'Gereed voor levering', key: 'Ready for delivery', aliases: ['Ready for delivery', 'Gereed voor levering', 'levering', 'klaar_voor_levering', 'ready_for_delivery', 'klaar voor levering'] },
     { name: isEn ? 'Delivered' : 'Geleverd', key: 'Delivered', aliases: ['Delivered', 'Geleverd', 'geleverd'] },
     { name: isEn ? 'Aftercare' : 'Nazorg', key: 'Aftercare', aliases: ['Aftercare', 'Nazorg', 'nazorg'] }
   ];

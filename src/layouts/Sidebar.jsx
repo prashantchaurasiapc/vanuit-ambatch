@@ -135,8 +135,6 @@ export default function Sidebar({ role }) {
     { name: t('common.documents') || 'Documents', path: '/customer/documents', icon: Folder },
     { name: t('common.payments') || 'Payments', path: '/customer/project?tab=payments', icon: CreditCard },
     { name: t('common.messagesContact') || 'Messages & Contact', path: '/customer/contact', icon: Phone },
-    { name: t('common.handoverAftercare') || 'Handover & Aftercare', path: '/customer/project?tab=handover', icon: ShieldCheck },
-    { name: t('common.mobileView') || 'Mobile View', path: '/customer/project?tab=mobile-view', icon: Smartphone },
   ];
 
 
