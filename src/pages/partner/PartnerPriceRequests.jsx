@@ -19,7 +19,9 @@ export default function PartnerPriceRequests() {
   const [formData, setFormData] = useState({});
   const [submitted, setSubmitted] = useState([]);
   const [open, setOpen] = useState([]);
+  const [toastMsg, setToastMsg] = useState('');
   const [inspectedOffer, setInspectedOffer] = useState(null);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get('tab');
 
