@@ -20,6 +20,7 @@ export default function PartnerPriceRequests() {
   const [submitted, setSubmitted] = useState([]);
   const [open, setOpen] = useState([]);
   const [inspectedOffer, setInspectedOffer] = useState(null);
+  const [toastMsg, setToastMsg] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get('tab');
 

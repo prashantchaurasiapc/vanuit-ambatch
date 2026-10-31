@@ -626,53 +626,206 @@ Object.assign(LEGACY_NL_TO_EN, {
   'Geverifieerd door Tim en Bram • Inclusief uitsparing voor Kamado Joe Ceramic Grill': 'Verified by Tim & Bram • Includes cutout for Kamado Joe Ceramic Grill'
 });
 
+
+// Extra vocabulary for 100% complete coverage across Quotes, Projects, Leads, and Partner portal
+const EXTRA_VOCABULARY = {
+  'STAT TILES (ALWAYS 4)': 'STATISTIEK TEGELS (ALTIJD 4)',
+  'DIMENSIONS': 'AFMETINGEN',
+  'Dimensions': 'Afmetingen',
+  'WOOD TYPE': 'HOUTSOORT',
+  'Wood Type': 'Houtsoort',
+  'CUTOUT': 'UITSPARING',
+  'Cutout': 'Uitsparing',
+  'DELIVERY TIME': 'LEVERTIJD',
+  'Delivery Time': 'Levertijd',
+  'No Barbecue': 'Geen Barbecue',
+  'centimeters': 'centimeter',
+  'Save dimensions, wood type and delivery time': 'Sla afmetingen, houtsoort en levertijd handmatig op',
+  'Save Configuration': 'Configuratie opslaan',
+  'Configuration saved successfully!': 'Configuratie succesvol opgeslagen!',
+  'Customer & details': 'Klant & gegevens',
+  'Cover': 'Omslag',
+  'Configuration': 'Configuratie',
+  'Investment': 'Investering',
+  'Letter & process': 'Brief & proces',
+  'Review & send': 'Controleren & verzenden',
+  'FOLLOWS OPTIONS': 'VOLGT OPTIES',
+  'FOLLOWS WOOD TYPE': 'VOLGT HOUTSOORT',
+  'MANUAL': 'HANDMATIG',
+  'ARCHITECTURAL LAYOUT': 'ARCHITECTONISCHE OPZET',
+  'ARCHITECTONISCHE OPZET': 'ARCHITECTURAL LAYOUT',
+  'Quick Actions': 'Snelle Acties',
+  'Upcoming Schedule': 'Aankomende Agenda',
+  'Full Agenda': 'Volledige Agenda',
+  'Workload & Available Weeks': 'Werkdruk & Beschikbare Weken',
+  'Upload Document': 'Document Uploaden',
+  'View Schedule & Agenda': 'Bekijk Planning & Agenda',
+  'Generate Partner Report': 'Partnerrapport Genereren',
+  'My Active Projects': 'Mijn Actieve Projecten',
+  'Overview of your assigned projects & tasks today': 'Overzicht van uw toegewezen projecten en taken vandaag',
+  'Partner Dashboard': 'Partner Dashboard',
+  'Price Requests': 'Prijsaanvragen',
+  'My Projects': 'Mijn Projecten',
+  'My Details': 'Mijn Gegevens',
+  'No upcoming schedule items': 'Geen geplande afspraken',
+  'No recent activity': 'Geen recente activiteit',
+  'In Progress': 'In Uitvoering',
+  'Completed': 'Afgerond',
+  'To confirm': 'Te bevestigen',
+  'Unassigned': 'Niet toegewezen',
+  'Quotes & Proposals': 'Offertes & Voorstellen',
+  'Create, track and manage commercial quotes and multi-item proposals.': 'Beheer offertes, kortingen en zet offertes direct om in facturen.',
+  'Create New Quote': 'Nieuwe Offerte Aanmaken',
+  'Total Quotes': 'Totaal Offertes',
+  'Draft / Concept': 'Concept / Draft',
+  'Sent Quotes': 'Verzonden Offertes',
+  'Accepted Quotes': 'Geaccepteerde Offertes',
+  'Search by customer, project or quote no...': 'Zoek op klant, project of offertenummer...',
+  'Quote ID': 'Offerte ID',
+  'Category': 'Categorie',
+  'Customer': 'Klant',
+  'Project': 'Project',
+  'Amount': 'Bedrag',
+  'Status': 'Status',
+  'Date': 'Datum',
+  'Actions': 'Acties',
+  'Duplicate Quote': 'Offerte Kopiëren',
+  'Edit Quote': 'Offerte Bewerken',
+  'Delete Quote': 'Offerte Verwijderen',
+  'Projects & Installation Management': 'Project- & Installatiebeheer',
+  'Manage active installations, link craftsmen, and track build drawings.': 'Beheer actieve installaties, koppel vakmensen en volg bouwtekeningen.',
+  'New Project': 'Nieuw Project',
+  'Outdoor Kitchens': 'Buitenkeukens',
+  'Living Outdoor Spaces': 'Buitenverblijven',
+  'STAGE': 'FASE',
+  'NEXT MILESTONE': 'VOLGENDE MIJLPAAL',
+  'PARTNER': 'PARTNER',
+  'Search by project, customer or order ID...': 'Zoek op project, klant of order-ID...',
+  'Customer Name': 'Klantnaam',
+  'Desired Size': 'Gewenste Maat',
+  'Source / Campaign': 'Bron / Campagne',
+  'Assignee': 'Eigenaar',
+  'Last Contact': 'Laatste Contact',
+  'Won': 'Gewonnen',
+  'In Conversation': 'In gesprek',
+  'Quote Sent': 'Offerte verstuurd',
+  'Draft': 'Concept',
+  'Accepted': 'Geaccepteerd',
+  'New': 'Nieuw',
+  'Outdoor Kitchen': 'Buitenkeuken',
+  'Garden Room': 'Buitenverblijf',
+  'Canopy': 'Overkapping',
+  'Bin Storage': 'Kliko-ombouw',
+  'Direct': 'Direct',
+  'Meta Ads': 'Meta Ads',
+  'Google Ads': 'Google Ads',
+  'Follow up': 'Opvolgen',
+  'Volg op': 'Follow up',
+  'Direct Customer Quote (Bypass Partner)': 'Directe Klantofferte (Sla Partner Over)',
+  'Partner Price Request Wizard': 'Partner Prijsaanvraag Wizard',
+  'Inspect': 'Bekijk Details',
+  'Bekijk Details': 'Inspect Details',
+  'Open Requests': 'Open Aanvragen',
+  'Submitted': 'Ingediend',
+  'Reload App': 'App Herladen',
+  'Go to Login': 'Naar Inloggen',
+  'Something went wrong': 'Er is iets misgegaan',
+  'A component crashed. See details below.': 'Een onderdeel is gecrasht. Zie details hieronder.',
+  'Today': 'Vandaag',
+  'Yesterday': 'Gisteren',
+  'days ago': 'dagen geleden',
+  'day ago': 'dag geleden'
+};
+Object.assign(LEGACY_TEXT, EXTRA_VOCABULARY);
+Object.entries(EXTRA_VOCABULARY).forEach(([en, nl]) => {
+  LEGACY_NL_TO_EN[nl] = en;
+});
+
 function translateLegacyText(value, language) {
-  if (!value) return value;
+  if (!value || typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (!trimmed) return value;
 
-  if (language === 'NL') {
-    // An English source label can be translated directly. If the rendered
-    // value is already a known Dutch variant, normalize it through English
-    // first so hybrid legacy labels still land on one Dutch result.
-    const directDutch = LEGACY_TEXT[value];
-    if (directDutch) return directDutch;
-    const english = LEGACY_NL_TO_EN[value];
-    return english ? (LEGACY_TEXT[english] || value) : value;
+  const lang = String(language || 'EN').toUpperCase();
+
+  // Pattern checks (e.g. "X days ago" -> "X dagen geleden")
+  const daysAgoMatch = trimmed.match(/^(\d+)\s+days?\s+ago$/i);
+  if (daysAgoMatch) {
+    return lang === 'NL' ? `${daysAgoMatch[1]} ${daysAgoMatch[1] === '1' ? 'dag' : 'dagen'} geleden` : trimmed;
+  }
+  const dagenGeledenMatch = trimmed.match(/^(\d+)\s+dagen?\s+geleden$/i);
+  if (dagenGeledenMatch) {
+    return lang === 'EN' ? `${dagenGeledenMatch[1]} ${dagenGeledenMatch[1] === '1' ? 'day' : 'days'} ago` : trimmed;
   }
 
-  // EN mode must also handle legacy source strings that were written in a
-  // Dutch/English hybrid. Normalize that source value to Dutch, then use the
-  // explicit Dutch-to-English vocabulary. This was the missing step behind
-  // the user-visible Bank / Invoices / Taxes mismatch.
-  const directEnglish = LEGACY_NL_TO_EN[value];
-  if (directEnglish && directEnglish !== value) return directEnglish;
-  const dutch = LEGACY_TEXT[value];
-  if (dutch) {
-    const normalizedEnglish = LEGACY_NL_TO_EN[dutch];
-    if (normalizedEnglish && normalizedEnglish !== dutch) return normalizedEnglish;
+  if (lang === 'NL') {
+    if (LEGACY_TEXT[trimmed]) return LEGACY_TEXT[trimmed];
+    const lower = trimmed.toLowerCase();
+    for (const [k, v] of Object.entries(LEGACY_TEXT)) {
+      if (k.toLowerCase() === lower) return v;
+    }
+    const english = LEGACY_NL_TO_EN[trimmed];
+    if (english && LEGACY_TEXT[english]) return LEGACY_TEXT[english];
+    return trimmed;
   }
-  return value;
+
+  // EN mode
+  if (LEGACY_NL_TO_EN[trimmed]) return LEGACY_NL_TO_EN[trimmed];
+  const lower = trimmed.toLowerCase();
+  for (const [k, v] of Object.entries(LEGACY_NL_TO_EN)) {
+    if (k.toLowerCase() === lower) return v;
+  }
+  const dutch = LEGACY_TEXT[trimmed];
+  if (dutch && LEGACY_NL_TO_EN[dutch]) return LEGACY_NL_TO_EN[dutch];
+  return trimmed;
 }
 
-function applyLegacyLanguage(language) {
-  const replace = (value) => translateLegacyText(value, language);
+export function applyLegacyLanguage(language) {
+  if (typeof document === 'undefined') return;
+  const lang = String(language || 'EN').toUpperCase();
+  const replace = (value) => translateLegacyText(value, lang);
+
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
-    acceptNode: node => ['SCRIPT', 'STYLE'].includes(node.parentElement?.tagName) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+    acceptNode: node => {
+      const parent = node.parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      const tag = parent.tagName;
+      if (['SCRIPT', 'STYLE', 'INPUT', 'TEXTAREA', 'CODE', 'PRE'].includes(tag)) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      if (parent.isContentEditable) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
   });
+
   const nodes = [];
   while (walker.nextNode()) nodes.push(walker.currentNode);
+
   nodes.forEach(node => {
     const raw = node.nodeValue;
-    const translated = replace(raw.trim());
-    if (translated !== raw.trim()) node.nodeValue = raw.replace(raw.trim(), translated);
+    if (!raw || !raw.trim()) return;
+    const trimmed = raw.trim();
+    if (/^[€$£¥]?\s*[\d.,\s+-]+%?$/.test(trimmed)) return;
+    const translated = replace(trimmed);
+    if (translated && translated !== trimmed) {
+      node.nodeValue = raw.replace(trimmed, translated);
+    }
   });
+
   document.querySelectorAll('[placeholder], [title]').forEach(element => {
     ['placeholder', 'title'].forEach(attribute => {
       const value = element.getAttribute(attribute);
-      if (value) element.setAttribute(attribute, replace(value));
+      if (value && value.trim()) {
+        const trimmed = value.trim();
+        if (/^[€$£¥]?\s*[\d.,\s+-]+%?$/.test(trimmed)) return;
+        const translated = replace(trimmed);
+        if (translated && translated !== trimmed) {
+          element.setAttribute(attribute, value.replace(trimmed, translated));
+        }
+      }
     });
   });
 }
-
 export function LanguageProvider({ children }) {
   // Default is EN (English) for development and client review.
   const [language, setLanguageState] = useState(() => {
@@ -683,14 +836,54 @@ export function LanguageProvider({ children }) {
     const formatted = lang ? String(lang).toUpperCase() : 'EN';
     setLanguageState(formatted);
     localStorage.setItem('app_language', formatted);
+    window.dispatchEvent(new CustomEvent('app_language_changed', { detail: formatted }));
+    setTimeout(() => applyLegacyLanguage(formatted), 10);
   };
 
+  // Run DOM level translation sync automatically whenever language or data changes
+  useEffect(() => {
+    let timeoutId;
+    const scheduleApply = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        applyLegacyLanguage(language);
+      }, 30);
+    };
 
-  // Do not mutate the rendered DOM to translate text. The former
-  // MutationObserver solution repeatedly scanned the entire application after
-  // DOM updates and could freeze the browser. Every screen must render its
-  // labels through t('...') instead, which is deterministic and responsive.
+    scheduleApply();
 
+    const handleDataChanged = () => scheduleApply();
+    const handlePopState = () => scheduleApply();
+
+    window.addEventListener('app_data_changed', handleDataChanged);
+    window.addEventListener('popstate', handlePopState);
+
+    // Safe mutation observer for newly injected elements
+    let rafId = null;
+    let isApplying = false;
+    const observer = new MutationObserver(() => {
+      if (isApplying) return;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        isApplying = true;
+        try {
+          applyLegacyLanguage(language);
+        } finally {
+          isApplying = false;
+        }
+      });
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (rafId) cancelAnimationFrame(rafId);
+      observer.disconnect();
+      window.removeEventListener('app_data_changed', handleDataChanged);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [language]);
 
   // Nested object lookup helper e.g. t('common.search') or t('dashboard.totalLeads')
   const t = (path, params = {}) => {
@@ -709,18 +902,23 @@ export function LanguageProvider({ children }) {
       }
     }
     
-    // 2. Fallback to English dictionary if not found or empty
-    if (!found || result === undefined) {
-      let fallback = DICTIONARY['EN'];
-      for (const k of keys) {
-        if (fallback && typeof fallback === 'object' && fallback[k] !== undefined) {
-          fallback = fallback[k];
-        } else {
-          fallback = undefined;
-          break;
+    // 2. If not found in DICTIONARY, check translateLegacyText
+    if (!found || result === undefined || result === path) {
+      const legacyTranslated = translateLegacyText(path, language);
+      if (legacyTranslated && legacyTranslated !== path) {
+        result = legacyTranslated;
+      } else {
+        let fallback = DICTIONARY['EN'];
+        for (const k of keys) {
+          if (fallback && typeof fallback === 'object' && fallback[k] !== undefined) {
+            fallback = fallback[k];
+          } else {
+            fallback = undefined;
+            break;
+          }
         }
+        result = fallback !== undefined ? fallback : legacyTranslated || path;
       }
-      result = fallback !== undefined ? fallback : path;
     }
 
     if (typeof result === 'string' && params) {
@@ -735,13 +933,16 @@ export function LanguageProvider({ children }) {
   // Universal Data Status Translation Helper
   const tStatus = (statusStr) => {
     if (!statusStr) return statusStr;
-    const statusKey = Object.keys(nl.statuses).find(
-      key => key.toLowerCase() === String(statusStr).toLowerCase()
+    const str = String(statusStr).trim();
+    const statusKey = Object.keys(nl.statuses || {}).find(
+      key => key.toLowerCase() === str.toLowerCase()
     );
-    if (statusKey) {
-      return DICTIONARY[language]?.statuses?.[statusKey] || statusStr;
+    if (statusKey && DICTIONARY[language]?.statuses?.[statusKey]) {
+      return DICTIONARY[language].statuses[statusKey];
     }
-    return statusStr;
+    const legacy = translateLegacyText(str, language);
+    if (legacy && legacy !== str) return legacy;
+    return str;
   };
 
   return (
