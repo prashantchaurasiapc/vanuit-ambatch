@@ -285,7 +285,11 @@ export default function Documents({ role = 'admin' }) {
   const getCustomerDisplayName = (photo) => {
     if (!photo) return '';
     const proj = projectsList.find((p) => p.id === photo.projectId);
-    return proj?.customerName || proj?.customer || photo.customer || '';
+    const raw = proj?.customerName || proj?.customer || photo.customer || '';
+    if (typeof raw === 'object' && raw !== null) {
+      return raw.name || `${raw.firstName || ''} ${raw.lastName || ''}`.trim() || '';
+    }
+    return String(raw || '');
   };
 
   const loadPhotosAndProjects = async () => {
@@ -329,7 +333,11 @@ export default function Documents({ role = 'admin' }) {
       const pArr = projRes.success ? (Array.isArray(projRes.data) ? projRes.data : (projRes.data?.items || [])) : [];
       if (pArr.length > 0) {
         setProjectsList(pArr);
-        const uniqueCust = Array.from(new Set(pArr.map((p) => p.customerName || p.customer).filter(Boolean)));
+        const uniqueCust = Array.from(new Set(pArr.map((p) => {
+          const raw = p.customerName || p.customer;
+          if (typeof raw === 'object' && raw !== null) return raw.name || '';
+          return String(raw || '');
+        }).filter(Boolean)));
         setCustomersList(uniqueCust);
       }
     } catch (err) {
@@ -1364,7 +1372,7 @@ export default function Documents({ role = 'admin' }) {
                   >
                     {projectsList.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name || 'Outdoor Kitchen'} — {p.customerName || p.customer || 'Client'} (#{p.id.slice(0, 8)})
+                        {p.name || 'Outdoor Kitchen'} — {typeof (p.customerName || p.customer) === 'object' && (p.customerName || p.customer) !== null ? ((p.customerName || p.customer).name || 'Client') : String(p.customerName || p.customer || 'Client')} (#{p.id.slice(0, 8)})
                       </option>
                     ))}
                   </select>

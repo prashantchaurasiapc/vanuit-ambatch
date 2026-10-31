@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, Mail, ShieldAlert, X, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -19,11 +20,11 @@ export default function CommunicationConfirmModal({
   subject = ''
 }) {
   const { language } = useLanguage();
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const isWhatsApp = type === 'whatsapp';
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4">
         <motion.div
@@ -142,6 +143,7 @@ export default function CommunicationConfirmModal({
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

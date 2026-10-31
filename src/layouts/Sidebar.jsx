@@ -25,13 +25,15 @@ export default function Sidebar({ role }) {
       try {
         const res = await api.get('/projects');
         if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          const currentCustName = user?.name || '';
-          const match = res.data.find(p => 
-            currentCustName && (
-              (p.customer || p.customerName || '').toLowerCase().includes(currentCustName.toLowerCase()) ||
-              currentCustName.toLowerCase().includes((p.customer || p.customerName || '').toLowerCase())
-            )
-          ) || res.data[0];
+          const currentCustName = String(user?.name || '').toLowerCase();
+          const match = res.data.find(p => {
+            if (!currentCustName) return false;
+            const pCust = typeof p.customer === 'object' && p.customer !== null 
+              ? (p.customer.name || '') 
+              : String(p.customer || p.customerName || '');
+            const pCustLower = pCust.toLowerCase();
+            return pCustLower && (pCustLower.includes(currentCustName) || currentCustName.includes(pCustLower));
+          }) || res.data[0];
           setActiveCustomerProject(match);
           return;
         }

@@ -711,10 +711,13 @@ export default function Quotes() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const finalCustomer = customerSelect === 'Other' ? form.customer : customerSelect;
-    const finalProject = projectSelect === 'Other' ? form.project : projectSelect;
+    const rawCustomer = customerSelect === 'Other' ? form.customer : customerSelect;
+    const finalCustomer = typeof rawCustomer === 'object' && rawCustomer !== null
+      ? (rawCustomer.name || `${rawCustomer.firstName || ''} ${rawCustomer.lastName || ''}`.trim() || '')
+      : String(rawCustomer || '').trim();
+    const finalProject = String(projectSelect === 'Other' ? form.project : projectSelect || '').trim();
 
-    if (!finalCustomer.trim() || !finalProject.trim()) {
+    if (!finalCustomer || !finalProject) {
       showToast("Please provide valid Customer and Project details.");
       return;
     }
@@ -1244,10 +1247,13 @@ export default function Quotes() {
         )}
       </Card>
 
-      {/* CREATE/EDIT MULTI-ITEM QUOTE BUILDER MODAL */}
-      <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* CREATE/EDIT MULTI-ITEM QUOTE BUILDER MODAL (PORTALED TO BODY) */}
+      {modalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1455,13 +1461,17 @@ export default function Quotes() {
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
-      {/* FULL 6-PAGE DUTCH BRANDED PDF PROPOSAL PREVIEW MODAL */}
-      <AnimatePresence>
-        {pdfPreviewQuote && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+      {/* FULL 6-PAGE DUTCH BRANDED PDF PROPOSAL PREVIEW MODAL (PORTALED TO BODY) */}
+      {pdfPreviewQuote && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
@@ -1513,8 +1523,9 @@ export default function Quotes() {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* 100% CLEAN PDF PRINT PORTAL ATTACHED DIRECTLY TO DOCUMENT BODY */}
       {pdfPreviewQuote && !selectedQuote && createPortal(

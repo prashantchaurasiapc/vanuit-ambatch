@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
@@ -53,19 +54,24 @@ export default function PartnerProjects() {
   const loadProjects = () => {
     api.get('/partner/projects?limit=50').then(res => {
       if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-        const enriched = res.data.map((p, idx) => ({
-          ...p,
-          customer: p.customer || p.customerName || 'Klant',
-          customerName: p.customerName || p.customer || 'Klant',
-          deliveryAddress: p.deliveryAddress || p.city || 'Address TBC',
-          agreedBuildPrice: p.agreedBuildPrice
-            ? `€ ${Number(p.agreedBuildPrice).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`
-            : '€ 4,850.00',
-          dimensions: p.dimensions || '350cm x 90cm x 95cm',
-          frameMaterial: p.frameMaterial || 'Massief Teak Hout (FSC Certificaat)',
-          topMaterial: p.topMaterial || 'Polijst Beton (Dark Grey)',
-          blueprintFile: p.blueprintFile || `BLU-${p.id}-SPEC.pdf`,
-        }));
+        const enriched = res.data.map((p, idx) => {
+          const custStr = typeof p.customer === 'object' && p.customer !== null
+            ? (p.customer.name || `${p.customer.firstName || ''} ${p.customer.lastName || ''}`.trim() || 'Klant')
+            : (p.customerName || p.customer || 'Klant');
+          return {
+            ...p,
+            customer: custStr,
+            customerName: custStr,
+            deliveryAddress: p.deliveryAddress || p.city || 'Address TBC',
+            agreedBuildPrice: p.agreedBuildPrice
+              ? `€ ${Number(p.agreedBuildPrice).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`
+              : '€ 4,850.00',
+            dimensions: p.dimensions || '350cm x 90cm x 95cm',
+            frameMaterial: p.frameMaterial || 'Massief Teak Hout (FSC Certificaat)',
+            topMaterial: p.topMaterial || 'Polijst Beton (Dark Grey)',
+            blueprintFile: p.blueprintFile || `BLU-${p.id}-SPEC.pdf`,
+          };
+        });
         setProjects(enriched);
       }
     }).catch(() => {});
@@ -423,10 +429,14 @@ export default function PartnerProjects() {
         ))}
       </div>
 
-      {/* UPDATE PROGRESS MODAL */}
-      <AnimatePresence>
-        {editProject && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      {/* UPDATE PROGRESS MODAL (PORTALED TO BODY) */}
+      {editProject && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+            onClick={(e) => { if (e.target === e.currentTarget) setEditProject(null); }}
+          >
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto my-auto">
               <div className="flex justify-between items-center pb-2 border-b border-[#D6CFC2]">
                 <h3 className="text-lg font-heading font-bold text-primary">{label('Update Progress & Status', 'Voortgang & Status Bijwerken')}</h3>
@@ -471,13 +481,18 @@ export default function PartnerProjects() {
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
-      {/* VIEW DETAILED BLUEPRINT & SPECS MODAL */}
-      <AnimatePresence>
-        {selectedProject && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      {/* VIEW DETAILED BLUEPRINT & SPECS MODAL (PORTALED TO BODY) */}
+      {selectedProject && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[999999] flex items-center justify-center p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+            onClick={(e) => { if (e.target === e.currentTarget) setSelectedProject(null); }}
+          >
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 w-full max-w-lg space-y-4 shadow-2xl text-xs max-h-[90vh] overflow-y-auto">
               
               <div className="flex justify-between items-start pb-3 border-b border-[#D6CFC2]">
@@ -677,13 +692,18 @@ export default function PartnerProjects() {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
-      {/* UPLOAD PARTNER PHOTO MODAL (NOTIFIES ADMIN & UPDATES CUSTOMER PORTAL) */}
-      <AnimatePresence>
-        {uploadPhotoProject && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      {/* UPLOAD PARTNER PHOTO MODAL (PORTALED TO BODY) */}
+      {uploadPhotoProject && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+            onClick={(e) => { if (e.target === e.currentTarget) setUploadPhotoProject(null); }}
+          >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -818,13 +838,18 @@ export default function PartnerProjects() {
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
-      {/* PARTNER DIRECT CHAT MODAL (VANUIT AMBACHT ADMIN & WHATSAPP MIRROR) */}
-      <AnimatePresence>
-        {partnerChatOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4">
+      {/* PARTNER DIRECT CHAT MODAL (PORTALED TO BODY) */}
+      {partnerChatOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[999999] flex items-center justify-center p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+            onClick={(e) => { if (e.target === e.currentTarget) setPartnerChatOpen(false); }}
+          >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -905,8 +930,9 @@ export default function PartnerProjects() {
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* FLOATING PARTNER CHAT BUTTON */}
       <button

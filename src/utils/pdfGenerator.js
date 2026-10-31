@@ -125,8 +125,9 @@ export async function generateFull6PagePdf(quoteData) {
   }
   activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
 
-  const custObj = typeof quote.customer === 'object' ? quote.customer : null;
-  const customerName = custObj?.name || quote.customer || quote.customerName || (activeLang === 'EN' ? 'Client' : 'Klant');
+  const custObj = typeof quote.customer === 'object' && quote.customer !== null ? quote.customer : null;
+  const rawCust = custObj?.name || (custObj ? `${custObj.firstName || ''} ${custObj.lastName || ''}`.trim() : null) || (typeof quote.customer === 'string' ? quote.customer : null) || quote.customerName;
+  const customerName = (rawCust && typeof rawCust === 'string') ? rawCust.trim() : (activeLang === 'EN' ? 'Client' : 'Klant');
   const cleanCustomerName = String(customerName).replace(/[\\/:*?"<>|]/g, '').trim();
   const filePrefix = quote.isDraft ? (activeLang === 'EN' ? 'Draft-Quote' : 'Concept-Offerte') : 'Quote';
   const fileName = `${filePrefix}-${quoteId} ${cleanCustomerName}.pdf`;
@@ -247,8 +248,9 @@ export function downloadQuotePdf(quote) {
   activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
 
   const quoteId = quoteObj.id || quoteObj.quoteId || 'OF-2026331';
-  const custObj = typeof quoteObj.customer === 'object' ? quoteObj.customer : null;
-  const customerName = custObj?.name || quoteObj.customer || quoteObj.customerName || (activeLang === 'EN' ? 'Client' : 'Klant');
+  const custObj = typeof quoteObj.customer === 'object' && quoteObj.customer !== null ? quoteObj.customer : null;
+  const rawCust = custObj?.name || (custObj ? `${custObj.firstName || ''} ${custObj.lastName || ''}`.trim() : null) || (typeof quoteObj.customer === 'string' ? quoteObj.customer : null) || quoteObj.customerName;
+  const customerName = (rawCust && typeof rawCust === 'string') ? rawCust.trim() : (activeLang === 'EN' ? 'Client' : 'Klant');
   const cleanCustomerName = String(customerName).replace(/[\\/:*?"<>|]/g, '').trim();
   const filePrefix = quoteObj.isDraft ? (activeLang === 'EN' ? 'Draft-Quote' : 'Concept-Offerte') : 'Quote';
   const fileName = `${filePrefix}-${quoteId} ${cleanCustomerName}.pdf`;
@@ -428,8 +430,9 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
 
   const quoteId = quote.id || quote.quoteId || 'OF-2026331';
   
-  const custObj = typeof quote.customer === 'object' ? quote.customer : null;
-  const customerName = custObj?.name || quote.customer || quote.customerName || (activeLang === 'EN' ? 'Client' : 'Klant');
+  const custObj = typeof quote.customer === 'object' && quote.customer !== null ? quote.customer : null;
+  const rawCust = custObj?.name || (custObj ? `${custObj.firstName || ''} ${custObj.lastName || ''}`.trim() : null) || (typeof quote.customer === 'string' ? quote.customer : null) || quote.customerName;
+  const customerName = (rawCust && typeof rawCust === 'string') ? rawCust.trim() : (activeLang === 'EN' ? 'Client' : 'Klant');
   const customerEmail = custObj?.email || quote.customerEmail || quote.email || 'klant@vanuitambacht.nl';
   const customerPhone = custObj?.phone || quote.customerPhone || quote.phone || '+31 6 12345678';
 
@@ -633,9 +636,9 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
 export async function downloadInvoicePdf(invoice) {
   const inv = invoice?.invoice || invoice || {};
   const id = inv.id || inv.invoiceNumber || 'INV-001';
-  const customer = typeof inv.customer === 'object'
-    ? (inv.customer.name || 'Klant')
-    : (inv.customer || 'Klant');
+  const customer = typeof inv.customer === 'object' && inv.customer !== null
+    ? (inv.customer.name || `${inv.customer.firstName || ''} ${inv.customer.lastName || ''}`.trim() || 'Klant')
+    : (inv.customer || inv.customerName || 'Klant');
   const cleanCustomerName = String(customer).replace(/[\\/:*?"<>|]/g, '').trim();
   const fileName = `Factuur-${id}-${cleanCustomerName}.pdf`;
 

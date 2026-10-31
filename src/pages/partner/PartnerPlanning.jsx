@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
@@ -509,11 +510,14 @@ export default function PartnerPlanning() {
         </div>
       </div>
 
-      {/* ADD TASK MODAL */}
-      <AnimatePresence>
-        {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/70 backdrop-blur-xs" onClick={() => setShowAddModal(false)} />
+      {/* ADD TASK MODAL (PORTALED TO BODY) */}
+      {showAddModal && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-dark/75 backdrop-blur-xs" onClick={() => setShowAddModal(false)} />
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs font-body">
               <div className="flex justify-between items-center border-b border-[#D6CFC2] pb-3">
                 <h3 className="text-lg font-heading font-bold text-primary">
@@ -620,11 +624,18 @@ export default function PartnerPlanning() {
               </form>
             </motion.div>
           </div>
-        )}
+        </AnimatePresence>,
+        document.body
+      )}
 
-        {/* Availability & Workload Modal */}
-        {showAvailabilityModal && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+      {/* Availability & Workload Modal (PORTALED TO BODY) */}
+      {showAvailabilityModal && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[999999] flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+            onClick={(e) => { if (e.target === e.currentTarget) setShowAvailabilityModal(false); }}
+          >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -644,8 +655,9 @@ export default function PartnerPlanning() {
               />
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

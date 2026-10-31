@@ -3,7 +3,10 @@ import api from '../api/apiClient';
 
 export const convertLeadToCustomerOnInvoiceSent = async (invoiceData, leadData = null) => {
   try {
-    const customerName = typeof invoiceData === 'string' ? invoiceData : (invoiceData?.customer || leadData?.name || 'Customer');
+    const rawCustomer = typeof invoiceData === 'string' ? invoiceData : (invoiceData?.customer || invoiceData?.customerName || leadData?.name || 'Customer');
+    const customerName = typeof rawCustomer === 'object' && rawCustomer !== null
+      ? (rawCustomer.name || `${rawCustomer.firstName || ''} ${rawCustomer.lastName || ''}`.trim() || 'Customer')
+      : String(rawCustomer || 'Customer').trim();
     const invoiceId = invoiceData?.id || (typeof invoiceData === 'object' ? invoiceData?.invoiceNumber : null);
     const customerEmail = leadData?.email || invoiceData?.email || `${customerName.toLowerCase().replace(/\s+/g, '.')}@gmail.com`;
     const customerPhone = leadData?.phone || invoiceData?.phone || '+31 6 12345678';

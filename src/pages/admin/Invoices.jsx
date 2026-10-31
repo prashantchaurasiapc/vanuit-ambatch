@@ -132,7 +132,7 @@ export default function Invoices() {
               ...inv,
               id: inv.invoiceNumber || inv.id || 'INV-001',
               realId: inv.id,
-              customer: inv.customerName || inv.customer || (inv.customer && typeof inv.customer === 'object' ? inv.customer.name : 'Klant'),
+              customer: inv.customerName || (typeof inv.customer === 'object' && inv.customer !== null ? (inv.customer.name || `${inv.customer.firstName || ''} ${inv.customer.lastName || ''}`.trim() || 'Klant') : (typeof inv.customer === 'string' ? inv.customer : 'Klant')),
               amount: inv.totalInclVat ? `€ ${parseFloat(inv.totalInclVat).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : (inv.amount || '€ 0,00'),
               numericAmount: parseFloat(inv.totalInclVat || inv.numericAmount || 0),
               status: inv.status === 'paid' ? 'Betaald' : (inv.status === 'sent' ? 'Openstaand' : (inv.status === 'overdue' ? 'Vervallen' : (inv.status || 'Concept'))),
@@ -325,7 +325,8 @@ export default function Invoices() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.customer || form.customer.trim() === '') {
+    const cleanCustomer = String(form.customer || '').trim();
+    if (!cleanCustomer) {
       return showToast('Vul de klantnaam in.');
     }
 
@@ -759,10 +760,13 @@ export default function Invoices() {
       </Card>
 
       {/* CREATE INVOICE MODAL */}
-      {/* CREATE & EDIT INVOICE MODAL WITH DYNAMIC LINE ITEMS (Client Feedback #5) */}
-      <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+      {/* CREATE & EDIT INVOICE MODAL (PORTALED TO BODY) */}
+      {modalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-dark/70 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-3xl max-h-[90vh] flex flex-col bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl shadow-2xl z-10 overflow-hidden">
               
@@ -1096,13 +1100,17 @@ export default function Invoices() {
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
-      {/* PDF PRINT / PREVIEW MODAL */}
-      <AnimatePresence>
-        {pdfInvoice && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+      {/* PDF PRINT / PREVIEW MODAL (PORTALED TO BODY) */}
+      {pdfInvoice && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
@@ -1149,13 +1157,17 @@ export default function Invoices() {
               <FactuurPDFTemplate invoice={pdfInvoice} />
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
-      {/* EXPLICIT CONFIRMATION MODAL FOR SENDING INVOICE (NO AUTOMATIC SENDING) */}
-      <AnimatePresence>
-        {confirmSendInvoiceModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* EXPLICIT CONFIRMATION MODAL FOR SENDING INVOICE (PORTALED TO BODY) */}
+      {confirmSendInvoiceModal && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/70 backdrop-blur-xs" onClick={() => setConfirmSendInvoiceModal(null)} />
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 font-body text-[#4A4A43]">
               <div className="flex items-center gap-3 border-b border-[#C4BEB3] pb-3">
@@ -1203,8 +1215,9 @@ export default function Invoices() {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* 100% CLEAN PRINT PORTAL ATTACHED DIRECTLY TO DOCUMENT BODY */}
       {pdfInvoice && createPortal(

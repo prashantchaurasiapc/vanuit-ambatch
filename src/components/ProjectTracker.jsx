@@ -152,7 +152,10 @@ export default function ProjectTracker({ project, onClose, onUpdateProject, part
     isShared: true
   });
 
-  const customerName = project?.customer || 'Jan de Vries';
+  const rawProjectCust = project?.customer || project?.customerName || 'Jan de Vries';
+  const customerName = typeof rawProjectCust === 'object' && rawProjectCust !== null
+    ? (rawProjectCust.name || `${rawProjectCust.firstName || ''} ${rawProjectCust.lastName || ''}`.trim() || 'Jan de Vries')
+    : String(rawProjectCust || 'Jan de Vries').trim();
   const customerEmail = project?.customerEmail || `${customerName.toLowerCase().replace(/\s+/g, '')}@gmail.com`;
   const customerPhone = project?.customerPhone || '+31 6 12345678';
   const categoryLabel = project?.category || (project?.name?.toLowerCase().includes('kliko') ? 'Kliko-ombouw' : project?.name?.toLowerCase().includes('snijplanken') ? 'Snijplanken' : 'Buitenkeukens');

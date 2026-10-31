@@ -34,7 +34,8 @@ import {
 } from '../utils/translator';
 import projectImg from '../assets/outdoor_project_card.png';
 import heroImg from '/dasbordes images.png';
-import { downloadQuotePdf, generateFull6PagePdf } from '../utils/pdfGenerator';
+import { downloadQuotePdf, downloadDirectPdfFile, generateFull6PagePdf } from '../utils/pdfGenerator';
+import api, { BASE_URL } from '../api/apiClient';
 import { compressImage } from '../utils/storageHelper';
 
 const STEPS = [
@@ -3736,13 +3737,42 @@ export default function QuoteEditor({
                     type="button"
                     onClick={async () => {
                       const targetId = quote?.backendId || quote?.id;
-                      if (targetId && String(targetId).includes('-')) {
-                        window.open(`/api/quotes/${targetId}/pdf`, '_blank');
-                        showToast(language === 'EN' ? '✅ Official PDF proposal downloading...' : '✅ Officiële PDF offerte wordt gedownload...');
-                      } else {
-                        showToast(language === 'EN' ? '⏳ Generating 6-page PDF proposal...' : '⏳ 6-pagina offerte PDF wordt gegenereerd...');
-                        const fileName = await generateFull6PagePdf(quote);
-                        showToast(language === 'EN' ? `✅ PDF downloaded: ${fileName}` : `✅ PDF gedownload: ${fileName}`);
+                      showToast(language === 'EN' ? '⏳ Generating 6-page PDF proposal...' : '⏳ 6-pagina offerte PDF wordt gegenereerd...');
+                      try {
+                        let downloaded = false;
+                        if (targetId && String(targetId).includes('-')) {
+                          try {
+                            const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+                            const res = await fetch(`${BASE_URL}/quotes/${targetId}/pdf`, {
+                              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                            });
+                            if (res.ok) {
+                              const blob = await res.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              const quoteNumber = quote?.id || quote?.quoteNumber || targetId;
+                              a.download = `Offerte-${quoteNumber}.pdf`;
+                              document.body.appendChild(a);
+                              a.click();
+                              window.URL.revokeObjectURL(url);
+                              document.body.removeChild(a);
+                              downloaded = true;
+                              showToast(language === 'EN' ? `✅ Downloaded Offerte-${quoteNumber}.pdf` : `✅ Offerte-${quoteNumber}.pdf gedownload!`);
+                            }
+                          } catch (fetchErr) {
+                            console.warn('[PDF] Backend PDF stream failed, using high-res vector engine:', fetchErr);
+                          }
+                        }
+
+                        if (!downloaded) {
+                          const fileName = await generateFull6PagePdf({ ...quote, language });
+                          showToast(language === 'EN' ? `✅ PDF downloaded: ${fileName}` : `✅ PDF gedownload: ${fileName}`);
+                        }
+                      } catch (err) {
+                        console.error('PDF generation error:', err);
+                        downloadQuotePdf({ ...quote, language });
+                        showToast(language === 'EN' ? '✅ PDF downloaded!' : '✅ PDF gedownload!');
                       }
                     }}
                     className="px-4 py-2.5 bg-[#33422C] text-[#FDFBF7] font-bold text-xs rounded-xl shadow-xs hover:bg-[#283523] transition-all cursor-pointer font-mono flex items-center gap-2"

@@ -21,12 +21,49 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
 
   const woodName = existingQuote?.configuration?.woodType || existingQuote?.woodType || customerData?.woodType || customerData?.material || 'Thermo Fraké';
   const defaultWood = WOOD_LIBRARY.find(w => w.name.toLowerCase() === woodName.toLowerCase()) || WOOD_LIBRARY[0];
-  const defaultProductType = existingQuote?.productType || customerData?.productType || 'Outdoor kitchen';
+  
+  // Resolve productType from existing quote or customer/lead source cleanly
+  let defaultProductType = existingQuote?.productType || customerData?.productType || customerData?.category;
+  if (!defaultProductType) {
+    defaultProductType = 'Outdoor kitchen';
+  } else if (String(defaultProductType).toLowerCase().includes('garden') || String(defaultProductType).toLowerCase().includes('buitenverblijf')) {
+    defaultProductType = activeLang === 'NL' ? 'Buitenverblijf' : 'Garden room';
+  } else if (String(defaultProductType).toLowerCase().includes('overkapping') || String(defaultProductType).toLowerCase().includes('canopy')) {
+    defaultProductType = activeLang === 'NL' ? 'Overkapping' : 'Canopy';
+  } else if (String(defaultProductType).toLowerCase().includes('keuken') || String(defaultProductType).toLowerCase().includes('kitchen')) {
+    defaultProductType = activeLang === 'NL' ? 'Buitenkeuken' : 'Outdoor kitchen';
+  }
   const productDefaults = getProductTypeDefaults(defaultProductType, activeLang);
 
-  const dimensions = existingQuote?.configuration?.dimensions || existingQuote?.dimensions || customerData?.dimensions || customerData?.size || '';
-  const cleanDimensions = String(dimensions).replace(/\s*cm$/i, '').trim();
-  const cutoutName = existingQuote?.configuration?.optionsTitle || existingQuote?.cutout || customerData?.cutout || (activeLang === 'EN' ? 'Big Green Egg Large' : 'Big Green Egg Large');
+  // Handle dimensions: string, number, or object { lengthCm, widthCm, heightCm, rawText }
+  const rawDims = existingQuote?.configuration?.dimensions || existingQuote?.dimensions || customerData?.dimensions || customerData?.size || '';
+  let cleanDimensions = '';
+  if (typeof rawDims === 'object' && rawDims !== null) {
+    if (rawDims.rawText) {
+      cleanDimensions = String(rawDims.rawText).trim();
+    } else if (rawDims.lengthCm || rawDims.widthCm || rawDims.heightCm) {
+      const l = rawDims.lengthCm || 0;
+      const w = rawDims.widthCm || 0;
+      const h = rawDims.heightCm || 0;
+      cleanDimensions = `${l}${w ? ` × ${w}` : ''}${h ? ` × ${h}` : ''}`;
+    } else {
+      cleanDimensions = '240 × 80';
+    }
+  } else {
+    cleanDimensions = String(rawDims).replace(/\s*cm$/i, '').trim();
+  }
+  if (!cleanDimensions) cleanDimensions = '240 × 80';
+
+  // Check if customer or lead explicitly requested a BBQ cutout
+  const explicitCutout = existingQuote?.configuration?.optionsTitle || existingQuote?.cutout || customerData?.cutout;
+  const hasExplicitBbq = Boolean(
+    explicitCutout &&
+    explicitCutout !== 'Geen' &&
+    explicitCutout !== 'None' &&
+    !String(explicitCutout).toLowerCase().includes('geen') &&
+    !String(explicitCutout).toLowerCase().includes('standaard')
+  );
+  const cutoutName = hasExplicitBbq ? explicitCutout : (activeLang === 'EN' ? 'No Barbecue' : 'Geen Barbecue');
   const deliveryTime = existingQuote?.configuration?.deliveryTime || existingQuote?.deliveryTime || customerData?.deliveryTime || (activeLang === 'EN' ? '3 to 5 weeks' : '3 tot 5 weken');
 
   let targetPrice = 0;
@@ -41,14 +78,20 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
     if (parsed > 0) targetPrice = parsed;
   }
 
+  const defaultItemDesc = hasExplicitBbq
+    ? (activeLang === 'EN'
+        ? `Wooden worktop with ceramic stones, custom cutout for ${cutoutName}, finished with natural oil`
+        : `Houten bovenblad met keramische stenen, uitsparing voor ${cutoutName}, afgewerkt met twee lagen olie (naturel)`)
+    : (activeLang === 'EN'
+        ? `Solid wooden worktop with ceramic stones, durable construction finished with natural protective oil`
+        : `Massief houten werkblad met keramische stenen, duurzame constructie afgewerkt met twee lagen beschermende olie`);
+
   const initialLineItems = existingQuote?.investment?.lineItems || existingQuote?.items || (
     productDefaults.lineItems || [
       {
         id: 'item-1',
         title: `${defaultProductType} ${woodName} · ${cleanDimensions} cm`,
-        description: activeLang === 'EN'
-          ? `Wooden worktop with ceramic stones, custom cutout for ${cutoutName}, finished with natural oil`
-          : `Houten bovenblad met keramische stenen, uitsparing voor ${cutoutName}, afgewerkt met twee lagen olie (naturel)`,
+        description: defaultItemDesc,
         quantity: 1,
         priceInclVat: targetPrice,
         vatRate: existingQuote?.vatRate || 21,
@@ -106,15 +149,15 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
       woodType: woodName,
       woodLifespan: existingQuote?.configuration?.woodLifespan || productDefaults.configuration?.woodLifespan || (activeLang === 'EN' ? (defaultWood.name === 'Douglas' ? '10 to 15 years' : '20 to 25 years') : (defaultWood.name === 'Douglas' ? '10 tot 15 jaar' : '20 tot 25 jaar')),
       optionsTitle: cutoutName,
-      optionsSubtext: existingQuote?.configuration?.optionsSubtext || productDefaults.configuration?.optionsSubtext || (activeLang === 'EN' ? 'Large, right of center' : 'Large, rechts van het midden'),
+      optionsSubtext: existingQuote?.configuration?.optionsSubtext || productDefaults.configuration?.optionsSubtext || (activeLang === 'EN' ? (hasExplicitBbq ? 'Large, right of center' : 'Standard configuration') : (hasExplicitBbq ? 'Large, rechts van het midden' : 'Standaard configuratie')),
       deliveryTime: deliveryTime,
       deliverySubtext: existingQuote?.configuration?.deliverySubtext || productDefaults.configuration?.deliverySubtext || (activeLang === 'EN' ? 'upon drawing approval' : 'na akkoord op tekening'),
 
       options: existingQuote?.configuration?.options || {
         bbqCutout: {
-          enabled: true,
-          type: cutoutName.includes('Egg') ? 'Big Green Egg' : cutoutName.includes('Kamado') ? 'Kamado Joe' : 'Custom Barbecue',
-          size: 'Large',
+          enabled: hasExplicitBbq,
+          type: hasExplicitBbq ? (cutoutName.includes('Egg') ? 'Big Green Egg' : cutoutName.includes('Kamado') ? 'Kamado Joe' : 'Custom Barbecue') : '',
+          size: hasExplicitBbq ? 'Large' : '',
           position: 'right of center'
         },
         fridge: {
@@ -125,14 +168,19 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
         }
       },
 
-      specifications: existingQuote?.configuration?.specifications || productDefaults.configuration?.specifications || [
+      specifications: existingQuote?.configuration?.specifications || [
         {
           id: 'sec-1',
           title: activeLang === 'NL' ? 'BOVENBLAD' : 'WORKTOP',
-          lines: [
-            { id: 'l-1', text: activeLang === 'NL' ? 'Keramische stenen in het werkblad – hittebestendig en onderhoudsarm' : 'Ceramic stones in worktop – heat-resistant and low maintenance', isOption: false },
-            { id: 'l-2', text: activeLang === 'NL' ? 'Uitsparing op maat voor Big Green Egg Large' : 'Custom cutout engineered for Big Green Egg Large', isOption: true }
-          ]
+          lines: hasExplicitBbq
+            ? [
+                { id: 'l-1', text: activeLang === 'NL' ? 'Keramische stenen in het werkblad – hittebestendig en onderhoudsarm' : 'Ceramic stones in worktop – heat-resistant and low maintenance', isOption: false },
+                { id: 'l-2', text: activeLang === 'NL' ? `Uitsparing op maat voor ${cutoutName}` : `Custom cutout engineered for ${cutoutName}`, isOption: true }
+              ]
+            : [
+                { id: 'l-1', text: activeLang === 'NL' ? 'Keramische stenen in het werkblad – hittebestendig en onderhoudsarm' : 'Ceramic stones in worktop – heat-resistant and low maintenance', isOption: false },
+                { id: 'l-2', text: activeLang === 'NL' ? 'Volledig vlak en doorlopend werkblad' : 'Continuous flat solid worktop without cutouts', isOption: false }
+              ]
         },
         {
           id: 'sec-2',
@@ -164,12 +212,19 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
       diagram: existingQuote?.configuration?.diagram || {
         show: true,
         totalWidth: 240,
-        segments: [
-          { id: 'seg-1', type: 'CABINET', label: activeLang === 'EN' ? 'cabinet' : 'kastje', width: 60 },
-          { id: 'seg-2', type: 'CABINET', label: activeLang === 'EN' ? 'cabinet' : 'kastje', width: 60 },
-          { id: 'seg-3', type: 'CUTOUT', label: 'Big Green Egg', width: 70 },
-          { id: 'seg-4', type: 'CABINET', label: activeLang === 'EN' ? 'cabinet' : 'kastje', width: 50 }
-        ]
+        segments: hasExplicitBbq
+          ? [
+              { id: 'seg-1', type: 'CABINET', label: activeLang === 'EN' ? 'cabinet' : 'kastje', width: 60 },
+              { id: 'seg-2', type: 'CABINET', label: activeLang === 'EN' ? 'cabinet' : 'kastje', width: 60 },
+              { id: 'seg-3', type: 'CUTOUT', label: cutoutName, width: 70 },
+              { id: 'seg-4', type: 'CABINET', label: activeLang === 'EN' ? 'cabinet' : 'kastje', width: 50 }
+            ]
+          : [
+              { id: 'seg-1', type: 'CABINET', label: activeLang === 'EN' ? 'cabinet' : 'kastje', width: 60 },
+              { id: 'seg-2', type: 'CABINET', label: activeLang === 'EN' ? 'cabinet' : 'kastje', width: 60 },
+              { id: 'seg-3', type: 'CABINET', label: activeLang === 'EN' ? 'drawer unit' : 'ladenblok', width: 60 },
+              { id: 'seg-4', type: 'CABINET', label: activeLang === 'EN' ? 'cabinet' : 'kastje', width: 60 }
+            ]
       },
 
       infobox: existingQuote?.configuration?.infobox || {

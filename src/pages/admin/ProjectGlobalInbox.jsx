@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
@@ -191,17 +192,19 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
   const handleOpenAddModal = () => {
     setSelectedProject(null);
-    const defaultCust = leadsList[0]?.name || '';
+    const firstCust = customersList[0];
+    const defaultCustId = firstCust?.id || 'Other';
+    const defaultCustName = firstCust ? (`${firstCust.firstName || ''} ${firstCust.lastName || ''}`.trim() || firstCust.companyName || firstCust.name) : '';
 
     setForm({
       name: '',
-      customer: defaultCust,
+      customer: defaultCustName,
       partner: 'Unassigned',
       progress: 10,
       deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       status: 'In Progress'
     });
-    setCustomerSelect(defaultCust || 'Other');
+    setCustomerSelect(defaultCustId);
     setPartnerSelect('Unassigned');
     setModalOpen(true);
   };
@@ -287,27 +290,26 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       // Create new project — POST /api/projects
       // Resolve customerId
       let customerId = null;
-      let deliveryAddress = 'Address not set';
+      let deliveryAddress = 'Adres op aanvraag';
       let city = 'Amsterdam';
 
-      // 1. Try matching from leadsList
-      const matchedLead = leadsList.find(l =>
-        (l.name && l.name.toLowerCase() === finalCustomer.toLowerCase()) ||
-        (l.fullName && l.fullName.toLowerCase() === finalCustomer.toLowerCase())
-      );
-      if (matchedLead) {
-        customerId = matchedLead.customerId || matchedLead.id;
-        if (matchedLead.address) deliveryAddress = matchedLead.address;
-        if (matchedLead.city) city = matchedLead.city;
+      // 1. Direct match by selected customer ID from dropdown
+      if (customerSelect && customerSelect !== 'Other') {
+        const directCust = customersList.find(c => c.id === customerSelect);
+        if (directCust) {
+          customerId = directCust.id;
+          if (directCust.streetAddress) deliveryAddress = directCust.streetAddress;
+          if (directCust.city) city = directCust.city;
+        }
       }
 
-      // 2. Try matching from customersList
-      if (!customerId) {
+      // 2. If customerSelect was 'Other' or name was typed, search customersList by name
+      if (!customerId && finalCustomer) {
         const matchedCust = customersList.find(c => {
-          const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim();
+          const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim().toLowerCase();
           return (
+            fullName === finalCustomer.toLowerCase() ||
             (c.companyName && c.companyName.toLowerCase() === finalCustomer.toLowerCase()) ||
-            (fullName && fullName.toLowerCase() === finalCustomer.toLowerCase()) ||
             (c.name && c.name.toLowerCase() === finalCustomer.toLowerCase())
           );
         });
@@ -318,22 +320,49 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
         }
       }
 
-      // 3. If still no customer found, auto-create customer in DB
+      // 3. Match from leadsList ONLY if lead has an actual verified customerId in customersList
+      if (!customerId && finalCustomer) {
+        const matchedLead = leadsList.find(l =>
+          (l.name && l.name.toLowerCase() === finalCustomer.toLowerCase()) ||
+          (l.fullName && l.fullName.toLowerCase() === finalCustomer.toLowerCase())
+        );
+        if (matchedLead) {
+          if (matchedLead.customerId && customersList.some(c => c.id === matchedLead.customerId)) {
+            customerId = matchedLead.customerId;
+          }
+          if (matchedLead.address) deliveryAddress = matchedLead.address;
+          if (matchedLead.city) city = matchedLead.city;
+        }
+      }
+
+      // 4. If still no customer found in database, auto-create customer cleanly in DB
       if (!customerId) {
         const parts = finalCustomer.split(/\s+/);
         const firstName = parts[0] || 'Klant';
-        const lastName = parts.slice(1).join(' ') || (parts[0] ? 'Klant' : 'Onbekend');
+        const lastName = parts.slice(1).join(' ') || 'Vanuit Ambacht';
         const cleanName = finalCustomer.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const uniqueSuffix = Date.now().toString().slice(-4);
+        const uniqueEmail = `${cleanName || 'klant'}.${uniqueSuffix}@klant.vanuitambacht.nl`;
+
         const newCustRes = await api.post('/customers', {
           firstName,
           lastName,
-          email: `${cleanName || 'klant'}@vanuitambacht.nl`,
+          email: uniqueEmail,
           phone: '+31 6 12345678',
-          city: 'Amsterdam',
-          streetAddress: deliveryAddress
+          city: city || 'Amsterdam',
+          streetAddress: deliveryAddress || 'Adres op aanvraag'
         });
         if (newCustRes.success && newCustRes.data?.id) {
           customerId = newCustRes.data.id;
+          api.get('/customers?limit=100').then(res => {
+            if (res.success) {
+              const items = res.data?.items || (Array.isArray(res.data) ? res.data : []);
+              setCustomersList(items);
+            }
+          }).catch(() => {});
+        } else {
+          showToast(`⚠ ${newCustRes.error?.message || 'Kon klant niet aanmaken in database'}`);
+          return;
         }
       }
 
@@ -354,7 +383,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       const res = await api.post('/projects', body);
       if (res.success) {
         await loadProjectsData();
-        showToast(`Project "${form.name}" created successfully!`);
+        showToast(`✓ Project "${form.name}" succesvol aangemaakt!`);
       } else {
         showToast(`⚠ ${res.error?.message || 'Failed to create project'}`);
       }
@@ -684,10 +713,13 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
         </div>
       </div>
 
-      {/* DIRECT UPLOAD POPUP MODAL (Exact match to second screenshot) */}
-      <AnimatePresence>
-        {directUploadProject && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark/60 backdrop-blur-xs font-body">
+      {/* DIRECT UPLOAD POPUP MODAL (PORTALED TO BODY) */}
+      {directUploadProject && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-dark/60 backdrop-blur-xs font-body overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -863,13 +895,17 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
-      {/* ADD / EDIT PROJECT MODAL */}
-      <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark/60 backdrop-blur-xs font-body">
+      {/* ADD / EDIT PROJECT MODAL (PORTALED TO BODY) */}
+      {modalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-dark/60 backdrop-blur-xs font-body overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -905,16 +941,44 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">
-                      {language === 'NL' ? 'Klantnaam *' : 'Customer Name *'}
+                      {language === 'NL' ? 'Klant *' : 'Customer *'}
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={form.customer}
-                      onChange={e => setForm(prev => ({ ...prev, customer: e.target.value }))}
-                      placeholder={language === 'NL' ? 'bijv. Jan Jansen' : 'e.g. John Miller'}
-                      className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark"
-                    />
+                    <select
+                      value={customerSelect}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setCustomerSelect(val);
+                        if (val !== 'Other') {
+                          const c = customersList.find(cust => cust.id === val);
+                          if (c) {
+                            const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.companyName || c.name;
+                            setForm(prev => ({ ...prev, customer: fullName }));
+                          }
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold text-dark mb-1.5"
+                    >
+                      {customersList.map((c, idx) => {
+                        const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.companyName || c.name || `Klant ${idx + 1}`;
+                        return (
+                          <option key={c.id || idx} value={c.id}>
+                            {fullName} {c.city ? `(${c.city})` : ''}
+                          </option>
+                        );
+                      })}
+                      <option value="Other">{language === 'NL' ? '+ Nieuwe klant handmatig invoeren' : '+ Enter new customer manually'}</option>
+                    </select>
+
+                    {customerSelect === 'Other' && (
+                      <input
+                        type="text"
+                        required
+                        value={form.customer}
+                        onChange={e => setForm(prev => ({ ...prev, customer: e.target.value }))}
+                        placeholder={language === 'NL' ? 'bijv. Jan Jansen' : 'e.g. John Miller'}
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark"
+                      />
+                    )}
                   </div>
 
                   <div>
@@ -981,8 +1045,9 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

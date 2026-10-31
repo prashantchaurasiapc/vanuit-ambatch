@@ -68,12 +68,34 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   }
   const language = (currentLang === 'NL' || currentLang === 'nl') ? 'NL' : 'EN';
 
-  // Extract dynamic customer & header properties
-  const custObj = typeof quote?.customer === 'object' ? quote.customer : null;
+  // Extract dynamic customer & header properties (safe string resolution preventing customerName.trim crashes)
+  const custObj = typeof quote?.customer === 'object' && quote?.customer !== null ? quote.customer : null;
   const customerInfo = quote?.activeVersion?.optionsConfig?.customerInfo || quote?.configuration?.options?.customerInfo;
-  const rawCustName = custObj?.name || customerInfo?.name || quote?.customer || quote?.customerName;
-  const customerName = (rawCustName && rawCustName !== 'Onbekend' && rawCustName !== 'Nieuwe Klant') ? rawCustName : (language === 'EN' ? 'Client' : 'Klant');
-  const firstName = custObj?.firstName || customerInfo?.firstName || (customerName && customerName !== 'Client' && customerName !== 'Klant' ? customerName.trim().split(' ')[0] : (language === 'EN' ? 'Client' : 'Klant'));
+  
+  let rawCustName = '';
+  if (custObj) {
+    rawCustName = custObj.name || `${custObj.firstName || ''} ${custObj.lastName || ''}`.trim();
+  }
+  if (!rawCustName && typeof quote?.customer === 'string') {
+    rawCustName = quote.customer;
+  }
+  if (!rawCustName && customerInfo) {
+    rawCustName = customerInfo.name || `${customerInfo.firstName || ''} ${customerInfo.lastName || ''}`.trim();
+  }
+  if (!rawCustName && typeof quote?.customerName === 'string') {
+    rawCustName = quote.customerName;
+  }
+
+  const customerName = (rawCustName && rawCustName !== 'Onbekend' && rawCustName !== 'Nieuwe Klant')
+    ? String(rawCustName).trim()
+    : (language === 'EN' ? 'Client' : 'Klant');
+
+  const rawFirstName = custObj?.firstName || customerInfo?.firstName;
+  const firstName = rawFirstName
+    ? String(rawFirstName).trim()
+    : (customerName && customerName !== 'Client' && customerName !== 'Klant'
+        ? String(customerName).trim().split(' ')[0]
+        : (language === 'EN' ? 'Client' : 'Klant'));
   const city = custObj?.city || customerInfo?.city || quote?.deliveryLocation || quote?.city || '';
   const quoteId = quote?.id || quote?.quoteNumber || 'OF-2026-032';
   const quoteDate = quote?.date || quote?.issueDate || new Date().toISOString().split('T')[0];

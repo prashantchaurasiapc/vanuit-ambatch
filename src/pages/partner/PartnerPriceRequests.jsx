@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
@@ -6,7 +7,7 @@ import Button from '../../components/Button';
 import {
   FileText, Send, Calendar, Banknote, Clock, CheckCircle2, ChevronDown,
   ChevronUp, MessageSquare, AlertCircle, Inbox, Loader2, RotateCcw,
-  XCircle, Download, Paperclip
+  XCircle, Download, Paperclip, Eye, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api, { BASE_URL } from '../../api/apiClient';
@@ -19,6 +20,7 @@ export default function PartnerPriceRequests() {
   const [open, setOpen] = useState([]);
   const [toastMsg, setToastMsg] = useState('');
   const [activeTab, setActiveTab] = useState('open');
+  const [inspectedOffer, setInspectedOffer] = useState(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -123,11 +125,14 @@ export default function PartnerPriceRequests() {
             ? new Date(item.expectedResponseDate).toLocaleDateString(language === 'NL' ? 'nl-NL' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' })
             : '—';
 
-          const anonymizedCustomer = item.customerName
-            ? item.customerName
-            : item.locationAccess?.city
-            ? (language === 'NL' ? `Klant (${item.locationAccess.city})` : `Client (${item.locationAccess.city})`)
-            : (language === 'NL' ? 'Klant' : 'Client');
+          const rawCust = item.customerName || item.customer;
+          const anonymizedCustomer = (typeof rawCust === 'object' && rawCust !== null)
+            ? (rawCust.name || 'Klant')
+            : (rawCust
+              ? String(rawCust)
+              : item.locationAccess?.city
+              ? (language === 'NL' ? `Klant (${item.locationAccess.city})` : `Client (${item.locationAccess.city})`)
+              : (language === 'NL' ? 'Klant' : 'Client'));
 
           const baseObj = {
             id: item.requestNumber || item.id,
@@ -682,9 +687,19 @@ export default function PartnerPriceRequests() {
                             <h3 className="font-heading font-bold text-primary text-base">{title}</h3>
                             <p className="text-xs text-dark/50">{language === 'NL' ? 'Klant:' : 'Customer:'} {offer.customer}</p>
                           </div>
-                          <div className="text-right">
-                            <span className="block text-[10px] text-dark/40 font-bold uppercase">{language === 'NL' ? 'Ingediend op' : 'Submitted On'}</span>
-                            <span className="text-sm font-bold text-primary">{offer.submittedOn}</span>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <span className="block text-[10px] text-dark/40 font-bold uppercase">{language === 'NL' ? 'Ingediend op' : 'Submitted On'}</span>
+                              <span className="text-sm font-bold text-primary">{offer.submittedOn}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setInspectedOffer(offer)}
+                              className="px-3 py-1.5 bg-[#33422C] text-[#FDFBF7] hover:bg-[#283523] text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              {language === 'NL' ? 'Bekijk Details' : 'Inspect'}
+                            </button>
                           </div>
                         </div>
 
@@ -738,6 +753,170 @@ export default function PartnerPriceRequests() {
             </div>
           )}
         </>
+      )}
+
+      {/* INSPECT SUBMITTED OFFER MODAL (PORTALED TO DOCUMENT.BODY) */}
+      {inspectedOffer && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setInspectedOffer(null);
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-[#FDFBF7] border border-[#D6CFC2] rounded-2xl shadow-2xl max-w-3xl w-full p-5 sm:p-7 space-y-5 my-auto max-h-[90vh] overflow-y-auto"
+            >
+              {/* Modal Header */}
+              <div className="flex items-start justify-between gap-4 border-b border-[#D6CFC2]/70 pb-4">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="text-xs font-mono font-bold text-green-700 bg-green-100 px-2.5 py-0.5 rounded-full">
+                      {inspectedOffer.offerId || inspectedOffer.id}
+                    </span>
+                    <Badge variant={inspectedOffer.adminStatus === 'Accepted' || inspectedOffer.adminStatus === 'Geaccepteerd' ? 'success' : 'warning'}>
+                      {language === 'NL'
+                        ? (inspectedOffer.adminStatus === 'Accepted' || inspectedOffer.adminStatus === 'Geaccepteerd' ? 'Geaccepteerd' : 'In beoordeling')
+                        : inspectedOffer.adminStatus}
+                    </Badge>
+                  </div>
+                  <h3 className="text-xl font-heading font-bold text-primary">
+                    {language === 'EN' ? (inspectedOffer.projectEN || inspectedOffer.projectNL) : (inspectedOffer.projectNL || inspectedOffer.projectEN)}
+                  </h3>
+                  <p className="text-xs text-dark/60 font-body">
+                    {language === 'NL' ? 'Klant:' : 'Client:'} {inspectedOffer.customer} • {language === 'NL' ? 'Ingediend op' : 'Submitted on'} {inspectedOffer.submittedOn}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setInspectedOffer(null)}
+                  className="p-2 text-dark/40 hover:text-dark rounded-xl hover:bg-dark/5 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Grid: Specifications & Location */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="p-4 bg-white rounded-xl border border-[#D6CFC2]/60 space-y-2">
+                  <h4 className="font-bold uppercase tracking-wider text-primary text-[11px] flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-accent" />
+                    {language === 'NL' ? 'PROJECTSPECIFICATIES' : 'PROJECT SPECIFICATIONS'}
+                  </h4>
+                  <div className="space-y-1.5 text-dark/80">
+                    <p><strong className="text-dark">{language === 'NL' ? 'Afmetingen:' : 'Dimensions:'}</strong> {inspectedOffer.raw?.dimensions?.rawText || (inspectedOffer.raw?.dimensions?.lengthCm ? `${inspectedOffer.raw.dimensions.lengthCm} × ${inspectedOffer.raw.dimensions.widthCm} × ${inspectedOffer.raw.dimensions.heightCm} cm` : inspectedOffer.specsNL || '—')}</p>
+                    <p><strong className="text-dark">{language === 'NL' ? 'Houtsoort / Materiaal:' : 'Timber / Material:'}</strong> {inspectedOffer.raw?.materials?.woodType || 'Thermo Fraké'}</p>
+                    {inspectedOffer.raw?.materials?.countertop && (
+                      <p><strong className="text-dark">{language === 'NL' ? 'Werkblad:' : 'Countertop:'}</strong> {inspectedOffer.raw.materials.countertop}</p>
+                    )}
+                    {inspectedOffer.raw?.materials?.notes && (
+                      <p><strong className="text-dark">{language === 'NL' ? 'Materiaal Notities:' : 'Material Notes:'}</strong> {inspectedOffer.raw.materials.notes}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-4 bg-white rounded-xl border border-[#D6CFC2]/60 space-y-2">
+                  <h4 className="font-bold uppercase tracking-wider text-primary text-[11px] flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-accent" />
+                    {language === 'NL' ? 'LOCATIE & LEVERING' : 'LOCATION & DELIVERY'}
+                  </h4>
+                  <div className="space-y-1.5 text-dark/80">
+                    <p><strong className="text-dark">{language === 'NL' ? 'Plaats / Locatie:' : 'City / Location:'}</strong> {inspectedOffer.raw?.locationAccess?.city || 'Amsterdam'}</p>
+                    <p><strong className="text-dark">{language === 'NL' ? 'Toegankelijkheid:' : 'Site Access:'}</strong> {inspectedOffer.raw?.locationAccess?.siteAccess || 'Normale doorgang'}</p>
+                    <p><strong className="text-dark">{language === 'NL' ? 'Kraan nodig:' : 'Crane required:'}</strong> {inspectedOffer.raw?.locationAccess?.craneNeeded ? (language === 'NL' ? 'Ja' : 'Yes') : (language === 'NL' ? 'Nee' : 'No')}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submitted Price & Breakdown Snapshot */}
+              <div className="p-4 bg-[#F8FFF8] rounded-xl border border-green-200/80 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-green-800">
+                      {language === 'NL' ? 'INGEDIENDE BOUWPRIJS (EXCL. BTW)' : 'SUBMITTED BUILD PRICE (EXCL. VAT)'}
+                    </span>
+                    <span className="text-2xl font-bold font-mono text-primary">{inspectedOffer.price}</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs font-semibold text-dark/80">
+                    <div>
+                      <span className="block text-[10px] uppercase text-dark/50 font-bold">{language === 'NL' ? 'Geldigheid' : 'Validity'}</span>
+                      <span>{language === 'NL' ? inspectedOffer.validityNL : inspectedOffer.validityEN}</span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] uppercase text-dark/50 font-bold">{language === 'NL' ? 'Levertijd' : 'Lead Time'}</span>
+                      <span>{language === 'NL' ? inspectedOffer.leadTimeNL : inspectedOffer.leadTimeEN}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {inspectedOffer.breakdownItems && inspectedOffer.breakdownItems.length > 0 && (
+                  <div className="pt-3 border-t border-green-200/60">
+                    <span className="text-[11px] uppercase font-bold text-dark/70 block mb-2">
+                      {language === 'NL' ? 'Gedetailleerde Kostenopbouw (Breakdown):' : 'Detailed Cost Breakdown:'}
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {inspectedOffer.breakdownItems.map((b, idx) => (
+                        <div key={idx} className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#D6CFC2]/50">
+                          <span className="text-dark/80 font-medium">{b.label}</span>
+                          <span className="font-mono font-bold text-primary">€{Number(b.amount).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Remarks */}
+              {inspectedOffer.remarksNL && inspectedOffer.remarksNL !== '—' && (
+                <div className="p-3 bg-white rounded-xl border border-[#D6CFC2]/60 text-xs">
+                  <span className="block text-[10px] uppercase font-bold text-dark/50 mb-1">
+                    {language === 'NL' ? 'INGEDIENDE OPMERKINGEN' : 'SUBMITTED REMARKS'}
+                  </span>
+                  <p className="text-dark/80 whitespace-pre-wrap">{inspectedOffer.remarksNL}</p>
+                </div>
+              )}
+
+              {/* Attachments */}
+              {inspectedOffer.attachments && inspectedOffer.attachments.length > 0 && (
+                <div className="p-3 bg-white rounded-xl border border-[#D6CFC2]/60 text-xs space-y-2">
+                  <span className="block text-[10px] uppercase font-bold text-dark/50">
+                    {language === 'NL' ? 'BIJLAGEN & BOUWTEKENINGEN' : 'ATTACHMENTS & BLUEPRINTS'} ({inspectedOffer.attachments.length})
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {inspectedOffer.attachments.map((att, idx) => {
+                      const attName = att.fileName || att.name || (typeof att === 'string' ? att : `Bijlage ${idx + 1}`);
+                      const attUrl = att.url || (typeof att === 'string' ? att : '#');
+                      return (
+                        <a
+                          key={idx}
+                          href={attUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-[#EDE8DF] hover:bg-[#D6CFC2] rounded-lg text-primary font-semibold flex items-center gap-1.5 transition-colors"
+                        >
+                          <Paperclip className="w-3.5 h-3.5" />
+                          <span>{attName}</span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer */}
+              <div className="flex justify-end pt-3 border-t border-[#D6CFC2]/70">
+                <Button variant="secondary" onClick={() => setInspectedOffer(null)}>
+                  {language === 'NL' ? 'Sluiten' : 'Close'}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </AnimatePresence>,
+        document.body
       )}
     </div>
   );

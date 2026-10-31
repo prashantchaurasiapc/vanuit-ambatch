@@ -1193,10 +1193,13 @@ export default function Leads() {
         )}
       </Card>
 
-      {/* LEAD FORM MODAL (ADD & EDIT) */}
-      <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 pt-10 sm:pt-6">
+      {/* LEAD FORM MODAL (PORTALED TO BODY) */}
+      {modalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-start sm:items-center justify-center p-4 pt-10 sm:pt-6 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1257,36 +1260,18 @@ export default function Leads() {
                       placeholder="john@outdoors.nl"
                     />
                   </div>
-                  {/* LOCATION / CITY CUSTOM DROPDOWN */}
-                  <div className="relative">
-                    <label className="block text-xs font-semibold text-dark/60 mb-1 font-body uppercase tracking-wider">{language === 'EN' ? 'Location / City' : 'Locatie / Stad'}</label>
-                    <button
-                      type="button"
-                      onClick={() => setCityDropdownOpen(!cityDropdownOpen)}
-                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs sm:text-sm font-body focus:outline-none text-[#4A4A43] flex items-center justify-between shadow-xs cursor-pointer"
-                    >
-                      <span className="truncate">{form.location || (language === 'EN' ? '— Select City —' : '— Selecteer Stad —')}</span>
-                      <ChevronDown className={`w-4 h-4 text-dark/40 transition-transform ${cityDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {cityDropdownOpen && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setCityDropdownOpen(false)} />
-                        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-[#EDE8DF]">
-                          {['', 'Amsterdam', 'Rotterdam', 'Den Haag', 'Utrecht', 'Eindhoven', 'Haarlem', 'Groningen', 'Breda', 'Tilburg', 'Almere', 'Nijmegen', 'Arnhem', 'Apeldoorn', 'Zwolle', 'Maastricht', 'Delft', 'Leiden', 'Dordrecht', 'Anders / Other'].map((city, idx) => (
-                            <div
-                              key={idx}
-                              onClick={() => {
-                                setForm(prev => ({ ...prev, location: city }));
-                                setCityDropdownOpen(false);
-                              }}
-                              className={`px-3 py-2 text-xs cursor-pointer hover:bg-primary/10 transition-colors ${form.location === city ? 'bg-primary/15 font-bold text-primary' : 'text-dark'}`}
-                            >
-                              {city === '' ? (language === 'EN' ? '— Select City —' : '— Selecteer Stad —') : city}
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
+                  {/* LOCATION / CITY FREE-TEXT INPUT */}
+                  <div>
+                    <label className="block text-xs font-semibold text-dark/60 mb-1 font-body uppercase tracking-wider">
+                      {language === 'EN' ? 'Location / Address / City' : 'Locatie / Adres / Plaats'}
+                    </label>
+                    <input
+                      type="text"
+                      value={form.location}
+                      onChange={e => setForm(prev => ({ ...prev, location: e.target.value }))}
+                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
+                      placeholder={language === 'EN' ? 'e.g. Amsterdam, backyard with water view...' : 'bijv. Amsterdam, achtertuin aan het water...'}
+                    />
                   </div>
                 </div>
 
@@ -1337,52 +1322,18 @@ export default function Leads() {
                     )}
                   </div>
 
-                  {/* DESIRED SIZE CUSTOM DROPDOWN */}
-                  <div className="relative">
-                    <label className="block text-xs font-semibold text-dark/60 mb-1 font-body uppercase tracking-wider">{language === 'EN' ? 'Desired Size' : 'Gewenste Maat'}</label>
-                    <button
-                      type="button"
-                      onClick={() => setSizeDropdownOpen(!sizeDropdownOpen)}
-                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs sm:text-sm font-body focus:outline-none text-[#4A4A43] flex items-center justify-between shadow-xs cursor-pointer"
-                    >
-                      <span className="truncate">{form.size || (language === 'EN' ? '— Select Size —' : '— Selecteer Maat —')}</span>
-                      <ChevronDown className={`w-4 h-4 text-dark/40 transition-transform ${sizeDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {sizeDropdownOpen && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setSizeDropdownOpen(false)} />
-                        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-[#EDE8DF]">
-                          {[
-                            { val: '', label: language === 'EN' ? '— Select Size —' : '— Selecteer Maat —' },
-                            { val: '1x2m', label: '1 × 2 m' },
-                            { val: '2x2m', label: '2 × 2 m' },
-                            { val: '2x3m', label: '2 × 3 m' },
-                            { val: '3x2m', label: '3 × 2 m' },
-                            { val: '3x3m', label: '3 × 3 m' },
-                            { val: '3x4m', label: '3 × 4 m' },
-                            { val: '4x3m', label: '4 × 3 m' },
-                            { val: '4x4m', label: '4 × 4 m' },
-                            { val: '5x3m', label: '5 × 3 m' },
-                            { val: '5x4m', label: '5 × 4 m' },
-                            { val: '6x4m', label: '6 × 4 m' },
-                            { val: '8x4m', label: '8 × 4 m' },
-                            { val: '10x4m', label: '10 × 4 m' },
-                            { val: 'Op maat / Custom', label: 'Op maat / Custom' }
-                          ].map((sz, idx) => (
-                            <div
-                              key={idx}
-                              onClick={() => {
-                                setForm(prev => ({ ...prev, size: sz.val }));
-                                setSizeDropdownOpen(false);
-                              }}
-                              className={`px-3 py-2 text-xs cursor-pointer hover:bg-primary/10 transition-colors ${form.size === sz.val ? 'bg-primary/15 font-bold text-primary' : 'text-dark'}`}
-                            >
-                              {sz.label}
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
+                  {/* DESIRED DIMENSIONS FREE-TEXT INPUT */}
+                  <div>
+                    <label className="block text-xs font-semibold text-dark/60 mb-1 font-body uppercase tracking-wider">
+                      {language === 'EN' ? 'Desired Dimensions (Free Text)' : 'Gewenste Afmetingen (Vrije Tekst)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={form.size}
+                      onChange={e => setForm(prev => ({ ...prev, size: e.target.value }))}
+                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
+                      placeholder={language === 'EN' ? 'e.g. 450 x 300 x 260 cm, or L-shape with canopy' : 'bijv. 450 × 300 × 260 cm, of L-vorm met overstek'}
+                    />
                   </div>
                 </div>
 
@@ -1494,13 +1445,17 @@ export default function Leads() {
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
-      {/* LOST REASON MODAL */}
-      <AnimatePresence>
-        {lostReasonModalOpen && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      {/* LOST REASON MODAL (PORTALED TO BODY) */}
+      {lostReasonModalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1549,13 +1504,17 @@ export default function Leads() {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
-      {/* 3-DAY RED WARNING ALERT 1-CLICK FOLLOW-UP MODAL */}
-      <AnimatePresence>
-        {redAlertModalLead && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+      {/* 3-DAY RED WARNING ALERT MODAL (PORTALED TO BODY) */}
+      {redAlertModalLead && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1638,15 +1597,19 @@ export default function Leads() {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
       </>
       )}
 
-      {/* SIMPLIFIED 7-STEP PARTNER PRICE REQUEST WIZARD MODAL */}
-      <AnimatePresence>
-        {partnerWizardLead && (
-          <div className="fixed inset-0 z-[85] flex items-center justify-center p-2 sm:p-4">
+      {/* SIMPLIFIED 7-STEP PARTNER PRICE REQUEST WIZARD MODAL (PORTALED TO BODY) */}
+      {partnerWizardLead && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1969,8 +1932,9 @@ export default function Leads() {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* REACT PORTAL STATUS DROPDOWN — Rendered at body level (z-[99999]) */}
       {statusPortalPos && createPortal(

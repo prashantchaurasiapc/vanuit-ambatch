@@ -62,7 +62,10 @@ export function downloadWerkorderPdf(project) {
 export function downloadOpleverrapportPdf(project) {
   const name = project?.name || 'Buitenverblijf Douglas';
   const id = project?.id || 'OF-2026418';
-  const customer = project?.customer || project?.customerName || 'Sander de Vries';
-  const shortName = (customer || 'Sander de Vries').split(' ').pop();
+  const rawCustomer = project?.customer || project?.customerName || 'Sander de Vries';
+  const customer = typeof rawCustomer === 'object' && rawCustomer !== null
+    ? (rawCustomer.name || `${rawCustomer.firstName || ''} ${rawCustomer.lastName || ''}`.trim() || 'Sander de Vries')
+    : String(rawCustomer || 'Sander de Vries');
+  const shortName = customer.split(' ').pop();
   generateReactPdf(OpleverrapportTemplate, { project }, `Opleverrapport-${id}-${shortName}.pdf`);
 }

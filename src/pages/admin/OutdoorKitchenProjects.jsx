@@ -2588,7 +2588,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
                 <div className="p-3 bg-[#FAF8F5] border border-[#E6E1D7] rounded-xl">
                   <div className="text-[10px] font-mono font-bold text-[#555046] uppercase">Customer</div>
                   <div className="font-semibold text-[#1C1C1A] mt-0.5 truncate">
-                    {projectData?.customerName || 'Customer'}
+                    {typeof projectData?.customerName === 'object' && projectData?.customerName !== null ? (projectData.customerName.name || 'Customer') : (projectData?.customerName || projectData?.customer || 'Customer')}
                   </div>
                 </div>
 

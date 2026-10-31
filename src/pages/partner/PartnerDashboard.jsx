@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
@@ -34,7 +35,17 @@ export default function PartnerDashboard() {
       let loadedProjects = [];
       if (projRes.status === 'fulfilled' && projRes.value?.data) {
         const d = projRes.value.data;
-        loadedProjects = Array.isArray(d) ? d : (d.data || []);
+        const rawArr = Array.isArray(d) ? d : (d.data || []);
+        loadedProjects = rawArr.map(p => {
+          const custStr = typeof p.customer === 'object' && p.customer !== null
+            ? (p.customer.name || `${p.customer.firstName || ''} ${p.customer.lastName || ''}`.trim() || 'Client')
+            : (p.customerName || p.customer || 'Client');
+          return {
+            ...p,
+            customer: custStr,
+            customerName: custStr
+          };
+        });
       }
       setProjects(loadedProjects);
 
@@ -311,9 +322,13 @@ export default function PartnerDashboard() {
         </div>
       </div>
 
-      {/* Edit Progress Modal */}
-      {editProject && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      {/* Edit Progress Modal (PORTALED TO BODY) */}
+      {editProject && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[999999] flex items-center justify-center p-4 overflow-y-auto"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setEditProject(null); }}
+        >
           <div className="bg-[#EDE8DF] border border-[#D6CFC2] rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
             <div className="flex justify-between items-center pb-2 border-b border-[#D6CFC2]">
               <h3 className="text-lg font-heading font-bold text-primary">Update Project Progress</h3>
@@ -356,12 +371,17 @@ export default function PartnerDashboard() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* View Project Details Modal */}
-      {selectedProject && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      {/* View Project Details Modal (PORTALED TO BODY) */}
+      {selectedProject && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[999999] flex items-center justify-center p-4 overflow-y-auto"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedProject(null); }}
+        >
           <div className="bg-[#EDE8DF] border border-[#D6CFC2] rounded-2xl p-6 w-full max-w-lg space-y-4 shadow-2xl">
             <div className="flex justify-between items-center pb-2 border-b border-[#D6CFC2]">
               <h3 className="text-lg font-heading font-bold text-primary">{selectedProject.name}</h3>
@@ -371,7 +391,7 @@ export default function PartnerDashboard() {
               <div className="grid grid-cols-2 gap-3 p-3 bg-white/70 rounded-xl">
                 <div>
                   <span className="text-dark/50 font-medium block">Client Name</span>
-                  <span className="font-bold text-dark">{selectedProject.customer || selectedProject.customerName || 'Klant'}</span>
+                  <span className="font-bold text-dark">{typeof selectedProject.customer === 'object' && selectedProject.customer !== null ? (selectedProject.customer.name || 'Klant') : (selectedProject.customer || selectedProject.customerName || 'Klant')}</span>
                 </div>
                 <div>
                   <span className="text-dark/50 font-medium block">Deadline</span>
@@ -397,12 +417,17 @@ export default function PartnerDashboard() {
               <Button onClick={() => setSelectedProject(null)}>Close</Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Partner Report Modal */}
-      {showReportModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      {/* Partner Report Modal (PORTALED TO BODY) */}
+      {showReportModal && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[999999] flex items-center justify-center p-4 overflow-y-auto"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowReportModal(false); }}
+        >
           <div className="bg-[#EDE8DF] border border-[#D6CFC2] rounded-2xl p-6 w-full max-w-md space-y-4 shadow-2xl">
             <div className="flex justify-between items-center pb-2 border-b border-[#D6CFC2]">
               <h3 className="text-lg font-heading font-bold text-primary">Partner Summary Report</h3>
@@ -421,7 +446,8 @@ export default function PartnerDashboard() {
               <Button icon={FileText} onClick={handleDownloadReport}>Download PDF</Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

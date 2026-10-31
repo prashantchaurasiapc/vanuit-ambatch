@@ -36,12 +36,21 @@ export default function FactuurPDFTemplate({ invoice, companyDetails }) {
 
   // Dynamic Props Extraction with Fallbacks
   const invId = invoice?.id || invoice?.invoiceNumber || 'F-2026-108';
-  const customerName = invoice?.customer || invoice?.customerName || 'Bjorn Valk';
-  const firstName = invoice?.firstName || (customerName ? customerName.trim().split(' ')[0] : 'Bjorn');
   
-  const addressLine1 = invoice?.address || 'Dangeheuvel 3';
-  const addressLine2 = invoice?.zipCity || '5101 WE Dongen';
-  const phone = invoice?.phone || '+31 6 53962542';
+  // Safe extraction of customer name preventing .trim() crashes if customer is an object or non-string
+  const rawCustomer = invoice?.customer || invoice?.customerName || 'Bjorn Valk';
+  let resolvedCustName = 'Bjorn Valk';
+  if (typeof rawCustomer === 'object' && rawCustomer !== null) {
+    resolvedCustName = rawCustomer.name || `${rawCustomer.firstName || ''} ${rawCustomer.lastName || ''}`.trim() || rawCustomer.companyName || 'Bjorn Valk';
+  } else if (rawCustomer) {
+    resolvedCustName = String(rawCustomer).trim();
+  }
+  const customerName = resolvedCustName || 'Bjorn Valk';
+  const firstName = invoice?.firstName || (customerName ? String(customerName).trim().split(' ')[0] : 'Bjorn');
+  
+  const addressLine1 = (typeof invoice?.customer === 'object' && invoice?.customer?.address) || invoice?.address || 'Dangeheuvel 3';
+  const addressLine2 = (typeof invoice?.customer === 'object' && (invoice?.customer?.zipCity || invoice?.customer?.city)) || invoice?.zipCity || '5101 WE Dongen';
+  const phone = (typeof invoice?.customer === 'object' && invoice?.customer?.phone) || invoice?.phone || '+31 6 53962542';
   
   // Date Formatter: converts ISO '2026-09-28' or raw dates to clean Dutch format
   const formatDutchDate = (rawDate) => {
@@ -87,7 +96,7 @@ export default function FactuurPDFTemplate({ invoice, companyDetails }) {
           price: formatDutchCurrency(totalIncl)
         },
         {
-          description: `Bezorging ${invoice?.customer ? invoice.customer.split(' ')[0] : 'Dongen'}`,
+          description: `Bezorging ${firstName || 'Dongen'}`,
           subtext: 'Geleverd op locatie.',
           quantity: 1,
           price: 'Inbegrepen'
