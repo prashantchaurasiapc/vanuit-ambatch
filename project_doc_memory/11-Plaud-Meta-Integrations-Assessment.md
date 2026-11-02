@@ -125,3 +125,4 @@ To connect Meta Lead Ads into your Vanuit Ambacht CRM:
 | **Plaud AI** | Client export method & account confirmation | Provide Plaud Web account key or webhook URL |
 | **Meta Ads** | Client Business Manager permissions & Page token | Generate System User Access Token in Business Manager |
 | **Internal Chat** | None (Fully self-contained within Vanuit Ambacht DB) | Proceed with DB pool connection keepalive & UI validation |
+
