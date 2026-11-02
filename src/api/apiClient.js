@@ -9,9 +9,8 @@
  *  - Global 403 → console warn (caller handles UI)
  */
 export const BASE_URL = (
-  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
-    ? '/api'
-    : (import.meta.env.VITE_API_BASE_URL || 'https://feisty-beauty-production-2f61.up.railway.app/api')
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://feisty-beauty-production-2f61.up.railway.app/api'
 ).replace(/\/+$/, '');
 
 async function request(method, path, body = null, isFormData = false) {
