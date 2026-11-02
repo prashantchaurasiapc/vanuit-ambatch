@@ -29,7 +29,9 @@ export default function Settings() {
       if (lower === 'partnerbreakdown' || lower === 'breakdown') return 'PartnerBreakdown';
       if (lower === 'profitlossconfig' || lower === 'profitloss') return 'ProfitLossConfig';
       if (lower === 'users') return 'Users';
-      if (lower === 'templates') return 'Templates';
+      if (lower === 'quotetemplate' || lower === 'quote' || lower === 'quotes') return 'QuoteTemplate';
+      if (lower === 'templates' || lower === 'template') return 'Templates';
+      if (lower === 'integrations' || lower === 'integration') return 'Integrations';
       if (lower === 'theme') return 'Theme';
     }
     const saved = typeof window !== 'undefined' ? localStorage.getItem('admin_settings_active_tab') : null;
@@ -61,7 +63,13 @@ export default function Settings() {
         profitlossconfig: 'ProfitLossConfig',
         profitloss: 'ProfitLossConfig',
         users: 'Users',
+        quotetemplate: 'QuoteTemplate',
+        quote: 'QuoteTemplate',
+        quotes: 'QuoteTemplate',
         templates: 'Templates',
+        template: 'Templates',
+        integrations: 'Integrations',
+        integration: 'Integrations',
         theme: 'Theme',
       };
       const target = tabMap[lower] || 'Company';
@@ -1937,332 +1945,6 @@ export default function Settings() {
         </div>
       )}
 
-      {/* INVITE USER MODAL */}
-      <AnimatePresence>
-        {inviteModalOpen && typeof document !== 'undefined' && createPortal(
-          <div
-            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-          >
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setInviteModalOpen(false)} />
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
-              <div className="flex items-center justify-between border-b border-cream-dark/60 pb-3">
-                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Invite New User' : 'Nieuwe Gebruiker Uitnodigen'}</h3>
-                <button onClick={() => setInviteModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
-              </div>
-
-              <form onSubmit={handleInviteSubmit} className="space-y-3 font-body">
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Name' : 'Naam'}</label>
-                  <input type="text" required value={inviteForm.name} onChange={e => setInviteForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs" placeholder="e.g. Prashant Kumar" />
-                </div>
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Email Address' : 'E-mailadres'}</label>
-                  <input type="email" required value={inviteForm.email} onChange={e => setInviteForm(prev => ({ ...prev, email: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs" placeholder="e.g. sarah123@gmail.com" />
-                </div>
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Password' : 'Wachtwoord'}</label>
-                  <div className="relative">
-                    <input 
-                      type={showPasswordInModal ? "text" : "password"} 
-                      required 
-                      value={inviteForm.password} 
-                      onChange={e => setInviteForm(prev => ({ ...prev, password: e.target.value }))} 
-                      className="w-full pl-3 pr-10 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-mono" 
-                      placeholder="••••••••" 
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswordInModal(!showPasswordInModal)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-dark/40 hover:text-dark p-1"
-                      title={showPasswordInModal ? "Hide Password" : "Show Password"}
-                    >
-                      {showPasswordInModal ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'System Role' : 'Systeem Rol'}</label>
-                  <select value={inviteForm.role} onChange={e => setInviteForm(prev => ({ ...prev, role: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-bold text-xs">
-                    <option value="admin">👑 Admin Portal</option>
-                    <option value="partner">🤝 Partner Portal</option>
-                    <option value="customer">👤 Customer Portal</option>
-                  </select>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-3 border-t border-cream-dark/60">
-                  <Button type="button" variant="outline" onClick={() => setInviteModalOpen(false)}>{t('common.cancel')}</Button>
-                  <Button type="submit">{language === 'EN' ? 'Send Invitation / Create User' : 'Verstuur Uitnodiging / Aanmaken'}</Button>
-                </div>
-              </form>
-            </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
-
-      {/* ADD CUSTOM FIELD MODAL */}
-      <AnimatePresence>
-        {addFieldModalOpen && typeof document !== 'undefined' && createPortal(
-          <div
-            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-          >
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddFieldModalOpen(false)} />
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
-              <div className="flex items-center justify-between border-b border-cream-dark/60 pb-3">
-                <h3 className="text-lg font-heading font-bold text-primary">
-                  {language === 'EN' 
-                    ? `Add Custom Field (${getProductTypeLabel(selectedProductType)})` 
-                    : `Aangepast Veld Toevoegen (${getProductTypeLabel(selectedProductType)})`}
-                </h3>
-                <button onClick={() => setAddFieldModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
-              </div>
-
-              <form onSubmit={handleAddFieldSubmit} className="space-y-3 font-body">
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Field Name / Label' : 'Veld Naam / Label'}</label>
-                  <input
-                    type="text"
-                    required
-                    value={newFieldForm.label}
-                    onChange={e => setNewFieldForm(prev => ({ ...prev, label: e.target.value }))}
-                    className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg"
-                    placeholder={
-                      selectedProductType === 'buitenverblijf'
-                        ? (language === 'EN' ? 'e.g. Insulation Type (Roof & Wall)' : 'b.v. Isolatie Type (Dak & Wand)')
-                        : (selectedProductType === 'overkapping'
-                            ? (language === 'EN' ? 'e.g. Louvered Roof Control' : 'b.v. Lamellendak Besturing')
-                            : (language === 'EN' ? 'e.g. Countertop Finish' : 'b.v. Werkblad Afwerking'))
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Options (comma separated)' : 'Opties (komma gescheiden)'}</label>
-                  <input
-                    type="text"
-                    value={newFieldForm.optionsStr}
-                    onChange={e => setNewFieldForm(prev => ({ ...prev, optionsStr: e.target.value }))}
-                    className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg"
-                    placeholder={
-                      selectedProductType === 'buitenverblijf'
-                        ? (language === 'EN' ? 'PIR 80mm, Rockwool 100mm, No Insulation' : 'PIR 80mm, Steenwol 100mm, Geen isolatie')
-                        : (selectedProductType === 'overkapping'
-                            ? (language === 'EN' ? 'Somfy Motor, Manual Crank, Fixed Roof' : 'Somfy motor, Handmatig zwengel, Vast dak')
-                            : (language === 'EN' ? 'Polished Concrete, Black Granite, Teak Wood' : 'Gepolijst Beton, Zwart Graniet, Teak Hout'))
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="checkbox"
-                    id="fieldRequiredCheck"
-                    checked={newFieldForm.required}
-                    onChange={e => setNewFieldForm(prev => ({ ...prev, required: e.target.checked }))}
-                    className="rounded border-[#D6CFC2] text-primary"
-                  />
-                  <label htmlFor="fieldRequiredCheck" className="text-xs font-semibold text-dark/80 cursor-pointer">
-                    {language === 'EN' ? 'Mandatory Field (Required)' : 'Verplicht veld'}
-                  </label>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-3 border-t border-cream-dark/60">
-                  <Button type="button" variant="outline" onClick={() => setAddFieldModalOpen(false)}>{t('common.cancel')}</Button>
-                  <Button type="submit">{language === 'EN' ? 'Save Field' : 'Veld Opslaan'}</Button>
-                </div>
-              </form>
-            </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
-      {/* ADD CATEGORY MODAL */}
-      <AnimatePresence>
-        {addCategoryModalOpen && typeof document !== 'undefined' && createPortal(
-          <div
-            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-          >
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddCategoryModalOpen(false)} />
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
-              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
-                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Add New Category' : 'Nieuwe Categorie Toevoegen'}</h3>
-                <button onClick={() => setAddCategoryModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
-              </div>
-
-              <form onSubmit={handleAddCategorySubmit} className="space-y-3 font-body">
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Category Name' : 'Categorienaam'}</label>
-                  <input type="text" required value={categoryForm.name} onChange={e => setCategoryForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Luxe Pergola / Tuinkamer" />
-                </div>
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Icon Emoji' : 'Icoon Emoji'}</label>
-                  <input type="text" value={categoryForm.icon} onChange={e => setCategoryForm(prev => ({ ...prev, icon: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-mono text-base" placeholder="🏡" />
-                </div>
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Description' : 'Omschrijving'}</label>
-                  <textarea value={categoryForm.description} onChange={e => setCategoryForm(prev => ({ ...prev, description: e.target.value }))} rows={2} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg resize-none" placeholder="Korte toelichting over dit product type..." />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
-                  <Button type="button" variant="outline" onClick={() => setAddCategoryModalOpen(false)}>{t('common.cancel')}</Button>
-                  <Button type="submit">{language === 'EN' ? 'Save Category' : 'Categorie Opslaan'}</Button>
-                </div>
-              </form>
-            </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
-
-      {/* ADD WOOD TYPE MODAL */}
-      <AnimatePresence>
-        {addWoodModalOpen && typeof document !== 'undefined' && createPortal(
-          <div
-            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-          >
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddWoodModalOpen(false)} />
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
-              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
-                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Add New Wood Type' : 'Nieuwe Houtsoort Toevoegen'}</h3>
-                <button onClick={() => setAddWoodModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
-              </div>
-
-              <form onSubmit={handleAddWoodSubmit} className="space-y-3 font-body">
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Wood Type Name' : 'Naam Houtsoort'}</label>
-                  <input type="text" required value={woodForm.name} onChange={e => setWoodForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Accoya Hout / Western Red Cedar" />
-                </div>
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Expected Lifespan' : 'Verwachte Levensduur'}</label>
-                  <input type="text" required value={woodForm.lifespan} onChange={e => setWoodForm(prev => ({ ...prev, lifespan: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. 25 tot 30 jaar" />
-                </div>
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Description & Characteristics' : 'Omschrijving & Kenmerken'}</label>
-                  <textarea value={woodForm.description} onChange={e => setWoodForm(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg resize-none" placeholder="Vormstabiliteit, houtnerf, vergrijzing en onderhoudseigenschappen..." />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
-                  <Button type="button" variant="outline" onClick={() => setAddWoodModalOpen(false)}>{t('common.cancel')}</Button>
-                  <Button type="submit">{language === 'EN' ? 'Save Wood Type' : 'Houtsoort Opslaan'}</Button>
-                </div>
-              </form>
-            </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
-
-      {/* ADD MATERIAL MODAL */}
-      <AnimatePresence>
-        {addMaterialModalOpen && typeof document !== 'undefined' && createPortal(
-          <div
-            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-          >
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddMaterialModalOpen(false)} />
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
-              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
-                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Add Countertop / Material' : 'Nieuw Materiaal / Werkblad'}</h3>
-                <button onClick={() => setAddMaterialModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
-              </div>
-
-              <form onSubmit={handleAddMaterialSubmit} className="space-y-3 font-body">
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Material Name' : 'Naam Materiaal / Werkblad'}</label>
-                  <input type="text" required value={materialForm.name} onChange={e => setMaterialForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Dekton Danae Marmerlook (2cm)" />
-                </div>
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Description' : 'Omschrijving & Afwerking'}</label>
-                  <textarea value={materialForm.description} onChange={e => setMaterialForm(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg resize-none" placeholder="Hittebestendigheid, waterdichtheid, dikte..." />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
-                  <Button type="button" variant="outline" onClick={() => setAddMaterialModalOpen(false)}>{t('common.cancel')}</Button>
-                  <Button type="submit">{language === 'EN' ? 'Save Material' : 'Materiaal Opslaan'}</Button>
-                </div>
-              </form>
-            </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
-
-      {/* ADD OPTION MODAL */}
-      <AnimatePresence>
-        {addOptionModalOpen && typeof document !== 'undefined' && createPortal(
-          <div
-            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-          >
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddOptionModalOpen(false)} />
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
-              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
-                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Add Built-in Option' : 'Nieuwe Inbouwoptie Toevoegen'}</h3>
-                <button onClick={() => setAddOptionModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
-              </div>
-
-              <form onSubmit={handleAddOptionSubmit} className="space-y-3 font-body">
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Option Name' : 'Naam Optie'}</label>
-                  <input type="text" required value={optionForm.name} onChange={e => setOptionForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Pizzaoven RVS Inbouwsteun" />
-                </div>
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Category' : 'Categorie'}</label>
-                  <input type="text" required value={optionForm.category} onChange={e => setOptionForm(prev => ({ ...prev, category: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Koken, Koelen, Verlichting..." />
-                </div>
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Description' : 'Omschrijving'}</label>
-                  <textarea value={optionForm.description} onChange={e => setOptionForm(prev => ({ ...prev, description: e.target.value }))} rows={2} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg resize-none" placeholder="Technische details of aansluitvereisten..." />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
-                  <Button type="button" variant="outline" onClick={() => setAddOptionModalOpen(false)}>{t('common.cancel')}</Button>
-                  <Button type="submit">{language === 'EN' ? 'Save Option' : 'Optie Opslaan'}</Button>
-                </div>
-              </form>
-            </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
-
-      {/* ADD NEW SECTION MODAL */}
-      <AnimatePresence>
-        {addSectionModalOpen && typeof document !== 'undefined' && createPortal(
-          <div
-            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-          >
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddSectionModalOpen(false)} />
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
-              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
-                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Add Cost Breakdown Section' : 'Nieuwe Prijsopbouw Sectie'}</h3>
-                <button onClick={() => setAddSectionModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
-              </div>
-
-              <form onSubmit={handleAddSectionSubmit} className="space-y-3 font-body">
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Section Title' : 'Sectienaam'}</label>
-                  <input type="text" required value={sectionForm.title} onChange={e => setSectionForm(prev => ({ ...prev, title: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Fundering & Grondwerk" />
-                </div>
-                <div>
-                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Section Icon Emoji' : 'Pictogram Emoji'}</label>
-                  <input type="text" value={sectionForm.icon} onChange={e => setSectionForm(prev => ({ ...prev, icon: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="🏗️" />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
-                  <Button type="button" variant="outline" onClick={() => setAddSectionModalOpen(false)}>{t('common.cancel')}</Button>
-                  <Button type="submit">{language === 'EN' ? 'Save Section' : 'Sectie Opslaan'}</Button>
-                </div>
-              </form>
-            </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
       {/* ========================================================= */}
       {/* INTEGRATIONS TAB (GOOGLE CALENDAR & GMAIL)                  */}
       {/* ========================================================= */}
@@ -2341,9 +2023,336 @@ export default function Settings() {
         </div>
       )}
 
+      {/* INVITE USER MODAL */}
+      {inviteModalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setInviteModalOpen(false)} />
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
+              <div className="flex items-center justify-between border-b border-cream-dark/60 pb-3">
+                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Invite New User' : 'Nieuwe Gebruiker Uitnodigen'}</h3>
+                <button onClick={() => setInviteModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleInviteSubmit} className="space-y-3 font-body">
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Name' : 'Naam'}</label>
+                  <input type="text" required value={inviteForm.name} onChange={e => setInviteForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs" placeholder="e.g. Prashant Kumar" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Email Address' : 'E-mailadres'}</label>
+                  <input type="email" required value={inviteForm.email} onChange={e => setInviteForm(prev => ({ ...prev, email: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs" placeholder="e.g. sarah123@gmail.com" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Password' : 'Wachtwoord'}</label>
+                  <div className="relative">
+                    <input 
+                      type={showPasswordInModal ? "text" : "password"} 
+                      required 
+                      value={inviteForm.password} 
+                      onChange={e => setInviteForm(prev => ({ ...prev, password: e.target.value }))} 
+                      className="w-full pl-3 pr-10 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-mono" 
+                      placeholder="••••••••" 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordInModal(!showPasswordInModal)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-dark/40 hover:text-dark p-1"
+                      title={showPasswordInModal ? "Hide Password" : "Show Password"}
+                    >
+                      {showPasswordInModal ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'System Role' : 'Systeem Rol'}</label>
+                  <select value={inviteForm.role} onChange={e => setInviteForm(prev => ({ ...prev, role: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-bold text-xs">
+                    <option value="admin">👑 Admin Portal</option>
+                    <option value="partner">🤝 Partner Portal</option>
+                    <option value="customer">👤 Customer Portal</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-cream-dark/60">
+                  <Button type="button" variant="outline" onClick={() => setInviteModalOpen(false)}>{t('common.cancel')}</Button>
+                  <Button type="submit">{language === 'EN' ? 'Send Invitation / Create User' : 'Verstuur Uitnodiging / Aanmaken'}</Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* ADD CUSTOM FIELD MODAL */}
+      {addFieldModalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddFieldModalOpen(false)} />
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
+              <div className="flex items-center justify-between border-b border-cream-dark/60 pb-3">
+                <h3 className="text-lg font-heading font-bold text-primary">
+                  {language === 'EN' 
+                    ? `Add Custom Field (${getProductTypeLabel(selectedProductType)})` 
+                    : `Aangepast Veld Toevoegen (${getProductTypeLabel(selectedProductType)})`}
+                </h3>
+                <button onClick={() => setAddFieldModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleAddFieldSubmit} className="space-y-3 font-body">
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Field Name / Label' : 'Veld Naam / Label'}</label>
+                  <input
+                    type="text"
+                    required
+                    value={newFieldForm.label}
+                    onChange={e => setNewFieldForm(prev => ({ ...prev, label: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg"
+                    placeholder={
+                      selectedProductType === 'buitenverblijf'
+                        ? (language === 'EN' ? 'e.g. Insulation Type (Roof & Wall)' : 'b.v. Isolatie Type (Dak & Wand)')
+                        : (selectedProductType === 'overkapping'
+                            ? (language === 'EN' ? 'e.g. Louvered Roof Control' : 'b.v. Lamellendak Besturing')
+                            : (language === 'EN' ? 'e.g. Countertop Finish' : 'b.v. Werkblad Afwerking'))
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Options (comma separated)' : 'Opties (komma gescheiden)'}</label>
+                  <input
+                    type="text"
+                    value={newFieldForm.optionsStr}
+                    onChange={e => setNewFieldForm(prev => ({ ...prev, optionsStr: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg"
+                    placeholder={
+                      selectedProductType === 'buitenverblijf'
+                        ? (language === 'EN' ? 'PIR 80mm, Rockwool 100mm, No Insulation' : 'PIR 80mm, Steenwol 100mm, Geen isolatie')
+                        : (selectedProductType === 'overkapping'
+                            ? (language === 'EN' ? 'Somfy Motor, Manual Crank, Fixed Roof' : 'Somfy motor, Handmatig zwengel, Vast dak')
+                            : (language === 'EN' ? 'Polished Concrete, Black Granite, Teak Wood' : 'Gepolijst Beton, Zwart Graniet, Teak Hout'))
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="fieldRequiredCheck"
+                    checked={newFieldForm.required}
+                    onChange={e => setNewFieldForm(prev => ({ ...prev, required: e.target.checked }))}
+                    className="rounded border-[#D6CFC2] text-primary"
+                  />
+                  <label htmlFor="fieldRequiredCheck" className="text-xs font-semibold text-dark/80 cursor-pointer">
+                    {language === 'EN' ? 'Mandatory Field (Required)' : 'Verplicht veld'}
+                  </label>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-cream-dark/60">
+                  <Button type="button" variant="outline" onClick={() => setAddFieldModalOpen(false)}>{t('common.cancel')}</Button>
+                  <Button type="submit">{language === 'EN' ? 'Save Field' : 'Veld Opslaan'}</Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
+      {/* ADD CATEGORY MODAL */}
+      {addCategoryModalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddCategoryModalOpen(false)} />
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
+                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Add New Category' : 'Nieuwe Categorie Toevoegen'}</h3>
+                <button onClick={() => setAddCategoryModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleAddCategorySubmit} className="space-y-3 font-body">
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Category Name' : 'Categorienaam'}</label>
+                  <input type="text" required value={categoryForm.name} onChange={e => setCategoryForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Luxe Pergola / Tuinkamer" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Icon Emoji' : 'Icoon Emoji'}</label>
+                  <input type="text" value={categoryForm.icon} onChange={e => setCategoryForm(prev => ({ ...prev, icon: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-mono text-base" placeholder="🏡" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Description' : 'Omschrijving'}</label>
+                  <textarea value={categoryForm.description} onChange={e => setCategoryForm(prev => ({ ...prev, description: e.target.value }))} rows={2} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg resize-none" placeholder="Korte toelichting over dit product type..." />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
+                  <Button type="button" variant="outline" onClick={() => setAddCategoryModalOpen(false)}>{t('common.cancel')}</Button>
+                  <Button type="submit">{language === 'EN' ? 'Save Category' : 'Categorie Opslaan'}</Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* ADD WOOD TYPE MODAL */}
+      {addWoodModalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddWoodModalOpen(false)} />
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
+                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Add New Wood Type' : 'Nieuwe Houtsoort Toevoegen'}</h3>
+                <button onClick={() => setAddWoodModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleAddWoodSubmit} className="space-y-3 font-body">
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Wood Type Name' : 'Naam Houtsoort'}</label>
+                  <input type="text" required value={woodForm.name} onChange={e => setWoodForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Accoya Hout / Western Red Cedar" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Expected Lifespan' : 'Verwachte Levensduur'}</label>
+                  <input type="text" required value={woodForm.lifespan} onChange={e => setWoodForm(prev => ({ ...prev, lifespan: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. 25 tot 30 jaar" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Description & Characteristics' : 'Omschrijving & Kenmerken'}</label>
+                  <textarea value={woodForm.description} onChange={e => setWoodForm(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg resize-none" placeholder="Vormstabiliteit, houtnerf, vergrijzing en onderhoudseigenschappen..." />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
+                  <Button type="button" variant="outline" onClick={() => setAddWoodModalOpen(false)}>{t('common.cancel')}</Button>
+                  <Button type="submit">{language === 'EN' ? 'Save Wood Type' : 'Houtsoort Opslaan'}</Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* ADD MATERIAL MODAL */}
+      {addMaterialModalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddMaterialModalOpen(false)} />
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
+                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Add Countertop / Material' : 'Nieuw Materiaal / Werkblad'}</h3>
+                <button onClick={() => setAddMaterialModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleAddMaterialSubmit} className="space-y-3 font-body">
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Material Name' : 'Naam Materiaal / Werkblad'}</label>
+                  <input type="text" required value={materialForm.name} onChange={e => setMaterialForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Dekton Danae Marmerlook (2cm)" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Description' : 'Omschrijving & Afwerking'}</label>
+                  <textarea value={materialForm.description} onChange={e => setMaterialForm(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg resize-none" placeholder="Hittebestendigheid, waterdichtheid, dikte..." />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
+                  <Button type="button" variant="outline" onClick={() => setAddMaterialModalOpen(false)}>{t('common.cancel')}</Button>
+                  <Button type="submit">{language === 'EN' ? 'Save Material' : 'Materiaal Opslaan'}</Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* ADD OPTION MODAL */}
+      {addOptionModalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddOptionModalOpen(false)} />
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
+                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Add Built-in Option' : 'Nieuwe Inbouwoptie Toevoegen'}</h3>
+                <button onClick={() => setAddOptionModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleAddOptionSubmit} className="space-y-3 font-body">
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Option Name' : 'Naam Optie'}</label>
+                  <input type="text" required value={optionForm.name} onChange={e => setOptionForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Pizzaoven RVS Inbouwsteun" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Category' : 'Categorie'}</label>
+                  <input type="text" required value={optionForm.category} onChange={e => setOptionForm(prev => ({ ...prev, category: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Koken, Koelen, Verlichting..." />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Description' : 'Omschrijving'}</label>
+                  <textarea value={optionForm.description} onChange={e => setOptionForm(prev => ({ ...prev, description: e.target.value }))} rows={2} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg resize-none" placeholder="Technische details of aansluitvereisten..." />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
+                  <Button type="button" variant="outline" onClick={() => setAddOptionModalOpen(false)}>{t('common.cancel')}</Button>
+                  <Button type="submit">{language === 'EN' ? 'Save Option' : 'Optie Opslaan'}</Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* ADD NEW SECTION MODAL */}
+      {addSectionModalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddSectionModalOpen(false)} />
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
+                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Add Cost Breakdown Section' : 'Nieuwe Prijsopbouw Sectie'}</h3>
+                <button onClick={() => setAddSectionModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleAddSectionSubmit} className="space-y-3 font-body">
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Section Title' : 'Sectienaam'}</label>
+                  <input type="text" required value={sectionForm.title} onChange={e => setSectionForm(prev => ({ ...prev, title: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Fundering & Grondwerk" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Section Icon Emoji' : 'Pictogram Emoji'}</label>
+                  <input type="text" value={sectionForm.icon} onChange={e => setSectionForm(prev => ({ ...prev, icon: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="🏗️" />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
+                  <Button type="button" variant="outline" onClick={() => setAddSectionModalOpen(false)}>{t('common.cancel')}</Button>
+                  <Button type="submit">{language === 'EN' ? 'Save Section' : 'Sectie Opslaan'}</Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
+      
       {/* ADD FIELD TO SECTION MODAL */}
-      <AnimatePresence>
-        {addFieldToSectionModalOpen && typeof document !== 'undefined' && createPortal(
+      {addFieldToSectionModalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
           <div
             className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
             style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
@@ -2367,13 +2376,13 @@ export default function Settings() {
                 </div>
               </form>
             </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
       {/* ADD NEW TEMPLATE MODAL */}
-      <AnimatePresence>
-        {addTemplateModalOpen && typeof document !== 'undefined' && createPortal(
+      {addTemplateModalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
           <div
             className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
             style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
@@ -2415,10 +2424,10 @@ export default function Settings() {
                 </div>
               </form>
             </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

@@ -1287,8 +1287,8 @@ export default function Partners() {
       )}
 
       {/* ── PARTNER DETAIL MODAL ── */}
-      <AnimatePresence>
-        {detailModalPartner && typeof document !== 'undefined' && createPortal(
+      {detailModalPartner && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
           <div
             className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
             style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
@@ -1438,14 +1438,14 @@ export default function Partners() {
                 <Button variant="outline" onClick={() => setDetailModalPartner(null)}>{language === 'NL' ? 'Sluiten' : 'Close'}</Button>
               </div>
             </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* ── CREATE / EDIT PARTNER MODAL ── */}
-      <AnimatePresence>
-        {modalOpen && typeof document !== 'undefined' && createPortal(
+      {modalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
           <div
             className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
             style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
@@ -1543,13 +1543,13 @@ export default function Partners() {
                 </div>
               </form>
             </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
       {/* ── CONVERT CANDIDATE TO OFFICIAL PARTNER MODAL ── */}
-      <AnimatePresence>
-        {convertModalOpen && candidateToConvert && typeof document !== 'undefined' && createPortal(
+      {convertModalOpen && candidateToConvert && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
           <div
             className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
             style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
@@ -1767,14 +1767,14 @@ export default function Partners() {
                 </div>
               </form>
             </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* ── ADD / EDIT PIPELINE CANDIDATE MODAL ── */}
-      <AnimatePresence>
-        {candidateModalOpen && typeof document !== 'undefined' && createPortal(
+      {candidateModalOpen && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
           <div
             className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
             style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
@@ -1946,10 +1946,10 @@ export default function Partners() {
                 </div>
               </form>
             </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
