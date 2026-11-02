@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Card from '../../components/Card';
@@ -1938,8 +1939,11 @@ export default function Settings() {
 
       {/* INVITE USER MODAL */}
       <AnimatePresence>
-        {inviteModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {inviteModalOpen && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setInviteModalOpen(false)} />
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
               <div className="flex items-center justify-between border-b border-cream-dark/60 pb-3">
@@ -1992,14 +1996,18 @@ export default function Settings() {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
 
       {/* ADD CUSTOM FIELD MODAL */}
       <AnimatePresence>
-        {addFieldModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {addFieldModalOpen && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddFieldModalOpen(false)} />
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
               <div className="flex items-center justify-between border-b border-cream-dark/60 pb-3">
@@ -2065,13 +2073,17 @@ export default function Settings() {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
       {/* ADD CATEGORY MODAL */}
       <AnimatePresence>
-        {addCategoryModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {addCategoryModalOpen && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddCategoryModalOpen(false)} />
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
               <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
@@ -2099,14 +2111,18 @@ export default function Settings() {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
 
       {/* ADD WOOD TYPE MODAL */}
       <AnimatePresence>
-        {addWoodModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {addWoodModalOpen && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddWoodModalOpen(false)} />
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
               <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
@@ -2134,14 +2150,18 @@ export default function Settings() {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
 
       {/* ADD MATERIAL MODAL */}
       <AnimatePresence>
-        {addMaterialModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {addMaterialModalOpen && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddMaterialModalOpen(false)} />
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
               <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
@@ -2165,14 +2185,18 @@ export default function Settings() {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
 
       {/* ADD OPTION MODAL */}
       <AnimatePresence>
-        {addOptionModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {addOptionModalOpen && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddOptionModalOpen(false)} />
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
               <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
@@ -2200,14 +2224,18 @@ export default function Settings() {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
 
       {/* ADD NEW SECTION MODAL */}
       <AnimatePresence>
-        {addSectionModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {addSectionModalOpen && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddSectionModalOpen(false)} />
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
               <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
@@ -2231,7 +2259,8 @@ export default function Settings() {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
       {/* ========================================================= */}
@@ -2314,8 +2343,11 @@ export default function Settings() {
 
       {/* ADD FIELD TO SECTION MODAL */}
       <AnimatePresence>
-        {addFieldToSectionModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {addFieldToSectionModalOpen && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddFieldToSectionModalOpen(false)} />
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
               <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
@@ -2335,13 +2367,17 @@ export default function Settings() {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
       {/* ADD NEW TEMPLATE MODAL */}
       <AnimatePresence>
-        {addTemplateModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {addTemplateModalOpen && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddTemplateModalOpen(false)} />
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
               <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
@@ -2379,7 +2415,8 @@ export default function Settings() {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
     </div>

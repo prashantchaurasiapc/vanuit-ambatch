@@ -246,3 +246,4 @@ export function getWoodLibraryForSchema(language = 'NL') {
     infoboxText: language === 'EN' ? (w.descriptionEn || w.description) : w.description
   }));
 }
+

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import Card from '../../components/Card';
 import Table from '../../components/Table';
@@ -1287,11 +1288,14 @@ export default function Partners() {
 
       {/* ── PARTNER DETAIL MODAL ── */}
       <AnimatePresence>
-        {detailModalPartner && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/70 backdrop-blur-xs" onClick={() => setDetailModalPartner(null)} />
+        {detailModalPartner && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-dark/70 backdrop-blur-sm" onClick={() => setDetailModalPartner(null)} />
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-2xl bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 max-h-[90vh] overflow-y-auto text-xs">
+              className="relative w-full max-w-2xl bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-5 sm:p-6 shadow-2xl z-10 space-y-4 max-h-[90vh] overflow-y-auto text-xs my-auto">
 
               {/* Profile Header */}
               <div className="flex justify-between items-start border-b border-[#D6CFC2] pb-4">
@@ -1434,17 +1438,21 @@ export default function Partners() {
                 <Button variant="outline" onClick={() => setDetailModalPartner(null)}>{language === 'NL' ? 'Sluiten' : 'Close'}</Button>
               </div>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
 
       {/* ── CREATE / EDIT PARTNER MODAL ── */}
       <AnimatePresence>
-        {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
+        {modalOpen && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-dark/70 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4">
+              className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-5 sm:p-6 shadow-2xl z-10 space-y-4 max-h-[92vh] overflow-y-auto my-auto">
               <div className="flex items-center justify-between border-b border-cream-dark/60 pb-3">
                 <h3 className="text-lg font-heading font-bold text-primary">
                   {selectedPartner ? (language === 'NL' ? 'Partner Bewerken' : 'Edit Partner') : (language === 'NL' ? 'Nieuwe Partner Toevoegen' : 'Add New Partner')}
@@ -1535,25 +1543,29 @@ export default function Partners() {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
       {/* ── CONVERT CANDIDATE TO OFFICIAL PARTNER MODAL ── */}
       <AnimatePresence>
-        {convertModalOpen && candidateToConvert && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {convertModalOpen && candidateToConvert && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-dark/60 backdrop-blur-sm"
+              className="fixed inset-0 bg-dark/70 backdrop-blur-sm"
               onClick={() => setConvertModalOpen(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 max-h-[90vh] overflow-y-auto"
+              className="relative w-full max-w-lg bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-5 sm:p-6 shadow-2xl z-10 space-y-4 max-h-[90vh] overflow-y-auto my-auto"
             >
               <div className="flex items-center justify-between border-b border-cream-dark/60 pb-3">
                 <div className="flex items-center gap-2">
@@ -1755,26 +1767,30 @@ export default function Partners() {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
 
       {/* ── ADD / EDIT PIPELINE CANDIDATE MODAL ── */}
       <AnimatePresence>
-        {candidateModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {candidateModalOpen && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-dark/60 backdrop-blur-sm"
+              className="fixed inset-0 bg-dark/70 backdrop-blur-sm"
               onClick={() => setCandidateModalOpen(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 max-h-[90vh] overflow-y-auto"
+              className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-5 sm:p-6 shadow-2xl z-10 space-y-4 max-h-[90vh] overflow-y-auto my-auto"
             >
               <div className="flex items-center justify-between border-b border-cream-dark/60 pb-3">
                 <h3 className="text-lg font-heading font-bold text-primary">
@@ -1930,7 +1946,8 @@ export default function Partners() {
                 </div>
               </form>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
     </div>
