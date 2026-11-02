@@ -11,7 +11,7 @@ import Card from './Card';
 import Badge from './Badge';
 import DiagramBuilder from './DiagramBuilder';
 import Offerte6PagePDF from './Offerte6PagePDF';
-import { WOOD_LIBRARY, PRESET_PRODUCT_LIBRARY, PRODUCT_TYPE_DEFAULTS, getProductTypeDefaults } from '../utils/quoteLibraries';
+import { WOOD_LIBRARY, PRESET_PRODUCT_LIBRARY, PRODUCT_TYPE_DEFAULTS, getProductTypeDefaults, getDynamicWoodLibrary } from '../utils/quoteLibraries';
 import { calculateTotals, calculateInstalments, validateQuoteForSend, createDefaultQuote } from '../utils/quoteSchema';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -1730,13 +1730,14 @@ export default function QuoteEditor({
                       </span>
                     </div>
                     {(() => {
-                      const matchedWood = WOOD_LIBRARY.find(w => normalizeWood(w.name) === normalizeWood(quote.configuration?.woodType));
+                      const activeWoodLib = getDynamicWoodLibrary(language);
+                      const matchedWood = activeWoodLib.find(w => normalizeWood(w.name) === normalizeWood(quote.configuration?.woodType)) || WOOD_LIBRARY.find(w => normalizeWood(w.name) === normalizeWood(quote.configuration?.woodType));
                       const isCustomWood = isCustomWoodMode || Boolean(
                         quote.configuration?.woodType && !matchedWood
                       );
                       const selectVal = isCustomWood
                         ? 'custom'
-                        : (matchedWood ? matchedWood.name : 'Thermo Fraké');
+                        : (matchedWood ? matchedWood.name : (activeWoodLib[0]?.name || 'Thermo Fraké'));
 
                       return (
                         <>
@@ -1745,7 +1746,7 @@ export default function QuoteEditor({
                             onChange={(e) => {
                               if (e.target.value === 'custom') {
                                 setIsCustomWoodMode(true);
-                                const currentMatched = WOOD_LIBRARY.find(w => normalizeWood(w.name) === normalizeWood(quote.configuration?.woodType));
+                                const currentMatched = activeWoodLib.find(w => normalizeWood(w.name) === normalizeWood(quote.configuration?.woodType));
                                 if (currentMatched) {
                                   handleCustomWoodChange('');
                                 }
@@ -1756,7 +1757,7 @@ export default function QuoteEditor({
                             }}
                             className="w-full px-3 py-1.5 bg-white border border-[#D6CFC2] rounded-lg font-bold text-dark text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
                           >
-                            {WOOD_LIBRARY.map((w) => (
+                            {activeWoodLib.map((w) => (
                               <option key={w.id} value={w.name}>{getDisplayWoodType(w.name, language)}</option>
                             ))}
                             <option value="custom">{language === 'NL' ? 'Aangepaste houtsoort (vrije tekst)' : 'Custom wood type (free text)'}</option>

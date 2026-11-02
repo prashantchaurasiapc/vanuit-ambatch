@@ -4,9 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Badge from '../../components/Badge';
-import { Building2, Upload, Palette, Bell, Save, CheckCircle, Users, Plus, Trash2, Edit2, Shield, Sliders, Hash, Percent, X, UserPlus, ToggleLeft, ToggleRight, FileText, MessageSquare, Layers, Wrench, FileCode, FolderPlus, DollarSign, TrendingUp, PieChart, Eye, EyeOff, Lock, Key, Link2, Calendar, Mail } from 'lucide-react';
+import { Building2, Upload, Palette, Bell, Save, CheckCircle, Users, Plus, Trash2, Edit2, Shield, Sliders, Hash, Percent, X, UserPlus, ToggleLeft, ToggleRight, FileText, MessageSquare, Layers, Wrench, FileCode, FolderPlus, DollarSign, TrendingUp, PieChart, Eye, EyeOff, Lock, Key, Link2, Calendar, Mail, TreePine, Hammer, Sparkles, Check } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import api from '../../api/apiClient';
+import {
+  getProductConfig,
+  saveProductConfig,
+  DEFAULT_PRODUCT_CONFIG
+} from '../../utils/productConfigManager';
 
 export default function Settings() {
   const { t, language } = useLanguage();
@@ -266,17 +271,51 @@ export default function Settings() {
   });
 
   // -------------------------------------------------------------
-  // 5. DYNAMIC CATEGORIES MANAGEMENT STATE
+  // 5. DYNAMIC CATEGORIES, WOOD TYPES, MATERIALS & OPTIONS MANAGEMENT STATE
   // -------------------------------------------------------------
-  const [dynamicCategories, setDynamicCategories] = useState([
-    { id: 'cat-1', name: 'Buitenkeukens', icon: '🔥', description: 'Maatwerk houten & beton buitenkeukens', status: 'Actief' },
-    { id: 'cat-2', name: 'Kliko-ombouw', icon: '🗑️', description: 'Duurzame bergingen voor afvalcontainers', status: 'Actief' },
-    { id: 'cat-3', name: 'Snijplanken', icon: '🪵', description: 'Luxe houten snijplanken & hakblokken', status: 'Actief' },
-    { id: 'cat-4', name: 'Overkappingen', icon: '☂️', description: 'Eiken gebint & lamellen overkappingen', status: 'Actief' }
-  ]);
+  const [categoriesSubTab, setCategoriesSubTab] = useState('categories'); // 'categories' | 'wood' | 'materials' | 'options'
+  
+  const [dynamicCategories, setDynamicCategories] = useState(() => {
+    const cfg = getProductConfig();
+    return cfg.categories || DEFAULT_PRODUCT_CONFIG.categories;
+  });
+  const [dynamicWoodTypes, setDynamicWoodTypes] = useState(() => {
+    const cfg = getProductConfig();
+    return cfg.woodTypes || DEFAULT_PRODUCT_CONFIG.woodTypes;
+  });
+  const [dynamicMaterials, setDynamicMaterials] = useState(() => {
+    const cfg = getProductConfig();
+    return cfg.materials || DEFAULT_PRODUCT_CONFIG.materials;
+  });
+  const [dynamicOptions, setDynamicOptions] = useState(() => {
+    const cfg = getProductConfig();
+    return cfg.options || DEFAULT_PRODUCT_CONFIG.options;
+  });
+
   const [addCategoryModalOpen, setAddCategoryModalOpen] = useState(false);
   const [categoryForm, setCategoryForm] = useState({ name: '', icon: '🪵', description: '' });
 
+  const [addWoodModalOpen, setAddWoodModalOpen] = useState(false);
+  const [woodForm, setWoodForm] = useState({ name: '', lifespan: '20 tot 25 jaar', description: '' });
+
+  const [addMaterialModalOpen, setAddMaterialModalOpen] = useState(false);
+  const [materialForm, setMaterialForm] = useState({ name: '', description: '' });
+
+  const [addOptionModalOpen, setAddOptionModalOpen] = useState(false);
+  const [optionForm, setOptionForm] = useState({ name: '', category: 'Inbouw', description: '' });
+
+  // Sync state to central product configuration storage
+  const syncAndSaveProductConfig = (newCats, newWoods, newMats, newOpts) => {
+    const cfg = {
+      categories: newCats || dynamicCategories,
+      woodTypes: newWoods || dynamicWoodTypes,
+      materials: newMats || dynamicMaterials,
+      options: newOpts || dynamicOptions
+    };
+    saveProductConfig(cfg);
+  };
+
+  // Category Actions
   const handleAddCategorySubmit = async (e) => {
     e.preventDefault();
     if (!categoryForm.name.trim()) return showToast(language === 'EN' ? 'Please enter a category name.' : 'Vul een categorienaam in.');
@@ -285,27 +324,130 @@ export default function Settings() {
       name: categoryForm.name.trim(),
       icon: categoryForm.icon || '📦',
       description: categoryForm.description || (language === 'EN' ? 'New product category' : 'Nieuwe product categorie'),
-      status: language === 'EN' ? 'Active' : 'Actief'
+      status: 'Actief'
     };
     const updated = [...dynamicCategories, newCat];
     setDynamicCategories(updated);
+    syncAndSaveProductConfig(updated, null, null, null);
     try {
       await api.patch('/settings/config/categories', updated);
     } catch (err) {}
-    window.dispatchEvent(new Event('app_data_changed'));
     showToast(language === 'EN' ? `New category "${newCat.name}" created!` : `Nieuwe categorie "${newCat.name}" aangemaakt!`);
     setCategoryForm({ name: '', icon: '🪵', description: '' });
     setAddCategoryModalOpen(false);
   };
 
+  const handleToggleCategoryStatus = (catId) => {
+    const updated = dynamicCategories.map(c => c.id === catId ? { ...c, status: c.status === 'Actief' ? 'Inactief' : 'Actief' } : c);
+    setDynamicCategories(updated);
+    syncAndSaveProductConfig(updated, null, null, null);
+    showToast(language === 'EN' ? 'Category status updated.' : 'Status van categorie gewijzigd.');
+  };
+
   const handleDeleteCategory = async (catId) => {
     const updated = dynamicCategories.filter(c => c.id !== catId);
     setDynamicCategories(updated);
-    try {
-      await api.patch('/settings/config/categories', updated);
-    } catch (err) {}
-    window.dispatchEvent(new Event('app_data_changed'));
+    syncAndSaveProductConfig(updated, null, null, null);
     showToast(language === 'EN' ? 'Category deleted.' : 'Categorie verwijderd.');
+  };
+
+  // Wood Type Actions
+  const handleAddWoodSubmit = (e) => {
+    e.preventDefault();
+    if (!woodForm.name.trim()) return showToast(language === 'EN' ? 'Please enter wood type name.' : 'Vul een houtsoortnaam in.');
+    const newWood = {
+      id: `wood-${Date.now()}`,
+      name: woodForm.name.trim(),
+      lifespan: woodForm.lifespan || '20 tot 25 jaar',
+      description: woodForm.description || (language === 'EN' ? 'Durable timber for outdoor kitchens.' : 'Duurzaam maatwerkhout voor buitenmeubels.'),
+      infoboxTitle: `Over ${woodForm.name.trim()}`,
+      status: 'Actief'
+    };
+    const updated = [...dynamicWoodTypes, newWood];
+    setDynamicWoodTypes(updated);
+    syncAndSaveProductConfig(null, updated, null, null);
+    showToast(language === 'EN' ? `Wood type "${newWood.name}" added!` : `Houtsoort "${newWood.name}" toegevoegd!`);
+    setWoodForm({ name: '', lifespan: '20 tot 25 jaar', description: '' });
+    setAddWoodModalOpen(false);
+  };
+
+  const handleToggleWoodStatus = (woodId) => {
+    const updated = dynamicWoodTypes.map(w => w.id === woodId ? { ...w, status: w.status === 'Actief' ? 'Inactief' : 'Actief' } : w);
+    setDynamicWoodTypes(updated);
+    syncAndSaveProductConfig(null, updated, null, null);
+    showToast(language === 'EN' ? 'Wood type status updated.' : 'Status van houtsoort gewijzigd.');
+  };
+
+  const handleDeleteWood = (woodId) => {
+    const updated = dynamicWoodTypes.filter(w => w.id !== woodId);
+    setDynamicWoodTypes(updated);
+    syncAndSaveProductConfig(null, updated, null, null);
+    showToast(language === 'EN' ? 'Wood type deleted.' : 'Houtsoort verwijderd.');
+  };
+
+  // Material Actions
+  const handleAddMaterialSubmit = (e) => {
+    e.preventDefault();
+    if (!materialForm.name.trim()) return showToast(language === 'EN' ? 'Please enter material name.' : 'Vul een materiaalnaam in.');
+    const newMat = {
+      id: `mat-${Date.now()}`,
+      name: materialForm.name.trim(),
+      description: materialForm.description || (language === 'EN' ? 'Premium countertop finish' : 'Hoogwaardige werkbladafwerking'),
+      status: 'Actief'
+    };
+    const updated = [...dynamicMaterials, newMat];
+    setDynamicMaterials(updated);
+    syncAndSaveProductConfig(null, null, updated, null);
+    showToast(language === 'EN' ? `Material "${newMat.name}" added!` : `Materiaal "${newMat.name}" toegevoegd!`);
+    setMaterialForm({ name: '', description: '' });
+    setAddMaterialModalOpen(false);
+  };
+
+  const handleToggleMaterialStatus = (matId) => {
+    const updated = dynamicMaterials.map(m => m.id === matId ? { ...m, status: m.status === 'Actief' ? 'Inactief' : 'Actief' } : m);
+    setDynamicMaterials(updated);
+    syncAndSaveProductConfig(null, null, updated, null);
+    showToast(language === 'EN' ? 'Material status updated.' : 'Status van materiaal gewijzigd.');
+  };
+
+  const handleDeleteMaterial = (matId) => {
+    const updated = dynamicMaterials.filter(m => m.id !== matId);
+    setDynamicMaterials(updated);
+    syncAndSaveProductConfig(null, null, updated, null);
+    showToast(language === 'EN' ? 'Material deleted.' : 'Materiaal verwijderd.');
+  };
+
+  // Options Actions
+  const handleAddOptionSubmit = (e) => {
+    e.preventDefault();
+    if (!optionForm.name.trim()) return showToast(language === 'EN' ? 'Please enter option name.' : 'Vul een optienaam in.');
+    const newOpt = {
+      id: `opt-${Date.now()}`,
+      name: optionForm.name.trim(),
+      category: optionForm.category || 'Inbouw',
+      description: optionForm.description || (language === 'EN' ? 'Custom built-in accessory or appliance' : 'Maatwerk inbouwoptie of accessoire'),
+      status: 'Actief'
+    };
+    const updated = [...dynamicOptions, newOpt];
+    setDynamicOptions(updated);
+    syncAndSaveProductConfig(null, null, null, updated);
+    showToast(language === 'EN' ? `Option "${newOpt.name}" added!` : `Inbouwoptie "${newOpt.name}" toegevoegd!`);
+    setOptionForm({ name: '', category: 'Inbouw', description: '' });
+    setAddOptionModalOpen(false);
+  };
+
+  const handleToggleOptionStatus = (optId) => {
+    const updated = dynamicOptions.map(o => o.id === optId ? { ...o, status: o.status === 'Actief' ? 'Inactief' : 'Actief' } : o);
+    setDynamicOptions(updated);
+    syncAndSaveProductConfig(null, null, null, updated);
+    showToast(language === 'EN' ? 'Option status updated.' : 'Status van optie gewijzigd.');
+  };
+
+  const handleDeleteOption = (optId) => {
+    const updated = dynamicOptions.filter(o => o.id !== optId);
+    setDynamicOptions(updated);
+    syncAndSaveProductConfig(null, null, null, updated);
+    showToast(language === 'EN' ? 'Option deleted.' : 'Inbouwoptie verwijderd.');
   };
 
   // -------------------------------------------------------------
@@ -1001,51 +1143,276 @@ export default function Settings() {
       )}
 
       {/* ========================================================= */}
-      {/* DYNAMIC CATEGORIES MANAGER TAB                            */}
+      {/* DYNAMIC PRODUCT & MATERIALS CONFIGURATION TAB             */}
       {/* ========================================================= */}
       {activeTab === 'Categories' && (
         <div className="space-y-6 font-body text-[#4A4A43]">
-          <div className="bg-[#EDE8DF]/60 p-4 rounded-xl border border-[#D6CFC2] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div>
-              <h3 className="font-heading font-bold text-primary text-base">
-                {language === 'EN' ? 'Dynamic Product Categories Manager' : 'Product Categorieën Beheerder'}
-              </h3>
-              <p className="text-dark/60 text-xs">
-                {language === 'EN'
-                  ? 'Add or remove product categories dynamically without updating code. Changes update all lead filters & forms.'
-                  : 'Voeg productcategorieën toe of verwijder ze zonder code. Wijzigingen worden overal direct bijgewerkt.'}
-              </p>
-            </div>
-            <Button icon={Plus} onClick={() => setAddCategoryModalOpen(true)}>
-              {language === 'EN' ? '+ Add Category' : '+ Categorie Toevoegen'}
-            </Button>
+          {/* Sub-tab Navigation */}
+          <div className="flex gap-2 flex-wrap border-b border-[#D6CFC2] pb-3">
+            {[
+              { id: 'categories', label: language === 'EN' ? `Categories (${dynamicCategories.length})` : `Categorieën (${dynamicCategories.length})`, icon: Layers },
+              { id: 'wood', label: language === 'EN' ? `Wood Types (${dynamicWoodTypes.length})` : `Houtsoorten (${dynamicWoodTypes.length})`, icon: TreePine },
+              { id: 'materials', label: language === 'EN' ? `Materials (${dynamicMaterials.length})` : `Werkbladen & Materialen (${dynamicMaterials.length})`, icon: Hammer },
+              { id: 'options', label: language === 'EN' ? `Built-in Options (${dynamicOptions.length})` : `Inbouw & Opties (${dynamicOptions.length})`, icon: Sparkles }
+            ].map(st => {
+              const Icon = st.icon;
+              return (
+                <button
+                  key={st.id}
+                  onClick={() => setCategoriesSubTab(st.id)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    categoriesSubTab === st.id
+                      ? 'bg-primary text-cream shadow-xs'
+                      : 'bg-white border border-[#D6CFC2] text-dark/70 hover:bg-[#EDE8DF]'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{st.label}</span>
+                </button>
+              );
+            })}
           </div>
 
-          <Card title={language === 'EN' ? 'Active Product Categories' : 'Actieve Product Categorieën'} icon={Layers} p="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {dynamicCategories.map((cat) => (
-                <div key={cat.id} className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex items-start justify-between gap-3 shadow-2xs">
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl p-2 bg-[#EDE8DF] rounded-xl">{cat.icon}</span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-primary text-sm font-heading">{cat.name}</h4>
-                        <Badge variant="success" className="text-[9px]">{language === 'EN' ? 'Active' : (cat.status || 'Actief')}</Badge>
-                      </div>
-                      <p className="text-xs text-dark/60 mt-1 font-body">{cat.description}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteCategory(cat.id)}
-                    className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete Category"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+          {/* 1. CATEGORIES SUBTAB */}
+          {categoriesSubTab === 'categories' && (
+            <div className="space-y-4">
+              <div className="bg-[#EDE8DF]/60 p-4 rounded-xl border border-[#D6CFC2] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                  <h3 className="font-heading font-bold text-primary text-base">
+                    {language === 'EN' ? 'Dynamic Product Categories Manager' : 'Product Categorieën Beheerder'}
+                  </h3>
+                  <p className="text-dark/60 text-xs">
+                    {language === 'EN'
+                      ? 'Add, disable or customize product categories. Changes immediately reflect across Leads and Quotes.'
+                      : 'Beheer productcategorieën. Wijzigingen worden direct doorgevoerd in Leads, Aanvragen en Offertes.'}
+                  </p>
                 </div>
-              ))}
+                <Button icon={Plus} onClick={() => setAddCategoryModalOpen(true)}>
+                  {language === 'EN' ? '+ Add Category' : '+ Categorie Toevoegen'}
+                </Button>
+              </div>
+
+              <Card title={language === 'EN' ? 'Configured Categories' : 'Geconfigureerde Categorieën'} icon={Layers} p="p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {dynamicCategories.map((cat) => (
+                    <div key={cat.id} className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex items-start justify-between gap-3 shadow-2xs">
+                      <div className="flex items-start gap-3">
+                        <span className="text-2xl p-2 bg-[#EDE8DF] rounded-xl">{cat.icon || '📦'}</span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-primary text-sm font-heading">{cat.name}</h4>
+                            <button
+                              onClick={() => handleToggleCategoryStatus(cat.id)}
+                              className="cursor-pointer"
+                              title="Klik om status te wijzigen"
+                            >
+                              <Badge variant={cat.status === 'Actief' ? 'success' : 'default'} className="text-[9px]">
+                                {cat.status || 'Actief'}
+                              </Badge>
+                            </button>
+                          </div>
+                          <p className="text-xs text-dark/60 mt-1 font-body">{cat.description}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleToggleCategoryStatus(cat.id)}
+                          className="p-1.5 text-dark/50 hover:text-dark hover:bg-dark/5 rounded-lg transition-colors cursor-pointer"
+                          title={cat.status === 'Actief' ? 'Deactiveren' : 'Activeren'}
+                        >
+                          {cat.status === 'Actief' ? <ToggleRight className="w-4 h-4 text-emerald-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCategory(cat.id)}
+                          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Verwijderen"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
             </div>
-          </Card>
+          )}
+
+          {/* 2. WOOD TYPES SUBTAB */}
+          {categoriesSubTab === 'wood' && (
+            <div className="space-y-4">
+              <div className="bg-[#EDE8DF]/60 p-4 rounded-xl border border-[#D6CFC2] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                  <h3 className="font-heading font-bold text-primary text-base">
+                    {language === 'EN' ? 'Dynamic Wood Types & Lifespan' : 'Houtsoorten & Duurzaamheid Beheer'}
+                  </h3>
+                  <p className="text-dark/60 text-xs">
+                    {language === 'EN'
+                      ? 'Manage timber types, lifespans, and descriptions loaded into the 6-Page PDF Offerte and Lead forms.'
+                      : 'Beheer houtsoorten, verwachte levensduur en toelichtingen voor de 6-pagina Offerte en Leads.'}
+                  </p>
+                </div>
+                <Button icon={Plus} onClick={() => setAddWoodModalOpen(true)}>
+                  {language === 'EN' ? '+ Add Wood Type' : '+ Houtsoort Toevoegen'}
+                </Button>
+              </div>
+
+              <Card title={language === 'EN' ? 'Configured Timber Species' : 'Geconfigureerde Houtsoorten'} icon={TreePine} p="p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {dynamicWoodTypes.map((wood) => (
+                    <div key={wood.id} className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex items-start justify-between gap-3 shadow-2xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-primary text-sm font-heading">{wood.name}</h4>
+                          <span className="text-[10px] font-mono font-bold bg-[#EDE8DF] text-primary px-2 py-0.5 rounded">
+                            {wood.lifespan}
+                          </span>
+                          <button onClick={() => handleToggleWoodStatus(wood.id)} className="cursor-pointer">
+                            <Badge variant={wood.status === 'Actief' ? 'success' : 'default'} className="text-[9px]">
+                              {wood.status || 'Actief'}
+                            </Badge>
+                          </button>
+                        </div>
+                        <p className="text-xs text-dark/60 font-body">{wood.description}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleToggleWoodStatus(wood.id)}
+                          className="p-1.5 text-dark/50 hover:text-dark hover:bg-dark/5 rounded-lg transition-colors cursor-pointer"
+                          title={wood.status === 'Actief' ? 'Deactiveren' : 'Activeren'}
+                        >
+                          {wood.status === 'Actief' ? <ToggleRight className="w-4 h-4 text-emerald-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteWood(wood.id)}
+                          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Verwijderen"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* 3. MATERIALS SUBTAB */}
+          {categoriesSubTab === 'materials' && (
+            <div className="space-y-4">
+              <div className="bg-[#EDE8DF]/60 p-4 rounded-xl border border-[#D6CFC2] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                  <h3 className="font-heading font-bold text-primary text-base">
+                    {language === 'EN' ? 'Countertops & Materials Management' : 'Werkbladen & Materialen Beheer'}
+                  </h3>
+                  <p className="text-dark/60 text-xs">
+                    {language === 'EN'
+                      ? 'Configure countertops, steel grades, and stone finishes available in project configurations.'
+                      : 'Beheer werkbladen, steensoorten en staalafwerkingen voor offerte- en projectconfiguraties.'}
+                  </p>
+                </div>
+                <Button icon={Plus} onClick={() => setAddMaterialModalOpen(true)}>
+                  {language === 'EN' ? '+ Add Material' : '+ Materiaal Toevoegen'}
+                </Button>
+              </div>
+
+              <Card title={language === 'EN' ? 'Configured Materials' : 'Geconfigureerde Werkbladen & Materialen'} icon={Hammer} p="p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {dynamicMaterials.map((mat) => (
+                    <div key={mat.id} className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex items-start justify-between gap-3 shadow-2xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-primary text-sm font-heading">{mat.name}</h4>
+                          <button onClick={() => handleToggleMaterialStatus(mat.id)} className="cursor-pointer">
+                            <Badge variant={mat.status === 'Actief' ? 'success' : 'default'} className="text-[9px]">
+                              {mat.status || 'Actief'}
+                            </Badge>
+                          </button>
+                        </div>
+                        <p className="text-xs text-dark/60 font-body">{mat.description}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleToggleMaterialStatus(mat.id)}
+                          className="p-1.5 text-dark/50 hover:text-dark hover:bg-dark/5 rounded-lg transition-colors cursor-pointer"
+                          title={mat.status === 'Actief' ? 'Deactiveren' : 'Activeren'}
+                        >
+                          {mat.status === 'Actief' ? <ToggleRight className="w-4 h-4 text-emerald-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMaterial(mat.id)}
+                          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Verwijderen"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* 4. OPTIONS & APPLIANCES SUBTAB */}
+          {categoriesSubTab === 'options' && (
+            <div className="space-y-4">
+              <div className="bg-[#EDE8DF]/60 p-4 rounded-xl border border-[#D6CFC2] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                  <h3 className="font-heading font-bold text-primary text-base">
+                    {language === 'EN' ? 'Built-in Options & Appliances' : 'Inbouwopties & Accessoires Beheer'}
+                  </h3>
+                  <p className="text-dark/60 text-xs">
+                    {language === 'EN'
+                      ? 'Define cutouts, sinks, fridges, and lighting options available for quotation line items.'
+                      : 'Beheer barbecue-uitsparingen, spoelbakken, koelkasten en verlichting voor offertes.'}
+                  </p>
+                </div>
+                <Button icon={Plus} onClick={() => setAddOptionModalOpen(true)}>
+                  {language === 'EN' ? '+ Add Option' : '+ Optie Toevoegen'}
+                </Button>
+              </div>
+
+              <Card title={language === 'EN' ? 'Configured Options' : 'Geconfigureerde Inbouwopties'} icon={Sparkles} p="p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {dynamicOptions.map((opt) => (
+                    <div key={opt.id} className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex items-start justify-between gap-3 shadow-2xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-primary text-sm font-heading">{opt.name}</h4>
+                          <span className="text-[10px] font-mono font-bold bg-[#EDE8DF] text-primary px-2 py-0.5 rounded">
+                            {opt.category}
+                          </span>
+                          <button onClick={() => handleToggleOptionStatus(opt.id)} className="cursor-pointer">
+                            <Badge variant={opt.status === 'Actief' ? 'success' : 'default'} className="text-[9px]">
+                              {opt.status || 'Actief'}
+                            </Badge>
+                          </button>
+                        </div>
+                        <p className="text-xs text-dark/60 font-body">{opt.description}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleToggleOptionStatus(opt.id)}
+                          className="p-1.5 text-dark/50 hover:text-dark hover:bg-dark/5 rounded-lg transition-colors cursor-pointer"
+                          title={opt.status === 'Actief' ? 'Deactiveren' : 'Activeren'}
+                        >
+                          {opt.status === 'Actief' ? <ToggleRight className="w-4 h-4 text-emerald-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteOption(opt.id)}
+                          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Verwijderen"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          )}
         </div>
       )}
 
@@ -1729,6 +2096,107 @@ export default function Settings() {
                 <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
                   <Button type="button" variant="outline" onClick={() => setAddCategoryModalOpen(false)}>{t('common.cancel')}</Button>
                   <Button type="submit">{language === 'EN' ? 'Save Category' : 'Categorie Opslaan'}</Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ADD WOOD TYPE MODAL */}
+      <AnimatePresence>
+        {addWoodModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddWoodModalOpen(false)} />
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
+                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Add New Wood Type' : 'Nieuwe Houtsoort Toevoegen'}</h3>
+                <button onClick={() => setAddWoodModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleAddWoodSubmit} className="space-y-3 font-body">
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Wood Type Name' : 'Naam Houtsoort'}</label>
+                  <input type="text" required value={woodForm.name} onChange={e => setWoodForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Accoya Hout / Western Red Cedar" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Expected Lifespan' : 'Verwachte Levensduur'}</label>
+                  <input type="text" required value={woodForm.lifespan} onChange={e => setWoodForm(prev => ({ ...prev, lifespan: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. 25 tot 30 jaar" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Description & Characteristics' : 'Omschrijving & Kenmerken'}</label>
+                  <textarea value={woodForm.description} onChange={e => setWoodForm(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg resize-none" placeholder="Vormstabiliteit, houtnerf, vergrijzing en onderhoudseigenschappen..." />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
+                  <Button type="button" variant="outline" onClick={() => setAddWoodModalOpen(false)}>{t('common.cancel')}</Button>
+                  <Button type="submit">{language === 'EN' ? 'Save Wood Type' : 'Houtsoort Opslaan'}</Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ADD MATERIAL MODAL */}
+      <AnimatePresence>
+        {addMaterialModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddMaterialModalOpen(false)} />
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
+                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Add Countertop / Material' : 'Nieuw Materiaal / Werkblad'}</h3>
+                <button onClick={() => setAddMaterialModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleAddMaterialSubmit} className="space-y-3 font-body">
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Material Name' : 'Naam Materiaal / Werkblad'}</label>
+                  <input type="text" required value={materialForm.name} onChange={e => setMaterialForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Dekton Danae Marmerlook (2cm)" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Description' : 'Omschrijving & Afwerking'}</label>
+                  <textarea value={materialForm.description} onChange={e => setMaterialForm(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg resize-none" placeholder="Hittebestendigheid, waterdichtheid, dikte..." />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
+                  <Button type="button" variant="outline" onClick={() => setAddMaterialModalOpen(false)}>{t('common.cancel')}</Button>
+                  <Button type="submit">{language === 'EN' ? 'Save Material' : 'Materiaal Opslaan'}</Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ADD OPTION MODAL */}
+      <AnimatePresence>
+        {addOptionModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setAddOptionModalOpen(false)} />
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4 text-xs">
+              <div className="flex items-center justify-between border-b border-[#D6CFC2] pb-3">
+                <h3 className="text-lg font-heading font-bold text-primary">{language === 'EN' ? 'Add Built-in Option' : 'Nieuwe Inbouwoptie Toevoegen'}</h3>
+                <button onClick={() => setAddOptionModalOpen(false)} className="p-1 text-dark/40 hover:text-dark"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleAddOptionSubmit} className="space-y-3 font-body">
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Option Name' : 'Naam Optie'}</label>
+                  <input type="text" required value={optionForm.name} onChange={e => setOptionForm(prev => ({ ...prev, name: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Pizzaoven RVS Inbouwsteun" />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Category' : 'Categorie'}</label>
+                  <input type="text" required value={optionForm.category} onChange={e => setOptionForm(prev => ({ ...prev, category: e.target.value }))} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg" placeholder="b.v. Koken, Koelen, Verlichting..." />
+                </div>
+                <div>
+                  <label className="block font-semibold text-dark/60 mb-1 uppercase">{language === 'EN' ? 'Description' : 'Omschrijving'}</label>
+                  <textarea value={optionForm.description} onChange={e => setOptionForm(prev => ({ ...prev, description: e.target.value }))} rows={2} className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg resize-none" placeholder="Technische details of aansluitvereisten..." />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-[#D6CFC2]">
+                  <Button type="button" variant="outline" onClick={() => setAddOptionModalOpen(false)}>{t('common.cancel')}</Button>
+                  <Button type="submit">{language === 'EN' ? 'Save Option' : 'Optie Opslaan'}</Button>
                 </div>
               </form>
             </motion.div>

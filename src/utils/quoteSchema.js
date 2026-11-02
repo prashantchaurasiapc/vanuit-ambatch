@@ -1,4 +1,4 @@
-import { WOOD_LIBRARY, PRESET_PRODUCT_LIBRARY, PRODUCT_TYPE_DEFAULTS, getProductTypeDefaults } from './quoteLibraries.js';
+import { WOOD_LIBRARY, PRESET_PRODUCT_LIBRARY, PRODUCT_TYPE_DEFAULTS, getProductTypeDefaults, getWoodTypeDefaults, getDynamicWoodLibrary } from './quoteLibraries.js';
 const defaultCoverPhotos = ['/cover_img1.png', '/cover_img2.png', '/cover_img3.png'];
 
 export function createDefaultQuote(customerData = null, existingQuote = null, lang = null) {
@@ -20,7 +20,8 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
   const address = customerData?.address || (typeof existingCustomer === 'object' ? existingCustomer.address : null) || '';
 
   const woodName = existingQuote?.configuration?.woodType || existingQuote?.woodType || customerData?.woodType || customerData?.material || 'Thermo Fraké';
-  const defaultWood = WOOD_LIBRARY.find(w => w.name.toLowerCase() === woodName.toLowerCase()) || WOOD_LIBRARY[0];
+  const dynamicWoodLib = getDynamicWoodLibrary(activeLang);
+  const defaultWood = dynamicWoodLib.find(w => w.name.toLowerCase() === woodName.toLowerCase()) || WOOD_LIBRARY.find(w => w.name.toLowerCase() === woodName.toLowerCase()) || WOOD_LIBRARY[0];
   
   // Resolve productType from existing quote or customer/lead source cleanly
   let defaultProductType = existingQuote?.productType || customerData?.productType || customerData?.category;

@@ -11,7 +11,7 @@ export const LanguageSwitcher = () => {
     const [currentLang, setCurrentLang] = useState(() => {
         const stored = localStorage.getItem('app_language');
         if (stored) return stored.toLowerCase();
-        return (language || 'en').toLowerCase();
+        return (language || 'nl').toLowerCase();
     });
 
     useEffect(() => {

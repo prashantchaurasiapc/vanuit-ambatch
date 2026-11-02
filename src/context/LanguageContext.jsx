@@ -734,7 +734,38 @@ const EXTRA_VOCABULARY = {
   'Today': 'Vandaag',
   'Yesterday': 'Gisteren',
   'days ago': 'dagen geleden',
-  'day ago': 'dag geleden'
+  'day ago': 'dag geleden',
+  'Partner Dispatch': 'Prijsaanvraag',
+  'Send Partner Price Request': 'Prijsaanvraag Verzenden naar Vakman',
+  '1. Lead Details & Specifications': '1. Klant & Specificaties (Uit Lead)',
+  'Product Category': 'Product Categorie',
+  'Desired Dimensions': 'Gewenste Afmetingen',
+  'Wood Type (Dynamic)': 'Houtsoort (Dynamisch)',
+  'Countertop Material': 'Werkblad / Materiaal',
+  'Specific Client Wishes & Notes': 'Klantwensen & Technische Notities',
+  '2. Craftsman Assignment & Deadline': '2. Vakman Toewijzing & Deadline',
+  'Select Craftsman Partner': 'Selecteer Vakman / Partner',
+  'Response Deadline': 'Uiterste Reactietermijn',
+  'Instructions for Partner (Optional)': 'Instructies voor de Vakman (Optioneel)',
+  'Send Price Request': 'Prijsaanvraag Verzenden',
+  'Categories & Materials': 'Categorieën, Hout & Materialen',
+  'Wood Types': 'Houtsoorten',
+  'Materials': 'Werkbladen & Materialen',
+  'Built-in Options': 'Inbouw & Opties',
+  'Configured Categories': 'Geconfigureerde Categorieën',
+  'Configured Timber Species': 'Geconfigureerde Houtsoorten',
+  'Configured Materials': 'Geconfigureerde Werkbladen & Materialen',
+  'Configured Options': 'Geconfigureerde Inbouwopties',
+  'Add Category': 'Categorie Toevoegen',
+  'Add Wood Type': 'Houtsoort Toevoegen',
+  'Add Material': 'Materiaal Toevoegen',
+  'Add Option': 'Optie Toevoegen',
+  'Save Category': 'Categorie Opslaan',
+  'Save Wood Type': 'Houtsoort Opslaan',
+  'Save Material': 'Materiaal Opslaan',
+  'Save Option': 'Optie Opslaan',
+  'Expected Lifespan': 'Verwachte Levensduur',
+  'Description & Characteristics': 'Omschrijving & Kenmerken'
 };
 Object.assign(LEGACY_TEXT, EXTRA_VOCABULARY);
 Object.entries(EXTRA_VOCABULARY).forEach(([en, nl]) => {
@@ -827,9 +858,9 @@ export function applyLegacyLanguage(language) {
   });
 }
 export function LanguageProvider({ children }) {
-  // Default is EN (English) for development and client review.
+  // Default is NL (Dutch) as demanded by client requirements, with EN available via toggle.
   const [language, setLanguageState] = useState(() => {
-    return localStorage.getItem('app_language') || 'EN';
+    return localStorage.getItem('app_language') || 'NL';
   });
 
   const setLanguage = (lang) => {

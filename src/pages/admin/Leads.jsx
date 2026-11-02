@@ -14,6 +14,7 @@ import {
 import { useLanguage } from '../../context/LanguageContext';
 import { tValue } from '../../utils/translator';
 import api from '../../api/apiClient';
+import { getActiveCategories, getActiveWoodTypes, getActiveMaterials } from '../../utils/productConfigManager';
 
 // Helper to map backend product enum to frontend UI string
 function mapBackendProductToUI(pt) {
@@ -311,25 +312,39 @@ export default function Leads() {
 
   const handleOpenPartnerWizard = (lead) => {
     setPartnerWizardLead(lead);
-    setPartnerWizardStep(1);
     const defaultPartner = partnersList[0];
+    const activeWoods = getActiveWoodTypes();
+    const activeMats = getActiveMaterials();
+    const defaultWood = activeWoods.length > 0 ? activeWoods[0].name : 'Thermo Fraké';
+    const defaultMat = activeMats.length > 0 ? activeMats[0].name : 'Zwart Polijst Beton Cire (8cm)';
+
+    const rawDims = lead.size || lead.dimensions || '240 × 80 cm';
+    let length = '240', width = '80', height = '95';
+    if (typeof rawDims === 'string' && (rawDims.includes('x') || rawDims.includes('×'))) {
+      const parts = rawDims.replace(/cm/gi, '').split(/x|×/).map(p => p.trim());
+      if (parts[0]) length = parts[0];
+      if (parts[1]) width = parts[1];
+      if (parts[2]) height = parts[2];
+    }
+
     setWizardForm({
-      category: lead.productType || lead.category || 'Outdoor Kitchen',
+      category: lead.productType || lead.category || 'Buitenkeuken',
       customerName: lead.name || '',
-      customerEmail: lead.email || `${(lead.name || 'client').toLowerCase().replace(/\s+/g, '')}@gmail.com`,
-      customerPhone: lead.phone || '+31 6 12345678',
-      address: lead.location || 'Amsterdam, Netherlands',
-      lengthCm: '240',
-      widthCm: '80',
-      heightCm: '95',
-      woodType: 'Thermo Fraké Wood (Recommended)',
-      countertop: 'Zwart Polijst Beton Cire (8cm)',
-      appliances: ['Kamado Big Green Egg Large', 'RVS Sink & Tap'],
-      siteAccess: 'Ground floor backyard access via side gate',
-      gardenPhotoName: 'garden_site_photo.jpg',
-      render3dName: '3d_outdoor_kitchen_render.png',
-      craftsmanPartner: defaultPartner ? (defaultPartner.companyName || defaultPartner.contactName) : 'CraftWood Veluwe',
-      partnerId: defaultPartner ? defaultPartner.id : ''
+      customerEmail: lead.email || '',
+      customerPhone: lead.phone || '',
+      address: lead.location || 'Nederland',
+      dimensionsText: rawDims,
+      lengthCm: length,
+      widthCm: width,
+      heightCm: height,
+      woodType: lead.woodType || defaultWood,
+      countertop: lead.countertop || defaultMat,
+      materialNotes: lead.notes || '',
+      siteAccess: '',
+      partnerInstructions: '',
+      craftsmanPartner: defaultPartner ? (defaultPartner.companyName || defaultPartner.contactName) : '',
+      partnerId: defaultPartner ? defaultPartner.id : '',
+      deadlineDays: '7'
     });
   };
 
@@ -563,12 +578,15 @@ export default function Leads() {
       ) || partnersList[0];
 
       if (!selectedPartner) {
-        showToast('Please select an active craftsman partner.');
+        showToast(language === 'NL' ? 'Selecteer een actieve vakman partner.' : 'Please select an active craftsman partner.');
         return;
       }
 
+      setIsSaving(true);
+
+      const daysToAdd = Number(wizardForm.deadlineDays) || 7;
       const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 7);
+      futureDate.setDate(futureDate.getDate() + daysToAdd);
       const expDateStr = futureDate.toISOString().split('T')[0];
 
       const payload = {
@@ -577,6 +595,7 @@ export default function Leads() {
         category: wizardForm.category,
         productInfo: `${wizardForm.category} (${wizardForm.woodType}, ${wizardForm.countertop})`,
         dimensions: {
+          rawText: wizardForm.dimensionsText || `${wizardForm.lengthCm || 240} × ${wizardForm.widthCm || 80} cm`,
           lengthCm: Number(wizardForm.lengthCm) || 240,
           widthCm: Number(wizardForm.widthCm) || 80,
           heightCm: Number(wizardForm.heightCm) || 95,
@@ -584,26 +603,29 @@ export default function Leads() {
         materials: {
           woodType: wizardForm.woodType,
           countertop: wizardForm.countertop,
-          appliances: wizardForm.appliances || [],
           notes: wizardForm.materialNotes || '',
         },
         locationAccess: {
           city: wizardForm.address,
-          siteAccess: wizardForm.siteAccess,
+          siteAccess: wizardForm.siteAccess || wizardForm.partnerInstructions || '',
         },
         expectedResponseDate: expDateStr,
       };
 
       const res = await api.post('/partner-requests', payload);
       if (res.success) {
-        showToast(language === 'EN' ? 'Partner price request sent successfully!' : 'Prijsaanvraag succesvol verzonden naar partner!');
+        showToast(language === 'NL' 
+          ? `Prijsaanvraag succesvol verzonden naar ${selectedPartner.companyName || 'partner'}!` 
+          : `Partner price request sent to ${selectedPartner.companyName || 'partner'}!`);
         setPartnerWizardLead(null);
         fetchLeads();
       } else {
         showToast(res.error?.message || 'Failed to send partner request.');
       }
     } catch {
-      showToast('Network error while sending price request.');
+      showToast(language === 'NL' ? 'Fout bij verzenden van prijsaanvraag.' : 'Network error while sending price request.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1692,7 +1714,7 @@ export default function Leads() {
       </>
       )}
 
-      {/* SIMPLIFIED 7-STEP PARTNER PRICE REQUEST WIZARD MODAL (PORTALED TO BODY) */}
+      {/* SIMPLIFIED PARTNER PRICE REQUEST MODAL (PORTALED TO BODY) */}
       {partnerWizardLead && typeof document !== 'undefined' && createPortal(
         <AnimatePresence>
           <div
@@ -1717,268 +1739,127 @@ export default function Leads() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="bg-primary/10 text-primary font-bold text-xs font-mono px-2.5 py-0.5 rounded-md">
-                      {language === 'EN' ? `Step ${partnerWizardStep} of 7` : `Stap ${partnerWizardStep} van 7`}
+                      {language === 'EN' ? 'Partner Dispatch' : 'Prijsaanvraag'}
                     </span>
                     <h3 className="text-lg font-heading font-bold text-primary">
-                      {language === 'EN' ? 'Partner Price Request Wizard' : 'Prijsaanvraag Partner Wizard'}
+                      {language === 'EN' ? 'Send Partner Price Request' : 'Prijsaanvraag Verzenden naar Vakman'}
                     </h3>
                   </div>
                   <p className="text-xs text-dark/60 font-body mt-1">
-                    {language === 'EN' ? `Inquiry request for ${partnerWizardLead.name}` : `Prijsaanvraag voor ${partnerWizardLead.name}`}
+                    {language === 'EN'
+                      ? `Inquiry for ${partnerWizardLead.name} (${partnerWizardLead.location || 'NL'})`
+                      : `Aanvraag voor ${partnerWizardLead.name} (${partnerWizardLead.location || 'Nederland'})`}
                   </p>
                 </div>
-                <button onClick={() => setPartnerWizardLead(null)} className="p-1 text-dark/40 hover:text-dark rounded-lg hover:bg-dark/5">
+                <button onClick={() => setPartnerWizardLead(null)} className="p-1 text-dark/40 hover:text-dark rounded-lg hover:bg-dark/5 cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* 7-Step Horizontal Progress Bar */}
-              <div className="flex items-center justify-between gap-1 overflow-x-auto pb-2 border-b border-[#D6CFC2]/60 text-[10px] font-mono font-bold">
-                {[
-                  { step: 1, label: language === 'EN' ? '1. Category' : '1. Categorie' },
-                  { step: 2, label: language === 'EN' ? '2. Info' : '2. Gegevens' },
-                  { step: 3, label: language === 'EN' ? '3. Dimensions' : '3. Maten' },
-                  { step: 4, label: language === 'EN' ? '4. Materials' : '4. Materialen' },
-                  { step: 5, label: language === 'EN' ? '5. Location' : '5. Locatie' },
-                  { step: 6, label: language === 'EN' ? '6. Photos' : '6. Foto\'s' },
-                  { step: 7, label: language === 'EN' ? '7. Review' : '7. Verstuur' }
-                ].map((s) => (
-                  <button
-                    key={s.step}
-                    onClick={() => setPartnerWizardStep(s.step)}
-                    className={`px-2 py-1 rounded-md transition-all whitespace-nowrap cursor-pointer ${
-                      partnerWizardStep === s.step
-                        ? 'bg-primary text-cream shadow-xs'
-                        : partnerWizardStep > s.step
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-[#EDE8DF] text-dark/40'
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Step Dynamic Content */}
-              <div className="py-2 text-xs font-body">
-                {/* STEP 1: CATEGORY */}
-                {partnerWizardStep === 1 && (
-                  <div className="space-y-3">
-                    <label className="block font-bold text-dark text-sm mb-2">
-                      {language === 'EN' ? 'Step 1: Select Product Category' : 'Stap 1: Selecteer Product Categorie'}
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { titleNL: 'Buitenkeuken', titleEN: 'Outdoor Kitchen', descNL: 'Maatwerk Teak / Buitenkeuken', descEN: 'Custom Teak / Outdoor Kitchen' },
-                        { titleNL: 'Overkapping', titleEN: 'Wooden Canopy', descNL: 'Eiken / Douglas Houten Overkapping', descEN: 'Oak / Douglas Wooden Canopy' },
-                        { titleNL: 'Kliko-ombouw', titleEN: 'Bin Storage Unit', descNL: 'Kliko Ombouw Triple 240L', descEN: 'Bin Storage Triple 240L' },
-                        { titleNL: 'Buitenverblijf', titleEN: 'Garden Building', descNL: 'Terras & Tuin Buitenverblijf', descEN: 'Terrace & Garden Building' }
-                      ].map((item) => {
-                        const displayTitle = language === 'EN' ? item.titleEN : item.titleNL;
-                        const displayDesc = language === 'EN' ? item.descEN : item.descNL;
-                        return (
-                          <div
-                            key={item.titleNL}
-                            onClick={() => setWizardForm(prev => ({ ...prev, category: item.titleNL }))}
-                            className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                              wizardForm.category === item.titleNL
-                                ? 'border-primary bg-primary/5 text-primary font-bold shadow-xs'
-                                : 'border-[#D6CFC2] hover:border-primary/40 text-dark/80'
-                            }`}
-                          >
-                            <p className="font-bold text-xs">{displayTitle}</p>
-                            <p className="text-[10px] text-dark/50 mt-0.5">{displayDesc}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
+              {/* Form Content: Streamlined 2-Column Layout */}
+              <div className="space-y-4 text-xs font-body">
+                {/* 1. Client & Specifications Card */}
+                <div className="p-4 bg-[#F8F7F4] border border-[#D6CFC2] rounded-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-[#D6CFC2]/60 pb-2">
+                    <span className="font-bold text-primary text-xs uppercase tracking-wider">
+                      {language === 'EN' ? '1. Lead Details & Specifications' : '1. Klant & Specificaties (Uit Lead)'}
+                    </span>
+                    <span className="text-[11px] text-dark/50 font-mono">
+                      {partnerWizardLead.email || partnerWizardLead.phone || ''}
+                    </span>
                   </div>
-                )}
 
-                {/* STEP 2: BASIC DETAILS */}
-                {partnerWizardStep === 2 && (
-                  <div className="space-y-3">
-                    <label className="block font-bold text-dark text-sm mb-2">
-                      {language === 'EN' ? 'Step 2: Customer Contact & Delivery Details' : 'Stap 2: Klantgegevens en Leveradres'}
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Customer Name</label>
-                        <input
-                          type="text"
-                          value={wizardForm.customerName}
-                          onChange={e => setWizardForm(prev => ({ ...prev, customerName: e.target.value }))}
-                          className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Email</label>
-                        <input
-                          type="text"
-                          value={wizardForm.customerEmail}
-                          onChange={e => setWizardForm(prev => ({ ...prev, customerEmail: e.target.value }))}
-                          className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Phone</label>
-                        <input
-                          type="text"
-                          value={wizardForm.customerPhone}
-                          onChange={e => setWizardForm(prev => ({ ...prev, customerPhone: e.target.value }))}
-                          className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Address / City</label>
-                        <input
-                          type="text"
-                          value={wizardForm.address}
-                          onChange={e => setWizardForm(prev => ({ ...prev, address: e.target.value }))}
-                          className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* STEP 3: DIMENSIONS */}
-                {partnerWizardStep === 3 && (
-                  <div className="space-y-3">
-                    <label className="block font-bold text-dark text-sm mb-2">
-                      {language === 'EN' ? 'Step 3: Design & Dimensions (cm)' : 'Stap 3: Afmetingen en Ontwerp (cm)'}
-                    </label>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Length (cm)</label>
-                        <input
-                          type="number"
-                          value={wizardForm.lengthCm}
-                          onChange={e => setWizardForm(prev => ({ ...prev, lengthCm: e.target.value }))}
-                          className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-mono font-bold text-primary"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Width (cm)</label>
-                        <input
-                          type="number"
-                          value={wizardForm.widthCm}
-                          onChange={e => setWizardForm(prev => ({ ...prev, widthCm: e.target.value }))}
-                          className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-mono font-bold text-primary"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Height (cm)</label>
-                        <input
-                          type="number"
-                          value={wizardForm.heightCm}
-                          onChange={e => setWizardForm(prev => ({ ...prev, heightCm: e.target.value }))}
-                          className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-mono font-bold text-primary"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* STEP 4: MATERIALS */}
-                {partnerWizardStep === 4 && (
-                  <div className="space-y-3">
-                    <label className="block font-bold text-dark text-sm mb-2">
-                      {language === 'EN' ? 'Step 4: Wood Type & Countertop Material' : 'Stap 4: Houtsoort en Werkblad Materiaal'}
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
-                          {language === 'EN' ? 'Primary Wood Spec' : 'Houtsoort'}
-                        </label>
-                        <select
-                          value={wizardForm.woodType || 'Thermo Fraké Wood (Recommended)'}
-                          onChange={e => setWizardForm(prev => ({ ...prev, woodType: e.target.value }))}
-                          className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
-                        >
-                          <option value="Thermo Fraké Wood (Recommended)">{language === 'EN' ? 'Thermo Fraké Wood (Recommended)' : 'Thermo Fraké Hout'}</option>
-                          <option value="Solid Teak Wood">{language === 'EN' ? 'Solid Teak Wood' : 'Massief Teakhout'}</option>
-                          <option value="Oak Wood">{language === 'EN' ? 'Oak Wood' : 'Eikenhout'}</option>
-                          <option value="Douglas Timber">{language === 'EN' ? 'Douglas Timber' : 'Douglas Hout'}</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
-                          {language === 'EN' ? 'Worktop Finish' : 'Werkblad Afwerking'}
-                        </label>
-                        <select
-                          value={wizardForm.countertop || 'Zwart Polijst Beton Cire (8cm)'}
-                          onChange={e => setWizardForm(prev => ({ ...prev, countertop: e.target.value }))}
-                          className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
-                        >
-                          <option value="Zwart Polijst Beton Cire (8cm)">{language === 'EN' ? 'Black Polished Concrete Cire (8cm)' : 'Zwart Beton Cire (8cm)'}</option>
-                          <option value="Belgian Hardstone Granite">{language === 'EN' ? 'Belgian Hardstone Granite' : 'Belgisch Hardsteen'}</option>
-                          <option value="Solid Teak Top">{language === 'EN' ? 'Solid Teak Top' : 'Massief Teak Werkblad'}</option>
-                          <option value="Stainless Steel Top">{language === 'EN' ? 'Stainless Steel Top' : 'RVS Werkblad'}</option>
-                        </select>
-                      </div>
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Category */}
                     <div>
                       <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
-                        {language === 'EN' ? 'Special Hardware & Cutout Instructions' : 'Inbouw & Hardware Instructies'}
+                        {language === 'EN' ? 'Product Category' : 'Product Categorie'}
                       </label>
-                      <textarea
-                        value={wizardForm.materialNotes || (language === 'EN' ? 'Includes Big Green Egg Kamado cutout & stainless sink connections.' : 'Inclusief Kamado BBQ uitsparing & RVS spoelbak aansluiting.')}
-                        onChange={e => setWizardForm(prev => ({ ...prev, materialNotes: e.target.value }))}
-                        className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs min-h-[70px] resize-none"
+                      <select
+                        value={wizardForm.category}
+                        onChange={e => setWizardForm(prev => ({ ...prev, category: e.target.value }))}
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
+                      >
+                        {getActiveCategories().map(c => (
+                          <option key={c.id} value={c.name}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Dimensions Free Text */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
+                        {language === 'EN' ? 'Desired Dimensions' : 'Gewenste Afmetingen'}
+                      </label>
+                      <input
+                        type="text"
+                        value={wizardForm.dimensionsText || ''}
+                        onChange={e => setWizardForm(prev => ({ ...prev, dimensionsText: e.target.value }))}
+                        placeholder="bijv. 300 × 80 cm"
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-mono font-bold text-primary"
                       />
                     </div>
-                  </div>
-                )}
 
-                {/* STEP 5: LOCATION */}
-                {partnerWizardStep === 5 && (
-                  <div className="space-y-3">
-                    <label className="block font-bold text-dark text-sm mb-2">
-                      {language === 'EN' ? 'Step 5: Site Access & Installation Location' : 'Stap 5: Locatie en Toegankelijkheid'}
-                    </label>
+                    {/* Wood Type */}
                     <div>
-                      <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Garden Access Notes</label>
-                      <textarea
-                        value={wizardForm.siteAccess}
-                        onChange={e => setWizardForm(prev => ({ ...prev, siteAccess: e.target.value }))}
-                        className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs min-h-[80px] resize-none"
-                      />
+                      <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
+                        {language === 'EN' ? 'Wood Type (Dynamic)' : 'Houtsoort (Dynamisch)'}
+                      </label>
+                      <select
+                        value={wizardForm.woodType}
+                        onChange={e => setWizardForm(prev => ({ ...prev, woodType: e.target.value }))}
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
+                      >
+                        {getActiveWoodTypes().map(w => (
+                          <option key={w.id} value={w.name}>{w.name} ({w.lifespan})</option>
+                        ))}
+                      </select>
                     </div>
-                  </div>
-                )}
 
-                {/* STEP 6: PHOTOS */}
-                {partnerWizardStep === 6 && (
-                  <div className="space-y-3">
-                    <label className="block font-bold text-dark text-sm mb-2">
-                      {language === 'EN' ? 'Step 6: Photos & 3D Render Attachments' : 'Stap 6: Foto\'s en 3D Ontwerp Bijlagen'}
-                    </label>
-                    <div className="p-4 bg-[#EDE8DF]/50 border border-dashed border-primary/30 rounded-xl text-center space-y-2">
-                      <Upload className="w-6 h-6 text-primary mx-auto" />
-                      <p className="font-bold text-xs text-primary">2 Files Attached</p>
-                      <p className="text-[10px] text-dark/50">existing_garden_photo_01.jpg • 3d_render_model_v2.png</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* STEP 7: REVIEW & DISPATCH */}
-                {partnerWizardStep === 7 && (
-                  <div className="space-y-3">
-                    <label className="block font-bold text-dark text-sm mb-2">
-                      {language === 'EN' ? 'Step 7: Review & Assign Partner' : 'Stap 7: Overzicht en Partner Toewijzen'}
-                    </label>
-                    <div className="p-3.5 bg-primary/5 border border-primary/20 rounded-xl space-y-2 text-xs">
-                      <p className="font-bold text-primary">Inquiry Summary:</p>
-                      <div className="grid grid-cols-2 gap-2 text-[11px]">
-                        <div><span className="text-dark/50">Client:</span> <span className="font-bold">{wizardForm.customerName}</span></div>
-                        <div><span className="text-dark/50">Category:</span> <span className="font-bold">{wizardForm.category}</span></div>
-                        <div><span className="text-dark/50">Dimensions:</span> <span className="font-bold">{wizardForm.lengthCm}x{wizardForm.widthCm}x{wizardForm.heightCm} cm</span></div>
-                        <div><span className="text-dark/50">Wood:</span> <span className="font-bold">{wizardForm.woodType}</span></div>
-                      </div>
-                    </div>
+                    {/* Countertop */}
                     <div>
-                      <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Select Craftsman Partner</label>
+                      <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
+                        {language === 'EN' ? 'Countertop Material' : 'Werkblad / Materiaal'}
+                      </label>
+                      <select
+                        value={wizardForm.countertop}
+                        onChange={e => setWizardForm(prev => ({ ...prev, countertop: e.target.value }))}
+                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
+                      >
+                        {getActiveMaterials().map(m => (
+                          <option key={m.id} value={m.name}>{m.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Clean Notes (No fake BBQ!) */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
+                      {language === 'EN' ? 'Specific Client Wishes & Notes' : 'Klantwensen & Technische Notities'}
+                    </label>
+                    <textarea
+                      value={wizardForm.materialNotes || ''}
+                      onChange={e => setWizardForm(prev => ({ ...prev, materialNotes: e.target.value }))}
+                      placeholder={language === 'EN' ? 'Enter any specific customer requirements or appliances...' : 'Voer eventuele specifieke klantwensen, inbouwapparaten of details in...'}
+                      rows={2}
+                      className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Partner Assignment & Deadline Card */}
+                <div className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-3">
+                  <span className="font-bold text-primary text-xs uppercase tracking-wider block border-b border-[#D6CFC2]/60 pb-2">
+                    {language === 'EN' ? '2. Craftsman Assignment & Deadline' : '2. Vakman Toewijzing & Deadline'}
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Partner Selector */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
+                        {language === 'EN' ? 'Select Craftsman Partner' : 'Selecteer Vakman / Partner'}
+                      </label>
                       <select
                         value={wizardForm.partnerId || (partnersList[0]?.id || '')}
                         onChange={e => {
@@ -1989,7 +1870,7 @@ export default function Leads() {
                             craftsmanPartner: p ? (p.companyName || p.contactName) : ''
                           }));
                         }}
-                        className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
+                        className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
                       >
                         {partnersList.length > 0 ? (
                           partnersList.map(p => (
@@ -1998,26 +1879,54 @@ export default function Leads() {
                             </option>
                           ))
                         ) : (
-                          <option value="">CraftWood Veluwe (Default)</option>
+                          <option value="">CraftWood Veluwe (Standaard)</option>
                         )}
                       </select>
                     </div>
+
+                    {/* Deadline */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
+                        {language === 'EN' ? 'Response Deadline' : 'Uiterste Reactietermijn'}
+                      </label>
+                      <select
+                        value={wizardForm.deadlineDays || '7'}
+                        onChange={e => setWizardForm(prev => ({ ...prev, deadlineDays: e.target.value }))}
+                        className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
+                      >
+                        <option value="3">3 dagen (Spoed)</option>
+                        <option value="5">5 werkdagen</option>
+                        <option value="7">7 dagen (Standaard)</option>
+                        <option value="14">14 dagen</option>
+                      </select>
+                    </div>
                   </div>
-                )}
+
+                  {/* Optional Instructions */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
+                      {language === 'EN' ? 'Instructions for Partner (Optional)' : 'Instructies voor de Vakman (Optioneel)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={wizardForm.partnerInstructions || ''}
+                      onChange={e => setWizardForm(prev => ({ ...prev, partnerInstructions: e.target.value }))}
+                      placeholder={language === 'EN' ? 'e.g. Please quote delivery to backyard with side gate access' : 'bijv. Levering achtertuin via brede poort meenemen in offerte'}
+                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
               </div>
 
-              {/* Modal Navigation */}
-              <div className="flex justify-between items-center pt-3 border-t border-[#D6CFC2]">
-                <Button variant="outline" onClick={() => partnerWizardStep > 1 ? setPartnerWizardStep(prev => prev - 1) : setPartnerWizardLead(null)}>
-                  {partnerWizardStep > 1 ? '← Back' : 'Cancel'}
+              {/* Modal Actions */}
+              <div className="flex justify-end items-center gap-2 pt-3 border-t border-[#D6CFC2]">
+                <Button variant="outline" onClick={() => setPartnerWizardLead(null)}>
+                  {language === 'EN' ? 'Cancel' : 'Annuleren'}
                 </Button>
-                {partnerWizardStep < 7 ? (
-                  <Button onClick={() => setPartnerWizardStep(prev => prev + 1)}>Next Step →</Button>
-                ) : (
-                  <Button onClick={handleSendPartnerPriceRequest} className="bg-emerald-600">
-                    Send Request 🚀
-                  </Button>
-                )}
+                <Button onClick={handleSendPartnerPriceRequest} disabled={isSaving} className="bg-primary text-cream flex items-center gap-2">
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  <span>{language === 'EN' ? 'Send Price Request' : 'Prijsaanvraag Verzenden'}</span>
+                </Button>
               </div>
             </motion.div>
           </div>

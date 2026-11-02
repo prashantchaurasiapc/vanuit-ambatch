@@ -1,4 +1,6 @@
-// Wood Library presets per Reference B
+import { getWoodLibraryForSchema, getActiveWoodTypes } from './productConfigManager.js';
+
+// Base Wood Library presets per Reference B
 export const WOOD_LIBRARY = [
   {
     id: 'thermo_frake',
@@ -23,9 +25,34 @@ export const WOOD_LIBRARY = [
   }
 ];
 
+export function getDynamicWoodLibrary(language = 'NL') {
+  try {
+    return getWoodLibraryForSchema(language);
+  } catch (e) {
+    return WOOD_LIBRARY;
+  }
+}
+
 export function getWoodTypeDefaults(woodName, language = 'NL') {
   const norm = (str) => String(str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-  const match = WOOD_LIBRARY.find(w => norm(w.name) === norm(woodName));
+  const searchName = norm(woodName);
+
+  // 1. Check dynamic configuration first
+  try {
+    const dynamicWoods = getActiveWoodTypes();
+    const dynamicMatch = dynamicWoods.find(w => norm(w.name) === searchName || norm(w.nameEn) === searchName || norm(w.id) === searchName);
+    if (dynamicMatch) {
+      return {
+        name: dynamicMatch.name,
+        lifespan: language === 'EN' ? (dynamicMatch.lifespanEn || dynamicMatch.lifespan) : dynamicMatch.lifespan,
+        infoboxTitle: language === 'EN' ? `About ${dynamicMatch.nameEn || dynamicMatch.name}` : (dynamicMatch.infoboxTitle || `Over ${dynamicMatch.name}`),
+        infoboxText: language === 'EN' ? (dynamicMatch.descriptionEn || dynamicMatch.description) : dynamicMatch.description
+      };
+    }
+  } catch (e) {}
+
+  // 2. Fallback to preset library
+  const match = WOOD_LIBRARY.find(w => norm(w.name) === searchName || norm(w.id) === searchName);
   if (match) {
     return {
       name: match.name,
