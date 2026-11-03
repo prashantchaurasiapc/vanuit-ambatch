@@ -34,7 +34,7 @@ import {
 } from '../utils/translator';
 import projectImg from '../assets/outdoor_project_card.png';
 import heroImg from '/dasbordes images.png';
-import { downloadQuotePdf, downloadDirectPdfFile, generateFull6PagePdf } from '../utils/pdfGenerator';
+import { downloadQuotePdf, downloadDirectPdfFile, generateFull6PagePdf, downloadDirectPdfFileFallback, downloadQuotePdfFallback } from '../utils/pdfGenerator';
 import api, { BASE_URL } from '../api/apiClient';
 import { compressImage } from '../utils/storageHelper';
 
@@ -3736,15 +3736,14 @@ export default function QuoteEditor({
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    onClick={async () => {
-                      showToast(language === 'EN' ? '⏳ Generating official 6-page PDF matching Live Preview...' : '⏳ 6-pagina offerte PDF wordt gegenereerd (exact zoals Live Preview)...');
+                    onClick={() => {
                       try {
-                        const fileName = await generateFull6PagePdf({ ...quote, language });
-                        showToast(language === 'EN' ? `✅ PDF downloaded: ${fileName}` : `✅ PDF gedownload: ${fileName}`);
+                        const fileName = downloadDirectPdfFileFallback({ ...quote, language });
+                        showToast(language === 'EN' ? `✅ Downloaded ${fileName}!` : `✅ ${fileName} gedownload!`);
                       } catch (err) {
-                        console.error('PDF generation error:', err);
-                        downloadQuotePdf({ ...quote, language });
-                        showToast(language === 'EN' ? '✅ PDF downloaded!' : '✅ PDF gedownload!');
+                        console.error('PDF error:', err);
+                        const fileName = downloadQuotePdfFallback({ ...quote, language });
+                        showToast(language === 'EN' ? `✅ Downloaded ${fileName}!` : `✅ ${fileName} gedownload!`);
                       }
                     }}
                     className="px-4 py-2.5 bg-[#33422C] text-[#FDFBF7] font-bold text-xs rounded-xl shadow-xs hover:bg-[#283523] transition-all cursor-pointer font-mono flex items-center gap-2"

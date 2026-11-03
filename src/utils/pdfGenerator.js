@@ -136,20 +136,7 @@ export async function generateFull6PagePdf(quoteData) {
   const originalOverflow = document.body.style.overflow;
   document.body.style.overflow = 'hidden';
 
-  // Create an elegant progress overlay so the user gets clean visual feedback
-  const overlay = document.createElement('div');
-  overlay.id = 'pdf-progress-overlay';
-  overlay.innerHTML = `
-    <div style="position:fixed;inset:0;background:rgba(28,34,25,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999999;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;pointer-events:all;">
-      <div style="background:#283523;border:1px solid rgba(214,207,194,0.3);padding:32px 40px;border-radius:24px;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,0.6);min-width:320px;max-width:90vw;">
-        <div style="width:40px;height:40px;border:3px solid rgba(214,207,194,0.25);border-top-color:#34D399;border-radius:50%;animation:spinPdf 0.9s linear infinite;margin:0 auto 18px;"></div>
-        <div style="font-size:16px;font-weight:700;color:#FDFBF7;letter-spacing:0.02em;">${activeLang === 'EN' ? 'Generating Official Proposal PDF' : 'Officiële Offerte PDF Genereren'}</div>
-        <div id="pdf-progress-text" style="font-size:12px;color:#A7AC9B;margin-top:10px;font-weight:500;">${activeLang === 'EN' ? 'Preparing 6 high-resolution pages...' : '6 pagina\'s voorbereiden...'}</div>
-      </div>
-    </div>
-    <style>@keyframes spinPdf { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
-  `;
-  document.body.appendChild(overlay);
+// Direct vector export - zero blocking overlays
 
   // Create fixed off-screen container that NEVER stretches body height or causes scrolling
   const tempDiv = document.createElement('div');
@@ -278,9 +265,7 @@ export async function generateFull6PagePdf(quoteData) {
     if (document.body.contains(tempDiv)) {
       document.body.removeChild(tempDiv);
     }
-    if (document.body.contains(overlay)) {
-      document.body.removeChild(overlay);
-    }
+    // Cleaned up
     document.body.style.overflow = originalOverflow;
   }
 }
@@ -306,8 +291,7 @@ export function downloadQuotePdf(quote) {
   const filePrefix = quoteObj.isDraft ? (activeLang === 'EN' ? 'Draft-Quote' : 'Concept-Offerte') : 'Quote';
   const fileName = `${filePrefix}-${quoteId} ${cleanCustomerName}.pdf`;
 
-  generateFull6PagePdf({ ...quoteObj, language: activeLang }).catch(() => downloadQuotePdfFallback({ ...quoteObj, language: activeLang }));
-  return fileName;
+  return downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
 }
 
 export function downloadQuotePdfFallback(quote) {
@@ -462,12 +446,7 @@ export async function downloadDirectPdfFile(quoteData = {}) {
   }
   activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
 
-  try {
-    return await generateFull6PagePdf({ ...quoteObj, language: activeLang });
-  } catch (err) {
-    console.warn('[downloadDirectPdfFile] 6-page render failed, falling back to direct vector engine:', err);
-    return downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
-  }
+  return downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
 }
 
 export function downloadDirectPdfFileFallback(quoteData = {}) {
