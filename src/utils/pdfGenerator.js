@@ -118,7 +118,7 @@ export async function generateFull6PagePdf(quoteData) {
   const quote = quoteData?.quote || quoteData || {};
   const quoteId = quote.id || quote.quoteId || 'OF-2026331';
 
-  // Determine active language: quoteData.language -> quote.language -> localStorage -> default 'NL'
+  // Determine active language
   let activeLang = quoteData?.language || quote?.language;
   if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
     activeLang = window.localStorage.getItem('app_language');
@@ -132,14 +132,34 @@ export async function generateFull6PagePdf(quoteData) {
   const filePrefix = quote.isDraft ? (activeLang === 'EN' ? 'Draft-Quote' : 'Concept-Offerte') : 'Quote';
   const fileName = `${filePrefix}-${quoteId} ${cleanCustomerName}.pdf`;
 
-  // Create temporary container for 6 pages (placed off viewport but with valid positive geometry)
+  // Lock body scroll so no page shifting or scrolling happens
+  const originalOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+
+  // Create an elegant progress overlay so the user gets clean visual feedback
+  const overlay = document.createElement('div');
+  overlay.id = 'pdf-progress-overlay';
+  overlay.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(28,34,25,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999999;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;pointer-events:all;">
+      <div style="background:#283523;border:1px solid rgba(214,207,194,0.3);padding:32px 40px;border-radius:24px;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,0.6);min-width:320px;max-width:90vw;">
+        <div style="width:40px;height:40px;border:3px solid rgba(214,207,194,0.25);border-top-color:#34D399;border-radius:50%;animation:spinPdf 0.9s linear infinite;margin:0 auto 18px;"></div>
+        <div style="font-size:16px;font-weight:700;color:#FDFBF7;letter-spacing:0.02em;">${activeLang === 'EN' ? 'Generating Official Proposal PDF' : 'Officiële Offerte PDF Genereren'}</div>
+        <div id="pdf-progress-text" style="font-size:12px;color:#A7AC9B;margin-top:10px;font-weight:500;">${activeLang === 'EN' ? 'Preparing 6 high-resolution pages...' : '6 pagina\'s voorbereiden...'}</div>
+      </div>
+    </div>
+    <style>@keyframes spinPdf { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+  `;
+  document.body.appendChild(overlay);
+
+  // Create fixed off-screen container that NEVER stretches body height or causes scrolling
   const tempDiv = document.createElement('div');
-  tempDiv.style.position = 'absolute';
+  tempDiv.style.position = 'fixed';
   tempDiv.style.top = '0';
   tempDiv.style.left = '0';
   tempDiv.style.width = '794px';
-  tempDiv.style.zIndex = '-99999';
-  tempDiv.style.opacity = '1';
+  tempDiv.style.height = '1123px';
+  tempDiv.style.overflow = 'hidden';
+  tempDiv.style.zIndex = '9999990'; // Behind the overlay (overlay is 9999999)
   tempDiv.style.pointerEvents = 'none';
   tempDiv.style.backgroundColor = '#FFFFFF';
   tempDiv.style.letterSpacing = 'normal';
@@ -159,8 +179,7 @@ export async function generateFull6PagePdf(quoteData) {
       })
     );
 
-    // Wait for React DOM commit and all image elements to complete loading
-    // Wait for all fonts (Playfair Display & Montserrat) to be fully loaded so html2canvas captures sharp brand typography
+    // Wait for fonts to be ready
     if (document.fonts) {
       await Promise.all([
         document.fonts.load('400 16px "Playfair Display"').catch(() => {}),
@@ -175,6 +194,7 @@ export async function generateFull6PagePdf(quoteData) {
       ]);
     }
 
+    // Wait for images to load
     const imgs = Array.from(tempDiv.querySelectorAll('img'));
     await Promise.all(
       imgs.map(img => {
@@ -182,30 +202,46 @@ export async function generateFull6PagePdf(quoteData) {
         return new Promise(resolve => {
           img.onload = resolve;
           img.onerror = resolve;
-          setTimeout(resolve, 1500); // safety timeout
+          setTimeout(resolve, 1500);
         });
       })
     );
-    await new Promise(resolve => setTimeout(resolve, 250));
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     const pageElements = Array.from(tempDiv.querySelectorAll('.offerte-pdf-page'));
 
     if (pageElements.length > 0) {
-      // Normalize page geometry for exact flat A4 export matching client template
       pageElements.forEach(el => {
         el.style.borderRadius = '0px';
         el.style.boxShadow = 'none';
         el.style.border = 'none';
         el.style.width = '794px';
         el.style.height = '1123px';
+        el.style.margin = '0';
       });
 
       const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
       for (let i = 0; i < pageElements.length; i++) {
+        // Update progress text
+        const progressEl = document.getElementById('pdf-progress-text');
+        if (progressEl) {
+          progressEl.innerText = activeLang === 'EN'
+            ? `Rendering Page ${i + 1} of ${pageElements.length}...`
+            : `Pagina ${i + 1} van ${pageElements.length} renderen...`;
+        }
+
+        // Display ONLY the current page at top: 0, hide others so height stays exactly 1123px
+        pageElements.forEach((pEl, pIdx) => {
+          pEl.style.display = pIdx === i ? 'block' : 'none';
+        });
+
+        // Small frame delay to ensure paint
+        await new Promise(r => requestAnimationFrame(r));
+
         const el = pageElements[i];
         const canvas = await html2canvas(el, {
-          scale: 2.5, // 250 DPI razor-sharp brand typography without canvas aspect distortion
+          scale: 2.2, // Crisp 220+ DPI
           useCORS: true,
           allowTaint: false,
           backgroundColor: el.classList.contains('bg-[#33422C]') ? '#33422C' : '#FDFBF7',
@@ -220,7 +256,7 @@ export async function generateFull6PagePdf(quoteData) {
           scrollY: 0
         });
 
-        const imgData = canvas.toDataURL('image/png'); // Lossless PNG: zero compression blur
+        const imgData = canvas.toDataURL('image/png');
         if (i > 0) {
           pdf.addPage('a4', 'portrait');
         }
@@ -242,6 +278,10 @@ export async function generateFull6PagePdf(quoteData) {
     if (document.body.contains(tempDiv)) {
       document.body.removeChild(tempDiv);
     }
+    if (document.body.contains(overlay)) {
+      document.body.removeChild(overlay);
+    }
+    document.body.style.overflow = originalOverflow;
   }
 }
 
