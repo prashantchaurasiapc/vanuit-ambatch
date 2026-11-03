@@ -17,6 +17,10 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
+      cors: true,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
       proxy: {
         // Forward all /api/* requests to the backend server (Fastify on localhost:3000)
         '/api': {

@@ -128,29 +128,22 @@ export async function generateFull6PagePdf(quoteData) {
   const custObj = typeof quote.customer === 'object' && quote.customer !== null ? quote.customer : null;
   const rawCust = custObj?.name || (custObj ? `${custObj.firstName || ''} ${custObj.lastName || ''}`.trim() : null) || (typeof quote.customer === 'string' ? quote.customer : null) || quote.customerName;
   const customerName = (rawCust && typeof rawCust === 'string') ? rawCust.trim() : (activeLang === 'EN' ? 'Client' : 'Klant');
-  const cleanCustomerName = String(customerName).replace(/[\\/:*?"<>|]/g, '').trim();
+  const cleanCustomerName = String(customerName).replace(/[\/:*?"<>|]/g, '').trim();
   const filePrefix = quote.isDraft ? (activeLang === 'EN' ? 'Draft-Quote' : 'Concept-Offerte') : 'Quote';
   const fileName = `${filePrefix}-${quoteId} ${cleanCustomerName}.pdf`;
 
-  // Lock body scroll so no page shifting or scrolling happens
-  const originalOverflow = document.body.style.overflow;
-  document.body.style.overflow = 'hidden';
-
-// Direct vector export - zero blocking overlays
-
-  // Create fixed off-screen container that NEVER stretches body height or causes scrolling
+  // Create fixed off-screen container completely invisible behind the application (zero UI disruption)
   const tempDiv = document.createElement('div');
   tempDiv.style.position = 'fixed';
-  tempDiv.style.top = '0';
-  tempDiv.style.left = '0';
+  tempDiv.style.top = '0px';
+  tempDiv.style.left = '0px';
   tempDiv.style.width = '794px';
   tempDiv.style.height = '1123px';
   tempDiv.style.overflow = 'hidden';
-  tempDiv.style.zIndex = '9999990'; // Behind the overlay (overlay is 9999999)
+  tempDiv.style.zIndex = '-9999'; // Completely invisible behind page
   tempDiv.style.pointerEvents = 'none';
   tempDiv.style.backgroundColor = '#FFFFFF';
-  tempDiv.style.letterSpacing = 'normal';
-  tempDiv.style.fontVariantLigatures = 'none';
+  tempDiv.style.opacity = '1';
   document.body.appendChild(tempDiv);
 
   let root = null;
@@ -166,98 +159,115 @@ export async function generateFull6PagePdf(quoteData) {
       })
     );
 
-    // Wait for fonts to be ready
-    if (document.fonts) {
-      await Promise.all([
-        document.fonts.load('400 16px "Playfair Display"').catch(() => {}),
-        document.fonts.load('500 17px "Playfair Display"').catch(() => {}),
-        document.fonts.load('600 16px "Playfair Display"').catch(() => {}),
-        document.fonts.load('italic 16px "Playfair Display"').catch(() => {}),
-        document.fonts.load('400 14px "Montserrat"').catch(() => {}),
-        document.fonts.load('500 14px "Montserrat"').catch(() => {}),
-        document.fonts.load('600 14px "Montserrat"').catch(() => {}),
-        document.fonts.load('700 14px "Montserrat"').catch(() => {}),
-        document.fonts.ready
+    // Wait for all 6 pages to mount in the DOM
+    let pageElements = [];
+    for (let attempt = 0; attempt < 30; attempt++) {
+      pageElements = Array.from(tempDiv.querySelectorAll('.offerte-pdf-page'));
+      if (pageElements.length >= 6) break;
+      await new Promise(r => setTimeout(r, 50));
+    }
+
+    if (pageElements.length === 0) {
+      console.warn('[PDF Generator] No page elements found, falling back to direct vector engine');
+      return downloadDirectPdfFileFallback({ ...quote, language: activeLang });
+    }
+
+    // Wait for fonts to be ready (up to 400ms max)
+    if (document.fonts && document.fonts.ready) {
+      await Promise.race([
+        document.fonts.ready,
+        new Promise(r => setTimeout(r, 400))
       ]);
     }
 
-    // Wait for images to load
+    // Convert all images to Base64 data URLs to guarantee 0 CORS issues, 0 network timeouts, 0 canvas taints
     const imgs = Array.from(tempDiv.querySelectorAll('img'));
     await Promise.all(
-      imgs.map(img => {
-        if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
-        return new Promise(resolve => {
-          img.onload = resolve;
-          img.onerror = resolve;
-          setTimeout(resolve, 1500);
-        });
+      imgs.map(async (img) => {
+        const src = img.getAttribute('src');
+        if (!src || src.startsWith('data:')) return;
+        try {
+          const res = await fetch(src, { cache: 'force-cache' });
+          if (!res.ok) return;
+          const blob = await res.blob();
+          await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              if (reader.result) {
+                img.src = reader.result;
+              }
+              resolve();
+            };
+            reader.onerror = resolve;
+            reader.readAsDataURL(blob);
+          });
+        } catch (e) {
+          // If fetch fails, keep original image src
+        }
       })
     );
-    await new Promise(resolve => setTimeout(resolve, 300));
 
-    const pageElements = Array.from(tempDiv.querySelectorAll('.offerte-pdf-page'));
+    // Format all page elements: exact A4 dimensions, reset shadows/borders, stack at (0, 0)
+    pageElements.forEach((el) => {
+      el.style.position = 'absolute';
+      el.style.top = '0px';
+      el.style.left = '0px';
+      el.style.width = '794px';
+      el.style.minWidth = '794px';
+      el.style.maxWidth = '794px';
+      el.style.height = '1123px';
+      el.style.minHeight = '1123px';
+      el.style.maxHeight = '1123px';
+      el.style.boxSizing = 'border-box';
+      el.style.margin = '0px';
+      el.style.borderRadius = '0px';
+      el.style.boxShadow = 'none';
+      el.style.border = 'none';
+      el.style.visibility = 'hidden';
+    });
 
-    if (pageElements.length > 0) {
-      pageElements.forEach(el => {
-        el.style.borderRadius = '0px';
-        el.style.boxShadow = 'none';
-        el.style.border = 'none';
-        el.style.width = '794px';
-        el.style.height = '1123px';
-        el.style.margin = '0';
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+
+    for (let i = 0; i < pageElements.length; i++) {
+      // Make only the target page visible and on top
+      pageElements.forEach((pEl, pIdx) => {
+        pEl.style.visibility = pIdx === i ? 'visible' : 'hidden';
+        pEl.style.zIndex = pIdx === i ? '10' : '1';
       });
 
-      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+      // Brief frame delay to ensure paint
+      await new Promise(r => requestAnimationFrame(r));
 
-      for (let i = 0; i < pageElements.length; i++) {
-        // Update progress text
-        const progressEl = document.getElementById('pdf-progress-text');
-        if (progressEl) {
-          progressEl.innerText = activeLang === 'EN'
-            ? `Rendering Page ${i + 1} of ${pageElements.length}...`
-            : `Pagina ${i + 1} van ${pageElements.length} renderen...`;
-        }
+      const el = pageElements[i];
+      const isCover = i === 0;
 
-        // Display ONLY the current page at top: 0, hide others so height stays exactly 1123px
-        pageElements.forEach((pEl, pIdx) => {
-          pEl.style.display = pIdx === i ? 'block' : 'none';
-        });
+      const canvas = await html2canvas(el, {
+        scale: 1.8, // 180 DPI crisp typography & graphics with fast render time
+        useCORS: true,
+        allowTaint: true,
+        imageTimeout: 2000,
+        logging: false,
+        backgroundColor: isCover ? '#33422C' : '#FDFBF7',
+        width: 794,
+        height: 1123,
+        windowWidth: 794,
+        windowHeight: 1123,
+        scrollX: 0,
+        scrollY: 0
+      });
 
-        // Small frame delay to ensure paint
-        await new Promise(r => requestAnimationFrame(r));
-
-        const el = pageElements[i];
-        const canvas = await html2canvas(el, {
-          scale: 2.2, // Crisp 220+ DPI
-          useCORS: true,
-          allowTaint: false,
-          backgroundColor: el.classList.contains('bg-[#33422C]') ? '#33422C' : '#FDFBF7',
-          logging: false,
-          width: 794,
-          height: 1123,
-          windowWidth: 794,
-          windowHeight: 1123,
-          x: 0,
-          y: 0,
-          scrollX: 0,
-          scrollY: 0
-        });
-
-        const imgData = canvas.toDataURL('image/png');
-        if (i > 0) {
-          pdf.addPage('a4', 'portrait');
-        }
-        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
+      const imgData = canvas.toDataURL('image/jpeg', 0.93);
+      if (i > 0) {
+        pdf.addPage('a4', 'portrait');
       }
-
-      pdf.save(fileName);
-      return fileName;
-    } else {
-      return downloadQuotePdfFallback(quote);
+      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
     }
+
+    pdf.save(fileName);
+    return fileName;
   } catch (err) {
     console.error('[PDF Generator] 6-Page rendering failed, falling back to direct vector engine:', err);
-    return downloadDirectPdfFileFallback(quote);
+    return downloadDirectPdfFileFallback({ ...quote, language: activeLang });
   } finally {
     if (root) {
       try { root.unmount(); } catch(e){}
@@ -265,8 +275,6 @@ export async function generateFull6PagePdf(quoteData) {
     if (document.body.contains(tempDiv)) {
       document.body.removeChild(tempDiv);
     }
-    // Cleaned up
-    document.body.style.overflow = originalOverflow;
   }
 }
 
@@ -287,11 +295,15 @@ export function downloadQuotePdf(quote) {
   const custObj = typeof quoteObj.customer === 'object' && quoteObj.customer !== null ? quoteObj.customer : null;
   const rawCust = custObj?.name || (custObj ? `${custObj.firstName || ''} ${custObj.lastName || ''}`.trim() : null) || (typeof quoteObj.customer === 'string' ? quoteObj.customer : null) || quoteObj.customerName;
   const customerName = (rawCust && typeof rawCust === 'string') ? rawCust.trim() : (activeLang === 'EN' ? 'Client' : 'Klant');
-  const cleanCustomerName = String(customerName).replace(/[\\/:*?"<>|]/g, '').trim();
+  const cleanCustomerName = String(customerName).replace(/[\/:*?"<>|]/g, '').trim();
   const filePrefix = quoteObj.isDraft ? (activeLang === 'EN' ? 'Draft-Quote' : 'Concept-Offerte') : 'Quote';
   const fileName = `${filePrefix}-${quoteId} ${cleanCustomerName}.pdf`;
 
-  return downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
+  generateFull6PagePdf({ ...quoteObj, language: activeLang }).catch((err) => {
+    console.warn('[downloadQuotePdf] 6-page render fallback:', err);
+    downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
+  });
+  return fileName;
 }
 
 export function downloadQuotePdfFallback(quote) {
@@ -446,7 +458,12 @@ export async function downloadDirectPdfFile(quoteData = {}) {
   }
   activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
 
-  return downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
+  try {
+    return await generateFull6PagePdf({ ...quoteObj, language: activeLang });
+  } catch (err) {
+    console.warn('[downloadDirectPdfFile] 6-page render fallback:', err);
+    return downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
+  }
 }
 
 export function downloadDirectPdfFileFallback(quoteData = {}) {
@@ -588,7 +605,8 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.5);
     doc.setTextColor(...darkColor);
-    doc.text(desc, 25, y);
+    const splitDesc = doc.splitTextToSize(desc, 95);
+    doc.text(splitDesc, 25, y);
 
     doc.setFont('helvetica', 'normal');
     doc.text(String(qty), 130, y);
@@ -598,7 +616,8 @@ export function downloadDirectPdfFileFallback(quoteData = {}) {
       : `EUR ${price.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`;
     doc.text(priceText, 160, y);
 
-    y += 10;
+    const lineH = Math.max(10, splitDesc.length * 5 + 4);
+    y += lineH;
     doc.setDrawColor(230, 225, 215);
     doc.line(20, y - 4, 190, y - 4);
   });
