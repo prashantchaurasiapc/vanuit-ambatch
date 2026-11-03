@@ -3737,39 +3737,10 @@ export default function QuoteEditor({
                   <button
                     type="button"
                     onClick={async () => {
-                      const targetId = quote?.backendId || quote?.id;
-                      showToast(language === 'EN' ? '⏳ Generating 6-page PDF proposal...' : '⏳ 6-pagina offerte PDF wordt gegenereerd...');
+                      showToast(language === 'EN' ? '⏳ Generating official 6-page PDF matching Live Preview...' : '⏳ 6-pagina offerte PDF wordt gegenereerd (exact zoals Live Preview)...');
                       try {
-                        let downloaded = false;
-                        if (targetId && String(targetId).includes('-')) {
-                          try {
-                            const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
-                            const res = await fetch(`${BASE_URL}/quotes/${targetId}/pdf`, {
-                              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-                            });
-                            if (res.ok) {
-                              const blob = await res.blob();
-                              const url = window.URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              const quoteNumber = quote?.id || quote?.quoteNumber || targetId;
-                              a.download = `Offerte-${quoteNumber}.pdf`;
-                              document.body.appendChild(a);
-                              a.click();
-                              window.URL.revokeObjectURL(url);
-                              document.body.removeChild(a);
-                              downloaded = true;
-                              showToast(language === 'EN' ? `✅ Downloaded Offerte-${quoteNumber}.pdf` : `✅ Offerte-${quoteNumber}.pdf gedownload!`);
-                            }
-                          } catch (fetchErr) {
-                            console.warn('[PDF] Backend PDF stream failed, using high-res vector engine:', fetchErr);
-                          }
-                        }
-
-                        if (!downloaded) {
-                          const fileName = await generateFull6PagePdf({ ...quote, language });
-                          showToast(language === 'EN' ? `✅ PDF downloaded: ${fileName}` : `✅ PDF gedownload: ${fileName}`);
-                        }
+                        const fileName = await generateFull6PagePdf({ ...quote, language });
+                        showToast(language === 'EN' ? `✅ PDF downloaded: ${fileName}` : `✅ PDF gedownload: ${fileName}`);
                       } catch (err) {
                         console.error('PDF generation error:', err);
                         downloadQuotePdf({ ...quote, language });
