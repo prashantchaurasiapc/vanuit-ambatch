@@ -4,9 +4,13 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  let backendTarget = env.VITE_BACKEND_URL || 'https://feisty-beauty-production-2f61.up.railway.app'
+  // Live Railway URL (Commented out):
+  // let backendTarget = 'https://feisty-beauty-production-2f61.up.railway.app'
+  
+  // Localhost backend target (Fastify server on port 3000)
+  let backendTarget = env.VITE_BACKEND_URL || 'http://localhost:3000'
   if (!backendTarget.startsWith('http://') && !backendTarget.startsWith('https://')) {
-    backendTarget = `https://${backendTarget}`
+    backendTarget = `http://${backendTarget}`
   }
   backendTarget = backendTarget.replace(/\/api\/?$/, '').replace(/\/$/, '')
 
@@ -14,7 +18,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
-        // Forward all /api/* requests to the backend server (Railway / local)
+        // Forward all /api/* requests to the backend server (Fastify on localhost:3000)
         '/api': {
           target: backendTarget,
           changeOrigin: true,
@@ -24,4 +28,3 @@ export default defineConfig(({ mode }) => {
     },
   }
 })
-

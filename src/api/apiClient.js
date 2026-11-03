@@ -8,9 +8,14 @@
  *  - Global 401 → redirect to /login
  *  - Global 403 → console warn (caller handles UI)
  */
+
+// Live Railway Backend URL (Commented out):
+// const LIVE_BACKEND_URL = 'https://feisty-beauty-production-2f61.up.railway.app/api';
+
 export const BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ||
-  'https://feisty-beauty-production-2f61.up.railway.app/api'
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
+    ? (import.meta.env.VITE_API_BASE_URL || '/api')
+    : (import.meta.env.VITE_API_BASE_URL || '/api')
 ).replace(/\/+$/, '');
 
 async function request(method, path, body = null, isFormData = false) {
@@ -50,28 +55,31 @@ async function request(method, path, body = null, isFormData = false) {
 
   // Handle 403 globally
   if (response.status === 403) {
-    console.warn('[apiClient] 403 Forbidden:', path);
-    return { success: false, error: { code: 'FORBIDDEN', message: 'You do not have permission to perform this action.' } };
+    console.warn('[apiClient] 403 Forbidden for route:', path);
   }
 
-  // Parse JSON
-  let json;
-  try {
-    json = await response.json();
-  } catch {
-    return { success: false, error: { code: 'PARSE_ERROR', message: 'Invalid response from server.' } };
+  const json = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    return {
+      success: false,
+      error: json?.error || {
+        code: `HTTP_${response.status}`,
+        message: response.statusText || 'Request failed',
+      },
+    };
   }
 
-  return json; // { success: true, data: ... } or { success: false, error: ... }
+  return json ?? { success: true };
 }
 
-const api = {
-  get:    (path)              => request('GET',    path),
-  post:   (path, body)        => request('POST',   path, body),
-  put:    (path, body)        => request('PUT',    path, body),
-  patch:  (path, body)        => request('PATCH',  path, body),
-  delete: (path)              => request('DELETE', path),
-  upload: (path, formData)    => request('POST',   path, formData, true),
+export const api = {
+  get: (path) => request('GET', path),
+  post: (path, body) => request('POST', path, body),
+  put: (path, body) => request('PUT', path, body),
+  patch: (path, body) => request('PATCH', path, body),
+  delete: (path, body) => request('DELETE', path, body),
+  upload: (path, formData) => request('POST', path, formData, true),
 };
 
 export default api;
