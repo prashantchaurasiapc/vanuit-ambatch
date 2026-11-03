@@ -103,7 +103,8 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
     partner: 'Unassigned',
     progress: 0,
     deadline: '',
-    status: 'In Progress'
+    status: 'In Progress',
+    projectType: 'outdoor_kitchen'
   });
 
   // Load initial data from real API
@@ -245,7 +246,8 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       partner: 'Unassigned',
       progress: 10,
       deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      status: 'In Progress'
+      status: 'In Progress',
+      projectType: activeTab === 'Outdoor Living Spaces' ? 'garden_room' : 'outdoor_kitchen'
     });
     setCustomerSelect(defaultCustId);
     setPartnerSelect('Unassigned');
@@ -277,7 +279,8 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       partner: partnerVal,
       progress: proj.progress || proj.progressPercentage || 0,
       deadline: proj.deadline || '',
-      status: proj.status || 'In Progress'
+      status: proj.status || 'In Progress',
+      projectType: proj.projectType || detectProjectType(proj) || 'outdoor_kitchen'
     });
     setModalOpen(true);
   };
@@ -318,6 +321,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       // Edit existing project — PUT /api/projects/:id
       const body = {
         name: form.name,
+        projectType: form.projectType || 'outdoor_kitchen',
         progressPercentage: parseInt(form.progress) || 0,
         orderStatus: form.status === 'Completed' ? 'voltooid' : 'in_voorbereiding',
         partnerId: partnerId,
@@ -416,7 +420,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
       const body = {
         name: form.name,
-        projectType: 'outdoor_kitchen',
+        projectType: form.projectType || 'outdoor_kitchen',
         customerId,
         partnerId,
         deliveryAddress,
@@ -1047,7 +1051,21 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">
+                      {language === 'NL' ? 'Type / Categorie *' : 'Project Type *'}
+                    </label>
+                    <select
+                      value={form.projectType || 'outdoor_kitchen'}
+                      onChange={e => setForm(prev => ({ ...prev, projectType: e.target.value }))}
+                      className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-semibold text-dark"
+                    >
+                      <option value="outdoor_kitchen">{language === 'NL' ? 'Outdoor Kitchen' : 'Outdoor Kitchen'}</option>
+                      <option value="garden_room">{language === 'NL' ? 'Living Outdoor Spaces' : 'Living Outdoor Spaces'}</option>
+                    </select>
+                  </div>
+
                   <div>
                     <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">
                       {language === 'NL' ? 'Opleverdatum' : 'Completion Deadline'}
