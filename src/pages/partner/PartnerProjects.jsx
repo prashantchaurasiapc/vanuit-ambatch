@@ -135,10 +135,14 @@ export default function PartnerProjects() {
   const [inputPartnerReply, setInputPartnerReply] = useState('');
   const [partnerConversationId, setPartnerConversationId] = useState(null);
 
-  const activeChatProjectId = selectedProject?.id || selectedProject?.projectNumber || (projects.length > 0 ? (projects[0].id || projects[0].projectNumber) : 'PRJ-2026-001');
+  const activeChatProjectId = selectedProject?.id || selectedProject?.projectNumber || (projects.length > 0 ? (projects[0].id || projects[0].projectNumber) : null);
 
   // Load chat messages from backend and sync store
   useEffect(() => {
+    if (!activeChatProjectId) {
+      setPartnerMessages([]);
+      return;
+    }
     let isMounted = true;
     try {
       const stored = localStorage.getItem(`va_partner_chat_${activeChatProjectId}`);
@@ -1126,6 +1130,7 @@ export default function PartnerProjects() {
       )}
 
       {/* FLOATING PARTNER CHAT BUTTON */}
+      {projects.length > 0 && (
       <button
         onClick={() => {
           if (!selectedProject && projects.length > 0) setSelectedProject(projects[0]);
@@ -1139,6 +1144,7 @@ export default function PartnerProjects() {
           {partnerMessages.length}
         </span>
       </button>
+      )}
 
     </div>
   );

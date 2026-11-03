@@ -17,7 +17,7 @@ export default function ProjectChatDrawer({
   const { language } = useLanguage();
   const isEn = language !== 'NL';
 
-  const activeProjectId = projectId || projectCode || 'PRJ-2026-001';
+  const activeProjectId = projectId || projectCode || null;
 
   // Active channel: 'klant' | 'partner'
   const [activeChannel, setActiveChannel] = useState('klant');
@@ -97,6 +97,7 @@ export default function ProjectChatDrawer({
 
   // Load Partner & Customer Messages from backend and synchronized store
   useEffect(() => {
+    if (!activeProjectId) return;
     let isMounted = true;
     try {
       const storedPartner = localStorage.getItem(`va_partner_chat_${activeProjectId}`);

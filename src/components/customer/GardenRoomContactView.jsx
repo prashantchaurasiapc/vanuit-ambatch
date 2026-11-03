@@ -57,10 +57,11 @@ export default function GardenRoomContactView({ project = null }) {
   const [messages, setMessages] = useState(defaultGardenMsgs);
   const [activeConvId, setActiveConvId] = useState(null);
 
-  const activeChatProjectId = project?.id || project?.projectNumber || 'PRJ-2026-002';
+  const activeChatProjectId = project?.id || project?.projectNumber || null;
 
   // Load messages from backend conversations API & synchronized local storage
   useEffect(() => {
+    if (!activeChatProjectId) return;
     let isMounted = true;
     try {
       const stored = localStorage.getItem(`va_customer_chat_${activeChatProjectId}`);
