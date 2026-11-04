@@ -28,7 +28,7 @@ export default function OutdoorKitchenOverview({ project = null }) {
   const isNl = language === 'NL';
 
   // Fallback mock data matching client brief 1-to-1 if project fields missing
-  const custName = project?.customer || 'Sander';
+  const custName = project?.customerName || (typeof project?.customer === 'string' ? project?.customer : project?.customer?.name) || 'Bjorn Valk';
   const firstName = custName.split(' ')[0];
   const projectName = project?.name || (isNl ? 'Luxe Teak Buitenkeuken Den Haag' : 'Outdoor Kitchen Thermo Fraké - 240 x 80 cm');
   const projectSub = project?.subtext || (isNl ? 'met uitsparing voor jouw Big Green Egg Large' : 'with cutout for your Big Green Egg Large');
