@@ -9,13 +9,14 @@
  *  - Global 403 → console warn (caller handles UI)
  */
 
-// Live Railway Backend URL (Commented out):
-// const LIVE_BACKEND_URL = 'https://feisty-beauty-production-2f61.up.railway.app/api';
+// Live Railway Backend URL (Active):
+export const LIVE_BACKEND_URL = 'https://vanuit-ambacht-backend-production.up.railway.app/api';
 
 export const BASE_URL = (
-  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
-    ? (import.meta.env.VITE_API_BASE_URL || '/api')
-    : (import.meta.env.VITE_API_BASE_URL || '/api')
+  import.meta.env.VITE_API_BASE_URL ||
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? '/api'
+    : LIVE_BACKEND_URL)
 ).replace(/\/+$/, '');
 
 async function request(method, path, body = null, isFormData = false) {
