@@ -116,11 +116,20 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
         ? (Array.isArray(res.data) ? res.data : (res.data?.items || res.data?.projects || []))
         : [];
       if (projectsArr.length > 0) {
-        const merged = [
-          ...projectsArr,
-          ...localProjects.filter(lp => !projectsArr.some(bp => bp.id === lp.id || bp.projectNumber === lp.projectNumber || (lp.quoteId && bp.quoteId === lp.quoteId)))
-        ];
-        setProjects(merged);
+        const merged = projectsArr.map(bp => {
+          const lp = localProjects.find(l => l.id === bp.id || l.projectNumber === bp.projectNumber || (lp.quoteId && bp.quoteId === lp.quoteId));
+          if (!lp) return bp;
+          return {
+            ...bp,
+            ...lp,
+            orderStatus: lp.orderStatus || bp.orderStatus,
+            status: lp.status || bp.status,
+            partnerStatus: lp.partnerStatus || bp.partnerStatus,
+            progressPercentage: lp.progressPercentage ?? bp.progressPercentage
+          };
+        });
+        const additional = localProjects.filter(lp => !projectsArr.some(bp => bp.id === lp.id || bp.projectNumber === lp.projectNumber || (lp.quoteId && bp.quoteId === lp.quoteId)));
+        setProjects([...merged, ...additional]);
       } else if (localProjects.length > 0) {
         setProjects(localProjects);
       } else if (res.success && Array.isArray(projectsArr)) {
@@ -684,6 +693,23 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
               ) : (
                 filteredProjects.map((row) => {
                   const isConfirmed = row.isPartnerConfirmed || row.partnerStatus === 'Final / Locked';
+                  const isReadyForDelivery =
+                    row.orderStatus === 'klaar_voor_levering' ||
+                    row.orderStatus === 'ready_for_delivery' ||
+                    (row.status || '').toLowerCase().includes('ready') ||
+                    (row.status || '').toLowerCase().includes('levering') ||
+                    (row.partnerStatus || '').toLowerCase().includes('ready') ||
+                    (row.partnerStatus || '').toLowerCase().includes('levering') ||
+                    (row.stage || '').toLowerCase().includes('ready') ||
+                    Number(row.productionStep) >= 4 ||
+                    Number(row.progressPercentage) >= 75;
+
+                  const isCompleted =
+                    (row.status || '').toLowerCase() === 'completed' ||
+                    row.orderStatus === 'voltooid' ||
+                    Number(row.productionStep) >= 5 ||
+                    Number(row.progressPercentage) === 100;
+
                   const pType = detectProjectType(row);
                   const numericVal = Number(row.numericAmount || (typeof row.amount === 'string' ? parseFloat(row.amount.replace(/[^\d.-]/g, '')) : row.amount) || 15180);
 
@@ -728,9 +754,22 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
                       {/* 4. Phase (Status) */}
                       <td className="py-3 px-3 border-y border-[#E2DDD3] whitespace-nowrap">
-                        <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold ${row.status === 'Completed' ? 'bg-[#D1E7DD] text-[#0F5132]' : isConfirmed ? 'bg-emerald-100 text-emerald-900' : 'bg-[#FFF3CD] text-[#664D03]'
-                          }`}>
-                          {row.status === 'Completed' ? t('common.completed') : isConfirmed ? t('projects.toConfirm') : t('projects.toConfirm')}
+                        <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                          isCompleted
+                            ? 'bg-[#D1E7DD] text-[#0F5132]'
+                            : isReadyForDelivery
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : isConfirmed
+                                ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                                : 'bg-[#FFF3CD] text-[#664D03]'
+                        }`}>
+                          {isCompleted
+                            ? (language === 'NL' ? 'Afgerond' : 'Completed')
+                            : isReadyForDelivery
+                              ? (language === 'NL' ? 'Gereed voor levering' : 'Ready for delivery')
+                              : isConfirmed
+                                ? (language === 'NL' ? 'In productie' : 'In Production')
+                                : t('projects.toConfirm')}
                         </span>
                       </td>
 
@@ -748,7 +787,13 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                              (row.partnerId && (partnersList.find(p => p.id === row.partnerId)?.companyName || partnersList.find(p => p.id === row.partnerId)?.contactPerson)) ||
                              t('projects.unassigned')}
                           </span>
-                          <span className="text-[9px] text-dark/50">{t('projects.inProgress')}</span>
+                          <span className="text-[10px] text-dark/60 font-body">
+                            {isCompleted
+                              ? (language === 'NL' ? 'Afgerond' : 'Completed')
+                              : isReadyForDelivery
+                                ? (language === 'NL' ? 'Gereed voor levering' : 'Ready for delivery')
+                                : (row.partnerStatus || t('projects.inProgress'))}
+                          </span>
                         </div>
                       </td>
                     </tr>

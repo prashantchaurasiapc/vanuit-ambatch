@@ -63,7 +63,13 @@ export default function PartnerProjects() {
           return {
             ...p,
             progress: p.progressPercentage ?? p.progress ?? 0,
-            status: (p.status || '').toLowerCase().includes('completed') ? 'Completed' : (p.status || '').toLowerCase().includes('progress') ? 'In Progress' : (p.status || 'In Progress'),
+            status: (p.status || '').toLowerCase().includes('completed') || p.orderStatus === 'voltooid'
+              ? 'Completed'
+              : (p.orderStatus === 'klaar_voor_levering' || p.orderStatus === 'ready_for_delivery' || (p.status || '') === 'Ready for delivery' || (p.partnerStatus || '') === 'Ready for delivery')
+                ? 'Ready for delivery'
+                : (p.status || '').toLowerCase().includes('progress')
+                  ? 'In Progress'
+                  : (p.status || 'In Progress'),
             customer: custStr,
             customerName: custStr,
             deliveryAddress: p.deliveryAddress || p.city || 'Address TBC',
@@ -333,6 +339,41 @@ export default function PartnerProjects() {
       } catch (err) {}
       window.dispatchEvent(new CustomEvent('app_new_notification', { detail: notifItem }));
     }
+
+    // Sync to local project store for seamless cross-portal testing
+    try {
+      const local = JSON.parse(localStorage.getItem('app_projects_v2') || '[]');
+      let matched = false;
+      const updatedLocal = local.map(lp => {
+        if (lp.id === editProject.id || lp.projectNumber === editProject.projectNumber) {
+          matched = true;
+          return {
+            ...lp,
+            status: editProject.status,
+            orderStatus: isReadyForDelivery ? 'klaar_voor_levering' : isCompleted ? 'voltooid' : lp.orderStatus || 'in_productie',
+            partnerStatus: editProject.status,
+            stage: editProject.status,
+            progress: progressVal,
+            progressPercentage: progressVal,
+            productionStep: isCompleted ? 5 : isReadyForDelivery ? 4 : 3
+          };
+        }
+        return lp;
+      });
+      if (!matched) {
+        updatedLocal.push({
+          ...editProject,
+          status: editProject.status,
+          orderStatus: isReadyForDelivery ? 'klaar_voor_levering' : isCompleted ? 'voltooid' : 'in_productie',
+          partnerStatus: editProject.status,
+          stage: editProject.status,
+          progress: progressVal,
+          progressPercentage: progressVal,
+          productionStep: isCompleted ? 5 : isReadyForDelivery ? 4 : 3
+        });
+      }
+      localStorage.setItem('app_projects_v2', JSON.stringify(updatedLocal));
+    } catch (err) {}
 
     // 4. Immediately update UI state so user sees instant feedback
     setProjects(prev => prev.map(p => p.id === editProject.id ? {

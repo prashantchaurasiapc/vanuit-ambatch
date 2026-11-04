@@ -87,6 +87,15 @@ export default function CustomerProject() {
       if (projRes.success && projRes.data) {
         const proj = Array.isArray(projRes.data) ? projRes.data[0] : projRes.data;
         if (proj) {
+          const localProjects = JSON.parse(localStorage.getItem('app_projects_v2') || '[]');
+          const localMatch = localProjects.find(lp => lp.id === proj.id || lp.projectNumber === proj.projectNumber);
+          if (localMatch) {
+            proj.orderStatus = localMatch.orderStatus || proj.orderStatus;
+            proj.status = localMatch.status || proj.status;
+            proj.partnerStatus = localMatch.partnerStatus || proj.partnerStatus;
+            proj.progressPercentage = localMatch.progressPercentage ?? proj.progressPercentage;
+            proj.productionStep = localMatch.productionStep ?? proj.productionStep;
+          }
           const normalized = normalizeProjectData({
             ...proj,
             address: proj.deliveryAddress || proj.address || 'Address not set',
@@ -113,6 +122,8 @@ export default function CustomerProject() {
 
   useEffect(() => {
     loadCustomerProjectData();
+    window.addEventListener('app_data_changed', loadCustomerProjectData);
+    return () => window.removeEventListener('app_data_changed', loadCustomerProjectData);
   }, [user]);
 
 

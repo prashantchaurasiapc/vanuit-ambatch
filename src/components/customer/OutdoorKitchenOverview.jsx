@@ -91,9 +91,16 @@ export default function OutdoorKitchenOverview({ project = null }) {
       <div className="bg-[#EDE8DF] border border-[#C4BEB3] p-4 sm:p-6 rounded-2xl shadow-xs space-y-5">
         {/* Progress Bar Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[#D6CFC2] pb-3">
-          <span className="text-[11px] uppercase font-mono font-bold tracking-wider text-accent">
-            {isNl ? 'STATUS VAN JOUW PROJECT' : 'WHERE YOUR PROJECT STANDS'}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] uppercase font-mono font-bold tracking-wider text-accent">
+              {isNl ? 'STATUS VAN JOUW PROJECT' : 'WHERE YOUR PROJECT STANDS'}
+            </span>
+            {isReadyForDelivery && (
+              <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                {isNl ? 'Gereed voor levering' : 'Ready for delivery'}
+              </span>
+            )}
+          </div>
           <div className="text-xs font-mono font-bold text-primary">
             {isNl ? 'Verwachte levering:' : 'Target Delivery:'}{' '}
             <span className="text-dark font-normal">{targetDelivery}</span>
@@ -153,9 +160,13 @@ export default function OutdoorKitchenOverview({ project = null }) {
               {isNl ? 'WAT ER NU GEBEURT' : 'WHAT IS HAPPENING NOW'}
             </span>
             <p className="text-xs text-dark/90 leading-relaxed font-medium">
-              {isNl
-                ? 'Het massieve Thermo Fraké frame is gemonteerd en de kastmodules zijn geplaatst. Deze week wordt het werkblad afgewerkt en de uitsparing voor jouw Big Green Egg met de hand vervaardigd.'
-                : 'The solid Thermo Fraké frame is assembled and cabinet modules are mounted. This week the worktop is being finished and the cutout for your Big Green Egg is being crafted.'}
+              {isReadyForDelivery
+                ? (isNl
+                    ? 'Gereed voor levering: De vakman heeft de productie afgerond. Uw bestelling is gereed voor transport en montage.'
+                    : 'Ready for delivery: Craftsman finished production. Your order is ready for transport and assembly.')
+                : (isNl
+                    ? 'Het massieve Thermo Fraké frame is gemonteerd en de kastmodules zijn geplaatst. Deze week wordt het werkblad afgewerkt en de uitsparing voor jouw Big Green Egg met de hand vervaardigd.'
+                    : 'The solid Thermo Fraké frame is assembled and cabinet modules are mounted. This week the worktop is being finished and the cutout for your Big Green Egg is being crafted.')}
             </p>
           </div>
           <div className="space-y-1">
