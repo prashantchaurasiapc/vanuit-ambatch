@@ -3737,35 +3737,18 @@ export default function QuoteEditor({
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    disabled={isExportingPdf}
-                    onClick={async () => {
-                      setIsExportingPdf(true);
-                      showToast(language === 'EN' ? '⏳ 6-page proposal PDF is being prepared...' : '⏳ 6-pagina offerte PDF wordt voorbereid...');
+                    onClick={() => {
                       try {
-                        const fileName = await generateFull6PagePdf({ ...quote, language });
-                        showToast(language === 'EN' ? `✅ Downloaded ${fileName}!` : `✅ ${fileName} gedownload!`);
+                        const fileName = downloadDirectPdfFile({ ...quote, language });
+                        showToast(language === 'EN' ? `✅ Opened & Downloaded ${fileName}!` : `✅ ${fileName} geopend & gedownload!`);
                       } catch (err) {
                         console.error('PDF generation error:', err);
-                        const fileName = downloadDirectPdfFileFallback({ ...quote, language });
-                        showToast(language === 'EN' ? `✅ Downloaded ${fileName}!` : `✅ ${fileName} gedownload!`);
-                      } finally {
-                        setIsExportingPdf(false);
+                        showToast('PDF kon niet gegenereerd worden.');
                       }
                     }}
-                    className={`px-4 py-2.5 font-bold text-xs rounded-xl shadow-xs transition-all font-mono flex items-center gap-2 ${
-                      isExportingPdf
-                        ? 'bg-[#283523] text-white/80 cursor-wait opacity-90'
-                        : 'bg-[#33422C] text-[#FDFBF7] hover:bg-[#283523] cursor-pointer'
-                    }`}
+                    className="px-4 py-2.5 bg-[#33422C] text-[#FDFBF7] font-bold text-xs rounded-xl shadow-xs hover:bg-[#283523] transition-all cursor-pointer font-mono flex items-center gap-2"
                   >
-                    {isExportingPdf ? (
-                      <>
-                        <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                        <span>{language === 'NL' ? '⏳ Bezig met downloaden...' : '⏳ Downloading PDF...'}</span>
-                      </>
-                    ) : (
-                      <span>{language === 'NL' ? '↓ Download PDF Offerte' : '↓ Download PDF Proposal'}</span>
-                    )}
+                    <span>{language === 'NL' ? '↓ Download PDF Offerte' : '↓ Download PDF Proposal'}</span>
                   </button>
 
                   <button
