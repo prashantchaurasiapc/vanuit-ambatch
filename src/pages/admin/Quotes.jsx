@@ -1032,9 +1032,9 @@ export default function Quotes() {
         }}
         leadsList={leadsList}
         onClose={() => {
-          setSearchParams({});
           localStorage.removeItem('vanuit_active_quote_session');
           setActiveEditorQuote(null);
+          setSearchParams({}, { replace: true });
           fetchQuotes();
         }}
         onSaveQuote={(updated, showToastFlag) => handleSaveEditorQuote(updated, showToastFlag)}

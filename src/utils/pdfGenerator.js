@@ -291,19 +291,7 @@ export function downloadQuotePdf(quote) {
   }
   activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
 
-  const quoteId = quoteObj.id || quoteObj.quoteId || 'OF-2026331';
-  const custObj = typeof quoteObj.customer === 'object' && quoteObj.customer !== null ? quoteObj.customer : null;
-  const rawCust = custObj?.name || (custObj ? `${custObj.firstName || ''} ${custObj.lastName || ''}`.trim() : null) || (typeof quoteObj.customer === 'string' ? quoteObj.customer : null) || quoteObj.customerName;
-  const customerName = (rawCust && typeof rawCust === 'string') ? rawCust.trim() : (activeLang === 'EN' ? 'Client' : 'Klant');
-  const cleanCustomerName = String(customerName).replace(/[\/:*?"<>|]/g, '').trim();
-  const filePrefix = quoteObj.isDraft ? (activeLang === 'EN' ? 'Draft-Quote' : 'Concept-Offerte') : 'Quote';
-  const fileName = `${filePrefix}-${quoteId} ${cleanCustomerName}.pdf`;
-
-  generateFull6PagePdf({ ...quoteObj, language: activeLang }).catch((err) => {
-    console.warn('[downloadQuotePdf] 6-page render fallback:', err);
-    downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
-  });
-  return fileName;
+  return downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
 }
 
 export function downloadQuotePdfFallback(quote) {
@@ -450,7 +438,7 @@ export function downloadQuotePdfFallback(quote) {
  * Generates an official, beautiful branded PDF document matching the preview 100%
  * and calls doc.save("Quote-{number} {customer}.pdf") to trigger an actual file download.
  */
-export async function downloadDirectPdfFile(quoteData = {}) {
+export function downloadDirectPdfFile(quoteData = {}) {
   const quoteObj = quoteData?.quote || quoteData || {};
   let activeLang = quoteData?.language || quoteObj?.language;
   if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
@@ -458,12 +446,7 @@ export async function downloadDirectPdfFile(quoteData = {}) {
   }
   activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
 
-  try {
-    return await generateFull6PagePdf({ ...quoteObj, language: activeLang });
-  } catch (err) {
-    console.warn('[downloadDirectPdfFile] 6-page render fallback:', err);
-    return downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
-  }
+  return downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
 }
 
 export function downloadDirectPdfFileFallback(quoteData = {}) {

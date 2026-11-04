@@ -1088,8 +1088,11 @@ export default function QuoteEditor({
       <div className="flex-shrink-0 bg-white px-3 sm:px-4 py-2.5 rounded-2xl border border-[#D6CFC2] shadow-xs flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
+            type="button"
             onClick={() => {
-              if (onSaveQuote && quote) onSaveQuote(quote, false);
+              try {
+                localStorage.removeItem('vanuit_active_quote_session');
+              } catch (e) {}
               onClose();
             }}
             className="px-3 py-1.5 bg-white hover:bg-[#EDE8DF] text-primary border border-[#D6CFC2] rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer flex-shrink-0 shadow-2xs"
