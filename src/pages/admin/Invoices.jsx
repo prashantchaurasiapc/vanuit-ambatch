@@ -386,7 +386,6 @@ export default function Invoices() {
       });
 
       setInvoices(updatedInvoices);
-      window.dispatchEvent(new Event('app_data_changed'));
       showToast(language === 'EN' ? `Invoice "${editingInvoiceId}" updated!` : `Factuur "${editingInvoiceId}" succesvol bijgewerkt!`);
       setModalOpen(false);
 
@@ -412,12 +411,21 @@ export default function Invoices() {
         };
       });
 
-      api.patch(`/invoices/${apiId}?force=true`, {
-        status: mappedStatus,
-        dueDate: form.dueDate && /^\d{4}-\d{2}-\d{2}$/.test(form.dueDate) ? form.dueDate : undefined,
-        items: backendItems,
-        force: true
-      }).catch(err => console.warn('Could not sync invoice update to API:', err));
+      try {
+        await api.patch(`/invoices/${apiId}?force=true`, {
+          customerName: form.customer,
+          address: form.address,
+          city: form.zipCity,
+          phone: form.phone,
+          status: mappedStatus,
+          dueDate: form.dueDate && /^\d{4}-\d{2}-\d{2}$/.test(form.dueDate) ? form.dueDate : undefined,
+          items: backendItems,
+          force: true
+        });
+      } catch (err) {
+        console.warn('Could not sync invoice update to API:', err);
+      }
+      window.dispatchEvent(new Event('app_data_changed'));
     } else {
       let createdInv = null;
       try {
@@ -425,7 +433,11 @@ export default function Invoices() {
           (p.customerName && form.customer && p.customerName.toLowerCase().includes(form.customer.toLowerCase())) ||
           (p.name && form.customer && p.name.toLowerCase().includes(form.customer.toLowerCase())) ||
           (form.quoteRef && p.projectNumber && form.quoteRef.includes(p.projectNumber))
-        ) || (projectsList.length > 0 ? projectsList[0] : null);
+        );
+
+        const projectCustomerId = matchedProject && matchedProject.customerName && form.customer && matchedProject.customerName.toLowerCase().includes(form.customer.toLowerCase())
+          ? matchedProject.customerId
+          : undefined;
 
         const backendItems = processedItems.map((it, idx) => {
           const isInc = it.price === 'Inbegrepen';
@@ -451,10 +463,13 @@ export default function Invoices() {
               : 'full_amount';
 
         const createRes = await api.post('/invoices', {
-          projectId: matchedProject?.id || undefined,
-          customerId: matchedProject?.customerId || undefined,
+          projectId: matchedProject?.id || (projectsList.length > 0 ? projectsList[0].id : undefined),
+          customerId: projectCustomerId,
           invoiceNumber: form.id || undefined,
           customerName: form.customer,
+          address: form.address,
+          city: form.zipCity,
+          phone: form.phone,
           invoiceType: invoiceTypeEnum,
           status: form.status === 'Betaald' ? 'paid' : (form.status === 'Openstaand' ? 'sent' : 'draft'),
           dueDate: form.dueDate,
@@ -471,16 +486,17 @@ export default function Invoices() {
       const assignedId = createdInv?.invoiceNumber || createdInv?.id || form.id || `INV-${new Date().getFullYear()}-001`;
       const newInv = {
         id: assignedId,
+        realId: createdInv?.id,
         invoiceNumber: assignedId,
         customer: form.customer,
+        customerName: form.customer,
         address: form.address,
         zipCity: form.zipCity,
         phone: form.phone,
         type: form.type,
         amount: formattedAmount,
         numericAmount: totalInclAmount,
-        status: form.status || 'Openstaand',
-        isSent: form.status === 'Openstaand' || form.status === 'Betaald',
+        status: form.status,
         dueDate: form.dueDate,
         date: form.date,
         createdDate: form.date,
@@ -491,17 +507,12 @@ export default function Invoices() {
       const updatedInvoices = [newInv, ...invoices];
       setInvoices(updatedInvoices);
 
-      if (newInv.status === 'Openstaand' || newInv.status === 'Betaald' || newInv.isSent) {
+      if (newInv.status === 'Openstaand' || newInv.status === 'Betaald') {
         convertLeadToCustomerOnInvoiceSent(newInv.customer, newInv.id, newInv.amount);
       }
 
       window.dispatchEvent(new Event('app_data_changed'));
-
-      showToast(
-        newInv.isSent || newInv.status !== 'Concept'
-          ? (language === 'EN' ? `Invoice ${newInv.id} created!` : `Factuur ${newInv.id} aangemaakt!`)
-          : (language === 'EN' ? `Invoice ${newInv.id} saved as Draft!` : `Factuur ${newInv.id} opgeslagen als Concept!`)
-      );
+      showToast(language === 'EN' ? `Invoice "${assignedId}" created!` : `Factuur "${assignedId}" succesvol aangemaakt!`);
       setModalOpen(false);
     }
   };
