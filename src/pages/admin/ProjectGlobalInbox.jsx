@@ -143,6 +143,12 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
   useEffect(() => {
     loadProjectsData();
+    const handleSync = (e) => {
+      if (!e.detail?.entity || e.detail.entity === 'projects') {
+        loadProjectsData();
+      }
+    };
+    window.addEventListener('app_sync_entity', handleSync);
     window.addEventListener('app_data_changed', loadProjectsData);
 
     // Leads list for dropdowns (handles both { items: [...] } and [...])
@@ -170,6 +176,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
     }).catch(err => console.error('Failed to load partners:', err));
 
     return () => {
+      window.removeEventListener('app_sync_entity', handleSync);
       window.removeEventListener('app_data_changed', loadProjectsData);
     };
   }, [modalOpen]);

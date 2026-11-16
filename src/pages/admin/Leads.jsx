@@ -15,6 +15,8 @@ import { useLanguage } from '../../context/LanguageContext';
 import { tValue } from '../../utils/translator';
 import api from '../../api/apiClient';
 import { getActiveCategories, getActiveWoodTypes, getActiveMaterials } from '../../utils/productConfigManager';
+import { parseAndNormalizeLeadsCSV } from '../../utils/csvParser';
+import { useDataSync } from '../../hooks/useDataSync';
 
 // Helper to map backend product enum to frontend UI string
 function mapBackendProductToUI(pt) {
@@ -271,6 +273,29 @@ export default function Leads() {
 
   useEffect(() => {
     fetchLeads();
+  }, [fetchLeads]);
+
+  // Tim & Bram real-time multi-user data synchronization
+  useDataSync({
+    onSyncEntity: (entity) => {
+      if (entity === 'leads') {
+        fetchLeads();
+      }
+    },
+  });
+
+  useEffect(() => {
+    const handleSync = (e) => {
+      if (e.detail?.entity === 'leads') {
+        fetchLeads();
+      }
+    };
+    window.addEventListener('app_sync_entity', handleSync);
+    window.addEventListener('app_data_changed', fetchLeads);
+    return () => {
+      window.removeEventListener('app_sync_entity', handleSync);
+      window.removeEventListener('app_data_changed', fetchLeads);
+    };
   }, [fetchLeads]);
 
   // Fetch partners list for Partner Price Request Wizard
@@ -669,29 +694,51 @@ export default function Leads() {
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
-        const text = evt.target.result.replace(/\r/g, '');
-        const lines = text.split('\n').filter(l => l.trim());
-        if (lines.length < 2) return showToast('CSV file is empty or invalid.');
-        const rows = lines.slice(1);
-        let count = 0;
-        for (const line of rows) {
-          const cols = line.split(';').map(c => c.replace(/^"|"$/g, '').trim());
-          const payload = {
-            name: cols[1] || 'Imported Lead',
-            phone: cols[2] !== '-' ? cols[2] : null,
-            email: cols[3]?.includes('@') ? cols[3] : null,
-            productType: mapUIToBackendProduct(cols[4]),
-            dimensionsInquiry: cols[5] !== '-' ? cols[5] : null,
-            source: cols[6] || 'CSV Import',
-            status: mapUIToBackendStatus(cols[7]),
-          };
-          const res = await api.post('/leads', payload);
-          if (res.success) count++;
+        const text = evt.target.result;
+        const { leads: parsedLeads, errors } = parseAndNormalizeLeadsCSV(text);
+
+        if (!parsedLeads || parsedLeads.length === 0) {
+          showToast(language === 'NL' ? 'Geen geldige leads gevonden in CSV.' : 'No valid leads found in CSV file.');
+          return;
         }
-        showToast(`✅ ${count} leads imported to database successfully!`);
-        fetchLeads();
-      } catch {
-        showToast('Import failed. Please check your CSV format.');
+
+        // Send via dedicated atomic bulk-import endpoint
+        let importedCount = 0;
+        let skippedCount = 0;
+        const bulkRes = await api.post('/leads/bulk-import', { leads: parsedLeads });
+
+        if (bulkRes && bulkRes.success && bulkRes.data) {
+          importedCount = bulkRes.data.importedCount || 0;
+          skippedCount = bulkRes.data.skippedCount || 0;
+        } else {
+          // Fallback to sequential creation if needed
+          for (const item of parsedLeads) {
+            const res = await api.post('/leads', item);
+            if (res && res.success) {
+              importedCount++;
+            } else {
+              skippedCount++;
+            }
+          }
+        }
+
+        if (importedCount > 0) {
+          showToast(
+            language === 'NL'
+              ? `✅ ${importedCount} leads succesvol geïmporteerd!${skippedCount > 0 ? ` (${skippedCount} overgeslagen)` : ''}`
+              : `✅ ${importedCount} leads imported successfully!${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}`
+          );
+          fetchLeads();
+        } else {
+          showToast(
+            language === 'NL'
+              ? 'Import mislukt: controleer het CSV-bestandformaat.'
+              : 'Import failed: please check your CSV data format.'
+          );
+        }
+      } catch (err) {
+        console.error('CSV Import error:', err);
+        showToast(language === 'NL' ? 'Fout bij verwerken van CSV.' : 'Error processing CSV file.');
       }
       e.target.value = '';
     };

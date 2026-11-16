@@ -324,6 +324,21 @@ export default function Settings() {
     saveProductConfig(cfg);
   };
 
+  // Live multi-user synchronization: update local state when remote updates occur
+  useEffect(() => {
+    const handleRemoteConfig = (e) => {
+      const cfg = e.detail || getProductConfig();
+      if (cfg) {
+        if (cfg.categories) setDynamicCategories(cfg.categories);
+        if (cfg.woodTypes) setDynamicWoodTypes(cfg.woodTypes);
+        if (cfg.materials) setDynamicMaterials(cfg.materials);
+        if (cfg.options) setDynamicOptions(cfg.options);
+      }
+    };
+    window.addEventListener('app_product_config_changed', handleRemoteConfig);
+    return () => window.removeEventListener('app_product_config_changed', handleRemoteConfig);
+  }, []);
+
   // Category Actions
   const handleAddCategorySubmit = async (e) => {
     e.preventDefault();

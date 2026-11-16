@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
+import { useDataSync } from './hooks/useDataSync';
+import { reloadProductConfigFromBackend } from './utils/productConfigManager';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login';
 
@@ -89,6 +91,15 @@ function App() {
   const { user } = useAuth();
   const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   const redirectTarget = searchParams.get('redirect');
+
+  // Multi-user real-time synchronization between Tim & Bram
+  useDataSync({ enabled: Boolean(user) });
+
+  useEffect(() => {
+    if (user) {
+      reloadProductConfigFromBackend();
+    }
+  }, [user]);
 
   useEffect(() => {
     // Clear developer prototype mock caches once on app mount for clean testing

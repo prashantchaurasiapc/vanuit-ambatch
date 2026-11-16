@@ -1,3 +1,5 @@
+import api from '../api/apiClient';
+
 // Centralized Dynamic Configuration Manager for Vanuit Ambacht
 // Allows administrators to configure Categories, Wood Types, Materials/Countertops, and Options
 // dynamically through Settings without developer intervention, with fallback to Dutch standards.
@@ -199,16 +201,52 @@ export function getProductConfig() {
   }
 }
 
-// Persist updated configuration and notify other listeners
-export function saveProductConfig(newConfig) {
+// Reload configuration from PostgreSQL backend database
+export async function reloadProductConfigFromBackend() {
+  if (typeof window === 'undefined') return DEFAULT_PRODUCT_CONFIG;
+  try {
+    const res = await api.get('/settings/company');
+    if (res && res.success && res.data?.categoriesConfig) {
+      const cfg = res.data.categoriesConfig;
+      const merged = {
+        categories: Array.isArray(cfg.categories) && cfg.categories.length > 0 ? cfg.categories : DEFAULT_PRODUCT_CONFIG.categories,
+        woodTypes: Array.isArray(cfg.woodTypes) && cfg.woodTypes.length > 0 ? cfg.woodTypes : DEFAULT_PRODUCT_CONFIG.woodTypes,
+        materials: Array.isArray(cfg.materials) && cfg.materials.length > 0 ? cfg.materials : DEFAULT_PRODUCT_CONFIG.materials,
+        options: Array.isArray(cfg.options) && cfg.options.length > 0 ? cfg.options : DEFAULT_PRODUCT_CONFIG.options,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      window.dispatchEvent(new CustomEvent('app_product_config_changed', { detail: merged }));
+      window.dispatchEvent(new Event('app_data_changed'));
+      return merged;
+    }
+  } catch (err) {
+    console.warn('[productConfigManager] Could not load shared config from backend, using local:', err);
+  }
+  return getProductConfig();
+}
+
+// Persist updated configuration and notify other listeners and PostgreSQL backend
+export async function saveProductConfig(newConfig) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newConfig));
     window.dispatchEvent(new CustomEvent('app_product_config_changed', { detail: newConfig }));
     window.dispatchEvent(new Event('app_data_changed'));
+
+    // Persist to central PostgreSQL backend so Tim and Bram share identical configs
+    api.patch('/settings/config/categories', newConfig).catch((apiErr) => {
+      console.warn('[productConfigManager] Background backend sync failed:', apiErr);
+    });
   } catch (err) {
     console.error('Failed to save product configuration:', err);
   }
+}
+
+// Auto-hydrate from backend on startup
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    reloadProductConfigFromBackend();
+  }, 200);
 }
 
 // Get Active Categories
