@@ -2230,7 +2230,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                   {workflowPath === 'partner' ? (
                     <div className="p-5 bg-[#F8F7F4] rounded-2xl border border-[#D6CFC2]/70 space-y-4 shadow-2xs font-body">
                       
-                      {/* Section Title & 7-Step Partner Wizard Launch Button */}
+                      {/* Section Title & Partner Price Request Launch Button */}
                       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#D6CFC2]/60 pb-3">
                         <h4 className="font-bold text-dark flex items-center gap-2 text-sm sm:text-base font-heading">
                           <Send className="w-4 h-4 text-primary" />
@@ -2242,12 +2242,12 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             if (onOpenPartnerWizard) {
                               onOpenPartnerWizard(lead);
                             } else {
-                              showToast(language === 'EN' ? 'Opening 7-Step Partner Price Request Wizard...' : '7-Staps Prijsaanvraag Partner Wizard geopend...');
+                              showToast(language === 'EN' ? 'Opening Partner Price Request Wizard...' : 'Prijsaanvraag Partner Wizard geopend...');
                             }
                           }}
                           className="px-3.5 py-2 bg-[#3E4E36] hover:bg-[#2F3C29] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5 transition-all"
                         >
-                          <span>🚀 {language === 'EN' ? 'Open 7-Step Partner Price Request Wizard' : 'Open 7-Staps Prijsaanvraag Partner Wizard'}</span>
+                          <span>🚀 {language === 'EN' ? 'Partner Price Request Wizard' : 'Prijsaanvraag Partner Wizard'}</span>
                         </button>
                       </div>
 
