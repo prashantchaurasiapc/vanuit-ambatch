@@ -295,6 +295,13 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
 
   const [specFormValues, setSpecFormValues] = useState({});
 
+  // Prefilled State Inherited from Lead (Zero Dead Data Entry & Exact Match)
+  const customerName = lead?.name || lead?.customerName || '';
+  const customerEmail = lead?.email || '';
+  const customerPhone = lead?.phone || '';
+  const customerCity = lead?.city || lead?.location || '';
+  const customerCategory = lead?.productType || lead?.category || (lead?.company?.toLowerCase().includes('snijplanken') ? 'Snijplanken' : 'Buitenkeukens');
+
   const getCategoryKey = (catStr) => {
     const s = (catStr || '').toLowerCase().trim();
     if (!s) return 'buitenkeuken';
@@ -530,13 +537,6 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     const mainEl = document.querySelector('main');
     if (mainEl) mainEl.scrollTop = 0;
   }, [lead?.id]);
-
-  // Prefilled State Inherited from Lead (Zero Dead Data Entry & Exact Match)
-  const customerName = lead?.name || lead?.customerName || '';
-  const customerEmail = lead?.email || '';
-  const customerPhone = lead?.phone || '';
-  const customerCity = lead?.city || lead?.location || '';
-  const customerCategory = lead?.productType || lead?.category || (lead?.company?.toLowerCase().includes('snijplanken') ? 'Snijplanken' : 'Buitenkeukens');
   
   const translateCategory = (cat) => {
     if (!cat) return '';
