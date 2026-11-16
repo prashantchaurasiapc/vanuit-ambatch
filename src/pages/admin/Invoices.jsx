@@ -390,10 +390,33 @@ export default function Invoices() {
       showToast(language === 'EN' ? `Invoice "${editingInvoiceId}" updated!` : `Factuur "${editingInvoiceId}" succesvol bijgewerkt!`);
       setModalOpen(false);
 
-      api.patch(`/invoices/${editingInvoiceId}`, {
-        customerName: form.customer,
-        status: form.status,
-        dueDate: form.dueDate
+      const targetInv = invoices.find(i => i.id === editingInvoiceId);
+      const apiId = targetInv?.realId || targetInv?.invoiceNumber || editingInvoiceId;
+      const mappedStatus = form.status === 'Betaald' ? 'paid'
+        : form.status === 'Concept' ? 'draft'
+        : form.status === 'Vervallen' ? 'overdue'
+        : 'sent';
+
+      const backendItems = processedItems.map((it, idx) => {
+        const isInc = it.price === 'Inbegrepen';
+        const numPrice = isInc ? 0 : (typeof it.price === 'number' ? it.price : parseFloat(it.price) || 0);
+        return {
+          position: idx + 1,
+          description: it.description || 'Factuurregel',
+          subtext: it.subtext || null,
+          quantity: typeof it.quantity === 'number' ? it.quantity : (parseFloat(it.quantity) || 1),
+          unitPriceInclVat: numPrice,
+          unitPriceExclVat: Math.round((numPrice / 1.21) * 100) / 100,
+          vatRate: 21.00,
+          isIncluded: isInc,
+        };
+      });
+
+      api.patch(`/invoices/${apiId}?force=true`, {
+        status: mappedStatus,
+        dueDate: form.dueDate && /^\d{4}-\d{2}-\d{2}$/.test(form.dueDate) ? form.dueDate : undefined,
+        items: backendItems,
+        force: true
       }).catch(err => console.warn('Could not sync invoice update to API:', err));
     } else {
       let createdInv = null;
