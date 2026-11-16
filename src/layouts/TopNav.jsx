@@ -59,6 +59,44 @@ const PARTNER_NOTIFS = [
   { id: 4, titleKey: 'notifications.newBlueprint', descKey: 'notifications.newBlueprintDesc', descParams: { version: '2', city: 'Utrecht Villa' }, timeKey: 'notifications.1d', unread: false, link: '/partner/documents', icon: FileText },
 ];
 
+const ICON_MAP = {
+  Camera,
+  UserPlus,
+  Briefcase,
+  Check,
+  FileText,
+  Clock,
+  Bell,
+};
+
+const resolveNotifIcon = (notif) => {
+  if (!notif) return Bell;
+  if (typeof notif.icon === 'function') return notif.icon;
+  if (typeof notif.icon === 'object' && notif.icon !== null && (notif.icon.$$typeof || notif.icon.render)) return notif.icon;
+  if (typeof notif.icon === 'string' && ICON_MAP[notif.icon]) return ICON_MAP[notif.icon];
+
+  const link = (notif.link || '').toLowerCase();
+  const title = (notif.titleKey || '').toLowerCase();
+  const desc = (notif.descKey || '').toLowerCase();
+
+  if (title.includes('photo') || desc.includes('photo') || desc.includes('foto')) return Camera;
+  if (link.includes('lead') || title.includes('lead')) return UserPlus;
+  if (link.includes('project') || title.includes('project') || desc.includes('project')) return Briefcase;
+  if (link.includes('quote') || title.includes('quote')) return Check;
+  if (link.includes('invoice') || link.includes('finance') || link.includes('document')) return FileText;
+  if (link.includes('planning') || title.includes('delivery') || desc.includes('bezorg')) return Clock;
+
+  return Bell;
+};
+
+const sanitizeForStorage = (list) => {
+  if (!Array.isArray(list)) return [];
+  return list.map(item => {
+    const { icon, ...rest } = item;
+    return rest;
+  });
+};
+
 export default function TopNav() {
   const { user, logout } = useAuth();
   const { language, setLanguage, t } = useLanguage();
@@ -82,7 +120,10 @@ export default function TopNav() {
     try {
       const stored = JSON.parse(localStorage.getItem('va_admin_notifications') || '[]');
       if (Array.isArray(stored) && stored.length > 0) {
-        const merged = [...stored];
+        const merged = stored.map(s => ({
+          ...s,
+          icon: resolveNotifIcon(s),
+        }));
         base.forEach(b => {
           if (!merged.some(m => m.id === b.id)) merged.push(b);
         });
@@ -98,7 +139,11 @@ export default function TopNav() {
   useEffect(() => {
     const handleNewNotif = (e) => {
       if (e.detail) {
-        setNotifications(prev => [e.detail, ...prev.filter(n => n.id !== e.detail.id)]);
+        const withIcon = {
+          ...e.detail,
+          icon: resolveNotifIcon(e.detail),
+        };
+        setNotifications(prev => [withIcon, ...prev.filter(n => n.id !== withIcon.id)]);
       }
     };
 
@@ -160,7 +205,7 @@ export default function TopNav() {
     setNotifications(prev => {
       const updated = prev.map(n => ({ ...n, unread: false }));
       try {
-        localStorage.setItem('va_admin_notifications', JSON.stringify(updated));
+        localStorage.setItem('va_admin_notifications', JSON.stringify(sanitizeForStorage(updated)));
       } catch (e) {}
       return updated;
     });
@@ -170,7 +215,7 @@ export default function TopNav() {
     setNotifications(prev => {
       const updated = prev.map(n => n.id === notif.id ? { ...n, unread: false } : n);
       try {
-        localStorage.setItem('va_admin_notifications', JSON.stringify(updated));
+        localStorage.setItem('va_admin_notifications', JSON.stringify(sanitizeForStorage(updated)));
       } catch (e) {}
       return updated;
     });
@@ -260,7 +305,14 @@ export default function TopNav() {
 
               <div className="max-h-72 overflow-y-auto divide-y divide-[#D6CFC2]/50">
                 {notifications.map(notif => {
-                  const NotifIcon = notif.icon || Bell;
+                  const NotifIcon = resolveNotifIcon(notif);
+                  const rawTitle = notif.isCustomText ? notif.titleKey : t(notif.titleKey);
+                  const displayTitle = typeof rawTitle === 'string' ? rawTitle : (notif.titleKey || 'Melding');
+                  const rawDesc = notif.isCustomText ? notif.descKey : t(notif.descKey, notif.descParams);
+                  const displayDesc = typeof rawDesc === 'string' ? rawDesc : (notif.descKey || '');
+                  const rawTime = notif.isCustomText ? notif.timeKey : t(notif.timeKey);
+                  const displayTime = typeof rawTime === 'string' ? rawTime : (notif.timeKey || '');
+
                   return (
                     <div 
                       key={notif.id} 
@@ -277,11 +329,11 @@ export default function TopNav() {
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline">
                           <p className={`font-semibold truncate ${notif.unread ? 'text-dark font-bold' : 'text-dark/70'}`}>
-                            {notif.isCustomText ? notif.titleKey : t(notif.titleKey)}
+                            {displayTitle}
                           </p>
-                          <span className="text-[10px] text-dark/40 ml-2 flex-shrink-0">{notif.isCustomText ? notif.timeKey : t(notif.timeKey)}</span>
+                          <span className="text-[10px] text-dark/40 ml-2 flex-shrink-0">{displayTime}</span>
                         </div>
-                        <p className="text-[11px] text-dark/60 line-clamp-2 mt-0.5">{notif.isCustomText ? notif.descKey : t(notif.descKey, notif.descParams)}</p>
+                        <p className="text-[11px] text-dark/60 line-clamp-2 mt-0.5">{displayDesc}</p>
                       </div>
                     </div>
                   );

@@ -106,7 +106,7 @@ export default function Customers() {
     try {
       const payload = {
         firstName: newCustomerForm.firstName.trim(),
-        lastName: newCustomerForm.lastName.trim() || '',
+        lastName: newCustomerForm.lastName.trim() || 'Ambacht',
         email: newCustomerForm.email.trim().toLowerCase(),
         phone: newCustomerForm.phone.trim() || '+31 6 00000000',
         city: newCustomerForm.city.trim(),

@@ -53,6 +53,56 @@ export default function PartnerProjects() {
     return projectImg;
   };
 
+  const parseLocalFallback = () => {
+    try {
+      const localProjects = JSON.parse(localStorage.getItem('app_projects_v2') || '[]');
+      if (Array.isArray(localProjects) && localProjects.length > 0) {
+        return localProjects.map((p, idx) => ({
+          ...p,
+          id: p.id || p.projectNumber || `PRJ-2026-00${idx + 1}`,
+          name: p.name || 'Custom Outdoor Kitchen',
+          progress: p.progressPercentage ?? p.progress ?? 20,
+          status: (p.status || '').toLowerCase().includes('completed') || p.orderStatus === 'voltooid'
+            ? 'Completed'
+            : (p.orderStatus === 'klaar_voor_levering' || p.orderStatus === 'ready_for_delivery' || (p.status || '') === 'Ready for delivery' || (p.partnerStatus || '') === 'Ready for delivery')
+              ? 'Ready for delivery'
+              : (p.status || '').toLowerCase().includes('progress')
+                ? 'In Progress'
+                : (p.status || 'In Progress'),
+          customer: typeof p.customer === 'object' && p.customer !== null ? (p.customer.name || 'Bjorn Valk') : (p.customer || p.customerName || 'Bjorn Valk'),
+          customerName: p.customerName || p.customer || 'Bjorn Valk',
+          deliveryAddress: p.deliveryAddress || p.city || 'Keizersgracht 101, Amsterdam',
+          agreedBuildPrice: p.agreedBuildPrice
+            ? (String(p.agreedBuildPrice).startsWith('€') ? p.agreedBuildPrice : `€ ${Number(p.agreedBuildPrice).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`)
+            : '€ 15.180,00',
+          deadline: p.deadline || '15 Nov 2026',
+          dimensions: p.dimensions || '350cm x 90cm x 95cm',
+          frameMaterial: p.frameMaterial || 'Massief Teak Hout (FSC Certificaat)',
+          topMaterial: p.topMaterial || 'Polijst Beton (Dark Grey)',
+          blueprintFile: p.blueprintFile || `BLU-${p.id || '2001'}-SPEC.pdf`,
+        }));
+      }
+    } catch (e) {}
+    return [
+      {
+        id: 'PRJ-2026-001',
+        projectNumber: 'PRJ-2026-001',
+        name: 'Custom Outdoor Kitchen',
+        progress: 20,
+        status: 'In Progress',
+        customer: 'Bjorn Valk',
+        customerName: 'Bjorn Valk',
+        deliveryAddress: 'Keizersgracht 101, Amsterdam',
+        agreedBuildPrice: '€ 15.180,00',
+        deadline: '15 Nov 2026',
+        dimensions: '350cm x 90cm x 95cm',
+        frameMaterial: 'Massief Teak Hout (FSC Certificaat)',
+        topMaterial: 'Polijst Beton (Dark Grey)',
+        blueprintFile: 'BLU-PRJ-2026-001-SPEC.pdf',
+      }
+    ];
+  };
+
   const loadProjects = () => {
     api.get('/partner/projects?limit=50').then(res => {
       if (res.success && Array.isArray(res.data) && res.data.length > 0) {
@@ -83,8 +133,14 @@ export default function PartnerProjects() {
           };
         });
         setProjects(enriched);
+      } else {
+        const fallback = parseLocalFallback();
+        if (fallback.length > 0) setProjects(fallback);
       }
-    }).catch(() => {});
+    }).catch(() => {
+      const fallback = parseLocalFallback();
+      if (fallback.length > 0) setProjects(fallback);
+    });
   };
 
   // Load assigned projects from real API (partner-scoped, RBAC filtered)

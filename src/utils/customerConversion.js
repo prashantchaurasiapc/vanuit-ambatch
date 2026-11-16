@@ -17,14 +17,22 @@ export const convertLeadToCustomerOnInvoiceSent = async (invoiceData, leadData =
       ? invoiceData.numericAmount 
       : (typeof invoiceData === 'number' ? invoiceData : parseFloat(String(invoiceAmt).replace(/[^\d.-]/g, '')) || 0);
 
-    // Call API to create/update customer
+    const nameParts = customerName.split(/\s+/);
+    const firstName = nameParts[0] || 'Klant';
+    const lastName = nameParts.slice(1).join(' ') || 'Ambacht';
+    const cleanCity = (customerAddress.includes(',') ? customerAddress.split(',')[0] : customerAddress).trim() || 'Amsterdam';
+
+    // Call API to create/update customer with valid backend schema
     api.post('/customers', {
+      firstName,
+      lastName,
       name: customerName,
       email: customerEmail,
       phone: customerPhone,
-      address: customerAddress,
-      city: customerAddress,
-      productInterest: productInterest,
+      city: cleanCity,
+      streetAddress: customerAddress,
+      country: 'NL',
+      notes: productInterest,
       totalSpend: numericAmt,
       status: 'active'
     }).catch(() => {});

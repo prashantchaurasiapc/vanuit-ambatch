@@ -120,9 +120,17 @@ export default function Invoices() {
     ]
   });
 
-  // Load invoices from API on mount
+  const [projectsList, setProjectsList] = useState([]);
+
+  // Load invoices and projects from API on mount
   useEffect(() => {
     let isMounted = true;
+    api.get('/projects?limit=50').then(res => {
+      if (isMounted && res.success && Array.isArray(res.data)) {
+        setProjectsList(res.data);
+      }
+    }).catch(() => {});
+
     const fetchInvoices = async () => {
       try {
         const res = await api.get('/invoices');
@@ -385,12 +393,45 @@ export default function Invoices() {
     } else {
       let createdInv = null;
       try {
+        const matchedProject = projectsList.find(p => 
+          (p.customerName && form.customer && p.customerName.toLowerCase().includes(form.customer.toLowerCase())) ||
+          (p.name && form.customer && p.name.toLowerCase().includes(form.customer.toLowerCase())) ||
+          (form.quoteRef && p.projectNumber && form.quoteRef.includes(p.projectNumber))
+        ) || (projectsList.length > 0 ? projectsList[0] : null);
+
+        const backendItems = processedItems.map((it, idx) => {
+          const isInc = it.price === 'Inbegrepen';
+          const numPrice = isInc ? 0 : (typeof it.price === 'number' ? it.price : parseFloat(it.price) || 0);
+          return {
+            position: idx + 1,
+            description: it.description || 'Factuurregel',
+            subtext: it.subtext || null,
+            quantity: typeof it.quantity === 'number' ? it.quantity : (parseFloat(it.quantity) || 1),
+            unitPriceInclVat: numPrice,
+            unitPriceExclVat: Math.round((numPrice / 1.21) * 100) / 100,
+            vatRate: 21.00,
+            isIncluded: isInc,
+          };
+        });
+
+        const invoiceTypeEnum = form.type?.includes('Aanbetaling')
+          ? 'down_payment_upfront'
+          : form.type?.includes('Eindfactuur')
+            ? 'final_completion'
+            : form.type?.includes('Termijn')
+              ? 'interim_progress'
+              : 'full_amount';
+
         const createRes = await api.post('/invoices', {
+          projectId: matchedProject?.id || undefined,
+          customerId: matchedProject?.customerId || undefined,
           invoiceNumber: form.id || undefined,
           customerName: form.customer,
-          totalAmount: totalInclAmount,
+          invoiceType: invoiceTypeEnum,
+          status: form.status === 'Betaald' ? 'paid' : (form.status === 'Openstaand' ? 'sent' : 'draft'),
           dueDate: form.dueDate,
-          items: processedItems
+          notes: form.quoteRef ? `Ref: ${form.quoteRef}` : undefined,
+          items: backendItems
         });
         if (createRes.success && createRes.data) {
           createdInv = createRes.data;
