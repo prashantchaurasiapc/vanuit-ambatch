@@ -405,7 +405,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             </div>
 
             {/* 3 Photo Strip */}
-            <div className="grid grid-cols-3 gap-1.5 h-36 sm:h-44 w-full -mx-6 sm:-mx-10 mt-4 mb-2">
+            <div className="grid grid-cols-3 gap-3 h-36 sm:h-44 w-full mt-4 mb-2">
               {coverPhotos.map((pImg, idx) => (
                 <div
                   key={idx}
@@ -418,7 +418,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                       e.target.onerror = null;
                       e.target.src = idx === 0 ? '/cover_img1.png' : idx === 1 ? '/cover_img2.png' : '/cover_img3.png';
                     }}
-                    className="w-full h-full object-contain object-center"
+                    className="w-full h-full object-cover object-center"
                   />
                 </div>
               ))}

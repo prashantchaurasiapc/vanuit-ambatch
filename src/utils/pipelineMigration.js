@@ -67,7 +67,7 @@ export async function migratePipelineCandidates(options = {}) {
   } catch (parseErr) {
     console.error('[PipelineMigration] Corrupted JSON in app_pipeline_candidates:', parseErr);
     // Preserve corrupted data in a timestamped backup before clearing
-    const corruptBackupKey = `backup_pipeline_candidates_corrupt_${Date.now()}`;
+    const corruptBackupKey = `backup_pipeline_candidates_corrupt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     storage.setItem(corruptBackupKey, rawStored);
     storage.removeItem('app_pipeline_candidates');
     return {
@@ -94,7 +94,7 @@ export async function migratePipelineCandidates(options = {}) {
   }
 
   // Step 1: Create a safe timestamped backup BEFORE doing anything
-  const backupKey = `backup_pipeline_candidates_${Date.now()}`;
+  const backupKey = `backup_pipeline_candidates_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   storage.setItem(backupKey, rawStored);
   console.log(`[PipelineMigration] Safely backed up ${candidates.length} candidate(s) to ${backupKey}`);
 
