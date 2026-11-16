@@ -307,10 +307,15 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     return 'buitenkeuken';
   };
 
-  const activeCategoryKey = getCategoryKey(lead?.productType || customerCategory);
-
   // Step 2 Editable Free-Text Fields & Smart Green Logic State
-  const [step2ProductType, setStep2ProductType] = useState(lead?.productType || customerCategory || '');
+  const [step2ProductType, setStep2ProductType] = useState(() => lead?.productType || customerCategory || 'Outdoor kitchen');
+  const activeCategoryKey = getCategoryKey(step2ProductType);
+
+  useEffect(() => {
+    if (lead?.productType || customerCategory) {
+      setStep2ProductType(lead?.productType || customerCategory);
+    }
+  }, [lead?.productType, customerCategory]);
   const [step2Size, setStep2Size] = useState(lead?.size || lead?.dimensions || '');
   const [step2Notes, setStep2Notes] = useState(lead?.notes || '');
   const [step2RequestedDate, setStep2RequestedDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -2313,21 +2318,25 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       {/* 2-Column Specifications Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                         <div>
-                          <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Category</label>
+                          <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
+                            {language === 'EN' ? 'Category' : 'Categorie'}
+                          </label>
                           <select 
                             value={activeCategoryKey}
-                            onChange={() => {}}
+                            onChange={(e) => setStep2ProductType(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-semibold text-dark cursor-pointer focus:ring-2 focus:ring-primary/20"
                           >
-                            <option value="buitenkeuken">Outdoor kitchen ▾</option>
-                            <option value="buitenverblijf">Garden room ▾</option>
-                            <option value="poolhouse">Poolhouse ▾</option>
-                            <option value="overkapping">Canopy ▾</option>
+                            <option value="buitenkeuken">{language === 'EN' ? 'Outdoor kitchen' : 'Buitenkeuken'}</option>
+                            <option value="buitenverblijf">{language === 'EN' ? 'Garden room' : 'Buitenverblijf'}</option>
+                            <option value="poolhouse">Poolhouse</option>
+                            <option value="overkapping">{language === 'EN' ? 'Canopy' : 'Overkapping'}</option>
                           </select>
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Dimensions</label>
+                          <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
+                            {language === 'EN' ? 'Dimensions' : 'Afmetingen'}
+                          </label>
                           <input 
                             type="text" 
                             value={step2Size} 
@@ -2338,16 +2347,18 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Timber / Material</label>
+                          <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
+                            {language === 'EN' ? 'Timber / Material' : 'Houtsoort / Materiaal'}
+                          </label>
                           <select 
                             value={step2Material}
                             onChange={(e) => setStep2Material(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-semibold text-dark cursor-pointer focus:ring-2 focus:ring-primary/20"
                           >
-                            <option value="Douglas">{language === 'EN' ? 'Douglas Fir' : 'Douglas'} ▾</option>
-                            <option value="Thermo Fraké Hout">{language === 'EN' ? 'Thermo Fraké Wood' : 'Thermo Fraké Hout'} ▾</option>
-                            <option value="Massief Teakhout">{language === 'EN' ? 'Solid Teak Wood' : 'Massief Teakhout'} ▾</option>
-                            <option value="Eikenhout">{language === 'EN' ? 'Oak Wood' : 'Eikenhout'} ▾</option>
+                            <option value="Douglas">{language === 'EN' ? 'Douglas Fir' : 'Douglas'}</option>
+                            <option value="Thermo Fraké Hout">{language === 'EN' ? 'Thermo Fraké Wood' : 'Thermo Fraké Hout'}</option>
+                            <option value="Massief Teakhout">{language === 'EN' ? 'Solid Teak Wood' : 'Massief Teakhout'}</option>
+                            <option value="Eikenhout">{language === 'EN' ? 'Oak Wood' : 'Eikenhout'}</option>
                           </select>
                         </div>
 
