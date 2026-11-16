@@ -1,4 +1,4 @@
-import api from '../api/apiClient';
+import api from '../api/apiClient.js';
 
 // Centralized Dynamic Configuration Manager for Vanuit Ambacht
 // Allows administrators to configure Categories, Wood Types, Materials/Countertops, and Options

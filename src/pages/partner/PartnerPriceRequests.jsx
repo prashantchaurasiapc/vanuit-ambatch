@@ -332,7 +332,9 @@ export default function PartnerPriceRequests() {
         costPrice: parseFloat(form.price),
         laborHours: 0,
         validUntil: validUntilStr,
+        estimatedLeadTimeWeeks: leadTimeWeeks,
         leadTimeWeeks: leadTimeWeeks,
+        partnerNotes: form.remarks || null,
         notes: form.remarks || null,
         breakdown: {
           transportCost: transportCost || null,

@@ -126,10 +126,23 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   const config = quote?.configuration || {};
   const woodType = config.woodType || quote?.woodType || 'Thermo Fraké';
   const dimensions = config.dimensions || quote?.dimensions || '240 × 80';
-  const cleanDimensions = String(dimensions)
-    .replace(/\s*cm$/i, '')
-    .trim()
-    .replace(/\s*[\*xX×]\s*/g, ' × ');
+  let cleanDimensions = '';
+  if (typeof dimensions === 'object' && dimensions !== null) {
+    if (dimensions.rawText) {
+      cleanDimensions = String(dimensions.rawText).trim();
+    } else if (dimensions.lengthCm || dimensions.widthCm || dimensions.heightCm) {
+      const l = dimensions.lengthCm || 0;
+      const w = dimensions.widthCm || 0;
+      const h = dimensions.heightCm || 0;
+      cleanDimensions = `${l}${w ? ` × ${w}` : ''}${h ? ` × ${h}` : ''}`;
+    }
+  } else {
+    cleanDimensions = String(dimensions || '')
+      .replace(/\s*cm$/i, '')
+      .trim()
+      .replace(/\s*[\*xX×]\s*/g, ' × ');
+  }
+  if (!cleanDimensions) cleanDimensions = '240 × 80';
 
 
   const categoryTitle = productTypeLower.includes('poolhouse')
@@ -210,25 +223,34 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   ];
 
   // Dynamic Line Items & Calculations
+  const quoteTargetPrice = Number(quote?.calculatedPrice || quote?.totalInclVat || quote?.amount || 0);
   const rawItems = (quote?.investment?.lineItems || quote?.items || []);
-  const items = rawItems.length > 0 ? rawItems : [
-    {
-      description: `Outdoor Kitchen ${woodType} · ${cleanDimensions} cm`,
-      subtext: `Wooden worktop with ceramic stones and cutout for ${optionsTitle}`,
-      quantity: 1,
-      priceInclVat: 0,
-      vatRate: 21,
-      isIncluded: false
-    },
-    {
-      description: `Delivery ${city}`,
-      subtext: `Free delivery in ${city}, scheduled at your convenience`,
-      quantity: 1,
-      priceInclVat: 0,
-      vatRate: 21,
-      isIncluded: true
-    }
-  ];
+  let items = rawItems;
+  if (!items || items.length === 0) {
+    items = [
+      {
+        id: 'item-1',
+        title: `${quote?.productType || (language === 'EN' ? 'Outdoor kitchen' : 'Buitenkeuken')} ${displayWood} · ${cleanDimensions} cm`,
+        description: language === 'EN' ? `Wooden worktop with ceramic stones and cutout for ${displayCoverOption}` : `Houten bovenblad met keramische stenen en uitsparing voor ${displayCoverOption}`,
+        quantity: 1,
+        priceInclVat: quoteTargetPrice > 0 ? quoteTargetPrice : 0,
+        vatRate: 21,
+        isIncluded: false
+      },
+      {
+        id: 'item-2',
+        title: language === 'EN' ? `Delivery ${city}` : `Bezorging ${city}`,
+        description: language === 'EN' ? `Free delivery in ${city}, scheduled at your convenience` : `Gratis bezorgd in ${city}, op een moment dat jou uitkomt`,
+        quantity: 1,
+        priceInclVat: 0,
+        vatRate: 21,
+        isIncluded: true
+      }
+    ];
+  } else if (quoteTargetPrice > 0 && Number(items[0]?.priceInclVat || 0) === 0) {
+    // If the primary line item has 0 price but quote has a known total target price, populate it
+    items = items.map((item, idx) => idx === 0 ? { ...item, priceInclVat: quoteTargetPrice } : item);
+  }
 
   // Calculate delivery price and GRATIS logic
   const deliveryItem = items.find(i => (i.title || i.description || '').toLowerCase().includes('bezorging') || (i.title || i.description || '').toLowerCase().includes('delivery'));

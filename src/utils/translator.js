@@ -373,8 +373,29 @@ export function getDisplayOptionsSubtext(val, language = 'EN') {
 // 4. Delivery Times
 export function getDisplayDeliveryTime(val, language = 'EN') {
   if (!val) return language === 'EN' ? '3 to 5 weeks' : '3 tot 5 weken';
-  const n = norm(val);
   const lang = String(language).toUpperCase();
+  const n = norm(val);
+
+  // Match pure digits (e.g. 8 or "8")
+  if (/^\d+$/.test(String(val).trim())) {
+    const num = String(val).trim();
+    return lang === 'NL' ? `${num} weken` : `${num} weeks`;
+  }
+
+  // Match range (e.g. "3-5", "3 tot 5", "3 to 5", "4–5", "6-8", etc.)
+  const rangeMatch = n.match(/^(\d+)\s*(?:-|–|tot|to)\s*(\d+)(?:\s*(?:weken|weeks|wkn|wk))?$/);
+  if (rangeMatch) {
+    const min = rangeMatch[1];
+    const max = rangeMatch[2];
+    return lang === 'NL' ? `${min} tot ${max} weken` : `${min} to ${max} weeks`;
+  }
+
+  // Match single number with unit (e.g. "8 weken", "8 weeks", "8 wkn")
+  const singleMatch = n.match(/^(\d+)\s*(?:weken|weeks|wkn|wk|week)$/);
+  if (singleMatch) {
+    const num = singleMatch[1];
+    return lang === 'NL' ? `${num} weken` : `${num} weeks`;
+  }
 
   if (n === '3 tot 5 weken' || n === '3-5 weken' || n === '3 to 5 weeks') {
     return lang === 'NL' ? '3 tot 5 weken' : '3 to 5 weeks';

@@ -409,17 +409,19 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
           const prWithOffer = reqs.find(r => r.activeOffer != null) || reqs[0];
           if (prWithOffer && prWithOffer.activeOffer) {
             const offer = prWithOffer.activeOffer;
+            const weeks = offer.estimatedLeadTimeWeeks != null ? Number(offer.estimatedLeadTimeWeeks) : (offer.leadTimeWeeks != null ? Number(offer.leadTimeWeeks) : (offer.leadTime ? parseInt(offer.leadTime) : 4));
+            const partnerRemarks = offer.partnerNotes || offer.notes || '—';
             const formatted = {
               partnerName: prWithOffer.partnerName || partnerForm?.partnerName,
               submittedOn: offer.createdAt ? new Date(offer.createdAt).toLocaleDateString(language === 'NL' ? 'nl-NL' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' }) : '',
               price: `€ ${Number(offer.costPrice).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`,
               numericPrice: offer.costPrice,
-              leadTimeEN: `${offer.leadTimeWeeks || 4} weeks`,
-              leadTimeNL: `${offer.leadTimeWeeks || 4} weken`,
+              leadTimeEN: `${weeks} weeks`,
+              leadTimeNL: `${weeks} weken`,
               validityEN: offer.validUntil || '30 days',
               validityNL: offer.validUntil || '30 dagen',
-              remarksEN: offer.notes || '—',
-              remarksNL: offer.notes || '—',
+              remarksEN: partnerRemarks,
+              remarksNL: partnerRemarks,
               breakdownItems: offer.breakdown?.items || [],
               offerId: offer.id,
               requestId: prWithOffer.id,
@@ -429,8 +431,8 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
             if (offer.costPrice) {
               setPartnerCostPrice(String(offer.costPrice));
             }
-            if (offer.leadTimeWeeks) {
-              setPartnerLeadTime(`${offer.leadTimeWeeks} weken`);
+            if (weeks) {
+              setPartnerLeadTime(`${weeks} weken`);
             }
             if (offer.validUntil) {
               setPartnerValidUntil(offer.validUntil);
@@ -683,6 +685,8 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
         woodType: specFormValues['f-002'] || step2Material || lead?.woodType || '',
         cutout: specFormValues['f-003'] || lead?.cutout || '',
         deliveryTime: partnerLeadTime || '',
+        partnerCostPrice: effectivePartnerCost || partnerCostPrice || 0,
+        marginPercent: marginPercent || 35,
       },
       {
         id: targetQuoteId,
@@ -692,6 +696,9 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
         totalInclVat: step4TotalInclVat,
         amount: step4TotalInclVat,
         customerPriceExclVat: step4CustomerPriceExclVat,
+        costPrice: effectivePartnerCost || partnerCostPrice || 0,
+        partnerCostPrice: effectivePartnerCost || partnerCostPrice || 0,
+        marginPercent: marginPercent || 35,
         vatRate: step4VatRate || 21,
         vatAmount: step4VatAmount,
         configuration: {
@@ -811,7 +818,18 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
         };
       });
     }
-  }, [lead?.id]);
+  }, [
+    lead?.id,
+    step2Size,
+    step2Material,
+    step2ProductType,
+    partnerLeadTime,
+    step4TotalInclVat,
+    step4CustomerPriceExclVat,
+    effectivePartnerCost,
+    marginPercent,
+    specFormValues
+  ]);
 
   // Synchronize Step 5 message with language and customer details
   useEffect(() => {
@@ -3328,7 +3346,16 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       <div className="flex flex-col items-end gap-0.5">
                         <button
                           type="button"
-                          onClick={() => setShowInlineQuoteEditor(true)}
+                          onClick={() => {
+                            const fresh = getLeadQuote();
+                            setLeadQuote(prev => ({
+                              ...fresh,
+                              backendId: prev?.backendId,
+                              publicToken: prev?.publicToken,
+                              id: prev?.backendId ? (prev.id || fresh.id) : fresh.id
+                            }));
+                            setShowInlineQuoteEditor(true);
+                          }}
                           className="px-5 py-2.5 bg-[#3E4E36] hover:bg-[#2F3C29] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-2 whitespace-nowrap border-2 border-emerald-400/50"
                         >
                           <FileText className="w-4 h-4" />

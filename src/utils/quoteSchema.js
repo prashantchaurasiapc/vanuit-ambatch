@@ -1,4 +1,5 @@
 import { WOOD_LIBRARY, PRESET_PRODUCT_LIBRARY, PRODUCT_TYPE_DEFAULTS, getProductTypeDefaults, getWoodTypeDefaults, getDynamicWoodLibrary } from './quoteLibraries.js';
+import { getDisplayDeliveryTime } from './translator.js';
 const defaultCoverPhotos = ['/cover_img1.png', '/cover_img2.png', '/cover_img3.png'];
 
 export function createDefaultQuote(customerData = null, existingQuote = null, lang = null) {
@@ -19,12 +20,12 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
   const phone = customerData?.phone || customerData?.customerPhone || (typeof existingCustomer === 'object' ? existingCustomer.phone : null) || '';
   const address = customerData?.address || (typeof existingCustomer === 'object' ? existingCustomer.address : null) || '';
 
-  const woodName = existingQuote?.configuration?.woodType || existingQuote?.woodType || customerData?.woodType || customerData?.material || 'Thermo Fraké';
+  const woodName = customerData?.woodType || customerData?.material || existingQuote?.configuration?.woodType || existingQuote?.woodType || 'Thermo Fraké';
   const dynamicWoodLib = getDynamicWoodLibrary(activeLang);
   const defaultWood = dynamicWoodLib.find(w => w.name.toLowerCase() === woodName.toLowerCase()) || WOOD_LIBRARY.find(w => w.name.toLowerCase() === woodName.toLowerCase()) || WOOD_LIBRARY[0];
   
   // Resolve productType from existing quote or customer/lead source cleanly
-  let defaultProductType = existingQuote?.productType || customerData?.productType || customerData?.category;
+  let defaultProductType = customerData?.productType || customerData?.category || existingQuote?.productType;
   if (!defaultProductType) {
     defaultProductType = 'Outdoor kitchen';
   } else if (String(defaultProductType).toLowerCase().includes('garden') || String(defaultProductType).toLowerCase().includes('buitenverblijf')) {
@@ -37,7 +38,7 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
   const productDefaults = getProductTypeDefaults(defaultProductType, activeLang);
 
   // Handle dimensions: string, number, or object { lengthCm, widthCm, heightCm, rawText }
-  const rawDims = existingQuote?.configuration?.dimensions || existingQuote?.dimensions || customerData?.dimensions || customerData?.size || '';
+  const rawDims = customerData?.dimensions || customerData?.size || existingQuote?.configuration?.dimensions || existingQuote?.dimensions || '';
   let cleanDimensions = '';
   if (typeof rawDims === 'object' && rawDims !== null) {
     if (rawDims.rawText) {
@@ -56,7 +57,7 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
   if (!cleanDimensions) cleanDimensions = '240 × 80';
 
   // Check if customer or lead explicitly requested a BBQ cutout
-  const explicitCutout = existingQuote?.configuration?.optionsTitle || existingQuote?.cutout || customerData?.cutout;
+  const explicitCutout = customerData?.cutout || existingQuote?.configuration?.optionsTitle || existingQuote?.cutout;
   const hasExplicitBbq = Boolean(
     explicitCutout &&
     explicitCutout !== 'Geen' &&
@@ -65,7 +66,8 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
     !String(explicitCutout).toLowerCase().includes('standaard')
   );
   const cutoutName = hasExplicitBbq ? explicitCutout : (activeLang === 'EN' ? 'No Barbecue' : 'Geen Barbecue');
-  const deliveryTime = existingQuote?.configuration?.deliveryTime || existingQuote?.deliveryTime || customerData?.deliveryTime || (activeLang === 'EN' ? '3 to 5 weeks' : '3 tot 5 weken');
+  const rawDeliveryTime = customerData?.deliveryTime || existingQuote?.configuration?.deliveryTime || existingQuote?.deliveryTime;
+  const deliveryTime = rawDeliveryTime ? getDisplayDeliveryTime(rawDeliveryTime, activeLang) : (activeLang === 'EN' ? '3 to 5 weeks' : '3 tot 5 weken');
 
   const partnerCost = Number(customerData?.partnerCostPrice || customerData?.costPrice || existingQuote?.partnerCostPrice || existingQuote?.costPrice || existingQuote?.agreedBuildPrice || 0);
   const targetMargin = Number(customerData?.marginPercent || existingQuote?.marginPercent || 35);
@@ -98,28 +100,46 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
         : `Massief houten werkblad met keramische stenen, duurzame constructie afgewerkt met twee lagen beschermende olie`);
 
   const rawLineItems = existingQuote?.investment?.lineItems || existingQuote?.items;
-  let initialLineItems = rawLineItems || productDefaults.lineItems || [
-    {
-      id: 'item-1',
-      title: `${defaultProductType} ${woodName} · ${cleanDimensions} cm`,
-      description: defaultItemDesc,
-      quantity: 1,
-      priceInclVat: targetPrice,
-      vatRate: existingQuote?.vatRate || 21,
-      isIncluded: false
-    },
-    {
-      id: 'item-2',
-      title: activeLang === 'EN' ? `Delivery ${city}` : `Bezorging ${city}`,
-      description: activeLang === 'EN'
-        ? `Free delivery in ${city}, scheduled at your convenience`
-        : `Gratis bezorgd in ${city}, op een moment dat jou uitkomt`,
-      quantity: 1,
-      priceInclVat: 0,
-      vatRate: existingQuote?.vatRate || 21,
-      isIncluded: true
-    }
-  ];
+  let initialLineItems = null;
+
+  if (Array.isArray(rawLineItems) && rawLineItems.length > 0) {
+    initialLineItems = rawLineItems.map((item, idx) => {
+      if (idx === 0) {
+        const itemPrice = Number(item.priceInclVat || 0) > 0 ? Number(item.priceInclVat) : (targetPrice > 0 ? targetPrice : 0);
+        return {
+          ...item,
+          title: item.title && (item.title.includes('·') || item.title.includes('Outdoor') || item.title.includes('Buiten'))
+            ? `${defaultProductType} ${woodName} · ${cleanDimensions} cm`
+            : item.title,
+          priceInclVat: itemPrice
+        };
+      }
+      return item;
+    });
+  } else {
+    initialLineItems = [
+      {
+        id: 'item-1',
+        title: `${defaultProductType} ${woodName} · ${cleanDimensions} cm`,
+        description: defaultItemDesc,
+        quantity: 1,
+        priceInclVat: targetPrice,
+        vatRate: existingQuote?.vatRate || 21,
+        isIncluded: false
+      },
+      {
+        id: 'item-2',
+        title: activeLang === 'EN' ? `Delivery ${city}` : `Bezorging ${city}`,
+        description: activeLang === 'EN'
+          ? `Free delivery in ${city}, scheduled at your convenience`
+          : `Gratis bezorgd in ${city}, op een moment dat jou uitkomt`,
+        quantity: 1,
+        priceInclVat: 0,
+        vatRate: existingQuote?.vatRate || 21,
+        isIncluded: true
+      }
+    ];
+  }
 
   if (Array.isArray(initialLineItems) && initialLineItems.length > 0 && Number(initialLineItems[0].priceInclVat || 0) === 0 && targetPrice > 0) {
     initialLineItems[0] = { ...initialLineItems[0], priceInclVat: targetPrice };
@@ -158,6 +178,7 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
     },
 
     configuration: {
+      ...(existingQuote?.configuration || {}),
       dimensions: cleanDimensions,
       dimensionsUnit: existingQuote?.configuration?.dimensionsUnit || productDefaults.configuration?.dimensionsUnit || (activeLang === 'EN' ? 'centimeters' : 'centimeter'),
       woodType: woodName,
@@ -255,14 +276,12 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
               : woodName === 'Padouk'
               ? 'Padouk is een van de meest stabiele houtsoorten ter wereld. Koraalrood bij verwerking, snel vergrijzend naar warm zilvergrijs.'
               : 'Douglas hout biedt een warme en authentieke uitstraling, idealiter geschikt voor beschutte buitenopstellingen.')
-      },
-      ...(existingQuote?.configuration || {})
+      }
     },
 
     investment: {
       sectionTitle: existingQuote?.investment?.sectionTitle || (activeLang === 'EN' ? '04 · INVESTMENT' : '04 · INVESTERING'),
       title: existingQuote?.investment?.title || (activeLang === 'EN' ? 'Your investment overview' : 'Uw investering in één overzicht'),
-      lineItems: initialLineItems,
       finishTreatment: existingQuote?.investment?.finishTreatment !== undefined ? existingQuote.investment.finishTreatment : (activeLang === 'EN' ? 'Two-layer protective oil finish (natural)' : 'Olieafwerking in twee lagen (naturel)'),
       checklistTitle: existingQuote?.investment?.checklistTitle || (activeLang === 'EN' ? 'INCLUDED WITH YOUR INVESTMENT' : 'INBEGREPEN BIJ JOUW INVESTERING'),
       checklist: existingQuote?.investment?.checklist || (activeLang === 'EN' ? [
@@ -284,11 +303,11 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
       vatDisclaimer: existingQuote?.investment?.vatDisclaimer || (activeLang === 'EN' ? 'All amounts include VAT' : 'Alle bedragen inclusief btw'),
       validityText: existingQuote?.investment?.validityText || (activeLang === 'EN' ? 'This proposal is valid until {date}' : 'Deze offerte is geldig tot en met {date}'),
       validityNote: existingQuote?.investment?.validityNote || (activeLang === 'EN' ? `This proposal is valid until ${validUntilDate}` : `Deze offerte is geldig tot en met ${validUntilDate}`),
+      ...(existingQuote?.investment || {}),
       costPrice: partnerCost > 0 ? partnerCost : existingQuote?.investment?.costPrice || existingQuote?.costPrice || null,
       partnerCostPrice: partnerCost > 0 ? partnerCost : existingQuote?.investment?.partnerCostPrice || null,
       marginPercent: targetMargin,
       lineItems: initialLineItems,
-      ...(existingQuote?.investment || {}),
       instalments: {
         count: existingQuote?.investment?.instalments?.count || 2,
         percentages: existingQuote?.investment?.instalments?.percentages || [50, 50],
