@@ -207,7 +207,7 @@ export default function Invoices() {
     showToast(`Factuur "${invId}" verwijderd.`);
 
     const apiId = targetInv?.realId || targetInv?.invoiceNumber || invId;
-    api.delete(`/invoices/${apiId}`).catch(err => console.warn('Could not sync invoice deletion to API:', err));
+    api.delete(`/invoices/${apiId}?force=true`).catch(err => console.warn('Could not sync invoice deletion to API:', err));
   };
 
   const handleAddLine = () => {
