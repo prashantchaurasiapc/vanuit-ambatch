@@ -30,8 +30,11 @@ export default function OutdoorKitchenOverview({ project = null }) {
   // Fallback mock data matching client brief 1-to-1 if project fields missing
   const custName = project?.customerName || (typeof project?.customer === 'string' ? project?.customer : project?.customer?.name) || 'Bjorn Valk';
   const firstName = custName.split(' ')[0];
-  const projectName = project?.name || (isNl ? 'Luxe Teak Buitenkeuken Den Haag' : 'Outdoor Kitchen Thermo Fraké - 240 x 80 cm');
-  const projectSub = project?.subtext || (isNl ? 'met uitsparing voor jouw Big Green Egg Large' : 'with cutout for your Big Green Egg Large');
+  const specs = project?.technicalSpecs || project?.specifications || {};
+  const woodDisplay = specs?.woodType || 'Thermo Fraké';
+  const dimsDisplay = specs?.dimensionsText || '240 × 80 cm';
+  const projectName = project?.name || (isNl ? `Luxe ${woodDisplay} Buitenkeuken (${dimsDisplay})` : `Outdoor Kitchen ${woodDisplay} - ${dimsDisplay}`);
+  const projectSub = project?.subtext || (specs?.optionsTitle ? (isNl ? `met ${specs.optionsTitle}` : `with ${specs.optionsTitle}`) : (isNl ? 'met uitsparing voor jouw Big Green Egg Large' : 'with cutout for your Big Green Egg Large'));
   const targetDelivery = project?.expectedDelivery || (isNl ? '15 november 2026' : '15 November 2026');
   const projectCode = project?.projectNumber || project?.id || '2026-014';
 

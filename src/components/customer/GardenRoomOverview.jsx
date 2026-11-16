@@ -29,9 +29,12 @@ export default function GardenRoomOverview({ project = null }) {
   const { language } = useLanguage();
   const isNl = language === 'NL';
 
-  const custName = project?.customer || 'Sander';
+  const custName = project?.customerName || (typeof project?.customer === 'string' ? project?.customer : project?.customer?.name) || 'Sander';
   const firstName = custName.split(' ')[0];
-  const projectName = project?.name || (isNl ? 'Overkapping met poolhouse - Douglas - 8,00 x 4,00 m - Oisterwijk' : 'Canopy with poolhouse - Douglas - 8.00 x 4.00 m - Oisterwijk');
+  const specs = project?.technicalSpecs || project?.specifications || {};
+  const woodDisplay = specs?.woodType || 'Douglas';
+  const dimsDisplay = specs?.dimensionsText || '8,00 x 4,00 m';
+  const projectName = project?.name || (isNl ? `Overkapping met poolhouse - ${woodDisplay} - ${dimsDisplay}` : `Canopy with poolhouse - ${woodDisplay} - ${dimsDisplay}`);
   const buildWeeks = project?.buildWeeks || (isNl ? 'Week 41 & 42' : 'Week 41 & 42');
   const projectCode = project?.projectNumber || project?.id || '2026-021';
   const scheduleStatus = project?.scheduleStatus || 'provisional';

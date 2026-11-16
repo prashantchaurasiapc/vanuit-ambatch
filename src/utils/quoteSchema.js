@@ -67,6 +67,9 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
   const cutoutName = hasExplicitBbq ? explicitCutout : (activeLang === 'EN' ? 'No Barbecue' : 'Geen Barbecue');
   const deliveryTime = existingQuote?.configuration?.deliveryTime || existingQuote?.deliveryTime || customerData?.deliveryTime || (activeLang === 'EN' ? '3 to 5 weeks' : '3 tot 5 weken');
 
+  const partnerCost = Number(customerData?.partnerCostPrice || customerData?.costPrice || existingQuote?.partnerCostPrice || existingQuote?.costPrice || existingQuote?.agreedBuildPrice || 0);
+  const targetMargin = Number(customerData?.marginPercent || existingQuote?.marginPercent || 35);
+
   let targetPrice = 0;
   if (existingQuote?.calculatedPrice && Number(existingQuote.calculatedPrice) > 0) {
     targetPrice = Number(existingQuote.calculatedPrice);
@@ -79,6 +82,13 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
     if (parsed > 0) targetPrice = parsed;
   }
 
+  // If retail price is not explicitly set but partner cost is known, calculate with target margin
+  if (targetPrice === 0 && partnerCost > 0) {
+    const marginAmount = Math.round(partnerCost * (targetMargin / 100));
+    const salesPriceExclVat = partnerCost + marginAmount;
+    targetPrice = Math.round(salesPriceExclVat * 1.21 * 100) / 100;
+  }
+
   const defaultItemDesc = hasExplicitBbq
     ? (activeLang === 'EN'
         ? `Wooden worktop with ceramic stones, custom cutout for ${cutoutName}, finished with natural oil`
@@ -87,30 +97,33 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
         ? `Solid wooden worktop with ceramic stones, durable construction finished with natural protective oil`
         : `Massief houten werkblad met keramische stenen, duurzame constructie afgewerkt met twee lagen beschermende olie`);
 
-  const initialLineItems = existingQuote?.investment?.lineItems || existingQuote?.items || (
-    productDefaults.lineItems || [
-      {
-        id: 'item-1',
-        title: `${defaultProductType} ${woodName} · ${cleanDimensions} cm`,
-        description: defaultItemDesc,
-        quantity: 1,
-        priceInclVat: targetPrice,
-        vatRate: existingQuote?.vatRate || 21,
-        isIncluded: false
-      },
-      {
-        id: 'item-2',
-        title: activeLang === 'EN' ? `Delivery ${city}` : `Bezorging ${city}`,
-        description: activeLang === 'EN'
-          ? `Free delivery in ${city}, scheduled at your convenience`
-          : `Gratis bezorgd in ${city}, op een moment dat jou uitkomt`,
-        quantity: 1,
-        priceInclVat: 0,
-        vatRate: existingQuote?.vatRate || 21,
-        isIncluded: true
-      }
-    ]
-  );
+  const rawLineItems = existingQuote?.investment?.lineItems || existingQuote?.items;
+  let initialLineItems = rawLineItems || productDefaults.lineItems || [
+    {
+      id: 'item-1',
+      title: `${defaultProductType} ${woodName} · ${cleanDimensions} cm`,
+      description: defaultItemDesc,
+      quantity: 1,
+      priceInclVat: targetPrice,
+      vatRate: existingQuote?.vatRate || 21,
+      isIncluded: false
+    },
+    {
+      id: 'item-2',
+      title: activeLang === 'EN' ? `Delivery ${city}` : `Bezorging ${city}`,
+      description: activeLang === 'EN'
+        ? `Free delivery in ${city}, scheduled at your convenience`
+        : `Gratis bezorgd in ${city}, op een moment dat jou uitkomt`,
+      quantity: 1,
+      priceInclVat: 0,
+      vatRate: existingQuote?.vatRate || 21,
+      isIncluded: true
+    }
+  ];
+
+  if (Array.isArray(initialLineItems) && initialLineItems.length > 0 && Number(initialLineItems[0].priceInclVat || 0) === 0 && targetPrice > 0) {
+    initialLineItems[0] = { ...initialLineItems[0], priceInclVat: targetPrice };
+  }
 
   const baseQuote = existingQuote && typeof existingQuote === 'object' ? existingQuote : {};
 
@@ -271,6 +284,10 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
       vatDisclaimer: existingQuote?.investment?.vatDisclaimer || (activeLang === 'EN' ? 'All amounts include VAT' : 'Alle bedragen inclusief btw'),
       validityText: existingQuote?.investment?.validityText || (activeLang === 'EN' ? 'This proposal is valid until {date}' : 'Deze offerte is geldig tot en met {date}'),
       validityNote: existingQuote?.investment?.validityNote || (activeLang === 'EN' ? `This proposal is valid until ${validUntilDate}` : `Deze offerte is geldig tot en met ${validUntilDate}`),
+      costPrice: partnerCost > 0 ? partnerCost : existingQuote?.investment?.costPrice || existingQuote?.costPrice || null,
+      partnerCostPrice: partnerCost > 0 ? partnerCost : existingQuote?.investment?.partnerCostPrice || null,
+      marginPercent: targetMargin,
+      lineItems: initialLineItems,
       ...(existingQuote?.investment || {}),
       instalments: {
         count: existingQuote?.investment?.instalments?.count || 2,

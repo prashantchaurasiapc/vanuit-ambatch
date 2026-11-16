@@ -44,19 +44,19 @@ const ADMIN_NOTIFS = [
     timeKey: '5m ago', 
     unread: true, 
     link: '/admin/documents?tab=photos', 
-    icon: Camera 
+    icon: 'Camera' 
   },
-  { id: 1, titleKey: 'notifications.newLead', descKey: 'notifications.newLeadDesc', descParams: { name: 'Sanne Visser', category: 'Bespoke Outdoor Kitchen' }, timeKey: 'notifications.10m', unread: true, link: '/admin/leads', icon: UserPlus },
-  { id: 2, titleKey: 'notifications.projectProgress', descKey: 'notifications.projectProgressDesc', descParams: { partner: 'Sven Hoek', project: 'Luxury Kitchen Amsterdam', progress: '70' }, timeKey: 'notifications.1h', unread: true, link: '/admin/projects', icon: Briefcase },
-  { id: 3, titleKey: 'notifications.quoteApproved', descKey: 'notifications.quoteApprovedDesc', descParams: { client: 'Jan de Vries', quote: 'Q-2004' }, timeKey: 'notifications.3h', unread: true, link: '/admin/quotes', icon: Check },
-  { id: 4, titleKey: 'notifications.invoicePaid', descKey: 'notifications.invoicePaidDesc', descParams: { invoice: 'INV-902', amount: '12.500', city: 'Rotterdam' }, timeKey: 'notifications.1d', unread: false, link: '/admin/finance', icon: FileText },
+  { id: 1, titleKey: 'notifications.newLead', descKey: 'notifications.newLeadDesc', descParams: { name: 'Sanne Visser', category: 'Bespoke Outdoor Kitchen' }, timeKey: 'notifications.10m', unread: true, link: '/admin/leads', icon: 'UserPlus' },
+  { id: 2, titleKey: 'notifications.projectProgress', descKey: 'notifications.projectProgressDesc', descParams: { partner: 'Sven Hoek', project: 'Luxury Kitchen Amsterdam', progress: '70' }, timeKey: 'notifications.1h', unread: true, link: '/admin/projects', icon: 'Briefcase' },
+  { id: 3, titleKey: 'notifications.quoteApproved', descKey: 'notifications.quoteApprovedDesc', descParams: { client: 'Jan de Vries', quote: 'Q-2004' }, timeKey: 'notifications.3h', unread: true, link: '/admin/quotes', icon: 'Check' },
+  { id: 4, titleKey: 'notifications.invoicePaid', descKey: 'notifications.invoicePaidDesc', descParams: { invoice: 'INV-902', amount: '12.500', city: 'Rotterdam' }, timeKey: 'notifications.1d', unread: false, link: '/admin/finance', icon: 'FileText' },
 ];
 
 const PARTNER_NOTIFS = [
-  { id: 1, titleKey: 'notifications.partnerNewProject', descKey: 'notifications.partnerNewProjectDesc', descParams: { project: 'Luxury Outdoor Kitchen Amsterdam' }, timeKey: 'notifications.20m', unread: true, link: '/partner/projects', icon: Briefcase },
-  { id: 2, titleKey: 'notifications.materialDelivery', descKey: 'notifications.materialDeliveryDesc', descParams: { date: '25 Nov', time: '13:00' }, timeKey: 'notifications.2h', unread: true, link: '/partner/planning', icon: Clock },
-  { id: 3, titleKey: 'notifications.siteVisit', descKey: 'notifications.siteVisitDesc', descParams: { time: '09:00' }, timeKey: 'notifications.4h', unread: true, link: '/partner/planning', icon: Clock },
-  { id: 4, titleKey: 'notifications.newBlueprint', descKey: 'notifications.newBlueprintDesc', descParams: { version: '2', city: 'Utrecht Villa' }, timeKey: 'notifications.1d', unread: false, link: '/partner/documents', icon: FileText },
+  { id: 1, titleKey: 'notifications.partnerNewProject', descKey: 'notifications.partnerNewProjectDesc', descParams: { project: 'Luxury Outdoor Kitchen Amsterdam' }, timeKey: 'notifications.20m', unread: true, link: '/partner/projects', icon: 'Briefcase' },
+  { id: 2, titleKey: 'notifications.materialDelivery', descKey: 'notifications.materialDeliveryDesc', descParams: { date: '25 Nov', time: '13:00' }, timeKey: 'notifications.2h', unread: true, link: '/partner/planning', icon: 'Clock' },
+  { id: 3, titleKey: 'notifications.siteVisit', descKey: 'notifications.siteVisitDesc', descParams: { time: '09:00' }, timeKey: 'notifications.4h', unread: true, link: '/partner/planning', icon: 'Clock' },
+  { id: 4, titleKey: 'notifications.newBlueprint', descKey: 'notifications.newBlueprintDesc', descParams: { version: '2', city: 'Utrecht Villa' }, timeKey: 'notifications.1d', unread: false, link: '/partner/documents', icon: 'FileText' },
 ];
 
 const ICON_MAP = {
@@ -69,31 +69,57 @@ const ICON_MAP = {
   Bell,
 };
 
-const resolveNotifIcon = (notif) => {
-  if (!notif) return Bell;
-  if (typeof notif.icon === 'function') return notif.icon;
-  if (typeof notif.icon === 'object' && notif.icon !== null && (notif.icon.$$typeof || notif.icon.render)) return notif.icon;
-  if (typeof notif.icon === 'string' && ICON_MAP[notif.icon]) return ICON_MAP[notif.icon];
+const renderNotifIcon = (notif) => {
+  let IconComp = Bell;
+  const iconVal = notif?.icon;
 
-  const link = (notif.link || '').toLowerCase();
-  const title = (notif.titleKey || '').toLowerCase();
-  const desc = (notif.descKey || '').toLowerCase();
+  if (typeof iconVal === 'string' && ICON_MAP[iconVal]) {
+    IconComp = ICON_MAP[iconVal];
+  } else if (typeof iconVal === 'function') {
+    IconComp = iconVal;
+  } else if (typeof iconVal === 'object' && iconVal !== null) {
+    if (iconVal.$$typeof === Symbol.for('react.forward_ref') || typeof iconVal.render === 'function') {
+      IconComp = iconVal;
+    } else if (iconVal.$$typeof === Symbol.for('react.element')) {
+      return iconVal;
+    }
+  }
 
-  if (title.includes('photo') || desc.includes('photo') || desc.includes('foto')) return Camera;
-  if (link.includes('lead') || title.includes('lead')) return UserPlus;
-  if (link.includes('project') || title.includes('project') || desc.includes('project')) return Briefcase;
-  if (link.includes('quote') || title.includes('quote')) return Check;
-  if (link.includes('invoice') || link.includes('finance') || link.includes('document')) return FileText;
-  if (link.includes('planning') || title.includes('delivery') || desc.includes('bezorg')) return Clock;
+  if (IconComp === Bell) {
+    const link = (notif?.link || '').toLowerCase();
+    const title = (notif?.titleKey || '').toLowerCase();
+    const desc = (notif?.descKey || '').toLowerCase();
 
-  return Bell;
+    if (title.includes('photo') || desc.includes('photo') || desc.includes('foto')) IconComp = Camera;
+    else if (link.includes('lead') || title.includes('lead')) IconComp = UserPlus;
+    else if (link.includes('project') || title.includes('project') || desc.includes('project')) IconComp = Briefcase;
+    else if (link.includes('quote') || title.includes('quote')) IconComp = Check;
+    else if (link.includes('invoice') || link.includes('finance') || link.includes('document')) IconComp = FileText;
+    else if (link.includes('planning') || title.includes('delivery') || desc.includes('bezorg')) IconComp = Clock;
+  }
+
+  if (typeof IconComp === 'function' || (typeof IconComp === 'object' && IconComp !== null && (IconComp.$$typeof || typeof IconComp.render === 'function'))) {
+    const Component = IconComp;
+    return <Component className="w-3.5 h-3.5" />;
+  }
+  return <Bell className="w-3.5 h-3.5" />;
 };
 
 const sanitizeForStorage = (list) => {
   if (!Array.isArray(list)) return [];
   return list.map(item => {
-    const { icon, ...rest } = item;
-    return rest;
+    let iconName = 'Bell';
+    if (typeof item.icon === 'string') {
+      iconName = item.icon;
+    } else {
+      for (const [k, v] of Object.entries(ICON_MAP)) {
+        if (v === item.icon) {
+          iconName = k;
+          break;
+        }
+      }
+    }
+    return { ...item, icon: iconName };
   });
 };
 
@@ -120,10 +146,16 @@ export default function TopNav() {
     try {
       const stored = JSON.parse(localStorage.getItem('va_admin_notifications') || '[]');
       if (Array.isArray(stored) && stored.length > 0) {
-        const merged = stored.map(s => ({
-          ...s,
-          icon: resolveNotifIcon(s),
-        }));
+        const merged = stored.map(s => {
+          let cleanIcon = 'Bell';
+          if (typeof s.icon === 'string' && ICON_MAP[s.icon]) {
+            cleanIcon = s.icon;
+          }
+          return {
+            ...s,
+            icon: cleanIcon,
+          };
+        });
         base.forEach(b => {
           if (!merged.some(m => m.id === b.id)) merged.push(b);
         });
@@ -139,9 +171,13 @@ export default function TopNav() {
   useEffect(() => {
     const handleNewNotif = (e) => {
       if (e.detail) {
+        let cleanIcon = 'Bell';
+        if (typeof e.detail.icon === 'string' && ICON_MAP[e.detail.icon]) {
+          cleanIcon = e.detail.icon;
+        }
         const withIcon = {
           ...e.detail,
-          icon: resolveNotifIcon(e.detail),
+          icon: cleanIcon,
         };
         setNotifications(prev => [withIcon, ...prev.filter(n => n.id !== withIcon.id)]);
       }
@@ -304,8 +340,7 @@ export default function TopNav() {
               </div>
 
               <div className="max-h-72 overflow-y-auto divide-y divide-[#D6CFC2]/50">
-                {notifications.map(notif => {
-                  const NotifIcon = resolveNotifIcon(notif);
+                {notifications.map((notif, idx) => {
                   const rawTitle = notif.isCustomText ? notif.titleKey : t(notif.titleKey);
                   const displayTitle = typeof rawTitle === 'string' ? rawTitle : (notif.titleKey || 'Melding');
                   const rawDesc = notif.isCustomText ? notif.descKey : t(notif.descKey, notif.descParams);
@@ -315,7 +350,7 @@ export default function TopNav() {
 
                   return (
                     <div 
-                      key={notif.id} 
+                      key={notif.id || `notif-${idx}`} 
                       onClick={() => handleNotifClick(notif)}
                       className={`p-3 flex gap-3 cursor-pointer transition-colors ${
                         notif.unread ? 'bg-white/80 hover:bg-white' : 'hover:bg-white/40 opacity-75'
@@ -324,7 +359,7 @@ export default function TopNav() {
                       <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
                         notif.unread ? 'bg-primary/10 text-primary' : 'bg-dark/10 text-dark/50'
                       }`}>
-                        <NotifIcon className="w-3.5 h-3.5" />
+                        {renderNotifIcon(notif)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline">

@@ -102,7 +102,8 @@ export default function GardenRoomPlanningView({ project = null }) {
       unread: true,
       isCustomText: true,
       link: '/admin/projects',
-      projectId: pid
+      projectId: pid,
+      icon: 'Check'
     };
     try {
       const existingNotifs = JSON.parse(localStorage.getItem('va_admin_notifications') || '[]');
@@ -159,7 +160,8 @@ export default function GardenRoomPlanningView({ project = null }) {
       unread: true,
       isCustomText: true,
       link: '/admin/projects',
-      projectId: pid
+      projectId: pid,
+      icon: 'Check'
     };
     try {
       const existingNotifs = JSON.parse(localStorage.getItem('va_admin_notifications') || '[]');
