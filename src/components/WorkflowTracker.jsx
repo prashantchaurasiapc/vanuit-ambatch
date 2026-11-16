@@ -10,7 +10,7 @@ import {
   UserPlus, MessageSquare, FileText, CheckCircle2, CheckCircle, Briefcase, 
   UserCheck, Calendar, Award, ArrowRight, Check, Clock, Phone, 
   Mail, MapPin, DollarSign, Wrench, ShieldCheck, Download, ChevronRight,
-  AlertCircle, X, Sparkles, Send, FileSpreadsheet, CheckSquare, MessageCircle, Paperclip,
+  AlertCircle, X, Sparkles, Send, FileSpreadsheet, CheckSquare, MessageCircle, Paperclip, Upload,
   Mic, Play, Pause, FileAudio, Volume2, Sliders, Globe, PhoneCall, Copy
 } from 'lucide-react';
 import { convertLeadToCustomerOnInvoiceSent } from '../utils/customerConversion';
@@ -2396,21 +2396,55 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">Attachments</label>
-                        <div className="p-3 bg-white rounded-xl border border-[#D6CFC2] flex items-center justify-between text-xs">
-                          <span className="font-semibold text-dark">
-                            {attachedPhotos.length > 0 
-                              ? `${attachedPhotos.length} ${attachedPhotos.length === 1 ? 'file' : 'files'} (${attachedPhotos.map(p => p.name).join(', ')})`
-                              : (language === 'EN' ? 'No attachments' : 'Geen bijlagen')}
-                          </span>
-                          {isPriceRequestSent ? (
-                            <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                              ✓ Sent to Partner
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-[10px] font-bold text-dark/60 uppercase">
+                            📎 {language === 'EN' ? 'Attachments (Drawings, Blueprints, Photos)' : 'Bijlagen (Tekeningen, Bouwplannen, Foto\'s)'}
+                          </label>
+                          <label className="cursor-pointer text-[11px] font-bold text-primary hover:text-primary-dark flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-[#D6CFC2] hover:bg-[#F8F7F4] transition-all shadow-2xs">
+                            <Upload className="w-3.5 h-3.5 text-primary" />
+                            <span>{language === 'EN' ? '+ Upload File / Drawing' : '+ Upload Bestand / Tekening'}</span>
+                            <input
+                              type="file"
+                              multiple
+                              accept="image/*,.pdf,.dwg"
+                              onChange={handlePhotoUpload}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                        <div className="p-3 bg-white rounded-xl border border-[#D6CFC2] space-y-2 text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-dark">
+                              {attachedPhotos.length > 0 
+                                ? `${attachedPhotos.length} ${attachedPhotos.length === 1 ? 'bestand' : 'bestanden'} gekoppeld`
+                                : (language === 'EN' ? 'No attachments uploaded yet' : 'Nog geen bijlagen geüpload')}
                             </span>
-                          ) : (
-                            <span className="text-[10px] text-dark/70 font-bold bg-[#EDE8DF] px-2 py-0.5 rounded border border-[#D6CFC2]">
-                              Not yet sent
-                            </span>
+                            {isPriceRequestSent ? (
+                              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                ✓ Sent to Partner
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-dark/70 font-bold bg-[#EDE8DF] px-2 py-0.5 rounded border border-[#D6CFC2]">
+                                Ready to Send
+                              </span>
+                            )}
+                          </div>
+                          {attachedPhotos.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-2 border-t border-[#D6CFC2]/60">
+                              {attachedPhotos.map(p => (
+                                <span key={p.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-mono text-dark">
+                                  📄 {p.name}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemovePhoto(p.id)}
+                                    className="text-red-500 hover:text-red-700 cursor-pointer ml-1 font-bold text-sm"
+                                    title="Verwijder bestand"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -2683,7 +2717,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-body">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-body">
                           <div>
                             <span className="text-[10px] text-dark/50 uppercase block font-bold">Build Price</span>
                             <strong className="text-sm font-mono text-emerald-900">{submittedPartnerOffer.price}</strong>
@@ -2696,11 +2730,19 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             <span className="text-[10px] text-dark/50 uppercase block font-bold">Validity</span>
                             <strong className="text-xs font-semibold text-dark">{submittedPartnerOffer.validityEN || submittedPartnerOffer.validityNL || '—'}</strong>
                           </div>
-                          <div>
-                            <span className="text-[10px] text-dark/50 uppercase block font-bold">Remarks</span>
-                            <strong className="text-xs font-semibold text-dark truncate block" title={submittedPartnerOffer.remarksEN || submittedPartnerOffer.remarksNL}>{submittedPartnerOffer.remarksEN || submittedPartnerOffer.remarksNL || '—'}</strong>
-                          </div>
                         </div>
+
+                        {/* FULL UN-TRUNCATED PARTNER COMMENTS & TECHNICAL NOTES */}
+                        {(submittedPartnerOffer.remarksEN || submittedPartnerOffer.remarksNL) && (
+                          <div className="pt-2.5 border-t border-emerald-200/80 space-y-1">
+                            <span className="text-[10px] uppercase font-bold text-emerald-950 block tracking-wider">
+                              📝 {language === 'EN' ? 'Partner Remarks & Technical Notes' : 'Opmerkingen & Technische Notities Vakman'}
+                            </span>
+                            <div className="p-3 bg-white/95 rounded-lg border border-emerald-200 text-xs font-body text-dark whitespace-pre-wrap leading-relaxed shadow-2xs">
+                              {submittedPartnerOffer.remarksEN || submittedPartnerOffer.remarksNL}
+                            </div>
+                          </div>
+                        )}
 
                         {/* ITEMIZED COST BREAKDOWN (FROM PARTNER) */}
                         {submittedPartnerOffer.breakdownItems && submittedPartnerOffer.breakdownItems.length > 0 && (

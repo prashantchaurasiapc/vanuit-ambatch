@@ -166,9 +166,10 @@ export default function Leads() {
   // Red Warning Alert 1-Click Follow-up Modal State
   const [redAlertModalLead, setRedAlertModalLead] = useState(null);
 
-  // 7-Step Partner Price Request Wizard State
+  // Direct Partner Price Request Modal State
   const [partnerWizardLead, setPartnerWizardLead] = useState(null);
   const [partnerWizardStep, setPartnerWizardStep] = useState(1);
+  const [wizardAttachments, setWizardAttachments] = useState([]);
   const [partnersList, setPartnersList] = useState([]);
   const [wizardForm, setWizardForm] = useState({
     category: 'Outdoor Kitchen',
@@ -337,6 +338,7 @@ export default function Leads() {
 
   const handleOpenPartnerWizard = (lead) => {
     setPartnerWizardLead(lead);
+    setWizardAttachments([]);
     const defaultPartner = partnersList[0];
     const activeWoods = getActiveWoodTypes();
     const activeMats = getActiveMaterials();
@@ -369,6 +371,7 @@ export default function Leads() {
       partnerInstructions: '',
       craftsmanPartner: defaultPartner ? (defaultPartner.companyName || defaultPartner.contactName) : '',
       partnerId: defaultPartner ? defaultPartner.id : '',
+      responsiblePerson: lead.assignedTo || 'Tim & Bram',
       deadlineDays: '7'
     });
   };
@@ -634,6 +637,7 @@ export default function Leads() {
           city: wizardForm.address,
           siteAccess: wizardForm.siteAccess || wizardForm.partnerInstructions || '',
         },
+        attachmentIds: wizardAttachments.map(a => a.id).filter(Boolean),
         expectedResponseDate: expDateStr,
       };
 
@@ -1962,6 +1966,80 @@ export default function Leads() {
                       className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs"
                     />
                   </div>
+                </div>
+
+                {/* 3. Responsible Person & Blueprints Upload Card */}
+                <div className="p-4 bg-white border border-[#D6CFC2] rounded-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-[#D6CFC2]/60 pb-2">
+                    <span className="font-bold text-primary text-xs uppercase tracking-wider">
+                      📎 {language === 'EN' ? '3. Responsible Person & Blueprints' : '3. Verantwoordelijke & Bijlagen'}
+                    </span>
+                    <label className="cursor-pointer text-[11px] font-bold text-primary hover:underline flex items-center gap-1 bg-[#F8F7F4] px-2.5 py-1 rounded-lg border border-[#D6CFC2] transition-colors">
+                      <Paperclip className="w-3.5 h-3.5 text-primary" />
+                      <span>{language === 'EN' ? '+ Upload Drawings / PDF' : '+ Upload Tekening / PDF'}</span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*,.pdf,.dwg"
+                        onChange={async (e) => {
+                          const files = Array.from(e.target.files || []);
+                          for (const f of files) {
+                            try {
+                              const upRes = await api.post('/documents', {
+                                fileName: f.name,
+                                documentType: 'drawing',
+                                category: 'Blueprints',
+                                leadId: partnerWizardLead.id,
+                                isPublicForPartner: true
+                              });
+                              if (upRes.success && upRes.data) {
+                                setWizardAttachments(prev => [...prev, upRes.data]);
+                              }
+                            } catch (err) {}
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Responsible Person Selection */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-dark/60 uppercase mb-1">
+                      {language === 'EN' ? 'Responsible Contact Person (Tim / Bram)' : 'Verantwoordelijke Contactpersoon (Tim / Bram)'}
+                    </label>
+                    <select
+                      value={wizardForm.responsiblePerson || partnerWizardLead.assignedTo || 'Tim & Bram'}
+                      onChange={e => setWizardForm(prev => ({ ...prev, responsiblePerson: e.target.value }))}
+                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
+                    >
+                      <option value="Tim & Bram">Tim & Bram</option>
+                      <option value="Tim">Tim</option>
+                      <option value="Bram">Bram</option>
+                    </select>
+                  </div>
+
+                  {/* Attached Files List */}
+                  {wizardAttachments.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {wizardAttachments.map(att => (
+                        <span key={att.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-mono text-dark">
+                          📄 {att.fileName || att.name}
+                          <button
+                            type="button"
+                            onClick={() => setWizardAttachments(prev => prev.filter(a => a.id !== att.id))}
+                            className="text-red-500 hover:text-red-700 ml-1 font-bold cursor-pointer"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-dark/50 italic">
+                      {language === 'EN' ? 'No drawings, PDFs or customer photos attached yet.' : 'Nog geen tekeningen, PDF\'s of klantfoto\'s bijgevoegd.'}
+                    </p>
+                  )}
                 </div>
               </div>
 

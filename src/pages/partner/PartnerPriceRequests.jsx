@@ -183,6 +183,9 @@ export default function PartnerPriceRequests() {
             projectNL: item.productInfo || item.category || 'Maatwerk Project',
             projectEN: item.productInfo || item.category || 'Custom Project',
             customer: anonymizedCustomer,
+            responsiblePerson: item.responsiblePerson || item.leadAssignedToName || 'Tim & Bram',
+            locationCity: item.locationAccess?.city || item.leadCity || 'Nederland',
+            categoryName: item.category || 'Buitenkeuken',
             divisionNL: item.category === 'garden_room' ? 'Buitenverblijven' : item.category === 'canopy' ? 'Overkappingen' : 'Buitenkeukens',
             divisionEN: item.category || 'Outdoor Kitchens',
             deadlineNL: formattedDeadline,
@@ -487,7 +490,13 @@ export default function PartnerPriceRequests() {
                               <Badge variant="primary">{division}</Badge>
                             </div>
                             <h3 className="font-bold text-primary font-heading text-base mt-0.5 truncate">{title}</h3>
-                            <p className="text-xs text-dark/50">{language === 'NL' ? 'Klant:' : 'Customer:'} {req.customer} · {language === 'NL' ? 'Deadline klant:' : 'Client deadline:'} <strong className="text-primary">{deadline}</strong></p>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-dark/60 mt-1">
+                              <span>📍 {language === 'NL' ? 'Locatie:' : 'Location:'} <strong className="text-primary font-bold">{req.locationCity}</strong></span>
+                              <span>·</span>
+                              <span>👤 {language === 'NL' ? 'Contactpersoon:' : 'Responsible:'} <strong className="text-accent font-bold">{req.responsiblePerson}</strong></span>
+                              <span>·</span>
+                              <span>{language === 'NL' ? 'Deadline klant:' : 'Client deadline:'} <strong className="text-primary">{deadline}</strong></span>
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 flex-shrink-0">
@@ -728,7 +737,7 @@ export default function PartnerPriceRequests() {
                               </Badge>
                             </div>
                             <h3 className="font-heading font-bold text-primary text-base">{title}</h3>
-                            <p className="text-xs text-dark/50">{language === 'NL' ? 'Klant:' : 'Customer:'} {offer.customer}</p>
+                            <p className="text-xs text-dark/60 mt-0.5">📍 {offer.locationCity} · 👤 {offer.responsiblePerson}</p>
                           </div>
                           <div className="flex items-center gap-3">
                             <div className="text-right">
