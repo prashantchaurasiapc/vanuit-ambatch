@@ -183,7 +183,8 @@ export default function Invoices() {
       ? `Invoice "${invId}" sent! Lead "${targetInv?.customer || ''}" automatically converted to Active Customer!` 
       : `Factuur "${invId}" verzonden! Lead "${targetInv?.customer || ''}" succesvol geconverteerd naar Actieve Klant!`);
 
-    api.post(`/invoices/${invId}/send`).catch(err => console.warn('Could not sync invoice send to API:', err));
+    const apiId = targetInv?.realId || targetInv?.invoiceNumber || invId;
+    api.post(`/invoices/${apiId}/send`).catch(err => console.warn('Could not sync invoice send to API:', err));
   };
 
   const handleMarkAsPaid = (invId) => {
@@ -194,15 +195,19 @@ export default function Invoices() {
     window.dispatchEvent(new Event('app_data_changed'));
     showToast(`Factuur "${invId}" gemarkeerd als Betaald!`);
 
-    api.post(`/invoices/${invId}/mark-paid`, { paymentMethod: 'ideal' }).catch(err => console.warn('Could not sync mark paid to API:', err));
+    const apiId = targetInv?.realId || targetInv?.invoiceNumber || invId;
+    api.post(`/invoices/${apiId}/mark-paid`, { paymentMethod: 'ideal_mollie' }).catch(err => console.warn('Could not sync mark paid to API:', err));
   };
 
   const handleDeleteInvoice = (invId) => {
+    const targetInv = invoices.find(i => i.id === invId);
     const updatedInvoices = invoices.filter(i => i.id !== invId);
     setInvoices(updatedInvoices);
     window.dispatchEvent(new Event('app_data_changed'));
     showToast(`Factuur "${invId}" verwijderd.`);
-    api.delete(`/invoices/${invId}`).catch(err => console.warn('Could not sync invoice deletion to API:', err));
+
+    const apiId = targetInv?.realId || targetInv?.invoiceNumber || invId;
+    api.delete(`/invoices/${apiId}`).catch(err => console.warn('Could not sync invoice deletion to API:', err));
   };
 
   const handleAddLine = () => {
