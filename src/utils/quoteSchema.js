@@ -108,9 +108,7 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
         const itemPrice = Number(item.priceInclVat || 0) > 0 ? Number(item.priceInclVat) : (targetPrice > 0 ? targetPrice : 0);
         return {
           ...item,
-          title: item.title && (item.title.includes('·') || item.title.includes('Outdoor') || item.title.includes('Buiten'))
-            ? `${defaultProductType} ${woodName} · ${cleanDimensions} cm`
-            : item.title,
+          title: `${defaultProductType} ${woodName} · ${cleanDimensions} cm`,
           priceInclVat: itemPrice
         };
       }
