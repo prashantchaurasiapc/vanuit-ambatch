@@ -227,8 +227,8 @@ export const PRODUCT_TYPE_DEFAULTS_NL = {
     ]
   },
   'Garden room': {
-    titleLine1: 'Uw exclusief buitenverblijf,',
-    titleLine2: 'exclusief ontworpen.',
+    titleLine1: 'Uw buitenverblijf,',
+    titleLine2: 'op maat gebouwd.',
     letterParagraphs: [
       'Hartelijk dank voor je aanvraag voor een exclusief maatwerk buitenverblijf.',
       'Onze buitenverblijven worden met de hand gebouwd van hoogwaardige houtsoorten en materialen.',

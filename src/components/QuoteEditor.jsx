@@ -70,7 +70,7 @@ function ScaledPDFPreview({ quote, activePage, highlightField, language }) {
   }, []);
 
   // Fit inside right card cleanly without pushing page height
-  const scaledHeight = 1050 * scale;
+  const scaledHeight = 1123 * scale;
 
   return (
     <div
@@ -81,7 +81,7 @@ function ScaledPDFPreview({ quote, activePage, highlightField, language }) {
       <div
         style={{
           width: '794px',
-          height: '1050px',
+          height: '1123px',
           transform: `scale(${scale})`,
           transformOrigin: 'top center',
           position: 'absolute',

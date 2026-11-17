@@ -485,18 +485,22 @@ export function getDisplayCoverTitle(raw1, raw2, isGardenRoom = false, language 
   if (lang === 'NL') {
     if (n1 === 'your outdoor kitchen,' || n1 === 'uw buitenkeuken,') {
       titleLine1 = 'Uw buitenkeuken,';
-    } else if (n1 === 'your garden room,' || n1 === 'your bespoke garden room,' || n1 === 'uw exclusief buitenverblijf,') {
-      titleLine1 = 'Uw exclusief buitenverblijf,';
-    } else if (isGardenRoom && !raw1) {
-      titleLine1 = 'Uw exclusief buitenverblijf,';
+    } else if (n1 === 'your garden room,' || n1 === 'your bespoke garden room,' || n1 === 'uw exclusief buitenverblijf,' || n1 === 'uw buitenverblijf,') {
+      titleLine1 = 'Uw buitenverblijf,';
+    } else if (isGardenRoom) {
+      titleLine1 = 'Uw buitenverblijf,';
     } else if (!raw1) {
       titleLine1 = 'Uw buitenkeuken,';
     }
 
-    if (n2 === 'custom crafted.' || n2 === 'op maat gemaakt.') {
-      titleLine2 = 'op maat gemaakt.';
+    if (n2 === 'custom crafted.' || n2 === 'op maat gemaakt.' || n2 === 'op maat gebouwd.') {
+      titleLine2 = isGardenRoom ? 'op maat gebouwd.' : 'op maat gemaakt.';
     } else if (n2 === 'exclusively designed.' || n2 === 'exclusief ontworpen.') {
-      titleLine2 = 'exclusief ontworpen.';
+      titleLine2 = 'op maat gebouwd.';
+    } else if (isGardenRoom) {
+      titleLine2 = 'op maat gebouwd.';
+    } else {
+      titleLine2 = 'op maat gemaakt.';
     }
   } else {
     // EN

@@ -112,9 +112,11 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   // Cover properties
   const cover = quote?.cover || {};
   const defaultTitle1 = isGardenRoom
-    ? (language === 'EN' ? 'Your bespoke garden room,' : 'Uw exclusief buitenverblijf,')
+    ? (language === 'EN' ? 'Your garden room,' : 'Uw buitenverblijf,')
     : (language === 'EN' ? 'Your outdoor kitchen,' : 'Uw buitenkeuken,');
-  const defaultTitle2 = language === 'EN' ? 'custom crafted.' : 'op maat gemaakt.';
+  const defaultTitle2 = isGardenRoom
+    ? (language === 'EN' ? 'exclusively designed.' : 'op maat gebouwd.')
+    : (language === 'EN' ? 'custom crafted.' : 'op maat gemaakt.');
 
   const rawTitle1 = cover.titleLine1 || defaultTitle1;
   const rawTitle2 = cover.titleLine2 || defaultTitle2;
@@ -143,6 +145,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       .replace(/\s*[\*xX×]\s*/g, ' × ');
   }
   if (!cleanDimensions) cleanDimensions = '240 × 80';
+  const displayDim = cleanDimensions.endsWith('m') || cleanDimensions.endsWith('cm') ? cleanDimensions : `${cleanDimensions} cm`;
 
 
   const categoryTitle = productTypeLower.includes('poolhouse')
@@ -373,7 +376,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   className="inline-flex items-center justify-center border border-[#D6CFC2]/50 text-[#D6CFC2] px-6 py-2 rounded-full uppercase text-[10.5px] font-medium tracking-[0.3em]"
                   style={{ fontFamily: "'Montserrat', sans-serif" }}
                 >
-                  {language === 'EN' ? 'PROPOSAL' : 'OFFERTE'}
+                  OFFERTE
                 </span>
               </div>
             </div>
@@ -382,7 +385,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             <div className="pt-8 sm:pt-14">
               {/* Eyebrow with Quote Number in Warm Accent */}
               <div className="text-[11px] tracking-[0.28em] uppercase font-semibold text-[#D6CFC2] flex items-center" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                <span>{language === 'EN' ? 'CUSTOM PROPOSAL' : 'VOORSTEL OP MAAT'}</span>
+                <span>VOORSTEL OP MAAT</span>
                 <span className="mx-3.5 text-[#D6CFC2]/70 font-light">·</span>
                 <span className="text-[#D4A373] tracking-[0.22em] font-bold">{quoteId}</span>
               </div>
@@ -398,15 +401,15 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 </span>
               </h1>
 
-              {/* Specs Subline with Generous Margin & Warm Sand / Ochre Tone */}
-              <p className={`text-[14px] sm:text-[14.5px] mt-8 text-[#C5A880] tracking-[0.06em] font-normal flex flex-wrap items-center transition-all duration-300 ${highlightField === 'wood' || highlightField === 'title' ? 'bg-amber-300/80 text-dark px-2 py-0.5 rounded ring-2 ring-amber-400 font-extrabold' : ''}`} style={{ fontFamily: "'Montserrat', sans-serif" }}>
+              {/* Specs Subline with Generous Margin & Warm Sand / Ochre Tone (Contained so words never overflow) */}
+              <p className={`text-[12.5px] sm:text-[13px] mt-7 text-[#C5A880] tracking-[0.06em] font-normal max-w-[620px] leading-relaxed break-words transition-all duration-300 ${highlightField === 'wood' || highlightField === 'title' ? 'bg-amber-300/80 text-dark px-2 py-0.5 rounded ring-2 ring-amber-400 font-extrabold' : ''}`} style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 {cover.subtitleOverrideEnabled && cover.customSubtitle ? (
                   <span>{cover.customSubtitle}</span>
                 ) : (
                   <>
                     <span>{displayWood}</span>
                     <span className="mx-3 text-[#C5A880]/60">·</span>
-                    <span className="font-semibold text-[#D4B996]">{cleanDimensions} cm</span>
+                    <span className="font-semibold text-[#D4B996]">{displayDim}</span>
                     <span className="mx-3 text-[#C5A880]/60">·</span>
                     <span>{displayCoverOption}</span>
                   </>

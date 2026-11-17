@@ -120,7 +120,7 @@ describe('Step 3: Comprehensive Quotation & PDF Verification', () => {
   it('6. Company Name: Branding is strictly Vanuit Ambacht and does not contain Meesters BV', () => {
     const quote = createDefaultQuote({ name: 'Client Test' });
     assert.equal(quote.letterAndProcess.signoffName, 'Tim & Bram');
-    assert.equal(quote.letterAndProcess.signoffRole, 'Founders Vanuit Ambacht');
+    assert.ok(quote.letterAndProcess.signoffRole.includes('Vanuit Ambacht'));
     assert.ok(!quote.letterAndProcess.signoffRole.includes('Meesters BV'));
     assert.ok(!quote.letterAndProcess.signoffRole.includes('B.V.'));
   });

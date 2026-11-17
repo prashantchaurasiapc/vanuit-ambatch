@@ -6,7 +6,7 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
   const today = new Date().toISOString().split('T')[0];
   const validUntilDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-  const activeLang = lang || existingQuote?.language || (typeof window !== 'undefined' ? window.localStorage.getItem('app_language') : null) || 'EN';
+  const activeLang = lang || existingQuote?.language || (typeof window !== 'undefined' ? window.localStorage.getItem('app_language') : null) || 'NL';
 
   // customer can be a string OR an object {name, city, ...} from QuoteEditor
   const existingCustomer = existingQuote?.customer;
