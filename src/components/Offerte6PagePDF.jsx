@@ -355,50 +355,60 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       {/* ========================================================= */}
       {/* PAGE 1 OF 6: COVER PAGE */}
       {(!activePage || activePage === 'all' || Number(activePage) === 1) && (
-        <div className="offerte-pdf-page bg-[#33422C] text-[#FDFBF7] p-6 sm:p-8 space-y-4 relative rounded-xl shadow-2xl print:rounded-none print:shadow-none h-[1050px] flex flex-col justify-between overflow-hidden">
+        <div className="offerte-pdf-page bg-[#33422C] text-[#FDFBF7] px-8 sm:px-14 py-8 sm:py-10 relative rounded-xl shadow-2xl print:rounded-none print:shadow-none min-h-[1123px] h-[1123px] flex flex-col justify-between overflow-hidden">
 
-        {/* Background Watermark - Authentic VA Monogram matching client PDF */}
-        <img
-          src="/va_watermark.png"
-          alt=""
-          className="absolute right-[-2%] top-[22%] w-[58%] max-w-[460px] opacity-[0.065] pointer-events-none select-none"
-        />
+          {/* Background Watermark - Authentic VA Monogram matching client PDF */}
+          <img
+            src="/va_watermark.png"
+            alt=""
+            className="absolute right-[-4%] top-[14%] w-[65%] max-w-[540px] opacity-[0.055] pointer-events-none select-none"
+          />
 
-        <div className="space-y-6 relative z-10">
-          {/* Header Bar */}
-          <div className="relative flex justify-center items-center pt-2 pb-2">
-            <img src="/pdf_logo.png" alt="Vanuit Ambacht Logo" className="h-10 sm:h-12 w-auto object-contain mx-auto" />
-            <div className="absolute right-0 top-1/2 -translate-y-1/2">
-              <span className="text-xs font-bold border border-[#6B7B61] text-[#E5DFD5] bg-[#45543D]/40 px-4 py-1.5 rounded-full shadow-xs uppercase tracking-wider" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                {language === 'EN' ? 'PROPOSAL' : 'OFFERTE'}
-              </span>
+          <div className="relative z-10">
+            {/* Header Bar */}
+            <div className="relative flex justify-center items-center pt-2 pb-4">
+              <img src="/pdf_logo.png" alt="Vanuit Ambacht Logo" className="h-12 sm:h-14 w-auto object-contain mx-auto" />
+              <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                <span 
+                  className="inline-flex items-center justify-center border border-[#D6CFC2]/50 text-[#D6CFC2] px-6 py-2 rounded-full uppercase text-[10.5px] font-medium tracking-[0.3em]"
+                  style={{ fontFamily: "'Montserrat', sans-serif" }}
+                >
+                  {language === 'EN' ? 'PROPOSAL' : 'OFFERTE'}
+                </span>
+              </div>
             </div>
-          </div>
 
-            {/* Subtitle & Main Title */}
-            <div className="space-y-3 pt-12 sm:pt-16">
-              <div className="space-y-1.5">
-                <div className="text-xs tracking-[0.14em] uppercase block font-semibold text-[#D6CFC2]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                  {language === 'EN' ? 'CUSTOM PROPOSAL' : 'VOORSTEL OP MAAT'} &nbsp;·&nbsp; {quoteId}
-                </div>
-                <div className="w-16 h-[2px] bg-[#8A7966]"></div>
+            {/* Subtitle & Main Title & Specs */}
+            <div className="pt-8 sm:pt-14">
+              {/* Eyebrow with Quote Number in Warm Accent */}
+              <div className="text-[11px] tracking-[0.28em] uppercase font-semibold text-[#D6CFC2] flex items-center" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                <span>{language === 'EN' ? 'CUSTOM PROPOSAL' : 'VOORSTEL OP MAAT'}</span>
+                <span className="mx-3.5 text-[#D6CFC2]/70 font-light">·</span>
+                <span className="text-[#D4A373] tracking-[0.22em] font-bold">{quoteId}</span>
               </div>
 
-              <h2 className={`text-4xl sm:text-5xl text-[#FDFBF7] leading-[1.15] pt-2 font-normal transition-all duration-300 ${highlightField === 'title' ? 'bg-amber-300/80 text-dark px-2 rounded ring-2 ring-amber-400' : ''}`} style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
-                {titleLine1}<br />
-                <span className="italic" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>{titleLine2}</span>
-              </h2>
+              {/* Taupe Warm Accent Divider Line */}
+              <div className="w-[84px] h-[2px] bg-[#8A7966] mt-3.5 mb-7"></div>
 
-              <p className={`text-xs sm:text-sm pt-3 transition-all duration-300 ${highlightField === 'wood' || highlightField === 'title' ? 'bg-amber-300/80 text-dark px-2 py-0.5 rounded ring-2 ring-amber-400 font-extrabold' : ''}`} style={{ fontFamily: "'Montserrat', sans-serif" }}>
+              {/* Main Title: Editorial Serif with Signature Two-Tone Italic Line 2 */}
+              <h1 className={`text-[44px] sm:text-[48px] text-[#F3EFE7] leading-[1.18] font-normal tracking-tight transition-all duration-300 ${highlightField === 'title' ? 'bg-amber-300/80 text-dark px-2 rounded ring-2 ring-amber-400' : ''}`} style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
+                <span>{titleLine1}</span><br />
+                <span className="italic text-[#D6CFC2] block mt-1" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
+                  {titleLine2}
+                </span>
+              </h1>
+
+              {/* Specs Subline with Generous Margin & Warm Sand / Ochre Tone */}
+              <p className={`text-[14px] sm:text-[14.5px] mt-8 text-[#C5A880] tracking-[0.06em] font-normal flex flex-wrap items-center transition-all duration-300 ${highlightField === 'wood' || highlightField === 'title' ? 'bg-amber-300/80 text-dark px-2 py-0.5 rounded ring-2 ring-amber-400 font-extrabold' : ''}`} style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 {cover.subtitleOverrideEnabled && cover.customSubtitle ? (
-                  <span className="text-[#D6CFC2] font-normal">{cover.customSubtitle}</span>
+                  <span>{cover.customSubtitle}</span>
                 ) : (
                   <>
-                    <span className="text-[#D6CFC2] font-normal">{displayWood}</span>
-                    <span className="text-[#D6CFC2] mx-2">·</span>
-                    <span className="text-[#D6CFC2] font-normal">{cleanDimensions} cm</span>
-                    <span className="text-[#D6CFC2] mx-2">·</span>
-                    <span className="text-[#D6CFC2] font-normal">{displayCoverOption}</span>
+                    <span>{displayWood}</span>
+                    <span className="mx-3 text-[#C5A880]/60">·</span>
+                    <span className="font-semibold text-[#D4B996]">{cleanDimensions} cm</span>
+                    <span className="mx-3 text-[#C5A880]/60">·</span>
+                    <span>{displayCoverOption}</span>
                   </>
                 )}
               </p>
@@ -406,28 +416,29 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
           </div>
 
           {/* Customer & Quote Metadata */}
-          <div className="space-y-4 relative z-10" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-            <div className="pt-4 border-t border-[#4E5E45]/80 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+          <div className="relative z-10" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+            <div className="w-full h-[1px] bg-[#D6CFC2]/35 mt-8 mb-4"></div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-xs">
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'customer' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
-                <span className="text-[10px] text-[#A7AC9B] uppercase block tracking-[0.16em] font-medium">{language === 'EN' ? 'PREPARED FOR' : 'OPGESTELD VOOR'}</span>
-                <span className="font-medium text-[#FDFBF7] text-xs sm:text-sm block mt-1 tracking-wide">{customerName}</span>
+                <span className="text-[9.5px] text-[#D6CFC2] uppercase block tracking-[0.24em] font-medium">{language === 'EN' ? 'PREPARED FOR' : 'OPGESTELD VOOR'}</span>
+                <span className="font-medium text-[#FDFBF7] text-sm block mt-1.5 tracking-wide">{customerName}</span>
               </div>
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'date' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
-                <span className="text-[10px] text-[#A7AC9B] uppercase block tracking-[0.16em] font-medium">{language === 'EN' ? 'PROPOSAL NUMBER' : 'OFFERTENUMMER'}</span>
-                <span className="font-medium text-[#FDFBF7] text-xs sm:text-sm block mt-1 tracking-wide">{quoteId}</span>
+                <span className="text-[9.5px] text-[#D6CFC2] uppercase block tracking-[0.24em] font-medium">{language === 'EN' ? 'PROPOSAL NUMBER' : 'OFFERTENUMMER'}</span>
+                <span className="font-medium text-[#FDFBF7] text-sm block mt-1.5 tracking-wide">{quoteId}</span>
               </div>
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'date' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
-                <span className="text-[10px] text-[#A7AC9B] uppercase block tracking-[0.16em] font-medium">{language === 'EN' ? 'DATE' : 'DATUM'}</span>
-                <span className="font-medium text-[#FDFBF7] text-xs sm:text-sm block mt-1 tracking-wide">{quoteDate}</span>
+                <span className="text-[9.5px] text-[#D6CFC2] uppercase block tracking-[0.24em] font-medium">{language === 'EN' ? 'DATE' : 'DATUM'}</span>
+                <span className="font-medium text-[#FDFBF7] text-sm block mt-1.5 tracking-wide">{quoteDate}</span>
               </div>
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'date' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
-                <span className="text-[10px] text-[#A7AC9B] uppercase block tracking-[0.16em] font-medium">{language === 'EN' ? 'VALID UNTIL' : 'GELDIG T/M'}</span>
-                <span className="font-medium text-[#FDFBF7] text-xs sm:text-sm block mt-1 tracking-wide">{validUntil}</span>
+                <span className="text-[9.5px] text-[#D6CFC2] uppercase block tracking-[0.24em] font-medium">{language === 'EN' ? 'VALID UNTIL' : 'GELDIG T/M'}</span>
+                <span className="font-medium text-[#FDFBF7] text-sm block mt-1.5 tracking-wide">{validUntil}</span>
               </div>
             </div>
 
-            {/* 3 Photo Strip */}
-            <div className="grid grid-cols-3 gap-3 h-36 sm:h-44 w-full mt-4 mb-2">
+            {/* 3 Photo Strip with More Height and Breathing Room */}
+            <div className="grid grid-cols-3 gap-3.5 h-44 sm:h-48 w-full mt-6 mb-3">
               {coverPhotos.map((pImg, idx) => (
                 <div
                   key={idx}
@@ -447,13 +458,13 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             </div>
 
             {quote?.isDraft && (
-              <div className="bg-amber-600/90 text-white text-center py-1.5 px-3 text-[10px] font-semibold tracking-widest uppercase rounded-lg shadow-xs" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+              <div className="bg-amber-600/90 text-white text-center py-2 px-3 text-[10.5px] font-semibold tracking-widest uppercase rounded-lg shadow-xs" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 {language === 'EN' ? '⚠ INTERNAL DRAFT PROPOSAL — NOT YET SENT TO CLIENT' : '⚠ CONCEPT OFFERTE — NOG NIET VERZONDEN NAAR KLANT'}
               </div>
             )}
 
             {/* Footer Bar */}
-            <div className="flex justify-between items-center text-[10px] text-[#A7AC9B] tracking-[0.16em] pt-1 pb-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+            <div className="flex justify-between items-center text-[10px] text-[#D6CFC2] tracking-[0.22em] uppercase pt-3 pb-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>
               <span className="font-medium">VANUITAMBACHT.NL</span>
               <span className="font-normal">{language === 'EN' ? 'CRAFTSMANSHIP · QUALITY · PERSONAL' : 'AMBACHT · KWALITEIT · PERSOONLIJK'}</span>
             </div>
@@ -463,7 +474,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
       {/* PAGE 2 OF 6: PERSOONLIJK WOORD */}
       {(!activePage || activePage === 'all' || Number(activePage) === 2) && (
-        <div className="offerte-pdf-page bg-[#FDFBF7] text-dark p-6 sm:p-8 space-y-4 rounded-xl shadow-xl print:rounded-none print:shadow-none h-[1050px] flex flex-col justify-between border border-[#C4BEB3]">
+        <div className="offerte-pdf-page bg-[#FDFBF7] text-dark px-8 sm:px-14 py-8 sm:py-10 space-y-6 rounded-xl shadow-xl print:rounded-none print:shadow-none min-h-[1123px] h-[1123px] flex flex-col justify-between border border-[#C4BEB3]">
           <div className="space-y-4">
             <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs">
               <div className="flex items-center gap-2">
@@ -633,7 +644,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
       {/* PAGE 3 OF 6: UW CONFIGURATIE */}
       {(!activePage || activePage === 'all' || Number(activePage) === 3) && (
-        <div className="offerte-pdf-page bg-[#FDFBF7] text-dark p-6 sm:p-8 space-y-4 rounded-xl shadow-xl print:rounded-none print:shadow-none h-[1050px] flex flex-col justify-between border border-[#C4BEB3]">
+        <div className="offerte-pdf-page bg-[#FDFBF7] text-dark px-8 sm:px-14 py-8 sm:py-10 space-y-6 rounded-xl shadow-xl print:rounded-none print:shadow-none min-h-[1123px] h-[1123px] flex flex-col justify-between border border-[#C4BEB3]">
           <div className="space-y-4">
             <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs">
               <div className="flex items-center gap-2">
@@ -851,7 +862,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
       {/* PAGE 4 OF 6: INVESTERING */}
       {(!activePage || activePage === 'all' || Number(activePage) === 4) && (
-        <div className="offerte-pdf-page bg-[#FDFBF7] text-dark p-6 sm:p-8 space-y-4 rounded-xl shadow-xl print:rounded-none print:shadow-none h-[1050px] flex flex-col justify-between border border-[#C4BEB3]">
+        <div className="offerte-pdf-page bg-[#FDFBF7] text-dark px-8 sm:px-14 py-8 sm:py-10 space-y-6 rounded-xl shadow-xl print:rounded-none print:shadow-none min-h-[1123px] h-[1123px] flex flex-col justify-between border border-[#C4BEB3]">
           <div className="space-y-6">
             <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs">
               <div className="flex items-center gap-2">
@@ -1052,8 +1063,8 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
       {/* PAGE 5 OF 6: AKKOORD & SIGNATURES */}
       {(!activePage || activePage === 'all' || Number(activePage) === 5) && (
-        <div className="offerte-pdf-page bg-[#FDFBF7] text-dark p-5 sm:p-6 space-y-2 rounded-xl shadow-xl print:rounded-none print:shadow-none min-h-[1050px] flex flex-col justify-between border border-[#C4BEB3]">
-          <div className="space-y-2.5">
+        <div className="offerte-pdf-page bg-[#FDFBF7] text-dark px-8 sm:px-14 py-8 sm:py-10 space-y-5 rounded-xl shadow-xl print:rounded-none print:shadow-none min-h-[1123px] h-[1123px] flex flex-col justify-between border border-[#C4BEB3]">
+          <div className="space-y-4">
             <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-2 text-xs">
               <div className="flex items-center gap-2">
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
@@ -1261,7 +1272,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
       {/* PAGE 6 OF 6: VAN AKKOORD TOT ACHTERTUIN */}
       {(!activePage || activePage === 'all' || Number(activePage) === 6) && (
-        <div className="offerte-pdf-page bg-[#FDFBF7] text-dark p-6 sm:p-8 space-y-4 rounded-xl shadow-xl print:rounded-none print:shadow-none h-[1050px] flex flex-col justify-between border border-[#C4BEB3]">
+        <div className="offerte-pdf-page bg-[#FDFBF7] text-dark px-8 sm:px-14 py-8 sm:py-10 space-y-6 rounded-xl shadow-xl print:rounded-none print:shadow-none min-h-[1123px] h-[1123px] flex flex-col justify-between border border-[#C4BEB3]">
           <div className="space-y-5">
             <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs">
               <div className="flex items-center gap-2">
