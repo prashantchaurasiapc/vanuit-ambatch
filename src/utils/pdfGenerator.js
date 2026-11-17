@@ -76,7 +76,7 @@ function drawFooter(doc, pageCount) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(...BRAND.mid);
-  doc.text('Vanuit Ambacht B.V. • info@vanuitambacht.nl • +31 6 12345678 • vanuitambacht.nl', 14, h - 9);
+  doc.text('Vanuit Ambacht • info@vanuitambacht.nl • +31 6 12345678 • vanuitambacht.nl', 14, h - 9);
   doc.text(`Pagina ${pageCount}`, 196, h - 9, { align: 'right' });
 }
 
@@ -865,7 +865,7 @@ export function downloadDocumentPdf(docObj) {
   doc.setFontSize(9.5);
   doc.setTextColor(...BRAND.dark);
   const bodyText = [
-    `Dit is een officieel geverifieerd document van Vanuit Ambacht B.V.,`,
+    `Dit is een officieel geverifieerd document van Vanuit Ambacht,`,
     `uitgegeven ten behoeve van project gerelateerde documentatie en`,
     `klantcommunicatie. Alle vermelde specificaties, garanties en`,
     `afspraken in dit document zijn geldig en bindend.`,
@@ -886,7 +886,7 @@ export function downloadDocumentPdf(docObj) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(22, 101, 52);
-  doc.text('✓  DIGITAAL GEVERIFIEERD & GOEDGEKEURD DOOR VANUIT AMBACHT B.V.', 105, y + 9, { align: 'center' });
+  doc.text('✓  DIGITAAL GEVERIFIEERD & GOEDGEKEURD DOOR VANUIT AMBACHT', 105, y + 9, { align: 'center' });
 
   drawFooter(doc, 1);
   doc.save(fileName);
@@ -941,7 +941,7 @@ export function generateBurenbriefPdf(projectData) {
     '',
     'Met vriendelijke groet,',
     `${custName}`,
-    'Vanuit Ambacht B.V.'
+    'Vanuit Ambacht'
   ];
 
   letterLines.forEach((line) => {
