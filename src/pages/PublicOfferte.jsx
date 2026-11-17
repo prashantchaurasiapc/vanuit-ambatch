@@ -176,7 +176,7 @@ export default function PublicOfferte() {
     if (!quote || isDownloadingPdf) return;
     setIsDownloadingPdf(true);
     try {
-      await downloadDirectPdfFile({ ...quote, language });
+      await downloadDirectPdfFile({ ...quote, language: 'NL' });
     } catch (err) {
       console.error('[PublicOfferte] Error generating 6-page PDF:', err);
     } finally {

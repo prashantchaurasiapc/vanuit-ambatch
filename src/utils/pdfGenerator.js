@@ -118,19 +118,24 @@ export async function generateFull6PagePdf(quoteData) {
   const quote = quoteData?.quote || quoteData || {};
   const quoteId = quote.id || quote.quoteId || 'OF-2026331';
 
-  // Determine active language
+  // Determine active language (Default strictly to NL matching official proposal template)
   let activeLang = quoteData?.language || quote?.language;
   if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
     activeLang = window.localStorage.getItem('app_language');
   }
-  activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
+  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : (activeLang || 'NL');
 
   const custObj = typeof quote.customer === 'object' && quote.customer !== null ? quote.customer : null;
   const rawCust = custObj?.name || (custObj ? `${custObj.firstName || ''} ${custObj.lastName || ''}`.trim() : null) || (typeof quote.customer === 'string' ? quote.customer : null) || quote.customerName;
   const customerName = (rawCust && typeof rawCust === 'string') ? rawCust.trim() : (activeLang === 'EN' ? 'Client' : 'Klant');
   const cleanCustomerName = String(customerName).replace(/[\/:*?"<>|]/g, '').trim();
-  const filePrefix = quote.isDraft ? (activeLang === 'EN' ? 'Draft-Quote' : 'Concept-Offerte') : 'Quote';
+  const filePrefix = quote.isDraft ? (activeLang === 'EN' ? 'Draft-Quote' : 'Concept-Offerte') : 'Offerte';
   const fileName = `${filePrefix}-${quoteId} ${cleanCustomerName}.pdf`;
+
+  // Server-side / Node.js test environment guard
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return downloadDirectPdfFileFallback({ ...quote, language: activeLang });
+  }
 
   // Create fixed off-screen container completely invisible behind the application (zero UI disruption)
   const tempDiv = document.createElement('div');
@@ -283,15 +288,20 @@ export async function generateFull6PagePdf(quoteData) {
  * Download a real 6-page quote PDF matching Live Preview 100%.
  * @param {object} quote  - row from quotes state
  */
-export function downloadQuotePdf(quote) {
+export async function downloadQuotePdf(quote) {
   const quoteObj = quote?.quote || quote || {};
   let activeLang = quote?.language || quoteObj?.language;
   if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
     activeLang = window.localStorage.getItem('app_language');
   }
-  activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
+  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : (activeLang || 'NL');
 
-  return downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
+  try {
+    return await generateFull6PagePdf({ ...quoteObj, language: activeLang });
+  } catch (err) {
+    console.error('[PDF Generator] 6-Page PDF generation failed, falling back:', err);
+    return downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
+  }
 }
 
 export function downloadQuotePdfFallback(quote) {
@@ -438,15 +448,20 @@ export function downloadQuotePdfFallback(quote) {
  * Generates an official, beautiful branded PDF document matching the preview 100%
  * and calls doc.save("Quote-{number} {customer}.pdf") to trigger an actual file download.
  */
-export function downloadDirectPdfFile(quoteData = {}) {
+export async function downloadDirectPdfFile(quoteData = {}) {
   const quoteObj = quoteData?.quote || quoteData || {};
   let activeLang = quoteData?.language || quoteObj?.language;
   if (!activeLang && typeof window !== 'undefined' && window.localStorage) {
     activeLang = window.localStorage.getItem('app_language');
   }
-  activeLang = (activeLang === 'EN' || activeLang === 'en') ? 'EN' : 'NL';
+  activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : (activeLang || 'NL');
 
-  return downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
+  try {
+    return await generateFull6PagePdf({ ...quoteObj, language: activeLang });
+  } catch (err) {
+    console.error('[PDF Generator] 6-Page PDF generation failed, falling back:', err);
+    return downloadDirectPdfFileFallback({ ...quoteObj, language: activeLang });
+  }
 }
 
 export function downloadDirectPdfFileFallback(quoteData = {}) {

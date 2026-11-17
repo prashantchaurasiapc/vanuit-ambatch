@@ -1455,8 +1455,9 @@ export default function Quotes() {
                   <Button 
                     size="sm" 
                     icon={Download} 
-                    onClick={() => {
-                      const downloadedName = downloadQuotePdf({ ...pdfPreviewQuote, language });
+                    onClick={async () => {
+                      showToast(language === 'EN' ? 'Generating 6-page PDF...' : '6-pagina offerte PDF genereren...');
+                      const downloadedName = await downloadQuotePdf({ ...pdfPreviewQuote, language: 'NL' });
                       showToast(language === 'EN' ? `✓ Downloaded ${downloadedName}!` : `✓ ${downloadedName} gedownload!`);
                     }} 
                     className="text-xs font-bold bg-[#D97706] hover:bg-[#B45309] text-white shadow-sm cursor-pointer"

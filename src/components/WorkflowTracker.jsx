@@ -34,6 +34,14 @@ export const WORKFLOW_STEPS = [
 export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenPartnerWizard, leadsList = [] }) {
   const navigate = useNavigate();
   const { t, tStatus, language } = useLanguage();
+
+  // Prefilled State Inherited from Lead (Declared at very top to guarantee 0 initialization/TDZ errors)
+  const customerName = lead?.name || lead?.customerName || '';
+  const customerEmail = lead?.email || '';
+  const customerPhone = lead?.phone || '';
+  const customerCity = lead?.city || lead?.location || '';
+  const customerCategory = lead?.productType || lead?.category || (lead?.company?.toLowerCase().includes('snijplanken') ? 'Snijplanken' : 'Buitenkeukens');
+
   const initialStep = lead?.workflowStep || 1;
   const [currentStep, setCurrentStep] = useState(initialStep);
   const isLeadCompleted = currentStep === 8;
@@ -294,13 +302,6 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   });
 
   const [specFormValues, setSpecFormValues] = useState({});
-
-  // Prefilled State Inherited from Lead (Zero Dead Data Entry & Exact Match)
-  const customerName = lead?.name || lead?.customerName || '';
-  const customerEmail = lead?.email || '';
-  const customerPhone = lead?.phone || '';
-  const customerCity = lead?.city || lead?.location || '';
-  const customerCategory = lead?.productType || lead?.category || (lead?.company?.toLowerCase().includes('snijplanken') ? 'Snijplanken' : 'Buitenkeukens');
 
   const getCategoryKey = (catStr) => {
     const s = (catStr || '').toLowerCase().trim();
@@ -3516,7 +3517,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       </div>
                       <button
                         type="button"
-                        onClick={handleRealPdfDownload}
+                        onClick={() => handleRealPdfDownload(false)}
                         className="px-4 py-2 bg-white hover:bg-slate-50 text-primary border border-[#D6CFC2] font-bold text-xs rounded-xl shadow-2xs cursor-pointer flex items-center gap-2 whitespace-nowrap"
                       >
                         <Download className="w-4 h-4 text-primary" />
