@@ -67,7 +67,8 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       }
     } catch (e) {}
   }
-  const language = (currentLang === 'EN' || currentLang === 'en') ? 'EN' : 'NL';
+  // Official Vanuit Ambacht Offerte document template is strictly Dutch (NL) matching client's official reference PDF
+  const language = 'NL';
 
   // Extract dynamic customer & header properties (safe string resolution preventing customerName.trim crashes)
   const custObj = typeof quote?.customer === 'object' && quote?.customer !== null ? quote.customer : null;
@@ -220,9 +221,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
   const rawPhotos = quote?.cover?.photos || quote?.activeVersion?.coverPhotos;
   const coverPhotos = [
-    (rawPhotos?.[0] && String(rawPhotos[0]).trim().length > 3) ? rawPhotos[0] : '/cover_img1.png',
-    (rawPhotos?.[1] && String(rawPhotos[1]).trim().length > 3) ? rawPhotos[1] : '/cover_img2.png',
-    (rawPhotos?.[2] && String(rawPhotos[2]).trim().length > 3) ? rawPhotos[2] : '/cover_img3.png'
+    (rawPhotos?.[0] && String(rawPhotos[0]).trim().length > 3) ? rawPhotos[0] : '/cover_foto_1.jpg',
+    (rawPhotos?.[1] && String(rawPhotos[1]).trim().length > 3) ? rawPhotos[1] : '/cover_foto_2.jpg',
+    (rawPhotos?.[2] && String(rawPhotos[2]).trim().length > 3) ? rawPhotos[2] : '/cover_foto_3.jpg'
   ];
 
   // Dynamic Line Items & Calculations
@@ -341,10 +342,6 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
-      if (language === 'EN') {
-        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
-      }
       const months = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
       return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
     } catch (e) {
@@ -423,36 +420,36 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             <div className="w-full h-[1px] bg-[#D6CFC2]/35 mt-8 mb-4"></div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-xs">
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'customer' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
-                <span className="text-[9.5px] text-[#D6CFC2] uppercase block tracking-[0.24em] font-medium">{language === 'EN' ? 'PREPARED FOR' : 'OPGESTELD VOOR'}</span>
-                <span className="font-medium text-[#FDFBF7] text-sm block mt-1.5 tracking-wide">{customerName}</span>
+                <span className="text-[9.5px] text-[#D6CFC2] uppercase block tracking-[0.24em] font-medium">OPGESTELD VOOR</span>
+                <span className="font-semibold text-[#D4A373] text-sm block mt-1.5 tracking-wide">{customerName}</span>
               </div>
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'date' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
-                <span className="text-[9.5px] text-[#D6CFC2] uppercase block tracking-[0.24em] font-medium">{language === 'EN' ? 'PROPOSAL NUMBER' : 'OFFERTENUMMER'}</span>
-                <span className="font-medium text-[#FDFBF7] text-sm block mt-1.5 tracking-wide">{quoteId}</span>
+                <span className="text-[9.5px] text-[#D6CFC2] uppercase block tracking-[0.24em] font-medium">OFFERTENUMMER</span>
+                <span className="font-semibold text-[#D4A373] text-sm block mt-1.5 tracking-wide">{quoteId}</span>
               </div>
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'date' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
-                <span className="text-[9.5px] text-[#D6CFC2] uppercase block tracking-[0.24em] font-medium">{language === 'EN' ? 'DATE' : 'DATUM'}</span>
-                <span className="font-medium text-[#FDFBF7] text-sm block mt-1.5 tracking-wide">{quoteDate}</span>
+                <span className="text-[9.5px] text-[#D6CFC2] uppercase block tracking-[0.24em] font-medium">DATUM</span>
+                <span className="font-semibold text-[#D4A373] text-sm block mt-1.5 tracking-wide">{formatDutchDate(quoteDate)}</span>
               </div>
               <div className={`transition-all duration-300 p-1 rounded ${highlightField === 'date' ? 'bg-amber-300/80 text-dark ring-2 ring-amber-400' : ''}`}>
-                <span className="text-[9.5px] text-[#D6CFC2] uppercase block tracking-[0.24em] font-medium">{language === 'EN' ? 'VALID UNTIL' : 'GELDIG T/M'}</span>
-                <span className="font-medium text-[#FDFBF7] text-sm block mt-1.5 tracking-wide">{validUntil}</span>
+                <span className="text-[9.5px] text-[#D6CFC2] uppercase block tracking-[0.24em] font-medium">GELDIG T/M</span>
+                <span className="font-semibold text-[#D4A373] text-sm block mt-1.5 tracking-wide">{formatDutchDate(validUntil)}</span>
               </div>
             </div>
 
-            {/* 3 Photo Strip with More Height and Breathing Room */}
-            <div className="grid grid-cols-3 gap-3.5 h-44 sm:h-48 w-full mt-6 mb-3">
+            {/* 3 Photo Strip matching official template & reference screenshot 2 */}
+            <div className="grid grid-cols-3 gap-1 h-48 sm:h-52 w-full mt-6 mb-3">
               {coverPhotos.map((pImg, idx) => (
                 <div
                   key={idx}
-                  className="relative h-full w-full rounded-xl overflow-hidden bg-[#2D3A27] shadow-xs flex items-center justify-center"
+                  className="relative h-full w-full rounded-xs overflow-hidden bg-[#2D3A27] shadow-xs flex items-center justify-center"
                 >
                   <img
-                    src={pImg || (idx === 0 ? '/cover_img1.png' : idx === 1 ? '/cover_img2.png' : '/cover_img3.png')}
+                    src={pImg || (idx === 0 ? '/cover_foto_1.jpg' : idx === 1 ? '/cover_foto_2.jpg' : '/cover_foto_3.jpg')}
                     alt={`Cover Photo ${idx + 1}`}
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src = idx === 0 ? '/cover_img1.png' : idx === 1 ? '/cover_img2.png' : '/cover_img3.png';
+                      e.target.src = idx === 0 ? '/cover_foto_1.jpg' : idx === 1 ? '/cover_foto_2.jpg' : '/cover_foto_3.jpg';
                     }}
                     className="w-full h-full object-cover object-center"
                   />
@@ -469,7 +466,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
             {/* Footer Bar */}
             <div className="flex justify-between items-center text-[10px] text-[#D6CFC2] tracking-[0.22em] uppercase pt-3 pb-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>
               <span className="font-medium">VANUITAMBACHT.NL</span>
-              <span className="font-normal">{language === 'EN' ? 'CRAFTSMANSHIP · QUALITY · PERSONAL' : 'AMBACHT · KWALITEIT · PERSOONLIJK'}</span>
+              <span className="font-normal">AMBACHT · KWALITEIT · PERSOONLIJK</span>
             </div>
           </div>
         </div>
