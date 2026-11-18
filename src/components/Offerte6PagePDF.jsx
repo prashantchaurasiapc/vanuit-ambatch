@@ -1097,23 +1097,85 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 <p className="text-[11.5px] text-[#E5DFD5] leading-[1.7] max-w-[465px] mt-2.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   Stuur een korte bevestiging per WhatsApp of mail, of onderteken hieronder. Daarna ontvang je het definitieve ontwerp met technische tekening ter bevestiging en gaan we voor je aan de slag.
                 </p>
-                <div className="flex items-center gap-3.5 pt-3" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                <div className="flex items-center gap-[15px] pt-3.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   <a
                     href="https://wa.me/31682008025"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-6 py-2.5 bg-[#D6CFC2] text-[#2D3A27] font-semibold rounded-[6px] shadow-xs hover:bg-[#EAE5DC] transition-colors inline-flex items-center gap-2 text-[11.5px]" style={{ letterSpacing: '0.02em', height: '41px' }}
+                    className="hover:bg-[#EAE5DC] transition-colors"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '11px',
+                      width: '232px',
+                      height: '41px',
+                      borderRadius: '6px',
+                      backgroundColor: '#D6CFC2',
+                      color: '#2D3A27',
+                      fontFamily: "'Montserrat', sans-serif",
+                      fontWeight: 600,
+                      fontSize: '11.73px',
+                      lineHeight: '1',
+                      letterSpacing: '0.02em',
+                      textDecoration: 'none',
+                      boxSizing: 'border-box'
+                    }}
                   >
-                    <svg className="w-3.5 h-3.5 stroke-[#2D3A27] fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      viewBox="0 0 24 24"
+                      style={{
+                        width: '11px',
+                        height: '11px',
+                        fill: 'none',
+                        stroke: '#2D3A27',
+                        strokeWidth: 2,
+                        strokeLinecap: 'round',
+                        strokeLinejoin: 'round',
+                        display: 'block',
+                        flexShrink: 0
+                      }}
+                    >
                       <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
                     </svg>
                     <span>WhatsApp · 06 82 00 80 25</span>
                   </a>
                   <a
                     href="mailto:info@vanuitambacht.nl"
-                    className="px-6 py-2.5 border border-[#D6CFC2]/60 text-[#D6CFC2] font-semibold rounded-[6px] transition-colors inline-flex items-center gap-2 text-[11.5px] hover:bg-white/10" style={{ letterSpacing: '0.02em', height: '41px' }}
+                    className="hover:bg-white/10 transition-colors"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '11px',
+                      width: '212px',
+                      height: '41px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(214, 207, 194, 0.55)',
+                      color: '#D6CFC2',
+                      fontFamily: "'Montserrat', sans-serif",
+                      fontWeight: 600,
+                      fontSize: '11.73px',
+                      lineHeight: '1',
+                      letterSpacing: '0.02em',
+                      textDecoration: 'none',
+                      boxSizing: 'border-box'
+                    }}
                   >
-                    <svg className="w-3.5 h-3.5 stroke-[#D6CFC2] fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      viewBox="0 0 24 24"
+                      style={{
+                        width: '11px',
+                        height: '11px',
+                        fill: 'none',
+                        stroke: '#D6CFC2',
+                        strokeWidth: 2,
+                        strokeLinecap: 'round',
+                        strokeLinejoin: 'round',
+                        display: 'block',
+                        flexShrink: 0
+                      }}
+                    >
                       <rect x="2" y="4" width="20" height="16" rx="2" />
                       <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                     </svg>
