@@ -566,6 +566,18 @@ export function getDisplaySpecText(text, language = 'EN') {
       : 'Ceramic stones in worktop – heat-resistant and low maintenance';
   }
 
+  // Flat worktop without cutout
+  if (
+    n.includes('continuous flat solid worktop') ||
+    n.includes('volledig vlak') ||
+    n.includes('doorlopend werkblad') ||
+    n.includes('zonder uitsparingen')
+  ) {
+    return lang === 'NL'
+      ? 'Volledig vlak werkblad zonder uitsparingen'
+      : 'Continuous flat solid worktop without cutouts';
+  }
+
   // BBQ Cutout
   if (n.startsWith('uitsparing op maat voor') || n.startsWith('custom cutout engineered for')) {
     const brand = text.replace(/^(uitsparing op maat voor|custom cutout engineered for)\s*/i, '');

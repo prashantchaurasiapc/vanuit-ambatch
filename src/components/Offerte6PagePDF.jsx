@@ -644,61 +644,61 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
       {/* PAGE 3 OF 6: UW CONFIGURATIE */}
       {(!activePage || activePage === 'all' || Number(activePage) === 3) && (
-        <div className="offerte-pdf-page bg-[#FDFBF7] text-dark px-8 sm:px-14 py-8 sm:py-10 space-y-6 rounded-xl shadow-xl print:rounded-none print:shadow-none min-h-[1123px] h-[1123px] flex flex-col justify-between border border-[#C4BEB3]">
-          <div className="space-y-4">
-            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs">
+        <div className="offerte-pdf-page bg-[#FDFBF7] text-dark px-8 sm:px-14 py-8 sm:py-10 rounded-xl shadow-xl print:rounded-none print:shadow-none min-h-[1123px] h-[1123px] flex flex-col justify-between border border-[#C4BEB3]">
+          <div>
+            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs mb-5">
               <div className="flex items-center gap-2">
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
               <div className="text-[11px] font-medium text-right leading-tight tracking-[0.14em] uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                <div className="text-[#8A8275]">{language === 'EN' ? 'PROPOSAL' : 'OFFERTE'} <span className="text-[#3E4E36] font-bold">{quoteId}</span></div>
+                <div className="text-[#8A8275]">OFFERTE <span className="text-[#3E4E36] font-bold">{quoteId}</span></div>
                 <div className="text-[#4A4A43] font-bold">{customerName.toUpperCase()} &nbsp;·&nbsp; {city.toUpperCase()}</div>
               </div>
             </div>
 
-            <div className="space-y-1">
-              <span className="text-[10px] text-[#8A8275] font-semibold uppercase tracking-[0.16em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                {language === 'EN' ? '03 · YOUR CONFIGURATION' : '03 · UW CONFIGURATIE'}
+            <div className="space-y-1.5 mb-6">
+              <span className="text-[10px] text-[#8A8275] font-semibold uppercase tracking-[0.18em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                03 &nbsp;·&nbsp; UW CONFIGURATIE
               </span>
-              <h3 className="text-2xl sm:text-3xl font-serif text-[#3E4E36] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+              <h3 className="text-2xl sm:text-[28px] font-serif text-[#3E4E36] font-normal leading-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                 {isGardenRoom
-                  ? (language === 'EN' ? 'Your garden room at a glance' : 'Jouw buitenverblijf in één oogopslag')
-                  : (language === 'EN' ? 'Your outdoor kitchen at a glance' : 'Jouw buitenkeuken in één oogopslag')}
+                  ? 'Jouw buitenverblijf in één oogopslag'
+                  : 'Jouw buitenkeuken in één oogopslag'}
               </h3>
             </div>
 
             {/* 4 Green Stat Tiles */}
-            <div className="grid grid-cols-4 gap-3">
-              <div className="bg-[#3E4E36] rounded-[8px] text-left shadow-sm" style={{ padding: '20px 14px 0 18px', minHeight: '107px', height: '107px', boxSizing: 'border-box' }}>
+            <div className="grid grid-cols-4 gap-3.5 mb-7">
+              <div className="bg-[#3E4E36] rounded-[8px] text-left shadow-sm" style={{ padding: '22px 14px 0 18px', minHeight: '107px', height: '107px', boxSizing: 'border-box' }}>
                 <span className="block uppercase" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8.8px', fontWeight: 600, letterSpacing: '0.2em', color: '#D6CFC2', lineHeight: '1' }}>
-                  {language === 'EN' ? 'DIMENSIONS' : 'AFMETING'}
+                  AFMETING
                 </span>
                 <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '17px', fontWeight: 500, color: '#F3EFE7', letterSpacing: 'normal', fontVariantLigatures: 'none', WebkitFontFeatureSettings: '"liga" 0', marginTop: '7px', lineHeight: '1.25' }}>
                   {cleanDimensions}
                 </p>
                 <span className="block" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: '9.33px', lineHeight: '13px', color: '#F3EFE7', opacity: 0.8, marginTop: '4px', letterSpacing: 'normal' }}>
-                  {getDisplayDimensionsUnit(config.dimensionsUnit || 'centimeter', language)}
+                  {getDisplayDimensionsUnit(config.dimensionsUnit || 'centimeter', 'NL')}
                 </span>
               </div>
 
-              <div className="bg-[#49593F] rounded-[8px] text-left shadow-sm" style={{ padding: '20px 14px 0 18px', minHeight: '107px', height: '107px', boxSizing: 'border-box' }}>
+              <div className="bg-[#49593F] rounded-[8px] text-left shadow-sm" style={{ padding: '22px 14px 0 18px', minHeight: '107px', height: '107px', boxSizing: 'border-box' }}>
                 <span className="block uppercase" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8.8px', fontWeight: 600, letterSpacing: '0.2em', color: '#D6CFC2', lineHeight: '1' }}>
-                  {language === 'EN' ? 'WOOD TYPE' : 'HOUTSOORT'}
+                  HOUTSOORT
                 </span>
                 <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '17px', fontWeight: 500, color: '#F3EFE7', letterSpacing: 'normal', fontVariantLigatures: 'none', WebkitFontFeatureSettings: '"liga" 0', marginTop: '7px', lineHeight: '1.25' }}>
-                  {getDisplayWoodType(woodType, language)}
+                  {getDisplayWoodType(woodType, 'NL')}
                 </p>
                 <span className="block" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: '9.33px', lineHeight: '13px', color: '#F3EFE7', opacity: 0.8, marginTop: '4px', letterSpacing: 'normal' }}>
-                  {getDisplayLifespan(config.woodLifespan || woodLifespan, language)}
+                  {getDisplayLifespan(config.woodLifespan || woodLifespan, 'NL')}
                 </span>
               </div>
 
-              <div className="bg-[#3E4E36] rounded-[8px] text-left shadow-sm" style={{ padding: '20px 14px 0 18px', minHeight: '107px', height: '107px', boxSizing: 'border-box' }}>
+              <div className="bg-[#3E4E36] rounded-[8px] text-left shadow-sm" style={{ padding: '22px 14px 0 18px', minHeight: '107px', height: '107px', boxSizing: 'border-box' }}>
                 <span className="block uppercase" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8.8px', fontWeight: 600, letterSpacing: '0.2em', color: '#D6CFC2', lineHeight: '1' }}>
                   {tile3Title}
                 </span>
                 {(() => {
-                  let cleanVal = getDisplayOptionsTitle(tile3Value, language);
+                  let cleanVal = getDisplayOptionsTitle(tile3Value, 'NL');
                   if (!isGardenRoom && cleanVal.toLowerCase().includes('big green egg')) {
                     cleanVal = 'Big Green Egg';
                   }
@@ -709,42 +709,41 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   );
                 })()}
                 <span className="block" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: '9.33px', lineHeight: '13px', color: '#F3EFE7', opacity: 0.8, marginTop: '4px', letterSpacing: 'normal' }}>
-                  {getDisplayOptionsSubtext(config.optionsSubtext || tile3Subtext, language)}
+                  {getDisplayOptionsSubtext(config.optionsSubtext || tile3Subtext, 'NL')}
                 </span>
               </div>
 
-              <div className="bg-[#49593F] rounded-[8px] text-left shadow-sm" style={{ padding: '20px 14px 0 18px', minHeight: '107px', height: '107px', boxSizing: 'border-box' }}>
+              <div className="bg-[#49593F] rounded-[8px] text-left shadow-sm" style={{ padding: '22px 14px 0 18px', minHeight: '107px', height: '107px', boxSizing: 'border-box' }}>
                 <span className="block uppercase" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8.8px', fontWeight: 600, letterSpacing: '0.2em', color: '#D6CFC2', lineHeight: '1' }}>
-                  {language === 'EN' ? 'DELIVERY TIME' : 'LEVERTIJD'}
+                  LEVERTIJD
                 </span>
                 <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '17px', fontWeight: 500, color: '#F3EFE7', letterSpacing: 'normal', fontVariantLigatures: 'none', WebkitFontFeatureSettings: '"liga" 0', marginTop: '7px', lineHeight: '1.25' }}>
-                  {getDisplayDeliveryTime(deliveryTime, language)}
+                  {getDisplayDeliveryTime(deliveryTime, 'NL')}
                 </p>
                 <span className="block" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400, fontSize: '9.33px', lineHeight: '13px', color: '#F3EFE7', opacity: 0.8, marginTop: '4px', letterSpacing: 'normal' }}>
-                  {getDisplayDeliverySubtext(config.deliverySubtext || 'na akkoord op tekening', language)}
+                  {getDisplayDeliverySubtext(config.deliverySubtext || 'na akkoord op tekening', 'NL')}
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-5 items-start">
-              {/* Dynamic Specifications */}
-              <div className="space-y-3.5 text-xs font-body">
+            <div className="grid grid-cols-2 gap-8 sm:gap-10 items-start pt-1">
+              {/* Dynamic Specifications with generous spacing */}
+              <div className="space-y-6 sm:space-y-7 text-xs font-body">
                 {specifications.map((sec, sIdx) => {
-                  const displaySecTitle = getDisplaySpecTitle(sec.title, language);
+                  const displaySecTitle = getDisplaySpecTitle(sec.title, 'NL');
 
                   return (
-                    <div key={sec.id || sIdx}>
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="font-bold text-[#3E4E36] text-[11px] uppercase tracking-[0.14em] whitespace-nowrap" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                    <div key={sec.id || sIdx} className="space-y-2.5">
+                      <div className="flex items-center gap-2.5 pb-1 border-b border-[#E2DDD3]">
+                        <span className="font-bold text-[#3E4E36] text-[11px] uppercase tracking-[0.16em] whitespace-nowrap" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                           {displaySecTitle}
                         </span>
-                        <div className="flex-1 h-[1px] bg-[#E2DDD3]"></div>
                       </div>
-                      <ul className="space-y-1.5 text-[#4A4A43] font-medium text-[11.5px] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                      <ul className="space-y-2.5 text-[#4A4A43] font-medium text-[12px] sm:text-[12.5px] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                         {(sec.lines || []).map((l, lIdx) => (
-                          <li key={lIdx} className="flex items-start gap-2">
-                            <span className="text-[#33422C] font-bold flex-shrink-0">✓</span>
-                            <span>{getDisplaySpecText(l.text, language)}</span>
+                          <li key={lIdx} className="flex items-start gap-2.5">
+                            <span className="text-[#3E4E36] font-bold text-sm flex-shrink-0 mt-0.5">✓</span>
+                            <span className="leading-relaxed">{getDisplaySpecText(l.text, 'NL')}</span>
                           </li>
                         ))}
                       </ul>
@@ -753,9 +752,9 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                 })}
               </div>
 
-              {/* Photo & Diagram */}
-              <div className="space-y-3">
-                <div className={`relative rounded-2xl overflow-hidden border border-[#D6CFC2] shadow-xs bg-[#F4EFE6] flex items-center justify-center p-1.5 transition-all ${diagram.show ? 'h-44 sm:h-48' : 'h-64 sm:h-72'
+              {/* Photo & Diagram with generous spacing */}
+              <div className="space-y-4 sm:space-y-5">
+                <div className={`relative rounded-2xl overflow-hidden border border-[#D6CFC2] shadow-xs bg-[#F4EFE6] flex items-center justify-center p-1.5 transition-all ${diagram.show ? 'h-48 sm:h-52' : 'h-64 sm:h-72'
                   }`}>
                   <img
                     src={config.configPhoto || projectImg}
@@ -767,28 +766,28 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
                 {/* Floor-Plan Top-View Diagram for Garden Room / Veranda / Poolhouse */}
                 {isGardenRoom ? (
-                  <div className="p-3 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] space-y-2 shadow-xs font-body">
+                  <div className="p-4 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] space-y-2.5 shadow-xs font-body">
                     <span className="text-[10px] uppercase font-bold text-[#8A8275] tracking-[0.14em] block text-center" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                      {language === 'EN' ? 'FLOOR PLAN LAYOUT' : 'INDELING PLATTEGROND'}
+                      INDELING PLATTEGROND
                     </span>
 
                     {/* Exact Client 2-Compartment Floorplan Card */}
-                    <div className="h-28 flex gap-2">
+                    <div className="h-28 flex gap-2.5">
                       {/* Left: Poolhouse / Closed Timber Section */}
-                      <div className="w-[42%] bg-[#33422C] text-[#FDFBF7] rounded-xl p-2.5 flex flex-col justify-center items-center text-center">
+                      <div className="w-[42%] bg-[#3E4E36] text-[#FDFBF7] rounded-xl p-2.5 flex flex-col justify-center items-center text-center">
                         <span className="text-xs font-medium" style={{ fontFamily: "'Montserrat', sans-serif" }}>poolhouse</span>
-                        <span className="text-[10.5px] text-[#D6CFC2] mt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'enclosed · 3.00 m' : 'dicht · 3,00 m'}</span>
+                        <span className="text-[10.5px] text-[#D6CFC2] mt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>dicht · 3,00 m</span>
                       </div>
 
                       {/* Right: Lounge / Overkapt Section */}
                       <div className="flex-1 bg-white border border-[#D6CFC2] text-[#3E4E36] rounded-xl p-2.5 flex flex-col justify-center items-center text-center">
                         <span className="text-xs font-semibold" style={{ fontFamily: "'Montserrat', sans-serif" }}>lounge</span>
-                        <span className="text-[10.5px] text-[#4A4A43] font-medium mt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>{language === 'EN' ? 'canopy · 5.00 m' : 'overkapt · 5,00 m'}</span>
+                        <span className="text-[10.5px] text-[#4A4A43] font-medium mt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>overkapt · 5,00 m</span>
                       </div>
                     </div>
 
                     {/* Dimension Bar */}
-                    <div className="flex items-center justify-between text-[11px] text-[#4A4A43] font-bold px-1 pt-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                    <div className="flex items-center justify-between text-[11px] text-[#4A4A43] font-bold px-1 pt-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                       <span>0</span>
                       <div className="flex-1 mx-2.5 flex items-center">
                         <div className="w-[1.5px] h-3 bg-[#70624F]"></div>
@@ -799,37 +798,37 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                     </div>
                   </div>
                 ) : diagram.show && (
-                  <div className="p-3 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] text-center space-y-2 shadow-xs">
-                    <span className="text-[9px] uppercase font-bold text-[#8A8275] tracking-[0.14em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                      {language === 'EN' ? `FRONT VIEW DIAGRAM (${diagram.totalWidth} CM)` : `VOORAANZICHT TEKENING (${diagram.totalWidth} CM)`}
+                  <div className="p-4 bg-[#F4EFE6] rounded-2xl border border-[#E2DDD3] text-center space-y-2.5 shadow-xs">
+                    <span className="text-[9.5px] uppercase font-bold text-[#8A8275] tracking-[0.14em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                      VOORAANZICHT TEKENING ({diagram.totalWidth} CM)
                     </span>
 
-                    <div className="flex items-center justify-center gap-1 text-[9px]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                    <div className="flex items-center justify-center gap-1.5 text-[9.5px] py-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                       {diagram.segments.map((seg, sIdx) => {
                         const isDark = seg.type === 'CUTOUT' || seg.type === 'FRIDGE' || seg.type === 'SINK';
-                        const segLabel = seg.label === 'kastje' && language === 'EN' ? 'cabinet' : (seg.label || (language === 'EN' ? 'cabinet' : 'kastje'));
+                        const segLabel = seg.label || 'kastje';
                         return (
                           <div
                             key={sIdx}
                             style={{
                               flex: Math.max(1, Number(seg.width) || 50),
-                              minHeight: '46px',
+                              minHeight: '52px',
                               display: 'flex',
                               flexDirection: 'column',
                               justifyContent: 'center',
                               alignItems: 'center'
                             }}
-                            className={`py-1.5 px-1 rounded-xl font-bold shadow-xs border ${isDark ? 'bg-[#33422C] text-[#FDFBF7] border-[#33422C]' : 'bg-white text-dark border-[#D6CFC2]'
+                            className={`py-2 px-1 rounded-xl font-bold shadow-xs border ${isDark ? 'bg-[#3E4E36] text-[#FDFBF7] border-[#3E4E36]' : 'bg-white text-dark border-[#D6CFC2]'
                               }`}
                           >
-                            <span className="block max-w-full text-center" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8.5px', lineHeight: '12px', letterSpacing: 'normal', fontVariantLigatures: 'none', whiteSpace: 'nowrap' }}>{segLabel}</span>
-                            <span className="opacity-70 block text-center" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8px', lineHeight: '11px', letterSpacing: 'normal', marginTop: '2px' }}>{seg.width} cm</span>
+                            <span className="block max-w-full text-center" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '9px', lineHeight: '13px', letterSpacing: 'normal', fontVariantLigatures: 'none', whiteSpace: 'nowrap' }}>{segLabel}</span>
+                            <span className="opacity-70 block text-center" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '8.5px', lineHeight: '12px', letterSpacing: 'normal', marginTop: '2px' }}>{seg.width} cm</span>
                           </div>
                         );
                       })}
                     </div>
 
-                    <div className="text-[9px] text-[#4A4A43] border-t border-[#D6CFC2]/60 pt-1 flex justify-between px-2" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                    <div className="text-[9.5px] text-[#4A4A43] border-t border-[#D6CFC2]/60 pt-1.5 flex justify-between px-2" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                       <span className="font-bold text-[#4A4A43]">0 cm</span>
                       <span className="font-bold text-[#4A4A43]">{diagram.totalWidth} cm</span>
                     </div>
@@ -838,12 +837,12 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
                 {/* Wood Infobox */}
                 {infobox.show && (
-                  <div className="p-3.5 bg-[#35442E] text-[#FDFBF7] rounded-2xl space-y-1 shadow-sm border border-[#43543A]">
-                    <h4 className="text-sm font-normal text-[#FDFBF7]" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
-                      {getDisplayInfoboxTitle(infobox.title, language, woodType)}
+                  <div className="p-4 sm:p-5 bg-[#35442E] text-[#FDFBF7] rounded-2xl space-y-1.5 shadow-sm border border-[#43543A]">
+                    <h4 className="text-sm sm:text-base font-normal text-[#FDFBF7]" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
+                      {getDisplayInfoboxTitle(infobox.title, 'NL', woodType)}
                     </h4>
-                    <p className="text-[11px] text-[#E5DFD5] leading-relaxed" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                      {getDisplayInfoboxText(infobox.text, language, woodType)}
+                    <p className="text-[11.5px] sm:text-[12px] text-[#E5DFD5] leading-[1.65]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                      {getDisplayInfoboxText(infobox.text, 'NL', woodType)}
                     </p>
                   </div>
                 )}
@@ -853,8 +852,8 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
 
           {/* Footer */}
           <div className="flex justify-between items-center border-t border-[#C4BEB3]/70 pt-3 text-[10px] text-dark/60" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-            <span className="font-bold uppercase tracking-widest text-[#33422C]">VANUIT AMBACHT</span>
-            <span>{language === 'EN' ? 'Proposal' : 'Offerte'} <strong className="text-[#3E4E36]">{quoteId}</strong></span>
+            <span className="font-bold uppercase tracking-widest text-[#3E4E36]">VANUIT AMBACHT</span>
+            <span>Offerte <strong className="text-[#3E4E36]">{quoteId}</strong></span>
             <span className="font-bold">3 / 6</span>
           </div>
         </div>

@@ -212,7 +212,7 @@ export function createDefaultQuote(customerData = null, existingQuote = null, la
               ]
             : [
                 { id: 'l-1', text: activeLang === 'NL' ? 'Keramische stenen in het werkblad – hittebestendig en onderhoudsarm' : 'Ceramic stones in worktop – heat-resistant and low maintenance', isOption: false },
-                { id: 'l-2', text: activeLang === 'NL' ? 'Volledig vlak en doorlopend werkblad' : 'Continuous flat solid worktop without cutouts', isOption: false }
+                { id: 'l-2', text: 'Volledig vlak werkblad zonder uitsparingen', isOption: false }
               ]
         },
         {
