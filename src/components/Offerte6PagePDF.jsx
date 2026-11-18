@@ -476,7 +476,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       {(!activePage || activePage === 'all' || Number(activePage) === 2) && (
         <div className="offerte-pdf-page bg-[#FDFBF7] text-dark px-8 sm:px-14 py-8 sm:py-10 space-y-6 rounded-xl shadow-xl print:rounded-none print:shadow-none min-h-[1123px] h-[1123px] flex flex-col justify-between border border-[#C4BEB3]">
           <div className="space-y-4">
-            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs">
+            <div className="flex justify-between items-center text-xs mb-6 sm:mb-7">
               <div className="flex items-center gap-2">
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
@@ -646,7 +646,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       {(!activePage || activePage === 'all' || Number(activePage) === 3) && (
         <div className="offerte-pdf-page bg-[#FDFBF7] text-dark px-8 sm:px-14 py-8 sm:py-10 rounded-xl shadow-xl print:rounded-none print:shadow-none min-h-[1123px] h-[1123px] flex flex-col justify-between border border-[#C4BEB3]">
           <div>
-            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs mb-5">
+            <div className="flex justify-between items-center text-xs mb-6 sm:mb-7">
               <div className="flex items-center gap-2">
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
@@ -863,7 +863,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       {(!activePage || activePage === 'all' || Number(activePage) === 4) && (
         <div className="offerte-pdf-page bg-[#FDFBF7] text-dark px-8 sm:px-14 py-8 sm:py-10 space-y-6 rounded-xl shadow-xl print:rounded-none print:shadow-none min-h-[1123px] h-[1123px] flex flex-col justify-between border border-[#C4BEB3]">
           <div className="space-y-6">
-            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs">
+            <div className="flex justify-between items-center text-xs mb-6 sm:mb-7">
               <div className="flex items-center gap-2">
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
@@ -1064,7 +1064,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       {(!activePage || activePage === 'all' || Number(activePage) === 5) && (
         <div className="offerte-pdf-page bg-[#FDFBF7] text-dark px-8 sm:px-14 py-8 sm:py-10 rounded-xl shadow-xl print:rounded-none print:shadow-none min-h-[1123px] h-[1123px] flex flex-col justify-between border border-[#C4BEB3]">
           <div>
-            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs mb-5">
+            <div className="flex justify-between items-center text-xs mb-6 sm:mb-7">
               <div className="flex items-center gap-2">
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
@@ -1078,23 +1078,23 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
               <span className="text-[10px] text-[#8A8275] font-semibold uppercase tracking-[0.18em] block" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 05 &nbsp;·&nbsp; AKKOORD
               </span>
-              <h3 className="text-2xl sm:text-[28px] font-serif font-bold text-[#33422C] leading-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+              <h3 className="text-2xl sm:text-[32px] font-serif font-normal text-[#33422C] leading-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
                 {isGardenRoom ? 'Zullen we gaan bouwen?' : 'Zullen we hem gaan maken?'}
               </h3>
             </div>
 
             {/* Dark Green CTA Card matching reference image 2 */}
-            <div className="p-6 sm:p-7 bg-[#33422C] text-[#FDFBF7] rounded-2xl shadow-sm border border-[#43543A] relative overflow-hidden mb-6">
+            <div className="bg-[#33422C] text-[#FDFBF7] rounded-2xl shadow-sm border border-[#43543A] relative overflow-hidden mb-6" style={{ padding: '32px 34px' }}>
               <img
                 src="/va_watermark.png"
                 alt=""
                 className="absolute right-[-20px] top-[-20px] w-64 opacity-[0.048] pointer-events-none select-none"
               />
               <div className="relative z-10 space-y-2">
-                <h4 className="text-xl sm:text-[22px] font-serif text-[#FDFBF7] font-normal" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                <h4 className="text-xl sm:text-[23px] font-serif text-[#FDFBF7] font-normal leading-snug" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>
                   Akkoord geven kan in één minuut
                 </h4>
-                <p className="text-[11.5px] text-[#E5DFD5] leading-[1.65] max-w-xl" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                <p className="text-[11.5px] text-[#E5DFD5] leading-[1.7] max-w-[465px] mt-2.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                   Stuur een korte bevestiging per WhatsApp of mail, of onderteken hieronder. Daarna ontvang je het definitieve ontwerp met technische tekening ter bevestiging en gaan we voor je aan de slag.
                 </p>
                 <div className="flex items-center gap-3.5 pt-3" style={{ fontFamily: "'Montserrat', sans-serif" }}>
@@ -1102,7 +1102,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                     href="https://wa.me/31682008025"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-5 py-2.5 bg-[#D6CFC2] text-[#2D3A27] font-bold rounded-lg shadow-xs hover:bg-[#EAE5DC] transition-colors inline-flex items-center gap-2 text-xs"
+                    className="px-6 py-2.5 bg-[#D6CFC2] text-[#2D3A27] font-semibold rounded-[6px] shadow-xs hover:bg-[#EAE5DC] transition-colors inline-flex items-center gap-2 text-[11.5px]" style={{ letterSpacing: '0.02em', height: '41px' }}
                   >
                     <svg className="w-3.5 h-3.5 stroke-[#2D3A27] fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
@@ -1111,7 +1111,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
                   </a>
                   <a
                     href="mailto:info@vanuitambacht.nl"
-                    className="px-5 py-2.5 border border-[#D6CFC2]/60 text-[#D6CFC2] font-semibold rounded-lg transition-colors inline-flex items-center gap-2 text-xs hover:bg-white/10"
+                    className="px-6 py-2.5 border border-[#D6CFC2]/60 text-[#D6CFC2] font-semibold rounded-[6px] transition-colors inline-flex items-center gap-2 text-[11.5px] hover:bg-white/10" style={{ letterSpacing: '0.02em', height: '41px' }}
                   >
                     <svg className="w-3.5 h-3.5 stroke-[#D6CFC2] fill-none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -1266,7 +1266,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
       {(!activePage || activePage === 'all' || Number(activePage) === 6) && (
         <div className="offerte-pdf-page bg-[#FDFBF7] text-dark px-8 sm:px-14 py-8 sm:py-10 space-y-6 rounded-xl shadow-xl print:rounded-none print:shadow-none min-h-[1123px] h-[1123px] flex flex-col justify-between border border-[#C4BEB3]">
           <div className="space-y-5">
-            <div className="flex justify-between items-center border-b border-[#C4BEB3]/70 pb-3 text-xs">
+            <div className="flex justify-between items-center text-xs mb-6 sm:mb-7">
               <div className="flex items-center gap-2">
                 <img src="/pdf_logo_dark.png" alt="Vanuit Ambacht" className="h-7 sm:h-8 object-contain" />
               </div>
