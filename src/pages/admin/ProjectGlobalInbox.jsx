@@ -7,8 +7,9 @@ import {
   Plus, Search, Filter, Trash2, Edit2, X, CheckCircle, RotateCcw,
   MapPin, Calendar, UserCheck, Layers, FileText, CheckSquare,
   Sparkles, Truck, ShoppingBag, Download, Camera, Image as ImageIcon,
-  Lock, Check, ChevronDown, FolderOpen
+  Lock, Check, ChevronDown, FolderOpen, MessageSquare
 } from 'lucide-react';
+import ProjectChatDrawer from '../../components/common/ProjectChatDrawer';
 import { downloadBlueprintPdf } from '../../utils/pdfGenerator';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { compressImage } from '../../utils/storageHelper';
@@ -28,6 +29,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
   // Direct Upload Popup Modal State
   const [directUploadProject, setDirectUploadProject] = useState(null);
+  const [chatProject, setChatProject] = useState(null);
   const [selectedUploadFiles, setSelectedUploadFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadForm, setUploadForm] = useState({
@@ -104,7 +106,8 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
     progress: 0,
     deadline: '',
     status: 'In Progress',
-    projectType: 'outdoor_kitchen'
+    projectType: 'outdoor_kitchen',
+    contractValue: ''
   });
 
   // Load initial data from real API
@@ -117,7 +120,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
         : [];
       if (projectsArr.length > 0) {
         const merged = projectsArr.map(bp => {
-          const lp = localProjects.find(l => l.id === bp.id || l.projectNumber === bp.projectNumber || (lp.quoteId && bp.quoteId === lp.quoteId));
+          const lp = localProjects.find(l => l.id === bp.id || l.projectNumber === bp.projectNumber || (l.quoteId && bp.quoteId === l.quoteId));
           if (!lp) return bp;
           return {
             ...bp,
@@ -263,7 +266,8 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       progress: 10,
       deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       status: 'In Progress',
-      projectType: activeTab === 'Outdoor Living Spaces' ? 'garden_room' : 'outdoor_kitchen'
+      projectType: activeTab === 'Outdoor Living Spaces' ? 'garden_room' : 'outdoor_kitchen',
+      contractValue: ''
     });
     setCustomerSelect(defaultCustId);
     setPartnerSelect('Unassigned');
@@ -289,6 +293,10 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
     }
     setPartnerSelect(partnerVal);
 
+    const initialVal = proj.contractValue != null
+      ? String(proj.contractValue)
+      : (proj.numericAmount != null ? String(proj.numericAmount) : (typeof proj.amount === 'string' ? proj.amount.replace(/[^0-9.-]/g, '') : ''));
+
     setForm({
       name: proj.name || '',
       customer: cust,
@@ -296,7 +304,8 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       progress: proj.progress || proj.progressPercentage || 0,
       deadline: proj.deadline || '',
       status: proj.status || 'In Progress',
-      projectType: proj.projectType || detectProjectType(proj) || 'outdoor_kitchen'
+      projectType: proj.projectType || detectProjectType(proj) || 'outdoor_kitchen',
+      contractValue: initialVal || ''
     });
     setModalOpen(true);
   };
@@ -333,6 +342,14 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
       partnerId = matchedPartner ? matchedPartner.id : (finalPartner.length === 36 ? finalPartner : null);
     }
 
+    // Resolve numeric contractValue
+    const parsedContractValue = form.contractValue !== '' && form.contractValue != null
+      ? parseFloat(String(form.contractValue).replace(/[^0-9.-]/g, ''))
+      : null;
+    const validContractValue = !isNaN(parsedContractValue) && parsedContractValue !== null && parsedContractValue >= 0
+      ? parsedContractValue
+      : null;
+
     if (selectedProject) {
       // Edit existing project — PUT /api/projects/:id
       const body = {
@@ -341,6 +358,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
         progressPercentage: parseInt(form.progress) || 0,
         orderStatus: form.status === 'Completed' ? 'voltooid' : 'in_voorbereiding',
         partnerId: partnerId,
+        ...(validContractValue !== null ? { contractValue: validContractValue } : {})
       };
       const res = await api.put(`/projects/${selectedProject.id}`, body);
       if (res.success) {
@@ -442,6 +460,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
         deliveryAddress,
         city,
         orderStatus: 'in_voorbereiding',
+        ...(validContractValue !== null ? { contractValue: validContractValue } : {})
       };
       const res = await api.post('/projects', body);
       if (res.success) {
@@ -531,6 +550,11 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
     return matchesSearch && matchesStatus && matchesTab;
   }).sort((a, b) => {
+    // Round 3.2: Default sorting on "Wie is aan zet" (action items for us prioritized on top)
+    const aNeedsAction = (a.waitingReview || (a.unreadCount || 0) > 0 || (Array.isArray(a.customerActions) && a.customerActions.some(act => !act.completed))) ? 1 : 0;
+    const bNeedsAction = (b.waitingReview || (b.unreadCount || 0) > 0 || (Array.isArray(b.customerActions) && b.customerActions.some(act => !act.completed))) ? 1 : 0;
+    if (aNeedsAction !== bNeedsAction) return bNeedsAction - aNeedsAction;
+
     if (sortBy === 'deadline') return new Date(a.deadline || 0) - new Date(b.deadline || 0);
     if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
     if (sortBy === 'progress-desc') return (b.progress || 0) - (a.progress || 0);
@@ -688,6 +712,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                 <th className="py-1.5 px-3 w-[120px] min-w-[120px]">{t('projects.phase')}</th>
                 <th className="py-1.5 px-3 w-[140px] min-w-[140px]">{t('projects.nextMilestone')}</th>
                 <th className="py-1.5 px-3 w-[180px] min-w-[180px]">{t('projects.partner')}</th>
+                <th className="py-1.5 px-3 w-[110px] min-w-[110px] text-right">{language === 'NL' ? 'Acties' : 'Actions'}</th>
               </tr>
             </thead>
             <tbody>
@@ -718,16 +743,17 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                     Number(row.progressPercentage) === 100;
 
                   const pType = detectProjectType(row);
-                  const numericVal = Number(row.numericAmount || (typeof row.amount === 'string' ? parseFloat(row.amount.replace(/[^\d.-]/g, '')) : row.amount) || 15180);
+                  const numericVal = Number(row.contractValue ?? row.numericAmount ?? (typeof row.amount === 'string' ? parseFloat(row.amount.replace(/[^\d.-]/g, '')) : row.amount) ?? 0);
 
                   return (
                     <tr
                       key={row.id}
+                      onClick={() => onSelectProject ? onSelectProject(row) : (pType === 'field_mapping' ? navigate('/admin/projects/field-mapping') : navigate(`/admin/projects/${row.id || row.projectNumber}`))}
                       className="bg-white shadow-xs hover:shadow-md hover:bg-[#FAF8F5]/80 transition-all group cursor-pointer"
                     >
                       {/* 1. Project No. */}
                       <td
-                        onClick={() => onSelectProject ? onSelectProject(row) : (pType === 'field_mapping' ? navigate('/admin/projects/field-mapping') : pType === 'garden_room' ? navigate('/admin/projects/garden-rooms') : navigate('/admin/projects/outdoor-kitchens'))}
+                        onClick={() => onSelectProject ? onSelectProject(row) : (pType === 'field_mapping' ? navigate('/admin/projects/field-mapping') : navigate(`/admin/projects/${row.id || row.projectNumber}`))}
                         className="py-3 px-3 rounded-l-xl border-y border-l border-[#E2DDD3] font-mono font-bold text-[11px] text-primary whitespace-nowrap"
                         title="Click to open project overview & tabs"
                       >
@@ -738,7 +764,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
 
                       {/* 2. Customer */}
                       <td
-                        onClick={() => onSelectProject ? onSelectProject(row) : (pType === 'field_mapping' ? navigate('/admin/projects/field-mapping') : pType === 'garden_room' ? navigate('/admin/projects/garden-rooms') : navigate('/admin/projects/outdoor-kitchens'))}
+                        onClick={() => onSelectProject ? onSelectProject(row) : (pType === 'field_mapping' ? navigate('/admin/projects/field-mapping') : navigate(`/admin/projects/${row.id || row.projectNumber}`))}
                         className="py-3 px-3 border-y border-[#E2DDD3] text-dark text-[11px] font-bold"
                       >
                         <div className="flex flex-col">
@@ -786,7 +812,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                       </td>
 
                       {/* 6. Partner */}
-                      <td className="py-3 px-3 rounded-r-xl border-y border-r border-[#E2DDD3] text-[11px]">
+                      <td className="py-3 px-3 border-y border-[#E2DDD3] text-[11px]">
                         <div className="flex flex-col">
                           <span className="font-bold text-dark">
                             {row.partnerName ||
@@ -802,6 +828,22 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                                 : (row.partnerStatus || t('projects.inProgress'))}
                           </span>
                         </div>
+                      </td>
+
+                      {/* 7. Actions (Chat) */}
+                      <td className="py-3 px-3 rounded-r-xl border-y border-r border-[#E2DDD3] text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setChatProject(row);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FAF7F2] hover:bg-[#33422C] text-[#33422C] hover:text-white border border-[#D6CFC2] rounded-lg text-xs font-bold transition-all shadow-2xs group-hover:border-[#33422C] cursor-pointer"
+                          title={language === 'NL' ? 'Project Chat met Partner openen' : 'Open Project Chat with Partner'}
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>Chat</span>
+                        </button>
                       </td>
                     </tr>
                   );
@@ -1103,7 +1145,7 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
                     <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">
                       {language === 'NL' ? 'Type / Categorie *' : 'Project Type *'}
@@ -1116,6 +1158,19 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
                       <option value="outdoor_kitchen">{language === 'NL' ? 'Outdoor Kitchen' : 'Outdoor Kitchen'}</option>
                       <option value="garden_room">{language === 'NL' ? 'Living Outdoor Spaces' : 'Living Outdoor Spaces'}</option>
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">
+                      {language === 'NL' ? 'Projectwaarde (€)' : 'Project Value (€)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={form.contractValue}
+                      onChange={e => setForm(prev => ({ ...prev, contractValue: e.target.value }))}
+                      placeholder={language === 'NL' ? 'bijv. 18500' : 'e.g. 18500'}
+                      className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark font-mono font-bold"
+                    />
                   </div>
 
                   <div>
@@ -1160,6 +1215,19 @@ export default function ProjectGlobalInbox({ onSelectProject }) {
           </div>
         </AnimatePresence>,
         document.body
+      )}
+
+      {/* PROJECT CHAT DRAWER */}
+      {chatProject && (
+        <ProjectChatDrawer
+          isOpen={Boolean(chatProject)}
+          onClose={() => setChatProject(null)}
+          projectCode={chatProject.projectNumber || chatProject.id}
+          projectId={chatProject.id}
+          clientName={chatProject.customerName || (typeof chatProject.customer === 'string' ? chatProject.customer : chatProject.customer?.name) || 'Klant'}
+          partnerName={chatProject.partnerName || (chatProject.partner && chatProject.partner !== 'Unassigned' ? chatProject.partner : 'Vakman')}
+          onShowToast={(msg) => showToast(msg)}
+        />
       )}
     </div>
   );

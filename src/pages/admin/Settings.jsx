@@ -88,14 +88,7 @@ export default function Settings() {
   }, [urlTab, activeTab, setSearchParams]);
   const [toastMsg, setToastMsg] = useState('');
 
-  const getDisplayValue = (key, val) => {
-    if (language !== 'EN') return val;
-    if (key === 'name' && val === 'Vanuit Ambacht') return 'Craftsmanship Co.';
-    if (key === 'address' && val === 'Herengracht 1, Amsterdam') return '123 Main St, London';
-    if (key === 'kvk' && val === 'KVK-88741029') return 'REG-88741029';
-    if (key === 'vatNumber' && val === 'NL88741029B01') return 'UK88741029B01';
-    return val;
-  };
+  const getDisplayValue = (_key, val) => val;
 
   // -------------------------------------------------------------
   // 4. AUTO-MESSAGE TEMPLATES STATE (SECTION 2.3)
@@ -150,17 +143,17 @@ export default function Settings() {
     name: 'Vanuit Ambacht',
     website: 'www.vanuitambacht.nl',
     email: 'info@vanuitambacht.nl',
-    phone: '+31 6 12345678',
-    address: 'Herengracht 1, Amsterdam',
-    country: 'Netherlands',
-    kvk: 'KVK-88741029',
-    vatNumber: 'NL88741029B01',
-    iban: 'NL91 ABNA 0417 1234 56',
+    phone: '06 82 00 80 25',
+    address: 'Koningshof 33, 3451 LM Vleuten',
+    country: 'Nederland',
+    kvk: '93097429',
+    vatNumber: 'NL866264863B01',
+    iban: 'NL27 ABNA 0132 2698 56',
     bankName: 'ABN AMRO Bank',
     standardVatRate: '21',
     lowVatRate: '9',
-    quotePrefix: '#Q-2004',
-    invoicePrefix: '#INV-902'
+    quotePrefix: 'OF-2026',
+    invoicePrefix: '2026'
   });
 
   const [colors, setColors] = useState({
@@ -286,19 +279,19 @@ export default function Settings() {
   
   const [dynamicCategories, setDynamicCategories] = useState(() => {
     const cfg = getProductConfig();
-    return cfg.categories || DEFAULT_PRODUCT_CONFIG.categories;
+    return Array.isArray(cfg.categories) ? cfg.categories : [];
   });
   const [dynamicWoodTypes, setDynamicWoodTypes] = useState(() => {
     const cfg = getProductConfig();
-    return cfg.woodTypes || DEFAULT_PRODUCT_CONFIG.woodTypes;
+    return Array.isArray(cfg.woodTypes) ? cfg.woodTypes : [];
   });
   const [dynamicMaterials, setDynamicMaterials] = useState(() => {
     const cfg = getProductConfig();
-    return cfg.materials || DEFAULT_PRODUCT_CONFIG.materials;
+    return Array.isArray(cfg.materials) ? cfg.materials : [];
   });
   const [dynamicOptions, setDynamicOptions] = useState(() => {
     const cfg = getProductConfig();
-    return cfg.options || DEFAULT_PRODUCT_CONFIG.options;
+    return Array.isArray(cfg.options) ? cfg.options : [];
   });
 
   const [addCategoryModalOpen, setAddCategoryModalOpen] = useState(false);
@@ -313,7 +306,7 @@ export default function Settings() {
   const [addOptionModalOpen, setAddOptionModalOpen] = useState(false);
   const [optionForm, setOptionForm] = useState({ name: '', category: 'Inbouw', description: '' });
 
-  // Sync state to central product configuration storage
+  // Sync state to central product configuration storage & PostgreSQL backend
   const syncAndSaveProductConfig = (newCats, newWoods, newMats, newOpts) => {
     const cfg = {
       categories: newCats || dynamicCategories,
@@ -322,6 +315,8 @@ export default function Settings() {
       options: newOpts || dynamicOptions
     };
     saveProductConfig(cfg);
+    // Explicitly persist complete atomic JSON to backend PostgreSQL
+    api.patch('/settings/config/categories', cfg).catch(() => {});
   };
 
   // Live multi-user synchronization: update local state when remote updates occur
@@ -329,10 +324,10 @@ export default function Settings() {
     const handleRemoteConfig = (e) => {
       const cfg = e.detail || getProductConfig();
       if (cfg) {
-        if (cfg.categories) setDynamicCategories(cfg.categories);
-        if (cfg.woodTypes) setDynamicWoodTypes(cfg.woodTypes);
-        if (cfg.materials) setDynamicMaterials(cfg.materials);
-        if (cfg.options) setDynamicOptions(cfg.options);
+        if (cfg.categories && Array.isArray(cfg.categories)) setDynamicCategories(cfg.categories);
+        if (cfg.woodTypes && Array.isArray(cfg.woodTypes)) setDynamicWoodTypes(cfg.woodTypes);
+        if (cfg.materials && Array.isArray(cfg.materials)) setDynamicMaterials(cfg.materials);
+        if (cfg.options && Array.isArray(cfg.options)) setDynamicOptions(cfg.options);
       }
     };
     window.addEventListener('app_product_config_changed', handleRemoteConfig);
@@ -353,9 +348,6 @@ export default function Settings() {
     const updated = [...dynamicCategories, newCat];
     setDynamicCategories(updated);
     syncAndSaveProductConfig(updated, null, null, null);
-    try {
-      await api.patch('/settings/config/categories', updated);
-    } catch (err) {}
     showToast(language === 'EN' ? `New category "${newCat.name}" created!` : `Nieuwe categorie "${newCat.name}" aangemaakt!`);
     setCategoryForm({ name: '', icon: '🪵', description: '' });
     setAddCategoryModalOpen(false);
@@ -728,7 +720,25 @@ export default function Settings() {
               ...d.fieldsetsConfig
             }));
           }
-          if (d.categoriesConfig) setDynamicCategories(d.categoriesConfig);
+          if (d.categoriesConfig) {
+            const cfg = d.categoriesConfig;
+            if (Array.isArray(cfg)) {
+              setDynamicCategories(cfg);
+            } else if (typeof cfg === 'object') {
+              if (Array.isArray(cfg.categories) && cfg.categories.length > 0) {
+                setDynamicCategories(cfg.categories);
+              }
+              if (Array.isArray(cfg.woodTypes) && cfg.woodTypes.length > 0) {
+                setDynamicWoodTypes(cfg.woodTypes);
+              }
+              if (Array.isArray(cfg.materials) && cfg.materials.length > 0) {
+                setDynamicMaterials(cfg.materials);
+              }
+              if (Array.isArray(cfg.options) && cfg.options.length > 0) {
+                setDynamicOptions(cfg.options);
+              }
+            }
+          }
           if (d.partnerBreakdownConfig) setPartnerBreakdownConfig(d.partnerBreakdownConfig);
           if (d.plConfig) setPlConfig(d.plConfig);
           if (d.integrationsConfig) setIntegrations(d.integrationsConfig);
@@ -775,7 +785,7 @@ export default function Settings() {
         invoicePrefix: companyInfo.invoicePrefix,
       });
       window.dispatchEvent(new Event('app_data_changed'));
-      showToast(language === 'EN' ? 'Company details saved successfully!' : 'Bedrijfsgegevens & Nummering formats opgeslagen! (#Q-2004 / #INV-902)');
+      showToast(language === 'EN' ? 'Company details saved successfully!' : 'Bedrijfsgegevens & Nummering formats opgeslagen! (OF-2026 / 2026)');
     } catch (e) {
       showToast(language === 'EN' ? 'Failed to save company details.' : 'Opslaan bedrijfsgegevens mislukt.');
     }
@@ -1094,7 +1104,7 @@ export default function Settings() {
           </Card>
 
           {/* Quote & Invoice Numbering Format Customizer (PRD 4.12) */}
-          <Card title={language === 'EN' ? 'Quote & Invoice Numbering Formats (#Q-2004, #INV-902)' : 'Offerte & Factuur Nummering Formats (#Q-2004, #INV-902)'} icon={Hash}>
+          <Card title={language === 'EN' ? 'Quote & Invoice Numbering Formats (OF-2026, 2026)' : 'Offerte & Factuur Nummering Formats (OF-2026, 2026)'} icon={Hash}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div className="p-4 bg-white rounded-xl border border-[#D6CFC2] space-y-2">
                 <label className="block font-bold text-primary uppercase text-[10px] flex items-center gap-1">
@@ -1105,9 +1115,9 @@ export default function Settings() {
                   value={companyInfo.quotePrefix}
                   onChange={e => handleCompanyChange('quotePrefix', e.target.value)}
                   className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-mono font-bold text-primary text-sm"
-                  placeholder="#Q-2004"
+                  placeholder="OF-2026"
                 />
-                <p className="text-[10px] text-dark/60">{language === 'EN' ? 'Example on quote PDFs:' : 'Voorbeeld op offerte PDFs:'} <strong className="font-mono text-primary">{companyInfo.quotePrefix}-801</strong></p>
+                <p className="text-[10px] text-dark/60">{language === 'EN' ? 'Example on quote PDFs:' : 'Voorbeeld op offerte PDFs:'} <strong className="font-mono text-primary">{companyInfo.quotePrefix || 'OF-2026'}001</strong></p>
               </div>
 
               <div className="p-4 bg-white rounded-xl border border-[#D6CFC2] space-y-2">
@@ -1119,9 +1129,9 @@ export default function Settings() {
                   value={companyInfo.invoicePrefix}
                   onChange={e => handleCompanyChange('invoicePrefix', e.target.value)}
                   className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg font-mono font-bold text-primary text-sm"
-                  placeholder="#INV-902"
+                  placeholder="2026"
                 />
-                <p className="text-[10px] text-dark/60">{language === 'EN' ? 'Example on invoice PDFs:' : 'Voorbeeld op factuur PDFs:'} <strong className="font-mono text-primary">{companyInfo.invoicePrefix}-902</strong></p>
+                <p className="text-[10px] text-dark/60">{language === 'EN' ? 'Example on invoice PDFs:' : 'Voorbeeld op factuur PDFs:'} <strong className="font-mono text-primary">{companyInfo.invoicePrefix || '2026'}001</strong></p>
               </div>
             </div>
 
@@ -1218,44 +1228,51 @@ export default function Settings() {
 
               <Card title={language === 'EN' ? 'Configured Categories' : 'Geconfigureerde Categorieën'} icon={Layers} p="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {dynamicCategories.map((cat) => (
-                    <div key={cat.id} className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex items-start justify-between gap-3 shadow-2xs">
-                      <div className="flex items-start gap-3">
-                        <span className="text-2xl p-2 bg-[#EDE8DF] rounded-xl">{cat.icon || '📦'}</span>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-primary text-sm font-heading">{cat.name}</h4>
-                            <button
-                              onClick={() => handleToggleCategoryStatus(cat.id)}
-                              className="cursor-pointer"
-                              title="Klik om status te wijzigen"
-                            >
-                              <Badge variant={cat.status === 'Actief' ? 'success' : 'default'} className="text-[9px]">
-                                {cat.status || 'Actief'}
-                              </Badge>
-                            </button>
+                  {dynamicCategories.length === 0 ? (
+                    <div className="col-span-full py-12 text-center text-xs font-body text-dark/40 bg-[#F8F7F4] rounded-2xl border border-dashed border-[#D6CFC2]">
+                      <p className="font-bold text-dark/60 text-sm mb-1">{language === 'EN' ? 'No categories configured' : 'Geen categorieën geconfigureerd'}</p>
+                      <p>{language === 'EN' ? 'Click "+ Add Category" above to create your first category.' : 'Klik hierboven op "+ Categorie Toevoegen" om uw eerste categorie aan te maken.'}</p>
+                    </div>
+                  ) : (
+                    dynamicCategories.map((cat) => (
+                      <div key={cat.id} className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex items-start justify-between gap-3 shadow-2xs">
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl p-2 bg-[#EDE8DF] rounded-xl">{cat.icon || '📦'}</span>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-primary text-sm font-heading">{cat.name}</h4>
+                              <button
+                                onClick={() => handleToggleCategoryStatus(cat.id)}
+                                className="cursor-pointer"
+                                title="Klik om status te wijzigen"
+                              >
+                                <Badge variant={cat.status === 'Actief' ? 'success' : 'default'} className="text-[9px]">
+                                  {cat.status || 'Actief'}
+                                </Badge>
+                              </button>
+                            </div>
+                            <p className="text-xs text-dark/60 mt-1 font-body">{cat.description}</p>
                           </div>
-                          <p className="text-xs text-dark/60 mt-1 font-body">{cat.description}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleToggleCategoryStatus(cat.id)}
+                            className="p-1.5 text-dark/50 hover:text-dark hover:bg-dark/5 rounded-lg transition-colors cursor-pointer"
+                            title={cat.status === 'Actief' ? 'Deactiveren' : 'Activeren'}
+                          >
+                            {cat.status === 'Actief' ? <ToggleRight className="w-4 h-4 text-emerald-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCategory(cat.id)}
+                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            title="Verwijderen"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleToggleCategoryStatus(cat.id)}
-                          className="p-1.5 text-dark/50 hover:text-dark hover:bg-dark/5 rounded-lg transition-colors cursor-pointer"
-                          title={cat.status === 'Actief' ? 'Deactiveren' : 'Activeren'}
-                        >
-                          {cat.status === 'Actief' ? <ToggleRight className="w-4 h-4 text-emerald-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCategory(cat.id)}
-                          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                          title="Verwijderen"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </Card>
             </div>
@@ -1282,40 +1299,47 @@ export default function Settings() {
 
               <Card title={language === 'EN' ? 'Configured Timber Species' : 'Geconfigureerde Houtsoorten'} icon={TreePine} p="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {dynamicWoodTypes.map((wood) => (
-                    <div key={wood.id} className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex items-start justify-between gap-3 shadow-2xs">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-primary text-sm font-heading">{wood.name}</h4>
-                          <span className="text-[10px] font-mono font-bold bg-[#EDE8DF] text-primary px-2 py-0.5 rounded">
-                            {wood.lifespan}
-                          </span>
-                          <button onClick={() => handleToggleWoodStatus(wood.id)} className="cursor-pointer">
-                            <Badge variant={wood.status === 'Actief' ? 'success' : 'default'} className="text-[9px]">
-                              {wood.status || 'Actief'}
-                            </Badge>
+                  {dynamicWoodTypes.length === 0 ? (
+                    <div className="col-span-full py-12 text-center text-xs font-body text-dark/40 bg-[#F8F7F4] rounded-2xl border border-dashed border-[#D6CFC2]">
+                      <p className="font-bold text-dark/60 text-sm mb-1">{language === 'EN' ? 'No wood types configured' : 'Geen houtsoorten geconfigureerd'}</p>
+                      <p>{language === 'EN' ? 'Click "+ Add Wood Type" above to create your first wood type.' : 'Klik hierboven op "+ Houtsoort Toevoegen" om uw eerste houtsoort aan te maken.'}</p>
+                    </div>
+                  ) : (
+                    dynamicWoodTypes.map((wood) => (
+                      <div key={wood.id} className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex items-start justify-between gap-3 shadow-2xs">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-primary text-sm font-heading">{wood.name}</h4>
+                            <span className="text-[10px] font-mono font-bold bg-[#EDE8DF] text-primary px-2 py-0.5 rounded">
+                              {wood.lifespan}
+                            </span>
+                            <button onClick={() => handleToggleWoodStatus(wood.id)} className="cursor-pointer">
+                              <Badge variant={wood.status === 'Actief' ? 'success' : 'default'} className="text-[9px]">
+                                {wood.status || 'Actief'}
+                              </Badge>
+                            </button>
+                          </div>
+                          <p className="text-xs text-dark/60 font-body">{wood.description}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleToggleWoodStatus(wood.id)}
+                            className="p-1.5 text-dark/50 hover:text-dark hover:bg-dark/5 rounded-lg transition-colors cursor-pointer"
+                            title={wood.status === 'Actief' ? 'Deactiveren' : 'Activeren'}
+                          >
+                            {wood.status === 'Actief' ? <ToggleRight className="w-4 h-4 text-emerald-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteWood(wood.id)}
+                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            title="Verwijderen"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-xs text-dark/60 font-body">{wood.description}</p>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleToggleWoodStatus(wood.id)}
-                          className="p-1.5 text-dark/50 hover:text-dark hover:bg-dark/5 rounded-lg transition-colors cursor-pointer"
-                          title={wood.status === 'Actief' ? 'Deactiveren' : 'Activeren'}
-                        >
-                          {wood.status === 'Actief' ? <ToggleRight className="w-4 h-4 text-emerald-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteWood(wood.id)}
-                          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                          title="Verwijderen"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </Card>
             </div>
@@ -1342,37 +1366,44 @@ export default function Settings() {
 
               <Card title={language === 'EN' ? 'Configured Materials' : 'Geconfigureerde Werkbladen & Materialen'} icon={Hammer} p="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {dynamicMaterials.map((mat) => (
-                    <div key={mat.id} className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex items-start justify-between gap-3 shadow-2xs">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-primary text-sm font-heading">{mat.name}</h4>
-                          <button onClick={() => handleToggleMaterialStatus(mat.id)} className="cursor-pointer">
-                            <Badge variant={mat.status === 'Actief' ? 'success' : 'default'} className="text-[9px]">
-                              {mat.status || 'Actief'}
-                            </Badge>
+                  {dynamicMaterials.length === 0 ? (
+                    <div className="col-span-full py-12 text-center text-xs font-body text-dark/40 bg-[#F8F7F4] rounded-2xl border border-dashed border-[#D6CFC2]">
+                      <p className="font-bold text-dark/60 text-sm mb-1">{language === 'EN' ? 'No materials configured' : 'Geen werkbladen of materialen geconfigureerd'}</p>
+                      <p>{language === 'EN' ? 'Click "+ Add Material" above to create your first material.' : 'Klik hierboven op "+ Materiaal Toevoegen" om uw eerste materiaal aan te maken.'}</p>
+                    </div>
+                  ) : (
+                    dynamicMaterials.map((mat) => (
+                      <div key={mat.id} className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex items-start justify-between gap-3 shadow-2xs">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-primary text-sm font-heading">{mat.name}</h4>
+                            <button onClick={() => handleToggleMaterialStatus(mat.id)} className="cursor-pointer">
+                              <Badge variant={mat.status === 'Actief' ? 'success' : 'default'} className="text-[9px]">
+                                {mat.status || 'Actief'}
+                              </Badge>
+                            </button>
+                          </div>
+                          <p className="text-xs text-dark/60 font-body">{mat.description}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleToggleMaterialStatus(mat.id)}
+                            className="p-1.5 text-dark/50 hover:text-dark hover:bg-dark/5 rounded-lg transition-colors cursor-pointer"
+                            title={mat.status === 'Actief' ? 'Deactiveren' : 'Activeren'}
+                          >
+                            {mat.status === 'Actief' ? <ToggleRight className="w-4 h-4 text-emerald-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteMaterial(mat.id)}
+                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            title="Verwijderen"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-xs text-dark/60 font-body">{mat.description}</p>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleToggleMaterialStatus(mat.id)}
-                          className="p-1.5 text-dark/50 hover:text-dark hover:bg-dark/5 rounded-lg transition-colors cursor-pointer"
-                          title={mat.status === 'Actief' ? 'Deactiveren' : 'Activeren'}
-                        >
-                          {mat.status === 'Actief' ? <ToggleRight className="w-4 h-4 text-emerald-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteMaterial(mat.id)}
-                          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                          title="Verwijderen"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </Card>
             </div>
@@ -1399,40 +1430,47 @@ export default function Settings() {
 
               <Card title={language === 'EN' ? 'Configured Options' : 'Geconfigureerde Inbouwopties'} icon={Sparkles} p="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {dynamicOptions.map((opt) => (
-                    <div key={opt.id} className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex items-start justify-between gap-3 shadow-2xs">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-primary text-sm font-heading">{opt.name}</h4>
-                          <span className="text-[10px] font-mono font-bold bg-[#EDE8DF] text-primary px-2 py-0.5 rounded">
-                            {opt.category}
-                          </span>
-                          <button onClick={() => handleToggleOptionStatus(opt.id)} className="cursor-pointer">
-                            <Badge variant={opt.status === 'Actief' ? 'success' : 'default'} className="text-[9px]">
-                              {opt.status || 'Actief'}
-                            </Badge>
+                  {dynamicOptions.length === 0 ? (
+                    <div className="col-span-full py-12 text-center text-xs font-body text-dark/40 bg-[#F8F7F4] rounded-2xl border border-dashed border-[#D6CFC2]">
+                      <p className="font-bold text-dark/60 text-sm mb-1">{language === 'EN' ? 'No built-in options configured' : 'Geen inbouwopties geconfigureerd'}</p>
+                      <p>{language === 'EN' ? 'Click "+ Add Option" above to create your first option.' : 'Klik hierboven op "+ Optie Toevoegen" om uw eerste optie aan te maken.'}</p>
+                    </div>
+                  ) : (
+                    dynamicOptions.map((opt) => (
+                      <div key={opt.id} className="p-4 bg-white border border-[#D6CFC2] rounded-xl flex items-start justify-between gap-3 shadow-2xs">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-primary text-sm font-heading">{opt.name}</h4>
+                            <span className="text-[10px] font-mono font-bold bg-[#EDE8DF] text-primary px-2 py-0.5 rounded">
+                              {opt.category}
+                            </span>
+                            <button onClick={() => handleToggleOptionStatus(opt.id)} className="cursor-pointer">
+                              <Badge variant={opt.status === 'Actief' ? 'success' : 'default'} className="text-[9px]">
+                                {opt.status || 'Actief'}
+                              </Badge>
+                            </button>
+                          </div>
+                          <p className="text-xs text-dark/60 font-body">{opt.description}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleToggleOptionStatus(opt.id)}
+                            className="p-1.5 text-dark/50 hover:text-dark hover:bg-dark/5 rounded-lg transition-colors cursor-pointer"
+                            title={opt.status === 'Actief' ? 'Deactiveren' : 'Activeren'}
+                          >
+                            {opt.status === 'Actief' ? <ToggleRight className="w-4 h-4 text-emerald-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteOption(opt.id)}
+                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            title="Verwijderen"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-xs text-dark/60 font-body">{opt.description}</p>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleToggleOptionStatus(opt.id)}
-                          className="p-1.5 text-dark/50 hover:text-dark hover:bg-dark/5 rounded-lg transition-colors cursor-pointer"
-                          title={opt.status === 'Actief' ? 'Deactiveren' : 'Activeren'}
-                        >
-                          {opt.status === 'Actief' ? <ToggleRight className="w-4 h-4 text-emerald-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteOption(opt.id)}
-                          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                          title="Verwijderen"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </Card>
             </div>

@@ -2,17 +2,19 @@ import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../context/LanguageContext';
+import { useAdminCounters } from '../hooks/useAdminCounters';
 import { isGardenRoomFamily } from '../utils/projectType';
 import api from '../api/apiClient';
 import {
   LayoutDashboard, Users, FileText, Briefcase, UserSquare,
   Folder, PieChart, Settings, Calendar, LogOut, X, Menu, ChevronRight, ChevronLeft, ChevronDown,
-  Camera, Phone, Receipt, CreditCard, ShieldCheck, Smartphone, CornerDownRight
+  Camera, Phone, Receipt, CreditCard, ShieldCheck, Smartphone, CornerDownRight, MessageSquare
 } from 'lucide-react';
 
 export default function Sidebar({ role }) {
   const { user, logout } = useAuth();
   const { t, language } = useLanguage();
+  const counters = useAdminCounters();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -66,12 +68,25 @@ export default function Sidebar({ role }) {
     return localStorage.getItem('app_sidebar_collapsed') === 'true';
   });
 
-  const [openDropdowns, setOpenDropdowns] = useState({});
+  const [openDropdowns, setOpenDropdowns] = useState({
+    Verkoop: true,
+    Uitvoering: false,
+    'Financiën': false,
+  });
 
   useEffect(() => {
-    const bookkeepingPaths = ['/admin/quotes', '/admin/invoices', '/admin/customers', '/admin/bank', '/admin/taxes', '/admin/profit-loss'];
-    if (bookkeepingPaths.includes(location.pathname)) {
-      setOpenDropdowns(prev => ({ ...prev, Bookkeeping: true }));
+    const verkoopPaths = ['/admin/leads', '/admin/quotes', '/admin/customers'];
+    const uitvoeringPaths = ['/admin/projects', '/admin/planning'];
+    const financienPaths = ['/admin/invoices', '/admin/bank', '/admin/taxes', '/admin/profit-loss'];
+
+    if (verkoopPaths.some(p => location.pathname.startsWith(p))) {
+      setOpenDropdowns(prev => ({ ...prev, Verkoop: true }));
+    }
+    if (uitvoeringPaths.some(p => location.pathname.startsWith(p))) {
+      setOpenDropdowns(prev => ({ ...prev, Uitvoering: true }));
+    }
+    if (financienPaths.some(p => location.pathname.startsWith(p))) {
+      setOpenDropdowns(prev => ({ ...prev, 'Financiën': true }));
     }
   }, [location.pathname]);
 
@@ -93,28 +108,55 @@ export default function Sidebar({ role }) {
     setOpenDropdowns(prev => ({ ...prev, [name]: !prev[name] }));
   };
 
+  // Brief: 7 Admin sections ordered like working day (Dutch labels)
   const ADMIN_LINKS = [
-    { name: t('common.dashboard') || 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-    { name: t('common.leads') || 'Leads', path: '/admin/leads', icon: Users },
-    { name: t('common.projects') || 'Projects', path: '/admin/projects', icon: Briefcase },
     { 
-      name: t('common.bookkeeping') || 'Bookkeeping', 
+      name: 'Vandaag', 
+      path: '/admin/dashboard', 
+      icon: LayoutDashboard,
+      badge: counters.openTasks > 0 ? counters.openTasks : null 
+    },
+    { 
+      name: 'Verkoop', 
+      icon: Users, 
+      isDropdown: true,
+      children: [
+        { name: 'Leads', path: '/admin/leads', badge: counters.newLeads > 0 ? counters.newLeads : null },
+        { name: 'Offertes', path: '/admin/quotes' },
+        { name: 'Klanten', path: '/admin/customers' },
+      ]
+    },
+    { 
+      name: 'Uitvoering', 
+      icon: Briefcase, 
+      isDropdown: true,
+      children: [
+        { name: 'Projecten', path: '/admin/projects' },
+        { name: 'Planning', path: '/admin/planning' },
+      ]
+    },
+    { 
+      name: 'Berichten', 
+      path: '/admin/inbox', 
+      icon: MessageSquare, 
+      badge: counters.unreadMessages > 0 ? counters.unreadMessages : null 
+    },
+    { 
+      name: 'Partners', 
+      path: '/admin/partners', 
+      icon: UserSquare 
+    },
+    { 
+      name: 'Financiën', 
       icon: PieChart, 
       isDropdown: true,
       children: [
-        { name: t('common.quotes') || 'Quotes', path: '/admin/quotes' },
-        { name: t('common.invoices') || 'Invoices', path: '/admin/invoices' },
-        { name: t('common.customers') || 'Customers', path: '/admin/customers' },
-        { name: t('common.bank') || 'Bank', path: '/admin/bank' },
-        { name: t('common.taxes') || 'Taxes (VAT)', path: '/admin/taxes' },
-        { name: t('common.profitLoss') || 'Profit & Loss', path: '/admin/profit-loss' },
+        { name: 'Facturen', path: '/admin/invoices' },
+        { name: 'Bank', path: '/admin/bank' },
+        { name: 'Btw', path: '/admin/taxes' },
+        { name: 'Winst en verlies', path: '/admin/profit-loss' },
       ]
     },
-    { name: t('common.partners') || 'Partners', path: '/admin/partners', icon: UserSquare },
-    { name: t('common.planning') || 'Planning', path: '/admin/planning', icon: Calendar },
-    { name: t('common.documentsMedia') || t('common.documents') || 'Documents & Media', path: '/admin/documents', icon: Folder },
-    { name: t('common.tasks') || 'Tasks', path: '/admin/tasks', icon: FileText },
-    { name: t('common.settings') || 'Settings', path: '/admin/settings', icon: Settings },
   ];
 
   const PARTNER_LINKS = [
@@ -245,13 +287,14 @@ export default function Sidebar({ role }) {
                         to={child.path}
                         onClick={() => setMobileOpen(false)}
                         title={child.name}
-                        className={({ isActive }) =>
-                          `px-2 py-1.5 rounded-lg transition-all duration-150 text-[11px] font-body flex items-center justify-between ${
-                            isActive
+                        className={({ isActive }) => {
+                          const active = isActive || (child.path === '/admin/projects' && location.pathname.startsWith('/admin/projects'));
+                          return `px-2 py-1.5 rounded-lg transition-all duration-150 text-[11px] font-body flex items-center justify-between ${
+                            active
                               ? 'bg-cream/20 text-cream font-medium'
                               : 'text-white/50 hover:bg-white/5 hover:text-white/80'
-                          }`
-                        }
+                          }`;
+                        }}
                       >
                         <span className="truncate">{child.name}</span>
                         {child.badge && (
@@ -315,86 +358,46 @@ export default function Sidebar({ role }) {
           );
         })}
 
-        {role === 'admin' && (
-          <div className="pt-4 pb-2 mt-2 border-t border-white/10 space-y-0.5">
-            {!collapsed && (
-              <span className="text-[9px] font-mono font-bold text-white/40 uppercase tracking-widest block px-2.5 mb-1.5">
-                {language === 'NL' ? 'Deze Mock-up' : 'This Mock-up'}
-              </span>
-            )}
-            
-            <NavLink
-              to="/admin/projects/inbox-messages"
-              onClick={() => handleNavLinkClick('/admin/projects/inbox-messages')}
-              className={() =>
-                `flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 ${
-                  location.pathname.includes('/admin/projects/inbox')
-                    ? 'bg-white/15 text-white font-medium shadow-xs'
-                    : 'text-white/70 hover:bg-white/10 hover:text-white'
-                }`
-              }
-              title={language === 'NL' ? 'Inbox berichten' : 'Inbox messages'}
-            >
-              <CornerDownRight className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/admin/projects/inbox') ? 'font-medium' : 'font-normal'}`}>{language === 'NL' ? 'Inbox berichten' : 'Inbox messages'}</span>}
-              {!collapsed && (
-                <span className="ml-auto px-1.5 py-0.2 bg-[#D97706] text-white font-mono text-[9px] font-bold rounded-full">
-                  4
-                </span>
-              )}
-            </NavLink>
 
-            <NavLink
-              to="/admin/projects/outdoor-kitchen"
-              onClick={() => handleNavLinkClick('/admin/projects/outdoor-kitchen')}
-              className={() =>
-                `flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 ${
-                  location.pathname.includes('/outdoor-kitchen')
-                    ? 'bg-white/15 text-white font-medium shadow-xs'
-                    : 'text-white/70 hover:bg-white/10 hover:text-white'
-                }`
-              }
-              title={language === 'NL' ? 'Buitenkeuken project' : 'Outdoor Kitchen Project'}
-            >
-              <CornerDownRight className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/outdoor-kitchen') ? 'font-medium' : 'font-normal'}`}>{language === 'NL' ? 'Buitenkeuken project' : 'Outdoor Kitchen Project'}</span>}
-            </NavLink>
-
-            <NavLink
-              to="/admin/projects/garden-room"
-              onClick={() => handleNavLinkClick('/admin/projects/garden-room')}
-              className={() =>
-                `flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 ${
-                  location.pathname.includes('/garden-room')
-                    ? 'bg-white/15 text-white font-medium shadow-xs'
-                    : 'text-white/70 hover:bg-white/10 hover:text-white'
-                }`
-              }
-              title={language === 'NL' ? 'Buitenverblijf project' : 'Garden Room Project'}
-            >
-              <CornerDownRight className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/garden-room') ? 'font-medium' : 'font-normal'}`}>{language === 'NL' ? 'Buitenverblijf project' : 'Garden Room Project'}</span>}
-            </NavLink>
-
-            <NavLink
-              to="/admin/projects/field-mapping"
-              onClick={() => handleNavLinkClick('/admin/projects/field-mapping')}
-              className={() =>
-                `flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 ${
-                  location.pathname.includes('/field-mapping')
-                    ? 'bg-white/15 text-white font-medium shadow-xs'
-                    : 'text-white/70 hover:bg-white/10 hover:text-white'
-                }`
-              }
-              title={language === 'NL' ? 'Veldkoppeling' : 'Field Mapping'}
-            >
-              <CornerDownRight className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-              {collapsed ? null : <span className={`text-xs font-body truncate ${location.pathname.includes('/field-mapping') ? 'font-medium' : 'font-normal'}`}>{language === 'NL' ? 'Veldkoppeling' : 'Field Mapping'}</span>}
-            </NavLink>
-          </div>
-        )}
 
       </nav>
+
+      {/* Instellingen at the bottom of the sidebar (Brief Section 7) */}
+      {role === 'admin' && (
+        <div className={`px-2 py-1.5 border-t border-white/10 ${collapsed ? 'flex justify-center' : ''}`}>
+          {collapsed ? (
+            <NavLink
+              to="/admin/settings"
+              onClick={() => handleNavLinkClick('/admin/settings')}
+              className={({ isActive }) =>
+                `w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
+                  isActive
+                    ? 'bg-cream text-primary shadow-md font-bold'
+                    : 'text-white/70 hover:bg-white/15 hover:text-white'
+                }`
+              }
+              title="Instellingen"
+            >
+              <Settings className="w-4 h-4" strokeWidth={1.75} />
+            </NavLink>
+          ) : (
+            <NavLink
+              to="/admin/settings"
+              onClick={() => handleNavLinkClick('/admin/settings')}
+              className={({ isActive }) =>
+                `flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all duration-150 ${
+                  isActive
+                    ? 'bg-white/15 text-white font-medium shadow-xs'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                }`
+              }
+            >
+              <Settings className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} />
+              <span className="text-xs font-body font-normal">Instellingen</span>
+            </NavLink>
+          )}
+        </div>
+      )}
 
       {/* Logout */}
       <div className={`p-2.5 border-t border-white/10 ${collapsed ? 'flex justify-center' : ''}`}>

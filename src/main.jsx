@@ -8,9 +8,9 @@ import App from './App.jsx'
 import './index.css'
 import './i18n'
 
-// Ensure app_language default is initialized if not present
+// Ensure app_language default is initialized to Dutch (NL) on fresh login
 if (!localStorage.getItem('app_language')) {
-  localStorage.setItem('app_language', 'EN');
+  localStorage.setItem('app_language', 'NL');
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

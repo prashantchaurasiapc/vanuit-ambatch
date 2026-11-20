@@ -1,12 +1,59 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, Search, ChevronDown, User, LogOut, Settings, Check, Clock, FileText, Briefcase, UserPlus, Globe, Camera, Menu } from 'lucide-react';
+import { Bell, Search, ChevronDown, ChevronLeft, User, LogOut, Settings, Check, Clock, FileText, Briefcase, UserPlus, Globe, Camera, Menu, X, MessageSquare, Plus, CalendarPlus, CheckSquare } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../context/LanguageContext';
+import { useAdminCounters } from '../hooks/useAdminCounters';
 import { useLocation, useNavigate } from 'react-router-dom';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import api from '../api/apiClient';
 
-function getBreadcrumb(pathname, search, t) {
-  const parts = pathname.split('/').filter(Boolean).map(p => {
+function getBreadcrumb(pathname, search, t, language) {
+  const isNl = language === 'NL' || !language;
+  const segments = pathname.split('/').filter(Boolean);
+
+  if (segments[0] === 'admin') {
+    const section = segments[1] || 'dashboard';
+    const sub = segments[2];
+
+    const salesPaths = ['leads', 'quotes', 'customers'];
+    const opsPaths = ['projects', 'planning'];
+    const finPaths = ['invoices', 'bank', 'taxes', 'profit-loss', 'finance'];
+
+    let group = null;
+    let page = null;
+
+    if (section === 'dashboard') {
+      return [isNl ? 'Vandaag' : 'Today'];
+    } else if (salesPaths.includes(section)) {
+      group = isNl ? 'Verkoop' : 'Sales';
+      page = section === 'leads' ? 'Leads' : section === 'quotes' ? (isNl ? 'Offertes' : 'Quotes') : (isNl ? 'Klanten' : 'Customers');
+    } else if (opsPaths.includes(section)) {
+      group = isNl ? 'Uitvoering' : 'Operations';
+      page = section === 'projects' ? (isNl ? 'Projecten' : 'Projects') : (isNl ? 'Planning' : 'Planning');
+    } else if (section === 'inbox') {
+      return [isNl ? 'Berichten' : 'Messages'];
+    } else if (section === 'partners') {
+      return ['Partners'];
+    } else if (finPaths.includes(section)) {
+      group = isNl ? 'Financiën' : 'Finance';
+      page = section === 'invoices' ? (isNl ? 'Facturen' : 'Invoices')
+        : section === 'bank' ? 'Bank'
+        : section === 'taxes' ? (isNl ? 'Btw-aangifte' : 'Taxes')
+        : (isNl ? 'Winst & Verlies' : 'Profit & Loss');
+    } else if (section === 'settings') {
+      return [isNl ? 'Instellingen' : 'Settings'];
+    } else {
+      page = section.charAt(0).toUpperCase() + section.slice(1);
+    }
+
+    const crumbs = group ? [group, page] : [page];
+    if (sub && sub !== 'all' && sub !== 'inbox') {
+      crumbs.push(sub);
+    }
+    return crumbs;
+  }
+
+  const parts = segments.map(p => {
     const key = `breadcrumbs.${p.toLowerCase()}`;
     const trans = t(key);
     return trans !== key ? trans : p.charAt(0).toUpperCase() + p.slice(1);
@@ -35,29 +82,7 @@ function getBreadcrumb(pathname, search, t) {
   return parts;
 }
 
-const ADMIN_NOTIFS = [
-  { 
-    id: 'partner-photo-sample', 
-    titleKey: '📸 New Partner Photo Uploaded', 
-    descKey: 'Craftsman Sven Hoek uploaded a new workshop progress photo for Luxury Teak Outdoor Kitchen (PRJ-101).', 
-    isCustomText: true, 
-    timeKey: '5m ago', 
-    unread: true, 
-    link: '/admin/documents?tab=photos', 
-    icon: 'Camera' 
-  },
-  { id: 1, titleKey: 'notifications.newLead', descKey: 'notifications.newLeadDesc', descParams: { name: 'Sanne Visser', category: 'Bespoke Outdoor Kitchen' }, timeKey: 'notifications.10m', unread: true, link: '/admin/leads', icon: 'UserPlus' },
-  { id: 2, titleKey: 'notifications.projectProgress', descKey: 'notifications.projectProgressDesc', descParams: { partner: 'Sven Hoek', project: 'Luxury Kitchen Amsterdam', progress: '70' }, timeKey: 'notifications.1h', unread: true, link: '/admin/projects', icon: 'Briefcase' },
-  { id: 3, titleKey: 'notifications.quoteApproved', descKey: 'notifications.quoteApprovedDesc', descParams: { client: 'Jan de Vries', quote: 'Q-2004' }, timeKey: 'notifications.3h', unread: true, link: '/admin/quotes', icon: 'Check' },
-  { id: 4, titleKey: 'notifications.invoicePaid', descKey: 'notifications.invoicePaidDesc', descParams: { invoice: 'INV-902', amount: '12.500', city: 'Rotterdam' }, timeKey: 'notifications.1d', unread: false, link: '/admin/finance', icon: 'FileText' },
-];
-
-const PARTNER_NOTIFS = [
-  { id: 1, titleKey: 'notifications.partnerNewProject', descKey: 'notifications.partnerNewProjectDesc', descParams: { project: 'Luxury Outdoor Kitchen Amsterdam' }, timeKey: 'notifications.20m', unread: true, link: '/partner/projects', icon: 'Briefcase' },
-  { id: 2, titleKey: 'notifications.materialDelivery', descKey: 'notifications.materialDeliveryDesc', descParams: { date: '25 Nov', time: '13:00' }, timeKey: 'notifications.2h', unread: true, link: '/partner/planning', icon: 'Clock' },
-  { id: 3, titleKey: 'notifications.siteVisit', descKey: 'notifications.siteVisitDesc', descParams: { time: '09:00' }, timeKey: 'notifications.4h', unread: true, link: '/partner/planning', icon: 'Clock' },
-  { id: 4, titleKey: 'notifications.newBlueprint', descKey: 'notifications.newBlueprintDesc', descParams: { version: '2', city: 'Utrecht Villa' }, timeKey: 'notifications.1d', unread: false, link: '/partner/documents', icon: 'FileText' },
-];
+const DEFAULT_NOTIFS = [];
 
 const ICON_MAP = {
   Camera,
@@ -67,6 +92,7 @@ const ICON_MAP = {
   FileText,
   Clock,
   Bell,
+  MessageSquare,
 };
 
 const renderNotifIcon = (notif) => {
@@ -128,44 +154,48 @@ export default function TopNav() {
   const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
-  const crumbs = getBreadcrumb(location.pathname, location.search, t);
+  const crumbs = getBreadcrumb(location.pathname, location.search, t, language);
   const cleanDisplayName = (name) => {
     if (!name) return 'Admin User';
-    if (name.includes('Tim') || name.includes('Bram')) return 'Tim & Bram';
     return name.replace(/\s*\([^)]*\)/g, '').trim() || 'Admin User';
   };
 
   const displayName = cleanDisplayName(user?.name);
-  const initials = displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'TB';
+  const initials = displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || (user?.role === 'admin' ? 'A' : 'P');
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
   const getInitialNotifications = () => {
-    const base = user?.role === 'admin' ? ADMIN_NOTIFS : PARTNER_NOTIFS;
     try {
       const stored = JSON.parse(localStorage.getItem('va_admin_notifications') || '[]');
       if (Array.isArray(stored) && stored.length > 0) {
-        const merged = stored.map(s => {
-          let cleanIcon = 'Bell';
-          if (typeof s.icon === 'string' && ICON_MAP[s.icon]) {
-            cleanIcon = s.icon;
-          }
-          return {
-            ...s,
-            icon: cleanIcon,
-          };
-        });
-        base.forEach(b => {
-          if (!merged.some(m => m.id === b.id)) merged.push(b);
-        });
-        return merged;
+        const dummyTerms = ['sanne visser', 'jan de vries', 'luxury teak', 'sven hoek', 'partner-photo-sample'];
+        const clean = stored.filter(s => {
+          if ([1, 2, 3, 4, '1', '2', '3', '4', 'partner-photo-sample'].includes(s.id)) return false;
+          const str = (JSON.stringify(s) || '').toLowerCase();
+          return !dummyTerms.some(term => str.includes(term));
+        }).map(s => ({
+          ...s,
+          icon: (typeof s.icon === 'string' && ICON_MAP[s.icon]) ? s.icon : 'Bell'
+        }));
+        return clean;
       }
     } catch (e) {}
-    return base;
+    return DEFAULT_NOTIFS;
   };
 
   const [notifications, setNotifications] = useState(getInitialNotifications);
+  const [activePopup, setActivePopup] = useState(null);
+
+  // Auto-dismiss floating popup banner after 6.5s
+  useEffect(() => {
+    if (!activePopup) return;
+    const timer = setTimeout(() => {
+      setActivePopup(null);
+    }, 6500);
+    return () => clearTimeout(timer);
+  }, [activePopup]);
 
   // Listen to live notifications from customer & partner actions
   useEffect(() => {
@@ -180,6 +210,9 @@ export default function TopNav() {
           icon: cleanIcon,
         };
         setNotifications(prev => [withIcon, ...prev.filter(n => n.id !== withIcon.id)]);
+        if (withIcon.popup !== false) {
+          setActivePopup(withIcon);
+        }
       }
     };
 
@@ -198,10 +231,133 @@ export default function TopNav() {
     };
   }, [user]);
 
+  // Live polling for backend activity feed (for real-time bell updates)
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLiveActivities = async () => {
+      try {
+        const [actRes, leadsRes, quotesRes, projRes] = await Promise.allSettled([
+          api.get('/dashboard/activity'),
+          api.get('/leads?limit=3'),
+          api.get('/quotes?limit=3'),
+          api.get('/projects?limit=3')
+        ]);
+
+        if (!isMounted) return;
+        const newNotifs = [];
+
+        // 1. Real Leads
+        if (leadsRes.status === 'fulfilled' && leadsRes.value?.success) {
+          const leads = leadsRes.value.data?.items || leadsRes.value.data || [];
+          leads.slice(0, 2).forEach(lead => {
+            const custName = lead.fullName || lead.customerName || `${lead.firstName || ''} ${lead.lastName || ''}`.trim() || 'Nieuwe klant';
+            const cat = lead.productType === 'garden_room' ? 'Buitenverblijf' : 'Buitenkeuken';
+            newNotifs.push({
+              id: `notif-lead-${lead.id}`,
+              titleKey: language === 'NL' ? `Nieuwe aanvraag: ${lead.leadNumber || 'Lead'}` : `New Lead: ${lead.leadNumber || 'Lead'}`,
+              descKey: `${custName} — ${cat}`,
+              isCustomText: true,
+              timeKey: language === 'NL' ? 'Recent' : 'Recent',
+              unread: true,
+              link: `/admin/leads`,
+              icon: 'UserPlus',
+              createdAt: lead.createdAt || new Date().toISOString()
+            });
+          });
+        }
+
+        // 2. Real Quotes
+        if (quotesRes.status === 'fulfilled' && quotesRes.value?.success) {
+          const quotes = quotesRes.value.data?.items || quotesRes.value.data || [];
+          quotes.slice(0, 2).forEach(q => {
+            const statusLabel = q.status === 'sent' ? (language === 'NL' ? 'Verstuurd' : 'Sent') : q.status === 'approved' ? (language === 'NL' ? 'Akkoord' : 'Approved') : (language === 'NL' ? 'In concept' : 'Draft');
+            newNotifs.push({
+              id: `notif-quote-${q.id}`,
+              titleKey: language === 'NL' ? `Offerte ${q.quoteNumber || ''}` : `Quotation ${q.quoteNumber || ''}`,
+              descKey: `${q.customerName || 'Klant'} — ${statusLabel}`,
+              isCustomText: true,
+              timeKey: language === 'NL' ? 'Recent' : 'Recent',
+              unread: false,
+              link: `/admin/quotes`,
+              icon: 'Check',
+              createdAt: q.createdAt || new Date().toISOString()
+            });
+          });
+        }
+
+        // 3. Real Projects
+        if (projRes.status === 'fulfilled' && projRes.value?.success) {
+          const projs = projRes.value.data?.items || projRes.value.data || [];
+          projs.slice(0, 2).forEach(p => {
+            const orderStatus = p.orderStatus === 'klaar_voor_levering' ? (language === 'NL' ? 'Gereed voor levering' : 'Ready for delivery') : (language === 'NL' ? 'In voorbereiding' : 'In preparation');
+            newNotifs.push({
+              id: `notif-proj-${p.id}`,
+              titleKey: language === 'NL' ? `Project ${p.projectNumber || ''}` : `Project ${p.projectNumber || ''}`,
+              descKey: `${p.name || p.customerName || 'Project'} — ${orderStatus}`,
+              isCustomText: true,
+              timeKey: language === 'NL' ? 'Recent' : 'Recent',
+              unread: true,
+              link: user?.role === 'admin' ? `/admin/projects` : `/partner/projects`,
+              icon: 'Briefcase',
+              createdAt: p.createdAt || new Date().toISOString()
+            });
+          });
+        }
+
+        // 4. Live Activity Feed
+        if (actRes.status === 'fulfilled' && actRes.value?.success && Array.isArray(actRes.value.data)) {
+          actRes.value.data.slice(0, 3).forEach(act => {
+            const actId = `act-${act.id || act.referenceId || act.timestamp}`;
+            newNotifs.push({
+              id: actId,
+              titleKey: act.title || (language === 'NL' ? 'Systeem update' : 'System update'),
+              descKey: act.description || act.detail || '',
+              isCustomText: true,
+              timeKey: language === 'NL' ? 'Zojuist' : 'Just now',
+              unread: true,
+              link: act.link || (user?.role === 'admin' ? '/admin/projects' : '/partner/projects'),
+              icon: 'Briefcase',
+              createdAt: act.timestamp || new Date().toISOString()
+            });
+          });
+        }
+
+        if (newNotifs.length > 0) {
+          setNotifications(prev => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const merged = [...prev];
+            newNotifs.forEach(n => {
+              if (!existingIds.has(n.id)) {
+                merged.unshift(n);
+                existingIds.add(n.id);
+              }
+            });
+            try {
+              localStorage.setItem('va_admin_notifications', JSON.stringify(sanitizeForStorage(merged)));
+            } catch (e) {}
+            return merged;
+          });
+        }
+      } catch (err) {}
+    };
+
+    if (user?.role === 'admin') {
+      fetchLiveActivities();
+      const interval = setInterval(fetchLiveActivities, 25000);
+      return () => {
+        isMounted = false;
+        clearInterval(interval);
+      };
+    }
+  }, [user, language]);
+
+  const counters = useAdminCounters();
   const dropdownRef = useRef(null);
   const notifRef = useRef(null);
+  const newActionRef = useRef(null);
   const langDropdownRef = useRef(null);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const [newActionOpen, setNewActionOpen] = useState(false);
 
   const unreadCount = notifications.filter(n => n.unread).length;
 
@@ -213,6 +369,9 @@ export default function TopNav() {
       }
       if (notifRef.current && !notifRef.current.contains(e.target)) {
         setNotifOpen(false);
+      }
+      if (newActionRef.current && !newActionRef.current.contains(e.target)) {
+        setNewActionOpen(false);
       }
       if (langDropdownRef.current && !langDropdownRef.current.contains(e.target)) {
         setLangDropdownOpen(false);
@@ -273,6 +432,17 @@ export default function TopNav() {
           <Menu className="w-4 h-4" />
         </button>
 
+        {location.pathname !== '/admin/dashboard' && location.pathname !== '/customer/project' && location.pathname !== '/partner/dashboard' && (
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="p-1.5 rounded-lg hover:bg-[#D6CFC2]/50 text-dark/60 hover:text-dark transition-all flex items-center justify-center cursor-pointer mr-0.5"
+            title="Terug"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        )}
+
         <img 
           src="/mini logo2.png" 
           alt="VA Monogram" 
@@ -280,8 +450,8 @@ export default function TopNav() {
         />
         {crumbs.map((crumb, i) => (
           <span key={i} className={`flex items-center gap-1.5 min-w-0 ${i < crumbs.length - 1 ? 'hidden sm:flex' : 'flex'}`}>
-            {i > 0 && <span className="text-dark/25 flex-shrink-0">/</span>}
-            <span className={`${i === crumbs.length - 1 ? 'font-bold text-dark text-[11px] sm:text-xs' : 'text-dark/40'} truncate`}>
+            {i > 0 && <span className="text-dark/30 font-bold text-xs flex-shrink-0">›</span>}
+            <span className={`${i === crumbs.length - 1 ? 'font-bold text-dark text-[11px] sm:text-xs' : 'text-dark/50'} truncate`}>
               {crumb}
             </span>
           </span>
@@ -303,6 +473,74 @@ export default function TopNav() {
             className="pl-8 pr-4 py-1.5 bg-[#F8F7F4] border border-[#D6CFC2] rounded-full text-xs font-body focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all w-36 lg:w-44 text-dark"
           />
         </div>
+
+        {/* + Nieuw Quick Action Dropdown (Top bar: + Nieuw (lead, task, appointment)) */}
+        {user?.role === 'admin' && (
+          <div className="relative" ref={newActionRef}>
+            <button
+              onClick={() => setNewActionOpen(!newActionOpen)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-[#2F3C29] text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer"
+              title="Nieuw aanmaken"
+            >
+              <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+              <span className="hidden sm:inline">Nieuw</span>
+              <ChevronDown className={`w-3 h-3 text-white/70 transition-transform ${newActionOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {newActionOpen && (
+              <div className="absolute right-0 top-full mt-2 w-52 bg-[#F2EDE4] border border-[#D6CFC2] rounded-xl shadow-xl z-50 overflow-hidden font-body text-xs divide-y divide-[#D6CFC2]/50">
+                <button
+                  onClick={() => {
+                    navigate('/admin/leads?new=true');
+                    window.dispatchEvent(new Event('app_open_lead_wizard'));
+                    setNewActionOpen(false);
+                  }}
+                  className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-dark hover:bg-white/70 transition-colors font-medium cursor-pointer"
+                >
+                  <UserPlus className="w-4 h-4 text-primary" />
+                  <span>Nieuwe Lead</span>
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/admin/dashboard?view=tasks&new=true');
+                    window.dispatchEvent(new Event('app_open_task_modal'));
+                    setNewActionOpen(false);
+                  }}
+                  className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-dark hover:bg-white/70 transition-colors font-medium cursor-pointer"
+                >
+                  <CheckSquare className="w-4 h-4 text-accent" />
+                  <span>Nieuwe Taak</span>
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/admin/planning?new=true');
+                    setNewActionOpen(false);
+                  }}
+                  className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-dark hover:bg-white/70 transition-colors font-medium cursor-pointer"
+                >
+                  <CalendarPlus className="w-4 h-4 text-primary" />
+                  <span>Nieuwe Afspraak / Inmeting</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Synchronized Berichten Pill in Top Bar */}
+        {user?.role === 'admin' && (
+          <button
+            onClick={() => navigate('/admin/inbox')}
+            className="relative text-dark/60 hover:text-primary transition-colors p-2 rounded-xl hover:bg-[#D6CFC2]/40 cursor-pointer"
+            title="Berichten"
+          >
+            <MessageSquare className="w-4 h-4" />
+            {counters.unreadMessages > 0 && (
+              <span className="absolute top-1 right-1 px-1.5 py-0.2 bg-[#D97706] text-white font-mono text-[9px] font-bold rounded-full">
+                {counters.unreadMessages}
+              </span>
+            )}
+          </button>
+        )}
 
         {/* Notifications Dropdown Container */}
         <div className="relative" ref={notifRef}>
@@ -441,6 +679,58 @@ export default function TopNav() {
           )}
         </div>
       </div>
+
+      {/* FLOATING REAL-TIME NOTIFICATION POPUP BANNER */}
+      {activePopup && (
+        <div className="fixed top-16 right-4 z-[999999] max-w-sm w-[calc(100vw-32px)] bg-white border-2 border-primary/20 rounded-2xl shadow-2xl p-4 flex gap-3.5 items-start font-body transition-all duration-300">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+            {renderNotifIcon(activePopup)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-full">
+                {activePopup.badge || (language === 'NL' ? 'Nieuwe Melding' : 'New Notification')}
+              </span>
+              <button
+                onClick={() => setActivePopup(null)}
+                className="text-dark/40 hover:text-dark p-0.5 rounded-md hover:bg-dark/5 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs font-bold text-dark mt-1 line-clamp-1">
+              {activePopup.isCustomText ? activePopup.titleKey : t(activePopup.titleKey)}
+            </p>
+            <p className="text-[11px] text-dark/70 mt-0.5 line-clamp-2">
+              {activePopup.isCustomText ? activePopup.descKey : t(activePopup.descKey, activePopup.descParams)}
+            </p>
+            <div className="mt-2.5 flex items-center gap-3">
+              {activePopup.link && (
+                <button
+                  onClick={() => {
+                    navigate(activePopup.link);
+                    handleNotifClick(activePopup);
+                    setActivePopup(null);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary text-cream hover:bg-[#2A3824] rounded-lg text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+                >
+                  <span>{language === 'NL' ? 'Bekijken' : 'View'}</span>
+                  <span>→</span>
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  handleNotifClick(activePopup);
+                  setActivePopup(null);
+                }}
+                className="text-[11px] font-medium text-dark/50 hover:text-dark hover:underline cursor-pointer"
+              >
+                {language === 'NL' ? 'Als gelezen markeren' : 'Mark as read'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

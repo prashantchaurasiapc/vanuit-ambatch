@@ -102,15 +102,28 @@ function App() {
   }, [user]);
 
   useEffect(() => {
-    // Clear developer prototype mock caches once on app mount for clean testing
-    const resetKey = 'clean_slate_reset_v1';
+    // Round 2 & 3 Clean Slate: purge all legacy prototype mock caches so app starts at 0
+    const resetKey = 'clean_slate_reset_v4_zero_slate';
     if (!localStorage.getItem(resetKey)) {
-      localStorage.removeItem('app_quotes_v2');
-      localStorage.removeItem('app_leads_v2');
-      localStorage.removeItem('app_projects_v2');
-      localStorage.removeItem('app_pipeline_candidates');
-      localStorage.removeItem('pipeline_candidates_migrated');
-      localStorage.removeItem('app_invoices_v2');
+      const keysToClear = [
+        'app_quotes_v2',
+        'app_leads_v2',
+        'app_projects_v2',
+        'app_pipeline_candidates',
+        'pipeline_candidates_migrated',
+        'app_invoices_v2',
+        'va_general_logbook',
+        'va_custom_photos',
+        'quote_editor_draft_new',
+        'vanuit_active_quote_session',
+      ];
+      keysToClear.forEach(k => localStorage.removeItem(k));
+      // Clear all project-scoped logbooks
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith('va_project_logbook_') || k.startsWith('active_quote_')) {
+          localStorage.removeItem(k);
+        }
+      });
       localStorage.setItem(resetKey, 'true');
     }
   }, []);
@@ -138,35 +151,63 @@ function App() {
       <Route path="/offerte/:token" element={<PublicOfferte />} />
       <Route path="/" element={<Navigate to={defaultHome} replace />} />
 
-      {/* Admin */}
+      {/* Admin — 7 Working Day Sections (Brief Navigation Restructure) */}
       <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><MainLayout role="admin" /></ProtectedRoute>}>
+        {/* 1. Vandaag */}
         <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="vandaag" element={<Navigate to="/admin/dashboard" replace />} />
+
+        {/* 2. Verkoop (Leads, Offertes, Klanten) */}
         <Route path="leads" element={<Leads />} />
         <Route path="quotes" element={<Quotes />} />
-        <Route path="inbox" element={<ProjectChatInboxPage />} />
+        <Route path="customers" element={<Customers />} />
+        <Route path="verkoop/leads" element={<Navigate to="/admin/leads" replace />} />
+        <Route path="verkoop/offertes" element={<Navigate to="/admin/quotes" replace />} />
+        <Route path="verkoop/klanten" element={<Navigate to="/admin/customers" replace />} />
+
+        {/* 3. Uitvoering (Projecten, Planning) */}
         <Route path="projects" element={<Projects />} />
-        <Route path="projects/all" element={<Projects />} />
-        <Route path="projects/inbox" element={<ProjectGlobalInbox />} />
-        <Route path="projects/inbox-messages" element={<ProjectChatInboxPage />} />
-        <Route path="projects/inbox-create" element={<ProjectChatInboxPage />} />
-        <Route path="projects/outdoor-kitchens" element={<OutdoorKitchenProjects />} />
-        <Route path="projects/outdoor-kitchen" element={<OutdoorKitchenProjects />} />
-        <Route path="projects/garden-rooms" element={<GardenRoomProjects />} />
-        <Route path="projects/garden-room" element={<GardenRoomProjects />} />
-        <Route path="projects/field-mapping" element={<FieldMapping />} />
+        <Route path="projects/:id" element={<OutdoorKitchenProjects />} />
+        <Route path="planning" element={<Planning />} />
+        <Route path="uitvoering/projecten" element={<Navigate to="/admin/projects" replace />} />
+        <Route path="uitvoering/planning" element={<Navigate to="/admin/planning" replace />} />
+
+        {/* 4. Berichten (Inbox with unread counter) */}
+        <Route path="inbox" element={<ProjectChatInboxPage />} />
+        <Route path="berichten" element={<Navigate to="/admin/inbox" replace />} />
+        <Route path="projects/inbox" element={<Navigate to="/admin/inbox" replace />} />
+        <Route path="projects/inbox-messages" element={<Navigate to="/admin/inbox" replace />} />
+        <Route path="projects/inbox-create" element={<Navigate to="/admin/inbox" replace />} />
+
+        {/* 5. Partners */}
         <Route path="partners" element={<Partners />} />
-        <Route path="documents" element={<Documents role="admin" />} />
+
+        {/* 6. Financiën (Facturen, Bank, Btw, Winst & Verlies) */}
         <Route path="finance" element={<Finance />} />
         <Route path="invoices" element={<Invoices />} />
-        <Route path="customers" element={<Customers />} />
         <Route path="bank" element={<Bank />} />
         <Route path="taxes" element={<Taxes />} />
         <Route path="profit-loss" element={<ProfitLoss />} />
-        <Route path="planning" element={<Planning />} />
-        <Route path="photos" element={<Navigate to="/admin/documents?tab=photos" replace />} />
-        <Route path="tasks" element={<Tasks />} />
-        <Route path="reports" element={<Reports />} />
+        <Route path="financien/facturen" element={<Navigate to="/admin/invoices" replace />} />
+        <Route path="financien/bank" element={<Navigate to="/admin/bank" replace />} />
+        <Route path="financien/btw" element={<Navigate to="/admin/taxes" replace />} />
+        <Route path="financien/winst-verlies" element={<Navigate to="/admin/profit-loss" replace />} />
+
+        {/* 7. Instellingen */}
         <Route path="settings" element={<Settings />} />
+        <Route path="instellingen" element={<Navigate to="/admin/settings" replace />} />
+
+        {/* Legacy Mockup & Prototype Redirects */}
+        <Route path="projects/all" element={<Navigate to="/admin/projects" replace />} />
+        <Route path="projects/outdoor-kitchens" element={<Navigate to="/admin/projects" replace />} />
+        <Route path="projects/outdoor-kitchen" element={<Navigate to="/admin/projects" replace />} />
+        <Route path="projects/garden-rooms" element={<Navigate to="/admin/projects" replace />} />
+        <Route path="projects/garden-room" element={<Navigate to="/admin/projects" replace />} />
+        <Route path="projects/field-mapping" element={<Navigate to="/admin/settings" replace />} />
+        <Route path="documents" element={<Navigate to="/admin/projects?tab=documents" replace />} />
+        <Route path="photos" element={<Navigate to="/admin/projects?tab=documents" replace />} />
+        <Route path="tasks" element={<Navigate to="/admin/dashboard?view=tasks" replace />} />
+        <Route path="reports" element={<Reports />} />
         <Route path="profile" element={<Profile />} />
       </Route>
 

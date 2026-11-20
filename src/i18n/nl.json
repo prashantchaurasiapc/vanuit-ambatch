@@ -106,8 +106,8 @@
   "dashboard": {
     "adminTitle": "Beheerders Dashboard",
     "partnerTitle": "Partner Dashboard",
-    "adminOverview": "Overzicht van uw bedrijfsactiviteiten en lopende projecten",
-    "partnerOverview": "Overzicht van uw toegewezen projecten & taken vandaag",
+    "adminOverview": "Overzicht van je bedrijfsactiviteiten en lopende projecten",
+    "partnerOverview": "Overzicht van je toegewezen projecten & taken vandaag",
     "totalLeads": "TOTAAL LEADS",
     "activeQuotes": "ACTIEVE OFFERTES",
     "activeProjects": "ACTIEVE PROJECTEN",
@@ -167,6 +167,7 @@
     "title": "Offertes",
     "subtitle": "Maak, verstuur en beheer ambachtelijke offertes op maat.",
     "addNewQuote": "+ Offerte Maken",
+    "customerName": "Klantnaam",
     "searchPlaceholder": "Zoek offertes op ID, klant of project...",
     "quoteNumber": "Offerte #",
     "customer": "Klant",

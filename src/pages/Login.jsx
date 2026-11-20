@@ -204,34 +204,7 @@ export default function Login() {
             )}
           </form>
 
-          {/* Quick Demo Login — Pre-fills email/password only. Real POST /api/auth/login is still called on Sign In. */}
-          {/* DEV ONLY: Keep until client instructs removal. Do NOT use as an auth bypass. */}
-          {!isForgotPassword && !resetSent && (
-            <div className="w-full pt-5 mt-5 border-t border-[#C4BEB3]/40">
-              <p className="text-[9px] font-bold text-dark/40 uppercase tracking-widest mb-3 text-center font-body">⚙ Dev — Quick Fill</p>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { email: 'admin@vanuitambacht.nl', pass: 'admin123', name: 'Admin', initials: 'AD' },
-                  { email: 'partner@vanuitambacht.nl', pass: 'partner123', name: 'Partner', initials: 'SH' },
-                  { email: 'customer@vanuitambacht.nl', pass: 'customer123', name: language === 'EN' ? 'Customer' : 'Klant', initials: language === 'EN' ? 'CU' : 'KL' },
-                ].map((u, i) => (
-                  <motion.button
-                    key={i}
-                    type="button"
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => { setEmail(u.email); setPassword(u.pass); }}
-                    className="flex flex-row items-center justify-center p-2 gap-1.5 bg-white border border-[#D6CFC2] rounded-xl hover:border-primary/30 hover:bg-[#F8F7F4] transition-all shadow-sm cursor-pointer"
-                  >
-                    <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[8px] flex-shrink-0">
-                      {u.initials}
-                    </div>
-                    <p className="text-[10px] font-bold text-dark leading-none">{u.name}</p>
-                  </motion.button>
-                ))}
-              </div>
-            </div>
-          )}
+
         </div>
       </motion.div>
     </div>

@@ -167,6 +167,7 @@
     "title": "Quotes (Offertes)",
     "subtitle": "Create, send, and track bespoke craftsmanship quotes.",
     "addNewQuote": "+ Create Quote",
+    "customerName": "Client Name",
     "searchPlaceholder": "Search quotes by ID, customer or project...",
     "quoteNumber": "Quote #",
     "customer": "Customer",

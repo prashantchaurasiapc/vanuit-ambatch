@@ -30,7 +30,6 @@ export default function Customers() {
 
   // Dropdown open states
   const [productInterestDropdownOpen, setProductInterestDropdownOpen] = useState(false);
-  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
 
   const [newCustomerForm, setNewCustomerForm] = useState({
@@ -57,7 +56,7 @@ export default function Customers() {
     phone: c.phone || '',
     address: [c.streetAddress, c.city].filter(Boolean).join(', ') || c.city || '',
     city: c.city || '',
-    productInterest: c.notes || 'Bespoke Outdoor Kitchen',
+    productInterest: c.notes || '—',
     totalSpend: c.totalRevenue != null ? `€ ${Number(c.totalRevenue).toLocaleString('nl-NL')}` : '€ 0',
     numericSpend: Number(c.totalRevenue) || 0,
     totalProjects: c.totalProjects || 0,
@@ -100,7 +99,7 @@ export default function Customers() {
       return showToast('Please enter customer first name and email address.');
     }
     if (!newCustomerForm.city.trim()) {
-      return showToast('Please select a city / location.');
+      return showToast(language === 'EN' ? 'Please enter a city / location.' : 'Vul a.u.b. een stad / locatie in.');
     }
     setIsSaving(true);
     try {
@@ -539,26 +538,17 @@ export default function Customers() {
                   </div>
                 </div>
 
-                {/* City Dropdown */}
-                <div className="relative">
+                {/* City / Location Free-Text Input */}
+                <div>
                   <label className="block font-bold text-dark/60 mb-1 uppercase tracking-wider">{language === 'EN' ? 'City / Location *' : 'Stad / Locatie *'}</label>
-                  <button type="button" onClick={() => setCityDropdownOpen(!cityDropdownOpen)} className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-body focus:outline-none text-[#4A4A43] flex items-center justify-between shadow-xs">
-                    <span className="truncate">{newCustomerForm.city || (language === 'EN' ? '— Select City —' : '— Selecteer Stad —')}</span>
-                    <ChevronDown className={`w-4 h-4 text-dark/40 transition-transform ${cityDropdownOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {cityDropdownOpen && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setCityDropdownOpen(false)} />
-                      <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white border border-[#D6CFC2] rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-[#EDE8DF]">
-                        {['Amsterdam', 'Rotterdam', 'Den Haag', 'Utrecht', 'Eindhoven', 'Haarlem', 'Groningen', 'Breda', 'Tilburg', 'Almere', 'Nijmegen', 'Arnhem', 'Apeldoorn', 'Zwolle', 'Maastricht', 'Delft', 'Leiden', 'Dordrecht'].map((city, idx) => (
-                          <div key={idx} onClick={() => { setNewCustomerForm(p => ({ ...p, city })); setCityDropdownOpen(false); }}
-                            className={`px-3 py-2 text-xs cursor-pointer hover:bg-primary/10 transition-colors ${newCustomerForm.city === city ? 'bg-primary/15 font-bold text-primary' : 'text-dark'}`}>
-                            {city}
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                  <input
+                    type="text"
+                    required
+                    value={newCustomerForm.city}
+                    onChange={e => setNewCustomerForm(p => ({ ...p, city: e.target.value }))}
+                    className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-body text-dark placeholder-[#4A4A43]/50 shadow-xs"
+                    placeholder={language === 'EN' ? 'e.g. Amsterdam, Utrecht, or Antwerp' : 'bijv. Amsterdam, Utrecht of Den Haag'}
+                  />
                 </div>
 
                 <div>

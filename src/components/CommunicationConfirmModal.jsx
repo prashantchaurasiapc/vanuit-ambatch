@@ -1,8 +1,9 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Mail, ShieldAlert, X, CheckCircle, AlertTriangle } from 'lucide-react';
+import { MessageCircle, Mail, ShieldAlert, X, CheckCircle, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { guardEmailDispatch } from '../utils/sandboxCommunicationGuard';
 
 /**
  * CommunicationConfirmModal Component
@@ -114,6 +115,16 @@ export default function CommunicationConfirmModal({
             </div>
           </div>
 
+          {/* Test Environment Security Guard Notice */}
+          <div className="p-2.5 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center gap-2 text-[11px] text-emerald-900 font-body">
+            <ShieldCheck className="w-4 h-4 text-emerald-700 flex-shrink-0" />
+            <span>
+              {language === 'EN' 
+                ? 'Test Environment Guard Active: E-mails to real customers are blocked and quarantined internally.' 
+                : 'Testomgeving Beveiliging Actief: Berichten naar echte klanten worden geblokkeerd en veilig intern opgevangen.'}
+            </span>
+          </div>
+
           {/* Action Buttons */}
           <div className="flex justify-end items-center gap-2.5 pt-3 border-t border-[#C4BEB3]">
             <button
@@ -126,6 +137,9 @@ export default function CommunicationConfirmModal({
             <button
               type="button"
               onClick={() => {
+                if (!isWhatsApp) {
+                  guardEmailDispatch(recipientContact, subject, messageText);
+                }
                 onConfirm();
                 onClose();
               }}

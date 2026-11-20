@@ -74,7 +74,7 @@ const PRESET_PRODUCT_LIBRARY = [
 const mapBackendQuoteToRow = (q) => {
   const activeVer = q.activeVersion;
   const totalAmount = activeVer?.totalInclVat != null ? Number(activeVer.totalInclVat) : 0;
-  const formattedAmt = `€ ${Math.round(totalAmount).toLocaleString('nl-NL')}`;
+  const formattedAmt = `€ ${totalAmount.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   let displayStatus = 'Concept';
   if (q.status === 'sent') displayStatus = 'Verzonden';
@@ -84,7 +84,7 @@ const mapBackendQuoteToRow = (q) => {
   else if (q.status === 'draft') displayStatus = 'Concept';
 
   const customerInfo = activeVer?.optionsConfig?.customerInfo;
-  const custName = q.customerName || customerInfo?.name || (q.customer ? `${q.customer.firstName || ''} ${q.customer.lastName || ''}`.trim() : 'Onbekend');
+  const custName = q.customerName || customerInfo?.name || (q.customer ? `${q.customer.firstName || ''} ${q.customer.lastName || ''}`.trim() : '') || q.rawQuote?.lead?.name || q.lead?.name || 'Klant';
   const custEmail = q.customerEmail || customerInfo?.email || '';
   const custCity = q.customerCity || customerInfo?.city || '';
   const custPhone = q.customerPhone || customerInfo?.phone || '';
@@ -229,7 +229,7 @@ export default function Quotes() {
         const localNewDraft = JSON.parse(localStorage.getItem('quote_editor_draft_new') || 'null');
         const defaultLead = leadsList[0] || null;
         const newModel = localNewDraft || createDefaultQuote(defaultLead, {
-          id: `OF-${new Date().getFullYear()}-032`,
+          id: `OF-${new Date().getFullYear()}001`,
           backendId: null,
           status: 'Concept'
         });
@@ -509,7 +509,7 @@ export default function Quotes() {
   const handleOpenAddModal = () => {
     const defaultLead = leadsList[0] || null;
     const newQuoteModel = createDefaultQuote(defaultLead, {
-      id: `OF-${new Date().getFullYear()}-${String(quotes.length + 1).padStart(3, '0')}`,
+      id: `OF-${new Date().getFullYear()}${String(quotes.length + 1).padStart(3, '0')}`,
       backendId: null,
       customer: defaultLead ? { id: defaultLead.id, name: defaultLead.name, email: defaultLead.email, phone: defaultLead.phone, city: defaultLead.city } : { name: '', email: '', phone: '', city: '', address: '' },
       productType: 'outdoor_kitchen',
@@ -822,7 +822,13 @@ export default function Quotes() {
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
-      if (sortBy === 'newest') return new Date(b.date || 0) - new Date(a.date || 0);
+      // Rule 3: Default sort on "Wie is aan zet": Concept/Draft quotes where WE must act sort on top
+      if (sortBy === 'newest') {
+        const aNeedsUs = (a.status === 'Concept' || a.status === 'draft') ? 1 : 0;
+        const bNeedsUs = (b.status === 'Concept' || b.status === 'draft') ? 1 : 0;
+        if (aNeedsUs !== bNeedsUs) return bNeedsUs - aNeedsUs;
+        return new Date(b.date || 0) - new Date(a.date || 0);
+      }
       if (sortBy === 'oldest') return new Date(a.date || 0) - new Date(b.date || 0);
       if (sortBy === 'amount-desc') return getNumericAmount(b.amount) - getNumericAmount(a.amount);
       if (sortBy === 'amount-asc') return getNumericAmount(a.amount) - getNumericAmount(b.amount);

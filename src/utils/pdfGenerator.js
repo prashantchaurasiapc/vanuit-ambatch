@@ -311,7 +311,7 @@ export function downloadQuotePdfFallback(quote) {
   }
   activeLang = (activeLang === 'NL' || activeLang === 'nl') ? 'NL' : 'EN';
 
-  const id        = quote?.id || 'OF-2026-001';
+  const id        = quote?.quoteNumber || quote?.id || 'OF-2026001';
   const customer  = typeof quote?.customer === 'object'
     ? (quote.customer.name || (activeLang === 'EN' ? 'Client' : 'Klant'))
     : (quote?.customer || (activeLang === 'EN' ? 'Client' : 'Klant'));

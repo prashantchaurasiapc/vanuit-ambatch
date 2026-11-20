@@ -66,10 +66,11 @@ export default function AdminDashboard() {
   const [activities, setActivities] = useState([]);
 
   const [dashboardTasks, setDashboardTasks] = useState([]);
+  const [kpisData, setKpisData] = useState(null);
 
   const refreshDashboard = async () => {
     try {
-      const [leadsRes, quotesRes, tasksRes, finRes, funRes, todayRes, warnRes, actRes, custRes] = await Promise.allSettled([
+      const [leadsRes, quotesRes, tasksRes, finRes, funRes, todayRes, warnRes, actRes, custRes, kpisRes] = await Promise.allSettled([
         api.get('/leads'),
         api.get('/quotes'),
         api.get('/tasks?status=all'),
@@ -78,7 +79,8 @@ export default function AdminDashboard() {
         api.get('/dashboard/today'),
         api.get('/dashboard/warnings'),
         api.get('/dashboard/activity?limit=5'),
-        api.get('/customers')
+        api.get('/customers'),
+        api.get('/dashboard/kpis')
       ]);
 
       const rawLeads = leadsRes.status === 'fulfilled' && leadsRes.value?.data
@@ -134,6 +136,9 @@ export default function AdminDashboard() {
       if (funRes.status === 'fulfilled' && funRes.value?.data) {
         setFunnelData(funRes.value.data);
       }
+      if (kpisRes.status === 'fulfilled' && kpisRes.value?.data) {
+        setKpisData(kpisRes.value.data);
+      }
       if (todayRes.status === 'fulfilled' && todayRes.value?.data) {
         setFollowUps(todayRes.value.data.followUps || []);
         setDeliveries(todayRes.value.data.deliveries || []);
@@ -168,7 +173,6 @@ export default function AdminDashboard() {
 
   // Modals visibility state
   const [leadModalOpen, setLeadModalOpen] = useState(false);
-  const [quoteModalOpen, setQuoteModalOpen] = useState(false);
 
   // Lead Form state
   const [leadForm, setLeadForm] = useState({
@@ -178,14 +182,6 @@ export default function AdminDashboard() {
     email: '',
     status: 'New',
     notes: ''
-  });
-
-  // Quote Form state
-  const [quoteForm, setQuoteForm] = useState({
-    customer: '',
-    project: '',
-    amount: '',
-    status: 'Draft'
   });
 
   const showToast = (msg) => {
@@ -228,40 +224,6 @@ export default function AdminDashboard() {
     showToast(language === 'NL' ? `Lead voor "${leadForm.name}" succesvol aangemaakt!` : `Lead for "${leadForm.name}" created successfully!`);
     setLeadForm({ name: '', company: '', phone: '', email: '', status: 'New', notes: '' });
     setLeadModalOpen(false);
-    refreshDashboard();
-  };
-
-  const handleOpenQuoteModal = () => {
-    setQuoteForm({ customer: '', project: '', amount: '', status: 'Draft' });
-    setCustomerSelect('');
-    setProjectSelect('');
-    setQuoteModalOpen(true);
-  };
-
-  const handleQuoteSubmit = async (e) => {
-    e.preventDefault();
-    
-    const finalCustomer = customerSelect === 'Other' ? quoteForm.customer : customerSelect;
-    const finalProject = projectSelect === 'Other' ? quoteForm.project : projectSelect;
-
-    if (!customerSelect || !projectSelect || !finalCustomer.trim() || !finalProject.trim()) {
-      showToast(language === 'NL' ? "Selecteer een geldige klant en projecttype." : "Please select a valid customer and project type.");
-      return;
-    }
-
-    const numAmt = parseFloat(quoteForm.amount) || 0;
-    try {
-      await api.post('/quotes', {
-        customerName: finalCustomer,
-        totalAmount: numAmt,
-        status: quoteForm.status ? quoteForm.status.toLowerCase() : 'draft'
-      });
-    } catch (e) {}
-
-    window.dispatchEvent(new Event('app_data_changed'));
-    showToast(language === 'NL' ? `Offerte voor "${finalCustomer}" succesvol aangemaakt!` : `Quote for "${finalCustomer}" created successfully!`);
-    setQuoteForm({ customer: '', project: '', amount: '', status: 'Draft' });
-    setQuoteModalOpen(false);
     refreshDashboard();
   };
 
@@ -413,22 +375,12 @@ export default function AdminDashboard() {
           <Button 
             variant="custom" 
             icon={Plus} 
-            className="bg-cream text-primary hover:bg-cream/90 shadow-xs border border-primary/10 text-[10px] sm:text-[11px] font-semibold py-1 px-2 sm:px-2.5 rounded-md leading-tight" 
+            className="bg-cream text-primary hover:bg-cream/90 shadow-xs border border-primary/10 text-[10px] sm:text-[11px] font-semibold py-1 px-2.5 sm:px-3 rounded-md leading-tight" 
             size="sm"
             onClick={() => setLeadModalOpen(true)}
           >
             <span className="hidden xs:inline">{t('leads.addNewLead')}</span>
             <span className="xs:hidden">+ Lead</span>
-          </Button>
-          <Button 
-            variant="custom" 
-            icon={Plus} 
-            className="bg-white/15 text-white border border-white/30 hover:bg-white/25 text-[10px] sm:text-[11px] font-semibold py-1 px-2 sm:px-2.5 rounded-md backdrop-blur-xs leading-tight" 
-            size="sm"
-            onClick={handleOpenQuoteModal}
-          >
-            <span className="hidden xs:inline">{t('common.createQuote')}</span>
-            <span className="xs:hidden">+ Quote</span>
           </Button>
         </div>
       </div>
@@ -466,163 +418,7 @@ export default function AdminDashboard() {
         </motion.div>
       )}
 
-      {/* MODULE 1.2: DATE RANGE FILTER BAR & 7 KPI ANALYTICS CARDS GRID */}
-      <div className="space-y-4">
-        {/* Date Range Selector Header Bar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#D6CFC2]/60 shadow-xs">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-sm font-heading font-bold text-dark">
-                {language === 'NL' ? 'Prestaties & Analytische Cijfers' : 'Performance & Analytics KPIs'}
-              </h3>
-              <p className="text-[11px] font-body text-dark/50">
-                {language === 'NL' ? 'Prestatie-overzicht op basis van geselecteerde tijdsperiode' : 'Performance summary based on selected time frame'}
-              </p>
-            </div>
-          </div>
-
-          {/* Date Selector Dropdown & Custom Range Inputs */}
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <div className="relative flex-1 sm:flex-none">
-              <select 
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
-                className="w-full sm:w-auto appearance-none bg-[#F8F7F4] hover:bg-cream/40 text-dark text-xs font-body font-semibold px-3 py-2 pr-8 rounded-xl border border-[#D6CFC2]/80 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
-              >
-                <option value="7days">{language === 'NL' ? 'Laatste 7 dagen' : 'Last 7 days'}</option>
-                <option value="30days">{language === 'NL' ? 'Laatste 30 dagen' : 'Last 30 days'}</option>
-                <option value="currentMonth">{language === 'NL' ? 'Deze maand' : 'Current month'}</option>
-                <option value="3months">{language === 'NL' ? 'Laatste 3 maanden' : 'Last 3 months'}</option>
-                <option value="6months">{language === 'NL' ? 'Laatste 6 maanden' : 'Last 6 months'}</option>
-                <option value="12months">{language === 'NL' ? 'Laatste 12 maanden' : 'Last 12 months'}</option>
-                <option value="custom">{language === 'NL' ? 'Aangepaste datum' : 'Custom date range'}</option>
-              </select>
-              <Calendar className="w-3.5 h-3.5 text-dark/40 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-
-            {dateRange === 'custom' && (
-              <div className="flex items-center gap-1.5 bg-[#F8F7F4] p-1 rounded-xl border border-[#D6CFC2]/80 text-xs">
-                <input 
-                  type="date" 
-                  value={customStartDate} 
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="bg-white text-dark text-[11px] px-2 py-1 rounded-lg border border-[#D6CFC2]/50 focus:outline-none"
-                />
-                <span className="text-dark/40 text-[10px]">t/m</span>
-                <input 
-                  type="date" 
-                  value={customEndDate} 
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="bg-white text-dark text-[11px] px-2 py-1 rounded-lg border border-[#D6CFC2]/50 focus:outline-none"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 7 KPI Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-          {/* Card 1: Total Leads — LIVE from /leads API */}
-          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-primary">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Totaal Leads' : 'Total Leads'}</span>
-              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                <TrendingUp className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-xl font-heading font-extrabold text-dark">{totalLeads}</p>
-            <p className="text-[10px] font-body text-dark/40 truncate">{language === 'NL' ? 'totaal geregistreerd' : 'total registered'}</p>
-          </div>
-
-          {/* Card 2: Cost Per Lead — not tracked yet, show dash */}
-          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-amber-600">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Kosten / Lead' : 'Cost / Lead'}</span>
-              <div className="p-1.5 rounded-lg bg-amber-100 text-amber-700">
-                <DollarSign className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-xl font-heading font-extrabold text-dark">—</p>
-            <p className="text-[10px] font-body text-dark/40 truncate">{language === 'NL' ? 'nog niet bijgehouden' : 'not tracked yet'}</p>
-          </div>
-
-          {/* Card 3: Quotations Sent — LIVE from /quotes API */}
-          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-blue-600">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Offertes' : 'Quotes Sent'}</span>
-              <div className="p-1.5 rounded-lg bg-blue-100 text-blue-700">
-                <FileText className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-xl font-heading font-extrabold text-dark">{activeQuotes}</p>
-            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'uitgebracht' : 'issued'}</p>
-          </div>
-
-          {/* Card 4: Quotation % — computed from real leads + quotes */}
-          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-indigo-600">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Offerte %' : 'Quote %'}</span>
-              <div className="p-1.5 rounded-lg bg-indigo-100 text-indigo-700">
-                <Percent className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-xl font-heading font-extrabold text-dark">
-              {funnelData?.offerte?.percentage != null
-                ? `${funnelData.offerte.percentage}%`
-                : (totalLeads > 0 ? `${Math.min(100, Math.round((activeQuotes / totalLeads) * 100))}%` : '—')}
-            </p>
-            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'van totaal leads' : 'of total leads'}</p>
-          </div>
-
-          {/* Card 5: Orders Won — computed from quotes with accepted status */}
-          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-emerald-600">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Opdrachten' : 'Orders Won'}</span>
-              <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-xl font-heading font-extrabold text-dark">
-              {latestQuotes.filter(q => q.status === 'accepted' || q.status === 'goedgekeurd' || q.status === 'approved').length}
-            </p>
-            <p className="text-[10px] font-body text-emerald-700 font-semibold truncate">{language === 'NL' ? 'geaccepteerd' : 'accepted'}</p>
-          </div>
-
-          {/* Card 6: Conversion Rate % — computed from real data */}
-          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-purple-600">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Conversie' : 'Conversion'}</span>
-              <div className="p-1.5 rounded-lg bg-purple-100 text-purple-700">
-                <Award className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-xl font-heading font-extrabold text-dark">
-              {(() => {
-                const won = latestQuotes.filter(q => q.status === 'accepted' || q.status === 'goedgekeurd' || q.status === 'approved').length;
-                return totalLeads > 0 ? `${Math.min(100, Math.round((won / totalLeads) * 100))}%` : '—';
-              })()}
-            </p>
-            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'lead → order' : 'lead → order'}</p>
-          </div>
-
-          {/* Card 7: Meta Ads — not connected yet, show dash */}
-          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-pink-600 col-span-2 sm:col-span-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">Meta Ads</span>
-              <div className="p-1.5 rounded-lg bg-pink-100 text-pink-700">
-                <Sparkles className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-xl font-heading font-extrabold text-dark">—</p>
-            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'niet gekoppeld' : 'not connected'}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* NEW DASHBOARD LAYOUT: 5 BLOCKS AS PER CLIENT REQUIREMENTS */}
+{/* NEW DASHBOARD LAYOUT: 5 BLOCKS AS PER CLIENT REQUIREMENTS */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         
         {/* LEFT COLUMN (2/3 width on large screens) */}
@@ -835,6 +631,159 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* MODULE 1.2: DATE RANGE FILTER BAR & 7 KPI ANALYTICS CARDS GRID */}
+      <div className="space-y-4">
+        {/* Date Range Selector Header Bar */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#D6CFC2]/60 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-heading font-bold text-dark">
+                {language === 'NL' ? 'Prestaties & Analytische Cijfers' : 'Performance & Analytics KPIs'}
+              </h3>
+              <p className="text-[11px] font-body text-dark/50">
+                {language === 'NL' ? 'Prestatie-overzicht op basis van geselecteerde tijdsperiode' : 'Performance summary based on selected time frame'}
+              </p>
+            </div>
+          </div>
+
+          {/* Date Selector Dropdown & Custom Range Inputs */}
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none">
+              <select 
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value)}
+                className="w-full sm:w-auto appearance-none bg-[#F8F7F4] hover:bg-cream/40 text-dark text-xs font-body font-semibold px-3 py-2 pr-8 rounded-xl border border-[#D6CFC2]/80 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+              >
+                <option value="7days">{language === 'NL' ? 'Laatste 7 dagen' : 'Last 7 days'}</option>
+                <option value="30days">{language === 'NL' ? 'Laatste 30 dagen' : 'Last 30 days'}</option>
+                <option value="currentMonth">{language === 'NL' ? 'Deze maand' : 'Current month'}</option>
+                <option value="3months">{language === 'NL' ? 'Laatste 3 maanden' : 'Last 3 months'}</option>
+                <option value="6months">{language === 'NL' ? 'Laatste 6 maanden' : 'Last 6 months'}</option>
+                <option value="12months">{language === 'NL' ? 'Laatste 12 maanden' : 'Last 12 months'}</option>
+                <option value="custom">{language === 'NL' ? 'Aangepaste datum' : 'Custom date range'}</option>
+              </select>
+              <Calendar className="w-3.5 h-3.5 text-dark/40 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {dateRange === 'custom' && (
+              <div className="flex items-center gap-1.5 bg-[#F8F7F4] p-1 rounded-xl border border-[#D6CFC2]/80 text-xs">
+                <input 
+                  type="date" 
+                  value={customStartDate} 
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="bg-white text-dark text-[11px] px-2 py-1 rounded-lg border border-[#D6CFC2]/50 focus:outline-none"
+                />
+                <span className="text-dark/40 text-[10px]">t/m</span>
+                <input 
+                  type="date" 
+                  value={customEndDate} 
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="bg-white text-dark text-[11px] px-2 py-1 rounded-lg border border-[#D6CFC2]/50 focus:outline-none"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 7 KPI Cards Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          {/* Card 1: Total Leads — LIVE from /leads API */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-primary">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Totaal Leads' : 'Total Leads'}</span>
+              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                <TrendingUp className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl font-heading font-extrabold text-dark">{totalLeads}</p>
+            <p className="text-[10px] font-body text-dark/40 truncate">{language === 'NL' ? 'totaal geregistreerd' : 'total registered'}</p>
+          </div>
+
+          {/* Card 2: Cost Per Lead — not tracked yet, show dash */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-amber-600">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Kosten / Lead' : 'Cost / Lead'}</span>
+              <div className="p-1.5 rounded-lg bg-amber-100 text-amber-700">
+                <DollarSign className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl font-heading font-extrabold text-dark">—</p>
+            <p className="text-[10px] font-body text-dark/40 truncate">{language === 'NL' ? 'nog niet bijgehouden' : 'not tracked yet'}</p>
+          </div>
+
+          {/* Card 3: Quotations Sent — LIVE from Single Source of Truth */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-blue-600">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Offertes' : 'Quotes Sent'}</span>
+              <div className="p-1.5 rounded-lg bg-blue-100 text-blue-700">
+                <FileText className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl font-heading font-extrabold text-dark">
+              {kpisData?.quotesSent?.value != null ? kpisData.quotesSent.value : (funnelData?.offerte?.count != null ? funnelData.offerte.count : activeQuotes)}
+            </p>
+            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'uitgebracht' : 'issued'}</p>
+          </div>
+
+          {/* Card 4: Quotation % — computed from real leads + quotes */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-indigo-600">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Offerte %' : 'Quote %'}</span>
+              <div className="p-1.5 rounded-lg bg-indigo-100 text-indigo-700">
+                <Percent className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl font-heading font-extrabold text-dark">
+              {kpisData?.quotePercentage?.value != null ? `${kpisData.quotePercentage.value}%` : (funnelData?.offerte?.percentage != null ? `${funnelData.offerte.percentage}%` : (totalLeads > 0 ? `${Math.min(100, Math.round((activeQuotes / totalLeads) * 100))}%` : '0%'))}
+            </p>
+            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'van totaal leads' : 'of total leads'}</p>
+          </div>
+
+          {/* Card 5: Orders Won — Single Source of Truth */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-emerald-600">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Opdrachten' : 'Orders Won'}</span>
+              <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl font-heading font-extrabold text-dark">
+              {kpisData?.ordersWon?.value != null ? kpisData.ordersWon.value : (funnelData?.gewonnen?.count != null ? funnelData.gewonnen.count : latestQuotes.filter(q => q.status === 'accepted' || q.status === 'goedgekeurd' || q.status === 'approved').length)}
+            </p>
+            <p className="text-[10px] font-body text-emerald-700 font-semibold truncate">{language === 'NL' ? 'geaccepteerd' : 'accepted'}</p>
+          </div>
+
+          {/* Card 6: Conversion Rate % — Single Source of Truth */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-purple-600">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Conversie' : 'Conversion'}</span>
+              <div className="p-1.5 rounded-lg bg-purple-100 text-purple-700">
+                <Award className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl font-heading font-extrabold text-dark">
+              {kpisData?.conversionRate?.value != null ? `${kpisData.conversionRate.value}%` : (funnelData?.gewonnen?.percentage != null ? `${funnelData.gewonnen.percentage}%` : (totalLeads > 0 ? `${Math.min(100, Math.round(((kpisData?.ordersWon?.value || 0) / totalLeads) * 100))}%` : '0%'))}
+            </p>
+            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'lead → order' : 'lead → order'}</p>
+          </div>
+
+          {/* Card 7: Meta Ads — not connected yet, show dash */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-pink-600 col-span-2 sm:col-span-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">Meta Ads</span>
+              <div className="p-1.5 rounded-lg bg-pink-100 text-pink-700">
+                <Sparkles className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl font-heading font-extrabold text-dark">—</p>
+            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'niet gekoppeld' : 'not connected'}</p>
+          </div>
+        </div>
+      </div>
+
       {/* NEW LEAD MODAL */}
       <AnimatePresence>
         {leadModalOpen && (
@@ -940,146 +889,6 @@ export default function AdminDashboard() {
         )}
       </AnimatePresence>
 
-      {/* NEW QUOTE MODAL */}
-      <AnimatePresence>
-        {quoteModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-dark/60 backdrop-blur-sm"
-              onClick={() => setQuoteModalOpen(false)}
-            />
-            {/* Modal Content */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md bg-[#EDE8DF] border border-[#C4BEB3] rounded-2xl p-6 shadow-2xl z-10 space-y-4"
-            >
-              <div className="flex items-center justify-between border-b border-cream-dark/60 pb-3">
-                <h3 className="text-lg font-heading font-bold text-primary">{t('quotes.modalAddTitle')}</h3>
-                <button onClick={() => setQuoteModalOpen(false)} className="p-1 rounded-lg text-dark/40 hover:bg-cream-dark/20 hover:text-dark transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleQuoteSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-dark/60 mb-1 font-body uppercase tracking-wider">{t('quotes.customerName')}</label>
-                  <select
-                    value={customerSelect}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setCustomerSelect(val);
-                      if (val !== 'Other') {
-                        setQuoteForm(prev => ({ ...prev, customer: val }));
-                      } else {
-                        setQuoteForm(prev => ({ ...prev, customer: '' }));
-                      }
-                    }}
-                    className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43] mb-2"
-                  >
-                    <option value="" disabled>
-                      {language === 'NL' ? '-- Selecteer een Klant --' : '-- Select a Customer --'}
-                    </option>
-                    {leadsList.map((item, idx) => {
-                      const name = typeof item === 'string' ? item : item.name;
-                      const tag = typeof item === 'object' && item.type ? ` (${item.type})` : '';
-                      return <option key={idx} value={name}>{name}{tag}</option>;
-                    })}
-                    <option value="Other">{language === 'NL' ? 'Nieuw / Aangepaste Klant...' : 'New / Custom Customer...'}</option>
-                  </select>
-                  
-                  {customerSelect === 'Other' && (
-                    <motion.input
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      type="text"
-                      required
-                      value={quoteForm.customer}
-                      onChange={e => setQuoteForm(prev => ({ ...prev, customer: e.target.value }))}
-                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
-                      placeholder={language === 'NL' ? 'Typ klantnaam...' : 'Type new customer name...'}
-                    />
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-dark/60 mb-1 font-body uppercase tracking-wider">{t('quotes.projectType')}</label>
-                  <select
-                    value={projectSelect}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setProjectSelect(val);
-                      if (val !== 'Other') {
-                        setQuoteForm(prev => ({ ...prev, project: val }));
-                      } else {
-                        setQuoteForm(prev => ({ ...prev, project: '' }));
-                      }
-                    }}
-                    className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43] mb-2"
-                  >
-                    <option value="" disabled>
-                      {language === 'NL' ? '-- Selecteer een Projecttype --' : '-- Select Project Type --'}
-                    </option>
-                    <option value="Bespoke Outdoor Kitchen">{language === 'NL' ? 'Maatwerk Buitenkeuken' : 'Bespoke Outdoor Kitchen'}</option>
-                    <option value="Bespoke Hiko Surround">{language === 'NL' ? 'Maatwerk Hiko Omkasting' : 'Bespoke Bin Enclosure / Surround'}</option>
-                    <option value="Wood Pergola">{language === 'NL' ? 'Houten Overkapping / Pergola' : 'Wooden Canopy / Pergola'}</option>
-                    <option value="Garden Decking">{language === 'NL' ? 'Vlonderterras' : 'Garden Decking'}</option>
-                    <option value="Other">{language === 'NL' ? 'Overig (Aangepast type)...' : 'Other (Custom Type)...'}</option>
-                  </select>
-                  
-                  {projectSelect === 'Other' && (
-                    <motion.input
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      type="text"
-                      required
-                      value={quoteForm.project}
-                      onChange={e => setQuoteForm(prev => ({ ...prev, project: e.target.value }))}
-                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
-                      placeholder={language === 'NL' ? 'Typ aangepast projecttype...' : 'Type custom project type...'}
-                    />
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-dark/60 mb-1 font-body uppercase tracking-wider">{t('quotes.amountLabel')}</label>
-                    <input
-                      type="number"
-                      required
-                      value={quoteForm.amount}
-                      onChange={e => setQuoteForm(prev => ({ ...prev, amount: e.target.value }))}
-                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
-                      placeholder="e.g. 4500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-dark/60 mb-1 font-body uppercase tracking-wider">{t('common.status')}</label>
-                    <select
-                      value={quoteForm.status}
-                      onChange={e => setQuoteForm(prev => ({ ...prev, status: e.target.value }))}
-                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/20 text-[#4A4A43]"
-                    >
-                      <option value="Draft">{t('statuses.Draft')}</option>
-                      <option value="Accepted">{t('statuses.Accepted')}</option>
-                      <option value="Paid">{t('statuses.Paid')}</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2 border-t border-cream-dark/60">
-                  <Button type="button" variant="outline" onClick={() => setQuoteModalOpen(false)}>{t('common.cancel')}</Button>
-                  <Button type="submit">{t('quotes.addNewQuote')}</Button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

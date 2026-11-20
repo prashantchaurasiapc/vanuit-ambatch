@@ -7,19 +7,22 @@ import {
   FileSpreadsheet, Building, Plus, Bell, Eye, Edit2, UploadCloud, Image as ImageIcon,
   Paperclip, Share2, CornerDownRight, ChevronDown
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import ProjectChatDrawer from '../../components/common/ProjectChatDrawer';
 import api from '../../api/apiClient';
 import { useLanguage } from '../../context/LanguageContext';
 
-export default function OutdoorKitchenProjects({ onBackToOverview }) {
+export default function OutdoorKitchenProjects({ onBackToOverview, projectId: propProjectId }) {
   const navigate = useNavigate();
+  const { id: routeId } = useParams();
+  const targetId = routeId || propProjectId;
   const { language } = useLanguage();
   const isEn = language !== 'NL';
 
   // Live project from backend
-  const [projectId, setProjectId] = useState(null);
+  const [projectId, setProjectId] = useState(targetId || null);
   const [projectData, setProjectData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // UI State
   const [activeStep, setActiveStep] = useState('In the workshop');
@@ -34,32 +37,57 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
   const [interneNotities, setInterneNotities] = useState('');
   const [lastUpdated, setLastUpdated] = useState('');
 
-  // Load live project from backend on mount
+  // Load live project from backend on mount or when targetId changes
   useEffect(() => {
-    api.get('/projects?type=outdoor_kitchen&limit=1').then(res => {
-      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-        const proj = res.data[0];
-        setProjectId(proj.id);
-        setProjectData(proj);
-        // Hydrate editable text fields from live project
-        if (proj.statusTexts) {
-          if (proj.statusTexts.watErNuGebeurt) setWatErNuGebeurt(proj.statusTexts.watErNuGebeurt);
-          if (proj.statusTexts.watErHiernaKomt) setWatErHiernaKomt(proj.statusTexts.watErHiernaKomt);
-          if (proj.statusTexts.leverweek) setLeverweek(proj.statusTexts.leverweek);
-          if (proj.statusTexts.leverStatus) setLeverStatus(proj.statusTexts.leverStatus);
-          if (proj.statusTexts.internalNotes) setInterneNotities(proj.statusTexts.internalNotes);
+    let isMounted = true;
+    const fetchProject = async () => {
+      setLoading(true);
+      try {
+        let proj = null;
+        if (targetId) {
+          const res = await api.get(`/projects/${targetId}`);
+          if (res && res.success && res.data) {
+            proj = res.data;
+          }
         }
-        if (proj.deliverySlot?.proposedDate) {
-          setDeliveryProposalDay(proj.deliverySlot.proposedDate);
-          setDeliveryProposalTime(proj.deliverySlot.timeWindow || '13:00 - 16:00');
+        if (!proj) {
+          const res = await api.get('/projects?limit=1');
+          if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+            proj = res.data[0];
+          }
         }
-        if (Array.isArray(proj.customerActions) && proj.customerActions.length > 0) {
-          setCustomerActions(proj.customerActions);
+        if (proj && isMounted) {
+          setProjectId(proj.id);
+          setProjectData(proj);
+          if (proj.partnerName) setPartnerSelected(proj.partnerName);
+          if (proj.agreedBuildPrice != null) {
+            setPartnerAmount(new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(proj.agreedBuildPrice));
+          }
+          if (proj.statusTexts) {
+            if (proj.statusTexts.watErNuGebeurt) setWatErNuGebeurt(proj.statusTexts.watErNuGebeurt);
+            if (proj.statusTexts.watErHiernaKomt) setWatErHiernaKomt(proj.statusTexts.watErHiernaKomt);
+            if (proj.statusTexts.leverweek) setLeverweek(proj.statusTexts.leverweek);
+            if (proj.statusTexts.leverStatus) setLeverStatus(proj.statusTexts.leverStatus);
+            if (proj.statusTexts.internalNotes) setInterneNotities(proj.statusTexts.internalNotes);
+          }
+          if (proj.deliverySlot?.proposedDate) {
+            setDeliveryProposalDay(proj.deliverySlot.proposedDate);
+            setDeliveryProposalTime(proj.deliverySlot.timeWindow || '13:00 - 16:00');
+          }
+          if (Array.isArray(proj.customerActions) && proj.customerActions.length > 0) {
+            setCustomerActions(proj.customerActions);
+          }
+          if (proj.orderStatus) setActiveStep(proj.orderStatus);
         }
-        if (proj.orderStatus) setActiveStep(proj.orderStatus);
+      } catch (err) {
+        console.error('Failed to load project details:', err);
+      } finally {
+        if (isMounted) setLoading(false);
       }
-    });
-  }, []);
+    };
+    fetchProject();
+    return () => { isMounted = false; };
+  }, [targetId]);
 
   // Customer Actions — loaded from live project API
   const [customerActions, setCustomerActions] = useState([]);
@@ -171,8 +199,8 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
     try {
       const gen = JSON.parse(localStorage.getItem('va_general_logbook') || 'null');
       return gen || [
-        { id: 1, date: 'Today 10:30', text: 'Quote OF-2026-014 accepted by customer (Sander de Vries) — System' },
-        { id: 2, date: 'Yesterday 14:15', text: 'Partner Hoek Bouw started frame construction — Sven Hoek' }
+        { id: 1, date: 'Vandaag 10:30', text: 'Project geactiveerd in beheerportaal — Systeem' },
+        { id: 2, date: 'Gisteren 14:15', text: 'Partner geregistreerd voor uitvoering — Systeem' }
       ];
     } catch (e) {
       return [];
@@ -276,7 +304,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
   };
 
   const handleShareWithPartner = () => {
-    const forwardedText = "Forwarded customer request: Sander requested moving sink 15 cm to the left.";
+    const forwardedText = `Doorsturen klantverzoek: ${resolvedFirstName} vraagt om aanpassing aan specificatie.`;
     const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newPartnerMsg = {
       id: Date.now(),
@@ -616,6 +644,22 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
   const currentStepObj = stepsList.find(s => s.key === activeStep || s.name === activeStep || (s.aliases && s.aliases.includes(activeStep)));
   const displayActiveStep = currentStepObj ? currentStepObj.name : activeStep;
 
+  // Single source of truth project derivations
+  const resolvedCustomer = projectData?.customerName || projectData?.customer?.name || (isEn ? 'Customer' : 'Klant');
+  const resolvedFirstName = resolvedCustomer.split(' ')[0] || resolvedCustomer;
+  const resolvedPartner = projectData?.partnerName || projectData?.partner?.companyName || (isEn ? 'Partner' : 'Partner');
+  const resolvedCity = projectData?.city || projectData?.deliveryAddress || 'Nederland';
+  const resolvedPrice = projectData?.contractValue 
+    ? new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(projectData.contractValue)
+    : '€ 0,00';
+  const resolvedQuoteNumber = projectData?.quoteId || (projectData?.projectNumber ? `OF-${projectData.projectNumber.replace('PRJ-', '')}` : 'OF-2026001');
+  const resolvedProjectNumber = projectData?.projectNumber || 'PRJ-2026-001';
+  const isGenericTitle = !projectData?.name || /^(test|abc|project|demo|nieuw project|nieuwe buitenkeuken|onbekend)$/i.test(String(projectData.name).trim());
+  const productLabel = projectData?.projectType === 'garden_room' ? (isEn ? 'Garden Room' : 'Tuinkamer') : (isEn ? 'Outdoor Kitchen' : 'Buitenkeuken');
+  const autoProjectTitle = isGenericTitle
+    ? `${resolvedCustomer} · ${productLabel}`
+    : projectData.name;
+
   // Common Right Rail Component matching Screenshots (with High Contrast, Crisp Typography)
   const renderRightRail = () => (
     <div className="lg:col-span-5 space-y-5">
@@ -632,7 +676,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
         <div className="bg-white border border-[#D6CFC2] rounded-xl p-4 space-y-3 shadow-2xs">
           <div>
             <h4 className="font-bold text-sm text-[#1C1C1A]">
-              {isEn ? 'Hi Sander' : 'Hoi Sander'}
+              {isEn ? `Hi ${resolvedFirstName}` : `Hoi ${resolvedFirstName}`}
             </h4>
             <div className="flex items-center gap-1.5 text-xs font-bold text-[#2E2B25] mt-0.5">
               <span>{displayActiveStep}</span>
@@ -747,6 +791,15 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
     </div>
   );
 
+  if (loading && !projectData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+        <div className="w-8 h-8 border-3 border-[#33422C] border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs font-mono text-dark/60">{isEn ? 'Loading project details...' : 'Project laden...'}</span>
+      </div>
+    );
+  }
+
   return (
     <div className="-m-3 sm:-m-4 lg:-m-6 p-4 sm:p-6 lg:p-8 min-h-full bg-[#F4F1EA] text-[#4A4A43] font-body space-y-6 relative w-auto">
       
@@ -827,13 +880,13 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
         <div>
           <span className="text-[11px] font-mono font-bold text-dark/50 uppercase tracking-widest block">
-            {isEn ? 'PROJECT 2026-014 — OUTDOOR KITCHEN' : 'PROJECT 2026-014 — BUITENKEUKEN'}
+            {resolvedProjectNumber} — {projectData?.projectType ? String(projectData.projectType).toUpperCase().replace('_', ' ') : 'BUITENKEUKEN'}
           </span>
           <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#33422C] mt-0.5">
-            {projectData?.name || (isEn ? 'Sander de Vries — Luxury Outdoor Kitchen 240 cm' : 'Sander de Vries — Luxe Buitenkeuken 240 cm')}
+            {autoProjectTitle}
           </h1>
           <p className="text-xs text-dark/70 font-body mt-1">
-            {isEn ? 'Oisterwijk · Quote OF-2026325 · Approved Aug 11 · € 3,920.00 incl. VAT' : 'Oisterwijk · offerte OF-2026325 · akkoord 11 aug · € 3.920,00 incl. btw'}
+            {resolvedCity} · {resolvedQuoteNumber} · {resolvedPrice} incl. btw
           </p>
         </div>
 
@@ -1592,7 +1645,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
                     Payment Schedule & Invoices (50% / 50% Scheme)
                   </h3>
                   <p className="text-xs text-[#555046] mt-0.5">
-                    Total project sum: <strong className="text-[#1C1C1A]">€ 3,920.00 incl. VAT</strong> · Source: Bookkeeping & Invoices
+                    Total project sum: <strong className="text-[#1C1C1A]">{resolvedPrice} incl. btw</strong> · Source: Bookkeeping & Invoices
                   </p>
                 </div>
                 <span className="px-2.5 py-1 bg-[#E3EFE3] text-[#1E561E] rounded-md font-mono text-[10px] font-bold border border-[#C5E1C5] self-start sm:self-center">
@@ -1608,7 +1661,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 bg-[#EDE8DF] text-[#3E3A33] rounded font-mono text-[11px] font-bold">
-                        #INV-2026-041
+                        2026041
                       </span>
                       <h4 className="font-bold text-sm text-[#1C1C1A]">
                         50% Deposit (Aanbetaling bij akkoord)
@@ -1636,7 +1689,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
                       <span>✔</span> Fully settled & verified in bank
                     </span>
                     <button
-                      onClick={() => showToast('Downloading PDF for Invoice #INV-2026-041...')}
+                      onClick={() => showToast('Downloading PDF for Invoice 2026041...')}
                       className="px-3 py-1 bg-white hover:bg-[#FAF8F5] text-[#1C1C1A] border border-[#D6CFC2] rounded-lg text-xs font-semibold shadow-2xs cursor-pointer flex items-center gap-1"
                     >
                       <span>📄 Download Invoice PDF</span>
@@ -1649,7 +1702,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 bg-[#EDE8DF] text-[#3E3A33] rounded font-mono text-[11px] font-bold">
-                        #INV-2026-042
+                        2026042
                       </span>
                       <h4 className="font-bold text-sm text-[#1C1C1A]">
                         50% Final Invoice (Slottermijn bij oplevering)
@@ -1697,7 +1750,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
                     {finalInvoiceSent ? (
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => showToast('Payment reminder sent to customer Sander de Vries!')}
+                          onClick={() => showToast(`Payment reminder sent to customer ${resolvedCustomer}!`)}
                           className="px-3 py-1.5 bg-white hover:bg-[#FAF8F5] text-[#1C1C1A] border border-[#D6CFC2] rounded-xl text-xs font-semibold shadow-2xs cursor-pointer"
                         >
                           🔔 Send Reminder
@@ -1752,7 +1805,7 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
                       Chat with customer
                     </h3>
                     <span className="px-2 py-0.5 bg-[#E3EFE3] text-[#1E561E] rounded-md font-mono text-[9px] font-bold border border-[#C5E1C5]">
-                      → CUSTOMER · SANDER DE VRIES
+                      → CUSTOMER · {resolvedCustomer.toUpperCase()}
                     </span>
                   </div>
 
@@ -2271,10 +2324,10 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
       <ProjectChatDrawer
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
-        projectCode={projectData?.projectNumber || "PRJ-2026-001"}
+        projectCode={resolvedProjectNumber}
         projectId={projectId || projectData?.id || "PRJ-2026-001"}
-        clientName={projectData?.customer?.name || projectData?.customerName || "Sander"}
-        partnerName={projectData?.partner?.companyName || projectData?.partnerName || "Sven Hoek"}
+        clientName={resolvedCustomer}
+        partnerName={resolvedPartner}
         onShowToast={showToast}
       />
 
@@ -2298,11 +2351,26 @@ export default function OutdoorKitchenProjects({ onBackToOverview }) {
               </div>
 
               <form 
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault();
                   if (!newProjectClient.trim()) return;
+                  const parsedBudget = newProjectBudget ? parseFloat(String(newProjectBudget).replace(/[^0-9.-]/g, '')) : null;
+                  const pType = newProjectType.toLowerCase().includes('garden') ? 'garden_room' : 'outdoor_kitchen';
+                  const res = await api.post('/projects', {
+                    name: `${newProjectClient} — ${newProjectType}`,
+                    projectType: pType,
+                    deliveryAddress: 'Address to be confirmed',
+                    city: 'City to be confirmed',
+                    orderStatus: 'in_voorbereiding',
+                    ...(!isNaN(parsedBudget) && parsedBudget !== null ? { contractValue: parsedBudget } : {})
+                  });
                   setNewProjectModal(false);
-                  showToast(`✓ New project for "${newProjectClient}" created successfully!`);
+                  if (res.success) {
+                    window.dispatchEvent(new Event('app_data_changed'));
+                    showToast(`✓ New project for "${newProjectClient}" created successfully!`);
+                  } else {
+                    showToast(`⚠ ${res.error?.message || 'Failed to create project'}`);
+                  }
                 }} 
                 className="space-y-4 text-xs"
               >

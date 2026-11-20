@@ -53,7 +53,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
   const compAddress = (companyInfo.address && !companyInfo.address.includes('Industrieweg')) ? companyInfo.address : 'Koningshof 33, 3451 LM Vleuten';
   const compEmail = companyInfo.email || 'info@vanuitambacht.nl';
   const compPhone = (companyInfo.phone && !companyInfo.phone.includes('12345678')) ? companyInfo.phone : '06 82 00 80 25';
-  const compKvk = (companyInfo.kvkNumber ? `KVK ${companyInfo.kvkNumber}` : companyInfo.kvk) && !String(companyInfo.kvk || '').includes('84729102') ? (companyInfo.kvkNumber ? `KVK ${companyInfo.kvkNumber}` : companyInfo.kvk) : 'KVK 93067429';
+  const compKvk = (companyInfo.kvkNumber ? `KVK ${companyInfo.kvkNumber}` : companyInfo.kvk) && !String(companyInfo.kvk || '').includes('84729102') ? (companyInfo.kvkNumber ? `KVK ${companyInfo.kvkNumber}` : companyInfo.kvk) : 'KVK 93097429';
   const compVat = (companyInfo.btwNumber ? `BTW ${companyInfo.btwNumber}` : companyInfo.vatNumber) && !String(companyInfo.vat || '').includes('863492817') ? (companyInfo.btwNumber ? `BTW ${companyInfo.btwNumber}` : companyInfo.vatNumber) : 'BTW NL866264863B01';
   const compIban = (companyInfo.iban && companyInfo.iban.includes('NL27')) ? companyInfo.iban : 'IBAN NL27 ABNA 0132 2698 56';
   const compWebsite = 'vanuitambacht.nl';
@@ -98,7 +98,7 @@ export default function Offerte6PagePDF({ quote, activePage = null, highlightFie
         ? String(customerName).trim().split(' ')[0]
         : (language === 'EN' ? 'Client' : 'Klant'));
   const city = custObj?.city || customerInfo?.city || quote?.deliveryLocation || quote?.city || '';
-  const quoteId = quote?.id || quote?.quoteNumber || 'OF-2026-032';
+  const quoteId = quote?.quoteNumber || quote?.id || 'OF-2026001';
   const quoteDate = quote?.date || quote?.issueDate || new Date().toISOString().split('T')[0];
   const validUntil = quote?.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 

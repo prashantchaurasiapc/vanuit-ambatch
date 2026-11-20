@@ -18,6 +18,7 @@ import { downloadDirectPdfFile } from '../utils/pdfGenerator';
 import CommunicationConfirmModal from './CommunicationConfirmModal';
 import QuoteEditor from './QuoteEditor';
 import { createDefaultQuote } from '../utils/quoteSchema';
+import { getActiveCategories, getActiveWoodTypes } from '../utils/productConfigManager';
 import api from '../api/apiClient';
 
 export const WORKFLOW_STEPS = [
@@ -40,7 +41,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const customerEmail = lead?.email || '';
   const customerPhone = lead?.phone || '';
   const customerCity = lead?.city || lead?.location || '';
-  const customerCategory = lead?.productType || lead?.category || (lead?.company?.toLowerCase().includes('snijplanken') ? 'Snijplanken' : 'Buitenkeukens');
+  const customerCategory = lead?.productType || lead?.category || '';
 
   const initialStep = lead?.workflowStep || 1;
   const [currentStep, setCurrentStep] = useState(initialStep);
@@ -315,8 +316,25 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     return 'buitenkeuken';
   };
 
+  // Dynamic Categories and Wood Types (Synchronized with Settings)
+  const [dynamicCategoriesList, setDynamicCategoriesList] = useState(() => getActiveCategories());
+  const [dynamicWoodTypesList, setDynamicWoodTypesList] = useState(() => getActiveWoodTypes());
+
+  useEffect(() => {
+    const handleConfigChange = () => {
+      setDynamicCategoriesList(getActiveCategories());
+      setDynamicWoodTypesList(getActiveWoodTypes());
+    };
+    window.addEventListener('app_product_config_changed', handleConfigChange);
+    window.addEventListener('storage', handleConfigChange);
+    return () => {
+      window.removeEventListener('app_product_config_changed', handleConfigChange);
+      window.removeEventListener('storage', handleConfigChange);
+    };
+  }, []);
+
   // Step 2 Editable Free-Text Fields & Smart Green Logic State
-  const [step2ProductType, setStep2ProductType] = useState(() => lead?.productType || customerCategory || 'Outdoor kitchen');
+  const [step2ProductType, setStep2ProductType] = useState(() => lead?.productType || customerCategory || (getActiveCategories()[0]?.name || ''));
   const activeCategoryKey = getCategoryKey(step2ProductType);
 
   useEffect(() => {
@@ -328,7 +346,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const [step2Notes, setStep2Notes] = useState(lead?.notes || '');
   const [step2RequestedDate, setStep2RequestedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [step2ExpectedDate, setStep2ExpectedDate] = useState(() => new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-  const [step2Material, setStep2Material] = useState('Douglas');
+  const [step2Material, setStep2Material] = useState(() => lead?.woodType || lead?.material || (getActiveWoodTypes()[0]?.name || ''));
   const [step2SiteAccess, setStep2SiteAccess] = useState(lead?.siteAccess || '');
   const [step2RoofBaseWalls, setStep2RoofBaseWalls] = useState(lead?.roofBaseWalls || '');
   const [step2Electrics, setStep2Electrics] = useState(lead?.electrics || '');
@@ -620,19 +638,19 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
 
   // Derived margin calculations (internal use only)
   const partnerCostNum = parseFloat((partnerCostPrice || '0').replace(/[^0-9.]/g, '')) || 0;
-  const grossMarginAmount = Math.round(partnerCostNum * (marginPercent / 100));
+  const grossMarginAmount = Math.round(partnerCostNum * (marginPercent / 100) * 100) / 100;
   const customerSellPrice = partnerCostNum + grossMarginAmount;
 
-  // Step 4 — Build the Quote State (Two-Way Margin Synchronization & Calculated Totals)
+  // Step 4 — Build the Quote State (Two-Way Margin Synchronization & Calculated Totals in Cents)
   const effectivePartnerCost = partnerCostNum > 0 ? partnerCostNum : 0; // Auto carry-forward from Step 3
   const [step4MarginPercent, setStep4MarginPercent] = useState(20);
-  const [step4MarginAmount, setStep4MarginAmount] = useState(() => Math.round(effectivePartnerCost * 0.20));
+  const [step4MarginAmount, setStep4MarginAmount] = useState(() => Math.round(effectivePartnerCost * 0.20 * 100) / 100);
   const [step4VatRate, setStep4VatRate] = useState(21);
   const [quoteSavedAsDraft, setQuoteSavedAsDraft] = useState(false);
 
   useEffect(() => {
     if (effectivePartnerCost > 0) {
-      setStep4MarginAmount(Math.round(effectivePartnerCost * (step4MarginPercent / 100)));
+      setStep4MarginAmount(Math.round(effectivePartnerCost * (step4MarginPercent / 100) * 100) / 100);
     } else {
       setStep4MarginAmount(0);
     }
@@ -642,7 +660,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
   const handleMarginPercentChange = (val) => {
     const p = Math.max(0, Math.min(100, parseFloat(val) || 0));
     setStep4MarginPercent(p);
-    setStep4MarginAmount(Math.round(effectivePartnerCost * (p / 100)));
+    setStep4MarginAmount(Math.round(effectivePartnerCost * (p / 100) * 100) / 100);
   };
 
   const handleMarginAmountChange = (val) => {
@@ -653,10 +671,19 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     }
   };
 
-  // Derived calculations (Step 4 — READ-ONLY / CALCULATED TOTALS)
-  const step4CustomerPriceExclVat = Math.round(effectivePartnerCost + step4MarginAmount);
-  const step4VatAmount = Math.round(step4CustomerPriceExclVat * (step4VatRate / 100));
-  const step4TotalInclVat = step4CustomerPriceExclVat + step4VatAmount;
+  // Exact Cents (Integer) Mathematics — Brief 2.5: No premature integer euro rounding
+  const effectivePartnerCostCents = Math.round(effectivePartnerCost * 100);
+  const step4MarginCents = Math.round(effectivePartnerCostCents * (step4MarginPercent / 100));
+  const step4CustomerPriceExclVatCents = effectivePartnerCostCents + step4MarginCents;
+  const step4VatAmountCents = Math.round(step4CustomerPriceExclVatCents * (step4VatRate / 100));
+  const step4TotalInclVatCents = step4CustomerPriceExclVatCents + step4VatAmountCents;
+
+  const step4CustomerPriceExclVat = step4CustomerPriceExclVatCents / 100;
+  const step4VatAmount = step4VatAmountCents / 100;
+  const step4TotalInclVat = step4TotalInclVatCents / 100;
+
+  // Single Source of Truth Dutch currency formatter: always guarantees 2 decimal places (e.g. € 1.312,50)
+  const formatDutchCurrency = (val) => Number(val || 0).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // Step 5 — Review & Send State (Approval Gate & Confirmed Send Flow)
   const [step5ApprovalStatus, setStep5ApprovalStatus] = useState('DRAFT'); // 'DRAFT' | 'APPROVED'
@@ -930,32 +957,46 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
       }
 
       if (targetBackendId) {
-        const lineItems = (savedQuote.investment?.lineItems || []).map((it, idx) => ({
-          position: idx + 1,
-          title: it.title || 'Maatwerk item',
-          description: it.description || null,
-          quantity: Number(it.quantity) || 1,
-          priceInclVat: Number(it.priceInclVat ?? it.unitPriceInclVat ?? 0),
-          vatRate: Number(it.vatRate) || 21,
-          isIncluded: Boolean(it.isIncluded),
-          isStelpost: Boolean(it.isStelpost)
-        }));
+        const rawLineItems = (savedQuote.investment?.lineItems || []);
+        const lineItems = rawLineItems.length > 0
+          ? rawLineItems.map((it, idx) => ({
+              position: idx + 1,
+              title: it.title || 'Maatwerk item',
+              description: it.description || null,
+              quantity: Number(it.quantity) || 1,
+              priceInclVat: Number(it.priceInclVat ?? it.unitPriceInclVat ?? 0),
+              vatRate: Number(it.vatRate) || 21,
+              isIncluded: Boolean(it.isIncluded),
+              isStelpost: Boolean(it.isStelpost)
+            }))
+          : [
+              {
+                position: 1,
+                title: `${customerCategory || 'Maatwerk Buitenmeubel'} (${step2Size || '240 x 80 cm'})`,
+                description: `${step2Material || 'Thermo Fraké'} afwerking en vakkundige montage`,
+                quantity: 1,
+                priceInclVat: step4TotalInclVat || 12500,
+                vatRate: 21,
+                isIncluded: true,
+                isStelpost: false
+              }
+            ];
 
         const draftPayload = {
           coverTitleLine1: savedQuote.cover?.titleLine1 || savedQuote.name || 'EEN MAATWERK MEUBEL',
           coverTitleLine2: savedQuote.cover?.titleLine2 || `VOOR ${(customerName || 'KLANT').toUpperCase()}`,
           customSubtitle: savedQuote.cover?.subtitle || 'Exclusief vakwerk vervaardigd door Vanuit Ambacht',
           coverPhotos: savedQuote.cover?.photos || ['/cover_img1.png', '/cover_img2.png', '/cover_img3.png'],
-          dimensionsText: savedQuote.configuration?.dimensions || '240 x 80 cm',
-          woodType: savedQuote.configuration?.woodType || 'Thermo Frake',
+          dimensionsText: savedQuote.configuration?.dimensions || step2Size || '240 x 80 cm',
+          woodType: savedQuote.configuration?.woodType || step2Material || 'Thermo Frake',
           woodLifespan: savedQuote.configuration?.woodLifespan || '20 tot 25 jaar',
           optionsTitle: savedQuote.configuration?.optionsTitle || 'Kamado / BBQ integratie',
           optionsSubtext: savedQuote.configuration?.optionsSubtext || 'Rechts van het midden',
           deliveryTimeText: savedQuote.configuration?.deliveryTime || '3 tot 5 weken',
           deliverySubtext: savedQuote.configuration?.deliverySubtext || 'na technisch akkoord',
-          costPrice: savedQuote.investment?.costPrice ? Number(savedQuote.investment.costPrice) : undefined,
-          marginPercent: savedQuote.investment?.marginPercent ? Number(savedQuote.investment.marginPercent) : undefined,
-          marginAmount: savedQuote.investment?.marginAmount ? Number(savedQuote.investment.marginAmount) : undefined,
+          costPrice: savedQuote.investment?.costPrice ? Number(savedQuote.investment.costPrice) : (effectivePartnerCost || undefined),
+          marginPercent: savedQuote.investment?.marginPercent ? Number(savedQuote.investment.marginPercent) : (step4MarginPercent || undefined),
+          marginAmount: savedQuote.investment?.marginAmount ? Number(savedQuote.investment.marginAmount) : (step4MarginAmount || undefined),
           lineItems: lineItems.length > 0 ? lineItems : undefined,
           finishTreatment: savedQuote.configuration?.finishTreatment || 'Twee-laags natuurlijke beschermende olie',
           stelpostDisclaimer: savedQuote.investment?.stelpostDisclaimer,
@@ -965,8 +1006,10 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
 
         await api.put(`/quotes/${targetBackendId}/versions/draft`, draftPayload);
       }
+      return targetBackendId;
     } catch (err) {
       console.warn('Could not sync quote to DB:', err);
+      return targetBackendId;
     }
 
     if (isExplicit) {
@@ -1076,10 +1119,21 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     setStep5SendConfirmed(true);
     setStep5ConfirmModalOpen(false);
 
-    window.dispatchEvent(new Event('app_data_changed'));
+    // Guarantee quote is persisted to PostgreSQL database and officially published
+    try {
+      const activeQ = leadQuote || getLeadQuote();
+      let qId = activeQ?.backendId;
+      if (!qId) {
+        qId = await handleSaveQuote(activeQ, false);
+      }
+      if (qId) {
+        await api.post(`/quotes/${qId}/publish`, { sendEmail: false });
+      }
+    } catch (e) {
+      console.warn('Quote publish note:', e);
+    }
 
-    const qId = leadQuote?.backendId || leadQuote?.id || targetQuoteId;
-    api.post(`/quotes/${qId}/publish`).catch(() => {});
+    window.dispatchEvent(new Event('app_data_changed'));
 
     const channelLabel = step5SelectedChannel === 'EMAIL' ? 'E-mail Sent' : 'WhatsApp Sent';
     setStep5SendChannelLabel(channelLabel);
@@ -1156,49 +1210,26 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
 
   // Automatic consequence helper function: Convert quote via official accept-and-convert endpoint
   const autoCreateProjectOnApproval = async (meta) => {
-    window.dispatchEvent(new Event('app_data_changed'));
-
     // Ensure quote is persisted to backend first if not yet done
     let targetQId = leadQuote?.backendId;
     if (!targetQId) {
-      await handleSaveQuote(leadQuote, false);
-      targetQId = leadQuote?.backendId;
+      targetQId = await handleSaveQuote(leadQuote || getLeadQuote(), false);
     }
-    targetQId = targetQId || leadQuote?.id || targetQuoteId;
-
-    // Cache confirmed project for offline/UI preview fallback
-    try {
-      const projId = `PRJ-${lead?.id ? String(lead.id).replace(/[^0-9]/g, '').slice(-4) || '101' : '101'}`;
-      const projTitle = `Luxe ${customerCategory || 'Buitenkeuken'} — ${customerName || 'Klant'}`;
-      const newProj = {
-        id: projId,
-        projectNumber: projId,
-        name: projTitle,
-        customer: customerName || 'Klant',
-        customerEmail,
-        customerPhone,
-        projectType: (customerCategory || 'outdoor_kitchen').toLowerCase().includes('garden') ? 'garden_room' : 'outdoor_kitchen',
-        status: 'In execution',
-        progress: 25,
-        deadline: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        quoteId: targetQId,
-        leadId: lead?.id,
-        partner: partnerForm?.partnerName || lead?.partner || 'Unassigned',
-        orderStatus: 'in_voorbereiding',
-        createdAt: new Date().toISOString()
-      };
-      const existingProjects = JSON.parse(localStorage.getItem('app_projects_v2') || '[]');
-      const filteredP = existingProjects.filter(p => p.id !== projId && p.quoteId !== targetQId);
-      localStorage.setItem('app_projects_v2', JSON.stringify([newProj, ...filteredP]));
-    } catch (e) {
-      console.warn('Local project cache write error:', e);
-    }
+    targetQId = targetQId || leadQuote?.backendId || leadQuote?.id;
 
     if (targetQId) {
       try {
-        await api.post(`/quotes/${targetQId}/accept-and-convert`, {
+        const convRes = await api.post(`/quotes/${targetQId}/accept-and-convert`, {
           note: meta?.statusLabel || `Approved via ${meta?.route || 'Route A'}`
         });
+        if (convRes?.success && convRes.data?.project) {
+          const bp = convRes.data.project;
+          try {
+            const existingProjects = JSON.parse(localStorage.getItem('app_projects_v2') || '[]');
+            const filteredP = existingProjects.filter(p => p.id !== bp.id && p.quoteId !== targetQId);
+            localStorage.setItem('app_projects_v2', JSON.stringify([bp, ...filteredP]));
+          } catch (e) {}
+        }
       } catch (err) {
         // If already approved (409), that is completely expected and means it is already converted
         console.warn('Quote conversion notice:', err);
@@ -1215,7 +1246,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
       customerName,
       dateTime: formattedDate,
       ipAddress: '84.112.45.198 (Amsterdam, NL)',
-      quoteVersion: `Quote #${leadQuote?.id || targetQuoteId || 'Q-2026-003'} v1.0`,
+      quoteVersion: `Quote #${leadQuote?.quoteNumber || leadQuote?.id || targetQuoteId || 'OF-2026001'} v1.0`,
       statusLabel: '✓ Customer Approved (Online Link)'
     };
     setStep6Approved(true);
@@ -1269,7 +1300,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
     }
   }, [partnerForm?.partnerName]);
 
-  const handleConfirmProjectStep7 = () => {
+  const handleConfirmProjectStep7 = async () => {
     const originalPartner = partnerForm?.partnerName || lead?.partner || '';
     if (step7SelectedPartner !== originalPartner && !step7PartnerChangeReason.trim()) {
       showToast(language === 'EN' 
@@ -1278,50 +1309,35 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
       return;
     }
 
-    // Sync confirmed project via API for Projects Tab
-    const projId = `P-${lead?.id?.replace('LEAD', 'L') || '2525'}`;
-    const projTitle = `Luxe ${customerCategory || 'Buitenkeuken'} — ${customerName}`;
-    const confirmedProject = {
-      id: projId,
-      name: projTitle,
-      projectName: projTitle,
-      customer: customerName,
-      customerEmail,
-      customerPhone,
-      category: customerCategory || 'Buitenkeukens',
-      partner: step7SelectedPartner,
-      partnerReason: step7PartnerChangeReason,
-      isPartnerConfirmed: true,
-      partnerStatus: 'Final / Locked',
-      partnerCost: effectivePartnerCost,
-      margin: step4MarginAmount,
-      startDate: step7StartDate,
-      deadline: step7CompletionDate,
-      progress: 25,
-      totalAmount: `€ ${step4TotalInclVat.toLocaleString('nl-NL')}`,
-      numericAmount: step4TotalInclVat,
-      status: 'In execution',
-      internalNote: step7InternalNote,
-      confirmedAt: new Date().toISOString()
-    };
-
     setStep7Confirmed(true);
-    window.dispatchEvent(new Event('app_data_changed'));
 
-    // Link partner to project in backend if partner is selected
+    // 1. Ensure project conversion is triggered if not already converted
+    try {
+      await autoCreateProjectOnApproval({
+        route: 'STEP_7_LEAD_CONFIRM',
+        statusLabel: `Lead Confirmed & Released to ${step7SelectedPartner || 'Partner'}`
+      });
+    } catch (e) {
+      console.warn('Step 7 auto project creation warning:', e);
+    }
+
+    // 2. Link partner to project in backend if partner is selected
     const matchedPartner = availablePartners.find(p => p.name === step7SelectedPartner || p.company === step7SelectedPartner);
     const partnerId = matchedPartner?.id || partnerForm?.partnerId;
 
-    api.get('/projects?limit=50').then(pRes => {
+    try {
+      const pRes = await api.get('/projects?limit=50');
       const projs = pRes?.data?.items || (Array.isArray(pRes?.data) ? pRes.data : []);
       const pFound = projs.find(p => (lead?.id && p.leadId === lead.id) || (leadQuote?.backendId && p.quoteId === leadQuote.backendId));
       if (pFound && partnerId) {
-        api.patch(`/projects/${pFound.id}/assign-partner`, {
+        await api.patch(`/projects/${pFound.id}/assign-partner`, {
           partnerId,
           agreedBuildPrice: effectivePartnerCost || undefined
         }).catch(() => {});
       }
-    }).catch(() => {});
+    } catch (e) {}
+
+    window.dispatchEvent(new Event('app_data_changed'));
 
     showToast(language === 'EN'
       ? `✓ Project confirmed! Released to ${step7SelectedPartner}. Partner now sees customer address & phone.`
@@ -2341,14 +2357,26 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             {language === 'EN' ? 'Category' : 'Categorie'}
                           </label>
                           <select 
-                            value={activeCategoryKey}
+                            value={step2ProductType}
                             onChange={(e) => setStep2ProductType(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-semibold text-dark cursor-pointer focus:ring-2 focus:ring-primary/20"
                           >
-                            <option value="buitenkeuken">{language === 'EN' ? 'Outdoor kitchen' : 'Buitenkeuken'}</option>
-                            <option value="buitenverblijf">{language === 'EN' ? 'Garden room' : 'Buitenverblijf'}</option>
-                            <option value="poolhouse">Poolhouse</option>
-                            <option value="overkapping">{language === 'EN' ? 'Canopy' : 'Overkapping'}</option>
+                            {dynamicCategoriesList.length === 0 ? (
+                              <option value="">
+                                {language === 'EN' ? '-- No categories configured in Settings --' : '-- Geen categorieën geconfigureerd in Instellingen --'}
+                              </option>
+                            ) : (
+                              <>
+                                <option value="">
+                                  {language === 'EN' ? '-- Select a category --' : '-- Selecteer een categorie --'}
+                                </option>
+                                {dynamicCategoriesList.map(cat => (
+                                  <option key={cat.id || cat.name} value={cat.name}>
+                                    {language === 'EN' ? (cat.nameEn || cat.name) : cat.name}
+                                  </option>
+                                ))}
+                              </>
+                            )}
                           </select>
                         </div>
 
@@ -2374,10 +2402,22 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             onChange={(e) => setStep2Material(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl font-semibold text-dark cursor-pointer focus:ring-2 focus:ring-primary/20"
                           >
-                            <option value="Douglas">{language === 'EN' ? 'Douglas Fir' : 'Douglas'}</option>
-                            <option value="Thermo Fraké Hout">{language === 'EN' ? 'Thermo Fraké Wood' : 'Thermo Fraké Hout'}</option>
-                            <option value="Massief Teakhout">{language === 'EN' ? 'Solid Teak Wood' : 'Massief Teakhout'}</option>
-                            <option value="Eikenhout">{language === 'EN' ? 'Oak Wood' : 'Eikenhout'}</option>
+                            {dynamicWoodTypesList.length === 0 ? (
+                              <option value="">
+                                {language === 'EN' ? '-- No wood types configured in Settings --' : '-- Geen houtsoorten geconfigureerd in Instellingen --'}
+                              </option>
+                            ) : (
+                              <>
+                                <option value="">
+                                  {language === 'EN' ? '-- Select timber / material --' : '-- Selecteer houtsoort / materiaal --'}
+                                </option>
+                                {dynamicWoodTypesList.map(w => (
+                                  <option key={w.id || w.name} value={w.name}>
+                                    {language === 'EN' ? (w.nameEn || w.name) : w.name} {w.lifespan ? `(${w.lifespan})` : ''}
+                                  </option>
+                                ))}
+                              </>
+                            )}
                           </select>
                         </div>
 
@@ -3220,7 +3260,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             {language === 'NL' ? '🔒 Intern' : '🔒 Internal'}
                           </span>
                         </div>
-                        <span className="font-black text-red-900 text-sm">€ {effectivePartnerCost.toLocaleString('nl-NL')}</span>
+                        <span className="font-black text-red-900 text-sm">€ {formatDutchCurrency(effectivePartnerCost)}</span>
                       </div>
 
                       {/* Margin */}
@@ -3228,7 +3268,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         <span className="font-bold text-amber-900">
                           {language === 'NL' ? `Brutomarge (${step4MarginPercent}%)` : `Gross Margin (${step4MarginPercent}%)`}
                         </span>
-                        <span className="font-black text-amber-900 text-sm">+ € {step4MarginAmount.toLocaleString('nl-NL')}</span>
+                        <span className="font-black text-amber-900 text-sm">+ € {formatDutchCurrency(step4MarginAmount)}</span>
                       </div>
 
                       <div className="border-t border-[#D6CFC2]/60 my-1" />
@@ -3236,7 +3276,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       {/* Customer Price Excl VAT (Read-Only) */}
                       <div className="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-200">
                         <span className="font-bold text-dark">{language === 'NL' ? 'Klantprijs excl. btw' : 'Customer Price excl. VAT'}</span>
-                        <span className="font-black text-primary text-base">€ {step4CustomerPriceExclVat.toLocaleString('nl-NL')}</span>
+                        <span className="font-black text-primary text-base">€ {formatDutchCurrency(step4CustomerPriceExclVat)}</span>
                       </div>
 
                       {/* VAT 21% */}
@@ -3253,7 +3293,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             <option value={0}>{language === 'NL' ? '0% (Vrijgesteld)' : '0% (Exempt)'}</option>
                           </select>
                         </div>
-                        <span className="font-bold text-dark">+ € {step4VatAmount.toLocaleString('nl-NL')}</span>
+                        <span className="font-bold text-dark">+ € {formatDutchCurrency(step4VatAmount)}</span>
                       </div>
 
                       {/* TOTAL INCL VAT (Prominent & Read-Only) */}
@@ -3266,7 +3306,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             {language === 'NL' ? 'Alleen-lezen totaal voor klantofferte' : 'Read-only total for customer quotation'}
                           </span>
                         </div>
-                        <span className="text-2xl font-black text-white">€ {step4TotalInclVat.toLocaleString('nl-NL')}</span>
+                        <span className="text-2xl font-black text-white">€ {formatDutchCurrency(step4TotalInclVat)}</span>
                       </div>
                     </div>
                   </div>
@@ -3292,15 +3332,15 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         <span className="text-dark/70">
                           {language === 'NL' ? `Maatwerk ${lead?.productType || customerCategory} Offerte` : `Bespoke ${lead?.productType || customerCategory} Quotation`}
                         </span>
-                        <span className="font-semibold text-dark">€ {step4CustomerPriceExclVat.toLocaleString('nl-NL')}</span>
+                        <span className="font-semibold text-dark">€ {formatDutchCurrency(step4CustomerPriceExclVat)}</span>
                       </div>
                       <div className="flex justify-between items-center text-dark/70">
                         <span>{language === 'NL' ? `Btw (${step4VatRate}%)` : `VAT (${step4VatRate}%)`}</span>
-                        <span>€ {step4VatAmount.toLocaleString('nl-NL')}</span>
+                        <span>€ {formatDutchCurrency(step4VatAmount)}</span>
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-[#D6CFC2] font-bold text-primary text-sm">
                         <span>{language === 'NL' ? 'Totaal (incl. btw)' : 'Total (incl. VAT)'}</span>
-                        <span className="text-base text-primary">€ {step4TotalInclVat.toLocaleString('nl-NL')}</span>
+                        <span className="text-base text-primary">€ {formatDutchCurrency(step4TotalInclVat)}</span>
                       </div>
                     </div>
                   </div>
@@ -3461,11 +3501,11 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                             "Beste {customerName || 'klant'}, bedankt voor uw aanvraag bij Vanuit Ambacht. Op basis van uw wensen hebben wij onderstaande maatofferte voor uw {customerCategory || 'project'} opgesteld."
                           </p>
                           <div className="space-y-2 bg-white p-4 rounded-xl border border-[#D6CFC2]/60">
-                            <div className="flex justify-between font-medium"><span>Maatwerk {customerCategory} {step2Size ? `(${step2Size})` : ''}</span><span>€ {step4CustomerPriceExclVat.toLocaleString('nl-NL')}</span></div>
-                            <div className="flex justify-between font-medium"><span>BTW (21%)</span><span>€ {step4VatAmount.toLocaleString('nl-NL')}</span></div>
+                            <div className="flex justify-between font-medium"><span>Maatwerk {customerCategory} {step2Size ? `(${step2Size})` : ''}</span><span>€ {formatDutchCurrency(step4CustomerPriceExclVat)}</span></div>
+                            <div className="flex justify-between font-medium"><span>BTW (21%)</span><span>€ {formatDutchCurrency(step4VatAmount)}</span></div>
                             <div className="flex justify-between font-black text-primary text-sm pt-2 border-t border-[#D6CFC2]">
                               <span>Totaal incl. BTW</span>
-                              <span className="text-base text-primary">€ {step4TotalInclVat.toLocaleString('nl-NL')}</span>
+                              <span className="text-base text-primary">€ {formatDutchCurrency(step4TotalInclVat)}</span>
                             </div>
                           </div>
                         </div>
@@ -4738,7 +4778,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                       📑 Direct Multi-Item Quotation Generator
                     </h3>
                     <p className="text-[11px] text-dark/60 font-mono">
-                      Lead Card Step 4 • Official Quotation Builder (#OF-2026-002)
+                      Lead Card Step 4 • Official Quotation Builder
                     </p>
                   </div>
                 </div>
@@ -5424,7 +5464,7 @@ export default function WorkflowTracker({ lead, onClose, onUpdateStatus, onOpenP
                         <div className="pt-2 border-t border-[#D6CFC2] flex justify-between items-center font-bold text-primary">
                           <span>{language === 'EN' ? 'Total amount (incl. 21% VAT):' : 'Totaalbedrag (incl. 21% BTW):'}</span>
                           <span className="text-sm font-mono font-black text-primary">
-                            € {step4TotalInclVat.toLocaleString('nl-NL')}
+                            € {step4TotalInclVat.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
                       </div>

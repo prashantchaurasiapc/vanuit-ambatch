@@ -129,7 +129,13 @@ export default function PartnerPriceRequests() {
   useEffect(() => {
     loadBreakdownConfig();
     window.addEventListener('app_data_changed', loadBreakdownConfig);
-    return () => window.removeEventListener('app_data_changed', loadBreakdownConfig);
+    window.addEventListener('focus', loadBreakdownConfig);
+    const interval = setInterval(loadBreakdownConfig, 25000);
+    return () => {
+      window.removeEventListener('app_data_changed', loadBreakdownConfig);
+      window.removeEventListener('focus', loadBreakdownConfig);
+      clearInterval(interval);
+    };
   }, [loadBreakdownConfig]);
 
   const showToast = (msg) => {
@@ -349,6 +355,38 @@ export default function PartnerPriceRequests() {
         showToast(language === 'NL' ? `✅ Offerte ${req.id} succesvol ingediend!` : `✅ Offer ${req.id} submitted successfully!`);
         setExpanded(null);
         fetchRequests();
+
+        // Real-time Notification for Admin Bell & Floating Popup Banner
+        const partnerDisplayName = req.partnerName || (language === 'NL' ? 'Vakman / Partner' : 'Craftsman / Partner');
+        const formattedPrice = `€ ${parseFloat(form.price).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`;
+        const newNotif = {
+          id: `offer-notif-${Date.now()}`,
+          titleKey: language === 'NL' ? `💼 Nieuwe offerte: ${partnerDisplayName}` : `💼 New Partner Offer: ${partnerDisplayName}`,
+          descKey: language === 'NL' 
+            ? `Prijsvoorstel van ${formattedPrice} ontvangen voor aanvraag ${req.id} (${req.title || 'Project'}).`
+            : `Price proposal of ${formattedPrice} received for request ${req.id} (${req.title || 'Project'}).`,
+          isCustomText: true,
+          timeKey: language === 'NL' ? 'Zojuist' : 'Just now',
+          unread: true,
+          link: '/admin/quotes',
+          icon: 'Check',
+          popup: true,
+          badge: 'Nieuwe Offerte',
+          amount: parseFloat(form.price),
+          partnerName: partnerDisplayName,
+          requestId: req.id,
+          createdAt: new Date().toISOString()
+        };
+
+        // Persist to va_admin_notifications
+        try {
+          const stored = JSON.parse(localStorage.getItem('va_admin_notifications') || '[]');
+          const updated = [newNotif, ...(Array.isArray(stored) ? stored : [])].slice(0, 40);
+          localStorage.setItem('va_admin_notifications', JSON.stringify(updated));
+        } catch (e) {}
+
+        // Global events
+        window.dispatchEvent(new CustomEvent('app_new_notification', { detail: newNotif }));
         window.dispatchEvent(new Event('app_data_changed'));
       } else {
         showToast(res.error?.message || 'Failed to submit offer.');

@@ -1436,9 +1436,14 @@ Kenmerk: EREF-2026-9006`;
                   onChange={e => setNewSelectedCategory(e.target.value)}
                   className="w-full p-2.5 bg-white border border-[#D6CFC2] rounded-xl font-bold text-dark text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
-                  {BOOKKEEPING_CATEGORIES.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
+                  {BOOKKEEPING_CATEGORIES.map(cat => {
+                    const isArchived = cat.includes('bol.com') || cat.includes('Smart Fulfilment');
+                    return (
+                      <option key={cat} value={cat} disabled={isArchived}>
+                        {cat} {isArchived ? '(Inactief / Gearchiveerd)' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -1520,9 +1525,14 @@ Kenmerk: EREF-2026-9006`;
                 <div>
                   <label className="block font-bold text-dark/70 mb-1">Categorie *</label>
                   <select value={form.category} onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))} className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg font-bold">
-                    {BOOKKEEPING_CATEGORIES.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
+                    {BOOKKEEPING_CATEGORIES.map(cat => {
+                      const isArchived = cat.includes('bol.com') || cat.includes('Smart Fulfilment');
+                      return (
+                        <option key={cat} value={cat} disabled={isArchived}>
+                          {cat} {isArchived ? '(Inactief / Gearchiveerd)' : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 

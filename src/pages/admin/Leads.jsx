@@ -9,7 +9,7 @@ import WorkflowTracker from '../../components/WorkflowTracker';
 import {
   Plus, Search, Filter, X, CheckCircle, Trash2, Edit2, RotateCcw,
   AlertTriangle, ChevronDown, Download, Upload, Send, FileText,
-  Loader2, AlertCircle
+  Loader2, AlertCircle, Paperclip
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { tValue } from '../../utils/translator';
@@ -21,11 +21,11 @@ import { useDataSync } from '../../hooks/useDataSync';
 // Helper to map backend product enum to frontend UI string
 function mapBackendProductToUI(pt) {
   switch (pt) {
-    case 'outdoor_kitchen': return 'buitenkeuken';
-    case 'garden_room': return 'buitenverblijf';
-    case 'canopy': return 'overkapping';
-    case 'bin_storage': return 'kliko';
-    default: return pt || 'buitenkeuken';
+    case 'outdoor_kitchen': return 'Buitenkeukens';
+    case 'garden_room': return 'Buitenverblijven';
+    case 'canopy': return 'Overkappingen';
+    case 'bin_storage': return 'Kliko-ombouw';
+    default: return pt || 'Buitenkeukens';
   }
 }
 
@@ -36,7 +36,7 @@ function mapUIToBackendProduct(pt) {
   if (lower.includes('buitenverblijf') || lower.includes('garden') || lower.includes('tuinkamer') || lower.includes('poolhouse')) {
     return 'garden_room';
   }
-  if (lower.includes('overkapping') || lower.includes('canopy') || lower.includes('pergola')) {
+  if (lower.includes('overkapping') || lower.includes('canopy') || lower.includes('pergola') || lower.includes('veranda')) {
     return 'canopy';
   }
   if (lower.includes('kliko') || lower.includes('bin') || lower.includes('storage') || lower.includes('snijplank')) {
@@ -57,6 +57,18 @@ function mapBackendStatusToUI(status) {
     case 'lost': return 'Verloren';
     default: return status || 'Nieuw';
   }
+}
+
+// Brief 2.1: Derive status strictly from workflow step across entire portal
+function deriveStatusFromWorkflow(step, isLost = false, rawStatus = '') {
+  if (isLost || rawStatus === 'lost') return 'Verloren';
+  const s = Number(step) || 1;
+  if (s <= 1) return 'Nieuw';
+  if (s <= 3) return 'In behandeling';
+  if (s === 4) return 'Offerte in concept';
+  if (s === 5) return 'Offerte verstuurd';
+  if (s === 6) return 'Gewonnen';
+  return 'Project loopt';
 }
 
 // Helper to map frontend UI status to backend enum
@@ -117,21 +129,34 @@ export default function Leads() {
   const [sortBy, setSortBy] = useState('newest');
 
   // Dynamic Categories state from Platform Settings
-  const [dynamicCategoriesList, setDynamicCategoriesList] = useState([
-    { id: 'cat-1', name: 'Buitenkeukens', icon: '🔥' },
-    { id: 'cat-2', name: 'Kliko-ombouw', icon: '🗑️' },
-    { id: 'cat-3', name: 'Snijplanken', icon: '🪵' },
-    { id: 'cat-4', name: 'Overkappingen', icon: '☂️' }
-  ]);
+  const [dynamicCategoriesList, setDynamicCategoriesList] = useState(() => {
+    const active = getActiveCategories();
+    return active.length > 0 ? active : [
+      { id: 'cat-bk', name: 'Buitenkeukens', icon: '🍳', status: 'Actief', description: 'Ambachtelijke maatwerk buitenkeukens' },
+      { id: 'cat-bv', name: 'Buitenverblijven', icon: '🏡', status: 'Actief', description: 'Poolhouse, Tuinkamer, Tuinhuis' },
+      { id: 'cat-ov', name: 'Overkappingen', icon: '☂️', status: 'Actief', description: 'Veranda, Vrijstaande overkapping, Pergola' }
+    ];
+  });
 
   // Load dynamic categories configured in Platform Settings
   const loadSettings = useCallback(async () => {
+    const fallback = [
+      { id: 'cat-bk', name: 'Buitenkeukens', icon: '🍳', status: 'Actief', description: 'Ambachtelijke maatwerk buitenkeukens' },
+      { id: 'cat-bv', name: 'Buitenverblijven', icon: '🏡', status: 'Actief', description: 'Poolhouse, Tuinkamer, Tuinhuis' },
+      { id: 'cat-ov', name: 'Overkappingen', icon: '☂️', status: 'Actief', description: 'Veranda, Vrijstaande overkapping, Pergola' }
+    ];
     try {
+      const active = getActiveCategories();
+      if (active.length > 0) setDynamicCategoriesList(active);
+
       const res = await api.get('/settings/company');
-      if (res.success && res.data) {
-        if (Array.isArray(res.data.categoriesConfig) && res.data.categoriesConfig.length > 0) {
-          setDynamicCategoriesList(res.data.categoriesConfig);
-        }
+      if (res.success && res.data?.categoriesConfig) {
+        const cfg = res.data.categoriesConfig;
+        const cats = Array.isArray(cfg) ? cfg : (Array.isArray(cfg?.categories) ? cfg.categories : []);
+        const activeCats = cats.filter(c => c.status !== 'Inactief');
+        setDynamicCategoriesList(activeCats.length > 0 ? activeCats : (active.length > 0 ? active : fallback));
+      } else {
+        setDynamicCategoriesList(active.length > 0 ? active : fallback);
       }
     } catch (err) {
       console.warn('Failed to load settings categories in Leads:', err);
@@ -141,7 +166,13 @@ export default function Leads() {
   useEffect(() => {
     loadSettings();
     window.addEventListener('app_data_changed', loadSettings);
-    return () => window.removeEventListener('app_data_changed', loadSettings);
+    window.addEventListener('app_product_config_changed', loadSettings);
+    window.addEventListener('storage', loadSettings);
+    return () => {
+      window.removeEventListener('app_data_changed', loadSettings);
+      window.removeEventListener('app_product_config_changed', loadSettings);
+      window.removeEventListener('storage', loadSettings);
+    };
   }, [loadSettings]);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -160,8 +191,7 @@ export default function Leads() {
   const [isCustomSize, setIsCustomSize] = useState(false);
   const [customSizeValue, setCustomSizeValue] = useState('');
 
-  // React Portal Status Dropdown state
-  const [statusPortalPos, setStatusPortalPos] = useState(null);
+
 
   // Red Warning Alert 1-Click Follow-up Modal State
   const [redAlertModalLead, setRedAlertModalLead] = useState(null);
@@ -172,7 +202,7 @@ export default function Leads() {
   const [wizardAttachments, setWizardAttachments] = useState([]);
   const [partnersList, setPartnersList] = useState([]);
   const [wizardForm, setWizardForm] = useState({
-    category: 'Outdoor Kitchen',
+    category: '',
     customerName: '',
     customerEmail: '',
     customerPhone: '',
@@ -180,8 +210,8 @@ export default function Leads() {
     lengthCm: '240',
     widthCm: '80',
     heightCm: '95',
-    woodType: 'Thermo Fraké Wood (Recommended)',
-    countertop: 'Zwart Polijst Beton Cire (8cm)',
+    woodType: '',
+    countertop: '',
     appliances: ['Kamado Big Green Egg Large', 'RVS Sink & Tap'],
     siteAccess: 'Ground floor backyard access via side gate',
     gardenPhotoName: 'garden_site_photo.jpg',
@@ -201,9 +231,9 @@ export default function Leads() {
     phone: '',
     email: '',
     location: '',
-    productType: 'buitenkeuken',
+    productType: '',
     size: '',
-    source: 'Direct',
+    source: '',
     status: 'Nieuw',
     assignedTo: 'Tim',
     notes: ''
@@ -237,7 +267,7 @@ export default function Leads() {
       backendProductType: backendProductType,
       size: l.dimensionsInquiry || '-',
       source: l.source || 'Direct',
-      status: mapBackendStatusToUI(backendStatus),
+      status: deriveStatusFromWorkflow(l.workflowStep, backendStatus === 'lost', backendStatus),
       backendStatus: backendStatus,
       workflowStep: l.workflowStep || 1,
       assignedTo: resolvedOwner,
@@ -322,17 +352,10 @@ export default function Leads() {
       if (csvDropdownRef.current && !csvDropdownRef.current.contains(e.target)) {
         setCsvDropdownOpen(false);
       }
-      if (!e.target.closest('.status-portal-menu') && !e.target.closest('.status-dropdown-btn')) {
-        setStatusPortalPos(null);
-      }
     };
-    const handleScroll = () => setStatusPortalPos(null);
-
     document.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('scroll', handleScroll, true);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScroll, true);
     };
   }, []);
 
@@ -342,8 +365,10 @@ export default function Leads() {
     const defaultPartner = partnersList[0];
     const activeWoods = getActiveWoodTypes();
     const activeMats = getActiveMaterials();
-    const defaultWood = activeWoods.length > 0 ? activeWoods[0].name : 'Thermo Fraké';
-    const defaultMat = activeMats.length > 0 ? activeMats[0].name : 'Zwart Polijst Beton Cire (8cm)';
+    const activeCats = getActiveCategories();
+    const defaultWood = activeWoods.length > 0 ? activeWoods[0].name : '';
+    const defaultMat = activeMats.length > 0 ? activeMats[0].name : '';
+    const defaultCat = activeCats.length > 0 ? activeCats[0].name : '';
 
     const rawDims = lead.size || lead.dimensions || '240 × 80 cm';
     let length = '240', width = '80', height = '95';
@@ -355,7 +380,7 @@ export default function Leads() {
     }
 
     setWizardForm({
-      category: lead.productType || lead.category || 'Buitenkeuken',
+      category: lead.productType || lead.category || defaultCat,
       customerName: lead.name || '',
       customerEmail: lead.email || '',
       customerPhone: lead.phone || '',
@@ -380,7 +405,9 @@ export default function Leads() {
     setSelectedLead(null);
     setIsCustomSize(false);
     setCustomSizeValue('');
-    setForm({ name: '', phone: '', email: '', location: '', productType: 'buitenkeuken', size: '', source: 'Direct', status: 'Nieuw', assignedTo: 'Tim', notes: '' });
+    setForm({ name: '', phone: '', email: '', location: '', productType: '', size: '', source: '', status: 'Nieuw', assignedTo: 'Tim', notes: '' });
+    setProductTypeDropdownOpen(false);
+    setSourceDropdownOpen(false);
     setModalOpen(true);
   };
 
@@ -399,13 +426,15 @@ export default function Leads() {
       phone: lead.phone && lead.phone !== '-' ? lead.phone : '',
       email: lead.email && lead.email !== '-' ? lead.email : '',
       location: lead.location || lead.city || '',
-      productType: lead.productType || 'buitenkeuken',
+      productType: lead.productType || '',
       size: rawSize,
-      source: lead.source || 'Direct',
+      source: lead.source || '',
       status: lead.status || 'Nieuw',
       assignedTo: lead.assignedTo || 'Tim',
       notes: lead.notes || lead.intakeNotes || ''
     });
+    setProductTypeDropdownOpen(false);
+    setSourceDropdownOpen(false);
     setModalOpen(true);
   };
 
@@ -454,7 +483,6 @@ export default function Leads() {
     } catch {
       showToast('Failed to update status.');
     }
-    setStatusPortalPos(null);
   };
 
   const handleToggleAssignee = async (leadId) => {
@@ -524,6 +552,14 @@ export default function Leads() {
 
   const handleFormSubmitClick = (e) => {
     e.preventDefault();
+    if (!form.name || !form.name.trim()) {
+      showToast(language === 'EN' ? 'Please enter customer name.' : 'Vul een klantnaam in.');
+      return;
+    }
+    if (!form.productType) {
+      showToast(language === 'EN' ? 'Please select a product category.' : 'Selecteer een productcategorie.');
+      return;
+    }
     if (form.status === 'Verloren' && (!selectedLead || selectedLead.status !== 'Verloren')) {
       setPendingFormSubmit(form);
       setLostReasonText('');
@@ -802,10 +838,26 @@ export default function Leads() {
       return matchesSearch && matchesStatus && matchesProduct && matchesSource && matchesAssignee && matchesLastContact;
     })
     .sort((a, b) => {
-      if (sortBy === 'newest') return new Date(b.date) - new Date(a.date);
-      if (sortBy === 'oldest') return new Date(a.date) - new Date(b.date);
-      if (sortBy === 'name-asc') return a.name.localeCompare(b.name);
-      if (sortBy === 'name-desc') return b.name.localeCompare(a.name);
+      // Rule 3: Prioritize action items ("Wie is aan zet") — what WE must do is on top
+      const getActionPriority = (lead) => {
+        const step = Number(lead.workflowStep || 1);
+        if (lead.status === 'Verloren' || lead.backendStatus === 'lost') return 0;
+        if (lead.status === 'Gewonnen') return 10;
+        if (step === 1) return 100; // Nieuw — Intake call needed by us
+        if (step === 4) return 90;  // Offerte in concept — We must build & send quote
+        if (step === 2 || step === 3) return 80; // In behandeling — Technical spec / partner cost needed
+        if (step === 5) return 50;  // Offerte verstuurd — Waiting for customer acceptance
+        return 20;
+      };
+
+      const prioA = getActionPriority(a);
+      const prioB = getActionPriority(b);
+      if (prioA !== prioB) return prioB - prioA;
+
+      if (sortBy === 'newest') return new Date(b.date || b.createdAt || 0) - new Date(a.date || a.createdAt || 0);
+      if (sortBy === 'oldest') return new Date(a.date || a.createdAt || 0) - new Date(b.date || b.createdAt || 0);
+      if (sortBy === 'name-asc') return (a.name || '').localeCompare(b.name || '');
+      if (sortBy === 'name-desc') return (b.name || '').localeCompare(a.name || '');
       return 0;
     });
 
@@ -851,7 +903,7 @@ export default function Leads() {
       ),
       accessor: 'productType',
       render: (row) => {
-        const type = row.productType || row.category || 'buitenkeuken';
+        const type = row.productType || row.category || 'Buitenkeukens';
         const logoSrc = type.toLowerCase().includes('kliko')
           ? '/logo_kliko.png'
           : type.toLowerCase().includes('snijplanken')
@@ -906,33 +958,9 @@ export default function Leads() {
         else variant = 'warning';
 
         return (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const rect = e.currentTarget.getBoundingClientRect();
-              if (statusPortalPos && statusPortalPos.leadId === row.id) {
-                setStatusPortalPos(null);
-              } else {
-                const dropdownHeight = 240;
-                const spaceBelow = window.innerHeight - rect.bottom;
-                const showAbove = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
-                const calculatedTop = showAbove ? Math.max(10, rect.top - dropdownHeight - 6) : rect.bottom + 6;
-                const calculatedLeft = Math.min(Math.max(10, rect.left), window.innerWidth - 200);
-
-                setStatusPortalPos({
-                  top: calculatedTop,
-                  left: calculatedLeft,
-                  leadId: row.id,
-                  currentStatus: row.status
-                });
-              }
-            }}
-            className="status-dropdown-btn inline-flex items-center gap-1.5 focus:outline-none hover:opacity-85 transition-opacity cursor-pointer"
-            title={language === 'NL' ? 'Klik om status direct te wijzigen' : 'Click to change status'}
-          >
+          <div className="inline-flex items-center">
             <Badge variant={variant}>{getStatusLabel(row.status)}</Badge>
-            <ChevronDown className="w-3 h-3 text-dark/40" />
-          </button>
+          </div>
         );
       }
     },
@@ -1302,8 +1330,8 @@ export default function Leads() {
             columns={columns}
             data={processedLeads}
             onRowClick={(row) => setActiveWorkflowLead(row)}
-            getRowClassName={(row) => statusPortalPos?.leadId === row.id ? 'z-50 relative hover:bg-[#EDE8DF]/60' : 'z-1 relative hover:bg-[#EDE8DF]/60'}
-            getRowStyle={(row) => statusPortalPos?.leadId === row.id ? { zIndex: 50, position: 'relative' } : { zIndex: 1, position: 'relative' }}
+            getRowClassName={() => 'z-1 relative hover:bg-[#EDE8DF]/60'}
+            getRowStyle={() => ({ zIndex: 1, position: 'relative' })}
           />
         )}
       </Card>
@@ -1393,45 +1421,61 @@ export default function Leads() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* PRODUCT TYPE CUSTOM DROPDOWN */}
                   <div className="relative">
-                    <label className="block text-xs font-semibold text-dark/60 mb-1 font-body uppercase tracking-wider">{language === 'EN' ? 'Product Type' : 'Product Type'}</label>
+                    <label className="block text-xs font-semibold text-dark/60 mb-1 font-body uppercase tracking-wider">
+                      {language === 'EN' ? 'Product Type *' : 'Producttype *'}
+                    </label>
                     <button
                       type="button"
                       onClick={() => setProductTypeDropdownOpen(!productTypeDropdownOpen)}
-                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs sm:text-sm font-body focus:outline-none text-[#4A4A43] flex items-center justify-between shadow-xs cursor-pointer"
+                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs sm:text-sm font-body focus:outline-none text-[#4A4A43] flex items-center justify-between shadow-xs cursor-pointer hover:border-primary/50 transition-colors"
                     >
-                      <span className="truncate">
-                        {form.productType === 'buitenkeuken' ? (language === 'EN' ? 'Outdoor Kitchen' : 'Buitenkeuken') :
-                         form.productType === 'buitenverblijf' ? (language === 'EN' ? 'Garden Room' : 'Buitenverblijf / Tuinkamer') :
-                         form.productType === 'overkapping' ? (language === 'EN' ? 'Canopy / Pergola' : 'Overkapping / Pergola') :
-                         form.productType === 'poolhouse' ? 'Poolhouse' :
-                         (form.productType || (language === 'EN' ? 'Outdoor Kitchen' : 'Buitenkeuken'))}
+                      <span className={`truncate ${!form.productType ? 'text-dark/40 font-normal italic' : 'text-[#4A4A43] font-medium'}`}>
+                        {form.productType ? (
+                          language === 'EN' ? (tValue(form.productType, 'EN') || form.productType) : form.productType
+                        ) : (
+                          language === 'EN' ? 'Select Category' : 'Selecteer Categorie'
+                        )}
                       </span>
-                      <ChevronDown className={`w-4 h-4 text-dark/40 transition-transform ${productTypeDropdownOpen ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`w-4 h-4 text-dark/40 transition-transform ${productTypeDropdownOpen ? 'rotate-180 text-primary' : ''}`} />
                     </button>
                     {productTypeDropdownOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setProductTypeDropdownOpen(false)} />
-                        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-[#EDE8DF]">
-                          {[
-                            { val: 'buitenkeuken', label: language === 'EN' ? 'Outdoor Kitchen' : 'Buitenkeuken' },
-                            { val: 'buitenverblijf', label: language === 'EN' ? 'Garden Room' : 'Buitenverblijf / Tuinkamer' },
-                            { val: 'overkapping', label: language === 'EN' ? 'Canopy / Pergola' : 'Overkapping / Pergola' },
-                            { val: 'poolhouse', label: 'Poolhouse' },
-                            ...dynamicCategoriesList
-                              .filter(c => !['buitenkeuken','buitenverblijf','overkapping','poolhouse'].includes((c.name||'').toLowerCase()))
-                              .map(c => ({ val: c.name, label: c.name }))
-                          ].map((pt, idx) => (
-                            <div
-                              key={idx}
-                              onClick={() => {
-                                setForm(prev => ({ ...prev, productType: pt.val }));
-                                setProductTypeDropdownOpen(false);
-                              }}
-                              className={`px-3 py-2 text-xs cursor-pointer hover:bg-primary/10 transition-colors ${form.productType === pt.val ? 'bg-primary/15 font-bold text-primary' : 'text-dark'}`}
-                            >
-                              {pt.label}
-                            </div>
-                          ))}
+                        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg shadow-xl max-h-56 overflow-y-auto divide-y divide-[#EDE8DF]">
+                          {/* Default "Select Category" placeholder option */}
+                          <div
+                            onClick={() => {
+                              setForm(prev => ({ ...prev, productType: '' }));
+                              setProductTypeDropdownOpen(false);
+                            }}
+                            className={`px-3 py-2 text-xs cursor-pointer hover:bg-primary/10 transition-colors italic text-dark/50 ${!form.productType ? 'bg-primary/10 font-semibold' : ''}`}
+                          >
+                            {language === 'EN' ? '-- Select Category --' : '-- Selecteer Categorie --'}
+                          </div>
+                          {dynamicCategoriesList.map((cat, idx) => {
+                            const isSelected = form.productType === cat.name;
+                            const displayName = language === 'EN' ? (tValue(cat.name, 'EN') || cat.name) : cat.name;
+                            return (
+                              <div
+                                key={cat.id || idx}
+                                onClick={() => {
+                                  setForm(prev => ({ ...prev, productType: cat.name }));
+                                  setProductTypeDropdownOpen(false);
+                                }}
+                                className={`px-3 py-2.5 text-xs cursor-pointer hover:bg-primary/10 transition-colors flex items-center justify-between ${
+                                  isSelected ? 'bg-primary/15 font-bold text-primary' : 'text-dark'
+                                }`}
+                              >
+                                <div>
+                                  <div className="font-semibold">{cat.icon ? `${cat.icon} ` : ''}{displayName}</div>
+                                  {cat.description && (
+                                    <div className="text-[11px] text-dark/50 font-normal mt-0.5">{cat.description}</div>
+                                  )}
+                                </div>
+                                {isSelected && <CheckCircle className="w-3.5 h-3.5 text-primary shrink-0 ml-2" />}
+                              </div>
+                            );
+                          })}
                         </div>
                       </>
                     )}
@@ -1459,22 +1503,45 @@ export default function Leads() {
                     <button
                       type="button"
                       onClick={() => setSourceDropdownOpen(!sourceDropdownOpen)}
-                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs sm:text-sm font-body focus:outline-none text-[#4A4A43] flex items-center justify-between shadow-xs cursor-pointer"
+                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs sm:text-sm font-body focus:outline-none text-[#4A4A43] flex items-center justify-between shadow-xs cursor-pointer hover:border-primary/50 transition-colors"
                     >
-                      <span className="truncate">
-                        {form.source === 'Direct' ? (language === 'EN' ? 'Direct / Phone' : 'Direct / Telefonisch') :
-                         form.source === 'Referral' ? (language === 'EN' ? 'Referral' : 'Referral / Aanbeveling') :
-                         form.source === 'Email' ? (language === 'EN' ? 'Email Campaign' : 'E-mail Campagne') :
-                         form.source === 'Beurs' ? (language === 'EN' ? 'Trade Fair / Event' : 'Beurs / Event') :
-                         form.source === 'Anders' ? (language === 'EN' ? 'Other' : 'Anders') :
-                         (form.source || 'Google Ads')}
+                      <span className={`truncate ${!form.source ? 'text-dark/40 font-normal italic' : 'text-[#4A4A43] font-medium'}`}>
+                        {!form.source ? (
+                          language === 'EN' ? 'Select Source' : 'Selecteer Bron'
+                        ) : form.source === 'Direct' ? (
+                          language === 'EN' ? 'Direct / Phone' : 'Direct / Telefonisch'
+                        ) : form.source === 'Referral' ? (
+                          language === 'EN' ? 'Referral' : 'Referral / Aanbeveling'
+                        ) : form.source === 'Facebook' ? (
+                          'Facebook / Instagram'
+                        ) : form.source === 'Website' ? (
+                          language === 'EN' ? 'Website Contact Form' : 'Website Contactformulier'
+                        ) : form.source === 'Email' ? (
+                          language === 'EN' ? 'Email Campaign' : 'E-mail Campagne'
+                        ) : form.source === 'Beurs' ? (
+                          language === 'EN' ? 'Trade Fair / Event' : 'Beurs / Event'
+                        ) : form.source === 'Anders' ? (
+                          language === 'EN' ? 'Other' : 'Anders'
+                        ) : (
+                          form.source
+                        )}
                       </span>
-                      <ChevronDown className={`w-4 h-4 text-dark/40 transition-transform ${sourceDropdownOpen ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`w-4 h-4 text-dark/40 transition-transform ${sourceDropdownOpen ? 'rotate-180 text-primary' : ''}`} />
                     </button>
                     {sourceDropdownOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setSourceDropdownOpen(false)} />
-                        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-[#EDE8DF]">
+                        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg shadow-xl max-h-56 overflow-y-auto divide-y divide-[#EDE8DF]">
+                          {/* Option to clear/reset */}
+                          <div
+                            onClick={() => {
+                              setForm(prev => ({ ...prev, source: '' }));
+                              setSourceDropdownOpen(false);
+                            }}
+                            className={`px-3 py-2 text-xs cursor-pointer hover:bg-primary/10 transition-colors italic text-dark/50 ${!form.source ? 'bg-primary/10 font-semibold' : ''}`}
+                          >
+                            {language === 'EN' ? '-- Select Source --' : '-- Selecteer Bron --'}
+                          </div>
                           {[
                             { val: 'Google Ads', label: 'Google Ads' },
                             { val: 'Facebook', label: 'Facebook / Instagram' },
@@ -1484,66 +1551,36 @@ export default function Leads() {
                             { val: 'Email', label: language === 'EN' ? 'Email Campaign' : 'E-mail Campagne' },
                             { val: 'Beurs', label: language === 'EN' ? 'Trade Fair / Event' : 'Beurs / Event' },
                             { val: 'Anders', label: language === 'EN' ? 'Other' : 'Anders' }
-                          ].map((src, idx) => (
-                            <div
-                              key={idx}
-                              onClick={() => {
-                                setForm(prev => ({ ...prev, source: src.val }));
-                                setSourceDropdownOpen(false);
-                              }}
-                              className={`px-3 py-2 text-xs cursor-pointer hover:bg-primary/10 transition-colors ${form.source === src.val ? 'bg-primary/15 font-bold text-primary' : 'text-dark'}`}
-                            >
-                              {src.label}
-                            </div>
-                          ))}
+                          ].map((src, idx) => {
+                            const isSelected = form.source === src.val;
+                            return (
+                              <div
+                                key={idx}
+                                onClick={() => {
+                                  setForm(prev => ({ ...prev, source: src.val }));
+                                  setSourceDropdownOpen(false);
+                                }}
+                                className={`px-3 py-2 text-xs cursor-pointer hover:bg-primary/10 transition-colors flex items-center justify-between ${
+                                  isSelected ? 'bg-primary/15 font-bold text-primary' : 'text-dark'
+                                }`}
+                              >
+                                <span>{src.label}</span>
+                                {isSelected && <CheckCircle className="w-3.5 h-3.5 text-primary shrink-0 ml-2" />}
+                              </div>
+                            );
+                          })}
                         </div>
                       </>
                     )}
                   </div>
 
-                  {/* STATUS CUSTOM DROPDOWN */}
+                  {/* STATUS DERIVED FROM WORKFLOW — Brief 2.1 */}
                   <div className="relative">
-                    <label className="block text-xs font-semibold text-dark/60 mb-1 font-body uppercase tracking-wider">{language === 'EN' ? 'Status' : 'Status'}</label>
-                    <button
-                      type="button"
-                      onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-                      className="w-full px-3 py-2 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs sm:text-sm font-body focus:outline-none text-[#4A4A43] flex items-center justify-between shadow-xs cursor-pointer"
-                    >
-                      <span className="truncate">
-                        {form.status === 'Nieuw' ? (language === 'EN' ? 'New' : 'Nieuw') :
-                         form.status === 'In gesprek' ? (language === 'EN' ? 'In Conversation' : 'In gesprek') :
-                         form.status === 'Offerte verstuurd' ? (language === 'EN' ? 'Quote Sent' : 'Offerte verstuurd') :
-                         form.status === 'Gewonnen' ? (language === 'EN' ? 'Won' : 'Gewonnen') :
-                         form.status === 'Verloren' ? (language === 'EN' ? 'Lost' : 'Verloren') :
-                         (form.status || (language === 'EN' ? 'New' : 'Nieuw'))}
-                      </span>
-                      <ChevronDown className={`w-4 h-4 text-dark/40 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {statusDropdownOpen && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setStatusDropdownOpen(false)} />
-                        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-[#EDE8DF]">
-                          {[
-                            { val: 'Nieuw', label: language === 'EN' ? 'New' : 'Nieuw' },
-                            { val: 'In gesprek', label: language === 'EN' ? 'In Conversation' : 'In gesprek' },
-                            { val: 'Offerte verstuurd', label: language === 'EN' ? 'Quote Sent' : 'Offerte verstuurd' },
-                            { val: 'Gewonnen', label: language === 'EN' ? 'Won' : 'Gewonnen' },
-                            { val: 'Verloren', label: language === 'EN' ? 'Lost' : 'Verloren' }
-                          ].map((st, idx) => (
-                            <div
-                              key={idx}
-                              onClick={() => {
-                                setForm(prev => ({ ...prev, status: st.val }));
-                                setStatusDropdownOpen(false);
-                              }}
-                              className={`px-3 py-2 text-xs cursor-pointer hover:bg-primary/10 transition-colors ${form.status === st.val ? 'bg-primary/15 font-bold text-primary' : 'text-dark'}`}
-                            >
-                              {st.label}
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
+                    <label className="block text-xs font-semibold text-dark/60 mb-1 font-body uppercase tracking-wider">{language === 'EN' ? 'Status (Workflow Derived)' : 'Status (Uit Workflow)'}</label>
+                    <div className="py-1 px-3 bg-[#F8F7F4] border border-[#D6CFC2] rounded-lg text-xs font-body text-[#4A4A43] flex items-center justify-between shadow-xs">
+                      <span className="font-semibold text-primary">{form.status || 'Nieuw'}</span>
+                      <span className="text-[10px] text-dark/40 italic">{language === 'NL' ? 'Stap gebaseerd' : 'Step derived'}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -1831,9 +1868,16 @@ export default function Leads() {
                         onChange={e => setWizardForm(prev => ({ ...prev, category: e.target.value }))}
                         className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
                       >
-                        {getActiveCategories().map(c => (
-                          <option key={c.id} value={c.name}>{c.name}</option>
-                        ))}
+                        {getActiveCategories().length === 0 ? (
+                          <option value="">{language === 'EN' ? '-- No categories configured in Settings --' : '-- Geen categorieën geconfigureerd in Instellingen --'}</option>
+                        ) : (
+                          <>
+                            <option value="">{language === 'EN' ? '-- Select category --' : '-- Selecteer categorie --'}</option>
+                            {getActiveCategories().map(c => (
+                              <option key={c.id || c.name} value={c.name}>{c.name}</option>
+                            ))}
+                          </>
+                        )}
                       </select>
                     </div>
 
@@ -1861,9 +1905,16 @@ export default function Leads() {
                         onChange={e => setWizardForm(prev => ({ ...prev, woodType: e.target.value }))}
                         className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
                       >
-                        {getActiveWoodTypes().map(w => (
-                          <option key={w.id} value={w.name}>{w.name} ({w.lifespan})</option>
-                        ))}
+                        {getActiveWoodTypes().length === 0 ? (
+                          <option value="">{language === 'EN' ? '-- No wood types configured in Settings --' : '-- Geen houtsoorten geconfigureerd in Instellingen --'}</option>
+                        ) : (
+                          <>
+                            <option value="">{language === 'EN' ? '-- Select wood type --' : '-- Selecteer houtsoort --'}</option>
+                            {getActiveWoodTypes().map(w => (
+                              <option key={w.id || w.name} value={w.name}>{w.name} {w.lifespan ? `(${w.lifespan})` : ''}</option>
+                            ))}
+                          </>
+                        )}
                       </select>
                     </div>
 
@@ -1877,9 +1928,16 @@ export default function Leads() {
                         onChange={e => setWizardForm(prev => ({ ...prev, countertop: e.target.value }))}
                         className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-bold text-primary"
                       >
-                        {getActiveMaterials().map(m => (
-                          <option key={m.id} value={m.name}>{m.name}</option>
-                        ))}
+                        {getActiveMaterials().length === 0 ? (
+                          <option value="">{language === 'EN' ? '-- No materials configured in Settings --' : '-- Geen materialen geconfigureerd in Instellingen --'}</option>
+                        ) : (
+                          <>
+                            <option value="">{language === 'EN' ? '-- Select material --' : '-- Selecteer materiaal --'}</option>
+                            {getActiveMaterials().map(m => (
+                              <option key={m.id || m.name} value={m.name}>{m.name}</option>
+                            ))}
+                          </>
+                        )}
                       </select>
                     </div>
                   </div>
@@ -2056,48 +2114,6 @@ export default function Leads() {
             </motion.div>
           </div>
         </AnimatePresence>,
-        document.body
-      )}
-
-      {/* REACT PORTAL STATUS DROPDOWN — Rendered at body level (z-[99999]) */}
-      {statusPortalPos && createPortal(
-        <div
-          className="status-portal-menu fixed w-48 bg-white border border-[#C4BEB3] rounded-xl shadow-2xl z-[99999] py-1.5 font-body text-xs max-h-[240px] overflow-y-auto"
-          style={{ top: `${statusPortalPos.top}px`, left: `${statusPortalPos.left}px` }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="px-3 py-1.5 text-[10px] font-bold text-dark/50 uppercase tracking-wider border-b border-[#D6CFC2]/40 bg-[#F8F7F4] mb-1">
-            {language === 'NL' ? 'Direct Status Wijzigen' : 'Change Status'}
-          </div>
-          {[
-            { value: 'Nieuw', label: language === 'EN' ? 'New' : 'Nieuw' },
-            { value: 'In gesprek', label: language === 'EN' ? 'In Conversation' : 'In gesprek' },
-            { value: 'Offerte verstuurd', label: language === 'EN' ? 'Quote Sent' : 'Offerte verstuurd' },
-            { value: 'Gewonnen', label: language === 'EN' ? 'Won' : 'Gewonnen' },
-            { value: 'Verloren', label: language === 'EN' ? 'Lost' : 'Verloren' }
-          ].map(item => (
-            <button
-              key={item.value}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (item.value === 'Verloren' || item.value === 'Lost') {
-                  const currentLead = leads.find(l => l.id === statusPortalPos.leadId);
-                  setPendingFormSubmit({ id: statusPortalPos.leadId, status: item.value, name: currentLead?.name });
-                  setLostReasonModalOpen(true);
-                  setStatusPortalPos(null);
-                } else {
-                  handleDirectStatusChange(statusPortalPos.leadId, item.value);
-                }
-              }}
-              className={`w-full text-left px-3 py-2 hover:bg-[#F8F7F4] flex items-center justify-between transition-colors cursor-pointer ${
-                statusPortalPos.currentStatus === item.value ? 'bg-primary/10 font-bold text-primary' : 'text-dark/80'
-              }`}
-            >
-              <span>{item.label}</span>
-              {statusPortalPos.currentStatus === item.value && <CheckCircle className="w-3.5 h-3.5 text-primary" />}
-            </button>
-          ))}
-        </div>,
         document.body
       )}
 

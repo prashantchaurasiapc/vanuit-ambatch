@@ -190,6 +190,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
   const handleCreateNewProject = async (e) => {
     e.preventDefault();
     if (!newProjectClient.trim()) return;
+    const parsedBudget = newProjectBudget ? parseFloat(String(newProjectBudget).replace(/[^0-9.-]/g, '')) : null;
     // Create a real project via API (client must exist as a lead/customer)
     const res = await api.post('/projects', {
       name: `${newProjectClient} — ${newProjectType}`,
@@ -197,9 +198,11 @@ export default function GardenRoomProjects({ onBackToOverview }) {
       deliveryAddress: 'Address to be confirmed',
       city: 'City to be confirmed',
       orderStatus: 'in_voorbereiding',
+      ...(!isNaN(parsedBudget) && parsedBudget !== null ? { contractValue: parsedBudget } : {})
     });
     setNewProjectModal(false);
     if (res.success) {
+      window.dispatchEvent(new Event('app_data_changed'));
       showToast(`✓ New project for "${newProjectClient}" created successfully!`);
     } else {
       showToast(`⚠ ${res.error?.message || 'Failed to create project — ensure customer is in the leads list first'}`);
@@ -869,7 +872,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
                 {isEn ? 'Installment 3 (20% Final Handover)' : 'Termijn 3 (20% Oplevering)'}
               </span>
               <p className={`font-bold text-sm ${invoice20Generated ? 'text-emerald-800' : 'text-[#33422C]'}`}>
-                € 7,590.00 {invoice20Generated ? '— ✓ Invoiced (#INV-2026-089)' : handoverConfirmed ? '— 🔓 Ready to Invoice' : '— 🔒 Locked'}
+                € 7,590.00 {invoice20Generated ? '— ✓ Invoiced (2026089)' : handoverConfirmed ? '— 🔓 Ready to Invoice' : '— 🔒 Locked'}
               </p>
               <div className={`p-1.5 rounded-lg text-[10px] font-bold ${
                 invoice20Generated
@@ -955,7 +958,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
                       const newLog = {
                         id: Date.now(),
                         date: `Today ${timeNow}`,
-                        text: '20% Final Invoice #INV-2026-089 created (€ 7,590.00) & mirrored in bookkeeping — System'
+                        text: '20% Final Invoice 2026089 created (€ 7,590.00) & mirrored in bookkeeping — System'
                       };
                       setLogbook([newLog, ...logbook]);
                       showToast('✓ 20% Final Invoice (€ 7,590.00) created & pushed to Bookkeeping!');
@@ -972,7 +975,7 @@ export default function GardenRoomProjects({ onBackToOverview }) {
                 ) : (
                   <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-300">
                     <CheckCircle className="w-4 h-4 text-emerald-600" />
-                    <span>{isEn ? 'Invoice #INV-2026-089 Active in Bookkeeping' : 'Factuur #INV-2026-089 Actief in Boekhouding'}</span>
+                    <span>{isEn ? 'Invoice 2026089 Active in Bookkeeping' : 'Factuur 2026089 Actief in Boekhouding'}</span>
                   </div>
                 )}
               </div>

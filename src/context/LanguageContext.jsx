@@ -19,8 +19,6 @@ const LEGACY_TEXT = {
   'Welcome back': 'Welkom terug',
   'Log in to continue to your account.': 'Log in om door te gaan naar uw account.',
   'Email address': 'E-mailadres', 'Password': 'Wachtwoord', 'Log In': 'Inloggen',
-  'Quick Demo Login': 'Snelle demo-login', 'Click to fill': 'Klik om in te vullen',
-  'Invalid credentials. Use demo credentials below.': 'Ongeldige gegevens. Gebruik hieronder de demo-inloggegevens.',
   'Documents': 'Documenten', 'Upload, manage, and share project documents.': 'Projectdocumenten uploaden, beheren en delen.',
   'Upload Document': 'Document uploaden', 'Drag and drop file here, or click to browse': 'Sleep een bestand hierheen of klik om te bladeren',
   'PDF, Word, Excel, ZIP or Images up to 10MB': 'PDF, Word, Excel, ZIP of afbeeldingen tot 10 MB',
@@ -531,8 +529,8 @@ Object.assign(LEGACY_TEXT, {
 Object.assign(LEGACY_NL_TO_EN, {
   'Overzicht van banktransacties en automatische btw-belastingberekening van 21%.': 'Overview of bank transactions and automatic 21% VAT tax calculation.',
   'Bedrag (€)': 'Amount (€)', 'Inclusief 21% btw': 'Including 21% VAT', 'Alle': 'All', 'Nieuw': 'New',
-  'Offerte verstuurd': 'Quote sent', 'Verloren': 'Lost', 'Buitenkeuken': 'Outdoor kitchen', 'Buitenverblijf': 'Outdoor living',
-  'Overkapping': 'Canopy', 'Poolhouse': 'Pool house', 'Kliko': 'Wheelie-bin unit', 'Aangepaste klant...': 'Other customer...',
+  'Offerte verstuurd': 'Quote sent', 'Verloren': 'Lost', 'Buitenkeuken': 'Outdoor kitchen', 'Buitenkeukens': 'Outdoor kitchens', 'Buitenverblijf': 'Garden building', 'Buitenverblijven': 'Garden buildings',
+  'Overkapping': 'Canopy', 'Overkappingen': 'Canopies', 'Poolhouse': 'Pool house', 'Kliko': 'Wheelie-bin unit', 'Aangepaste klant...': 'Other customer...',
   'Anders...': 'Other...', 'Exclusieve buitenkeuken': 'Custom outdoor kitchen', 'Exclusieve kliko-ombouw': 'Custom wheelie-bin enclosure',
   'Houten pergola': 'Wooden pergola', 'Tuinterras': 'Garden terrace', 'Gecoördineerd': 'Coordinated',
   'Geaccepteerd (maakt automatisch 50/50-facturen)': 'Accepted (automatically generates 50/50 invoices)', 'Afgewezen': 'Rejected',
@@ -765,7 +763,22 @@ const EXTRA_VOCABULARY = {
   'Save Material': 'Materiaal Opslaan',
   'Save Option': 'Optie Opslaan',
   'Expected Lifespan': 'Verwachte Levensduur',
-  'Description & Characteristics': 'Omschrijving & Kenmerken'
+  'Description & Characteristics': 'Omschrijving & Kenmerken',
+  'in_voorbereiding': 'In voorbereiding',
+  'In voorbereiding': 'In preparation',
+  'outdoor_kitchen': 'Buitenkeuken',
+  'outdoor kitchen': 'Buitenkeuken',
+  'garden_room': 'Buitenverblijf',
+  'garden room': 'Buitenverblijf',
+  'canopy': 'Overkapping',
+  'poolhouse': 'Poolhouse',
+  'klaar_voor_levering': 'Gereed voor levering',
+  'Gereed voor levering': 'Ready for delivery',
+  'in_productie': 'In productie',
+  'In productie': 'In production',
+  'voltooid': 'Voltooid',
+  'Voltooid': 'Completed',
+  'uw bedrijfsactiviteiten': 'je bedrijfsactiviteiten'
 };
 Object.assign(LEGACY_TEXT, EXTRA_VOCABULARY);
 Object.entries(EXTRA_VOCABULARY).forEach(([en, nl]) => {

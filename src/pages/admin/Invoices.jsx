@@ -93,29 +93,22 @@ export default function Invoices() {
   const [form, setForm] = useState({
     id: '',
     customer: '',
-    address: 'Dangeheuvel 3',
-    zipCity: '5101 WE Dongen',
-    phone: '+31 6 53562542',
+    address: '',
+    zipCity: '',
+    phone: '',
     type: '100% Volledige Factuur',
     amount: '',
     status: 'Openstaand',
     date: new Date().toISOString().split('T')[0],
     dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    quoteRef: 'Offerte OF-2026325',
+    quoteRef: '',
     items: [
       {
-        description: 'Buitenkeuken Thermo Fraké · 240 × 80 cm',
-        subtext: 'Houten bovenblad met keramische stenen en uitsparing voor Big Green Egg Large · drie kastjes met twee inlegplanken · zes zwenkwielen · afgewerkt met twee lagen olie (naturel). Conform offerte OF-2026325.',
-        quantity: 1,
-        price: '3495',
-        isIncluded: false
-      },
-      {
-        description: 'Bezorging Dongen',
-        subtext: 'Geleverd op locatie.',
+        description: '',
+        subtext: '',
         quantity: 1,
         price: '',
-        isIncluded: true
+        isIncluded: false
       }
     ]
   });
@@ -138,7 +131,7 @@ export default function Invoices() {
           if (res.success && Array.isArray(res.data)) {
             setInvoices(res.data.map(inv => ({
               ...inv,
-              id: inv.invoiceNumber || inv.id || 'INV-001',
+              id: inv.invoiceNumber || inv.id || '2026001',
               realId: inv.id,
               customer: inv.customerName || (typeof inv.customer === 'object' && inv.customer !== null ? (inv.customer.name || `${inv.customer.firstName || ''} ${inv.customer.lastName || ''}`.trim() || 'Klant') : (typeof inv.customer === 'string' ? inv.customer : 'Klant')),
               amount: inv.totalInclVat ? `€ ${parseFloat(inv.totalInclVat).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : (inv.amount || '€ 0,00'),
@@ -258,28 +251,21 @@ export default function Invoices() {
     setForm({
       id: '',
       customer: '',
-      address: 'Dangeheuvel 3',
-      zipCity: '5101 WE Dongen',
-      phone: '+31 6 53562542',
+      address: '',
+      zipCity: '',
+      phone: '',
       type: '100% Volledige Factuur',
       status: 'Openstaand',
       date: new Date().toISOString().split('T')[0],
       dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      quoteRef: 'Offerte OF-2026325',
+      quoteRef: '',
       items: [
         {
-          description: 'Buitenkeuken Thermo Fraké · 240 × 80 cm',
-          subtext: 'Houten bovenblad met keramische stenen en uitsparing voor Big Green Egg Large · drie kastjes met twee inlegplanken · zes zwenkwielen · afgewerkt met twee lagen olie (naturel). Conform offerte OF-2026325.',
-          quantity: 1,
-          price: '3495',
-          isIncluded: false
-        },
-        {
-          description: 'Bezorging Dongen',
-          subtext: 'Geleverd op locatie.',
+          description: '',
+          subtext: '',
           quantity: 1,
           price: '',
-          isIncluded: true
+          isIncluded: false
         }
       ]
     });
@@ -301,21 +287,14 @@ export default function Invoices() {
         };
       });
     } else {
-      const amt = getNumericAmount(inv.amount, inv.numericAmount) || 3495;
+      const amt = getNumericAmount(inv.amount, inv.numericAmount) || 0;
       existingItems = [
         {
-          description: inv.project || (inv.type?.includes('Aanbetaling') ? `50% Aanbetaling - ${inv.customer}` : 'Buitenkeuken Thermo Fraké · 240 × 80 cm'),
-          subtext: 'Houten bovenblad met keramische stenen en uitsparing voor Big Green Egg Large · conform offerte.',
+          description: inv.project || (inv.type?.includes('Aanbetaling') ? `50% Aanbetaling - ${inv.customer}` : 'Buitenkeuken op maat'),
+          subtext: inv.quoteRef ? `Conform offerte ${inv.quoteRef}` : '',
           quantity: 1,
-          price: amt,
+          price: amt || '',
           isIncluded: false
-        },
-        {
-          description: `Bezorging ${inv.customer ? inv.customer.split(' ')[0] : 'op locatie'}`,
-          subtext: 'Geleverd op locatie.',
-          quantity: 1,
-          price: '',
-          isIncluded: true
         }
       ];
     }
@@ -323,14 +302,14 @@ export default function Invoices() {
     setForm({
       id: inv.id,
       customer: inv.customer || '',
-      address: inv.address || 'Dangeheuvel 3',
-      zipCity: inv.zipCity || '5101 WE Dongen',
-      phone: inv.phone || '+31 6 53562542',
+      address: inv.address || '',
+      zipCity: inv.zipCity || '',
+      phone: inv.phone || '',
       type: inv.type || '100% Volledige Factuur',
       status: inv.status || 'Openstaand',
       date: inv.date || inv.createdDate || new Date().toISOString().split('T')[0],
       dueDate: inv.dueDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      quoteRef: inv.quoteRef || inv.quoteId || (inv.id ? `Offerte OF-${inv.id.replace(/[^\d]/g, '')}` : 'Offerte OF-2026325'),
+      quoteRef: inv.quoteRef || inv.quoteNumber || inv.quoteId || '',
       items: existingItems
     });
     setModalOpen(true);
@@ -483,7 +462,7 @@ export default function Invoices() {
         console.warn('API invoice creation error:', err);
       }
 
-      const assignedId = createdInv?.invoiceNumber || createdInv?.id || form.id || `INV-${new Date().getFullYear()}-001`;
+      const assignedId = createdInv?.invoiceNumber || createdInv?.id || form.id || `${new Date().getFullYear()}001`;
       const newInv = {
         id: assignedId,
         realId: createdInv?.id,
@@ -887,7 +866,7 @@ export default function Invoices() {
                         value={form.customer} 
                         onChange={e => setForm(prev => ({ ...prev, customer: e.target.value }))} 
                         className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark font-medium focus:ring-1 focus:ring-primary outline-none" 
-                        placeholder="bijv. Bjorn Valk" 
+                        placeholder={language === 'EN' ? 'e.g. Jan Jansen' : 'bijv. Jan Jansen'} 
                       />
                     </div>
                     <div>
@@ -899,7 +878,7 @@ export default function Invoices() {
                         value={form.phone} 
                         onChange={e => setForm(prev => ({ ...prev, phone: e.target.value }))} 
                         className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark focus:ring-1 focus:ring-primary outline-none" 
-                        placeholder="+31 6 53562542" 
+                        placeholder="+31 6 12345678" 
                       />
                     </div>
                   </div>
@@ -913,7 +892,7 @@ export default function Invoices() {
                         value={form.address} 
                         onChange={e => setForm(prev => ({ ...prev, address: e.target.value }))} 
                         className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark focus:ring-1 focus:ring-primary outline-none" 
-                        placeholder="Dongeheuvel 3" 
+                        placeholder={language === 'EN' ? 'e.g. Kerkstraat 12' : 'bijv. Kerkstraat 12'} 
                       />
                     </div>
                     <div>
@@ -925,7 +904,7 @@ export default function Invoices() {
                         value={form.zipCity} 
                         onChange={e => setForm(prev => ({ ...prev, zipCity: e.target.value }))} 
                         className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs text-dark focus:ring-1 focus:ring-primary outline-none" 
-                        placeholder="5101 WE Dongen" 
+                        placeholder={language === 'EN' ? 'e.g. 1012 JS Amsterdam' : 'bijv. 1012 JS Amsterdam'} 
                       />
                     </div>
                   </div>
@@ -982,7 +961,7 @@ export default function Invoices() {
                         value={form.quoteRef} 
                         onChange={e => setForm(prev => ({ ...prev, quoteRef: e.target.value }))} 
                         className="w-full px-3 py-2 bg-white border border-[#D6CFC2] rounded-lg text-xs font-mono text-dark focus:ring-1 focus:ring-primary outline-none" 
-                        placeholder="Offerte OF-2026325" 
+                        placeholder="bijv. OF-2026001" 
                       />
                     </div>
                     <div>

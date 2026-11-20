@@ -58,26 +58,7 @@ export function AuthProvider({ children }) {
         setUser(savedUser);
       }
 
-      // Self-healing: if session exists without token, acquire token first before verifying
       let activeToken = savedToken;
-      if (savedUser && !savedToken) {
-        try {
-          const loginRes = await api.post('/auth/login', {
-            email: savedUser.email || 'admin@vanuitambacht.nl',
-            password: 'admin123',
-          });
-          if (loginRes.success && loginRes.data?.token) {
-            activeToken = loginRes.data.token;
-            sessionStorage.setItem('va_token', activeToken);
-            localStorage.setItem('va_token', activeToken);
-            sessionStorage.setItem('auth_token', activeToken);
-            localStorage.setItem('auth_token', activeToken);
-            window.dispatchEvent(new Event('app_data_changed'));
-          }
-        } catch {
-          // Ignore network errors on self-healing
-        }
-      }
 
       // Silently verify token with backend /auth/me
       try {

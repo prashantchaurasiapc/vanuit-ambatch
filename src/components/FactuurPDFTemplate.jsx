@@ -69,12 +69,12 @@ export default function FactuurPDFTemplate({ invoice, companyDetails }) {
 
   const invoiceDate = formatDutchDate(invoice?.date || invoice?.invoiceDate || '2026-08-01');
   const dueDate = formatDutchDate(invoice?.dueDate || invoice?.vervaldatum || '2026-09-28');
-  const quoteRef = invoice?.quoteRef || invoice?.reference || 'Offerte OF-2026325';
+  const quoteRef = invoice?.quoteRef || invoice?.reference || (invoice?.quoteNumber ? `Offerte ${invoice.quoteNumber}` : '—');
 
   // Amount Calculations
   const numericAmount = typeof invoice?.amount === 'number'
     ? invoice.amount
-    : parseFloat(String(invoice?.amount || '3495').replace(/[^\d.-]/g, '').replace(',', '.')) || 3495;
+    : parseFloat(String(invoice?.amount || '0').replace(/[^\d.-]/g, '').replace(',', '.')) || 0;
 
   const totalIncl = numericAmount;
   const totalExcl = Math.round((totalIncl / 1.21) * 100) / 100;
@@ -90,16 +90,10 @@ export default function FactuurPDFTemplate({ invoice, companyDetails }) {
     ? invoice.items
     : [
         {
-          description: 'Buitenkeuken Thermo Fraké - 240 × 80 cm',
-          subtext: 'Houten bovenblad met keramische stenen en uitsparing voor Big Green Egg Large · drie kastjes met twee inlegplanken · zes zwenkwielen · afgewerkt met twee lagen olie (naturel). Conform offerte-OF-2026325.',
+          description: invoice?.project || (invoice?.type?.includes('Aanbetaling') ? `50% Aanbetaling - ${firstName}` : 'Buitenkeuken op maat'),
+          subtext: quoteRef !== '—' ? `Conform ${quoteRef}.` : 'Conform goedgekeurde offerte.',
           quantity: 1,
           price: formatDutchCurrency(totalIncl)
-        },
-        {
-          description: `Bezorging ${firstName || 'Dongen'}`,
-          subtext: 'Geleverd op locatie.',
-          quantity: 1,
-          price: 'Inbegrepen'
         }
       ];
 
