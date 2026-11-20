@@ -418,7 +418,160 @@ export default function AdminDashboard() {
         </motion.div>
       )}
 
-{/* NEW DASHBOARD LAYOUT: 5 BLOCKS AS PER CLIENT REQUIREMENTS */}
+      {/* MODULE 1.2: DATE RANGE FILTER BAR & 7 KPI ANALYTICS CARDS GRID */}
+      <div className="space-y-4">
+        {/* Date Range Selector Header Bar */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#D6CFC2]/60 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-heading font-bold text-dark">
+                {language === 'NL' ? 'Prestaties & Analytische Cijfers' : 'Performance & Analytics KPIs'}
+              </h3>
+              <p className="text-[11px] font-body text-dark/50">
+                {language === 'NL' ? 'Prestatie-overzicht op basis van geselecteerde tijdsperiode' : 'Performance summary based on selected time frame'}
+              </p>
+            </div>
+          </div>
+
+          {/* Date Selector Dropdown & Custom Range Inputs */}
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none">
+              <select 
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value)}
+                className="w-full sm:w-auto appearance-none bg-[#F8F7F4] hover:bg-cream/40 text-dark text-xs font-body font-semibold px-3 py-2 pr-8 rounded-xl border border-[#D6CFC2]/80 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+              >
+                <option value="7days">{language === 'NL' ? 'Laatste 7 dagen' : 'Last 7 days'}</option>
+                <option value="30days">{language === 'NL' ? 'Laatste 30 dagen' : 'Last 30 days'}</option>
+                <option value="currentMonth">{language === 'NL' ? 'Deze maand' : 'Current month'}</option>
+                <option value="3months">{language === 'NL' ? 'Laatste 3 maanden' : 'Last 3 months'}</option>
+                <option value="6months">{language === 'NL' ? 'Laatste 6 maanden' : 'Last 6 months'}</option>
+                <option value="12months">{language === 'NL' ? 'Laatste 12 maanden' : 'Last 12 months'}</option>
+                <option value="custom">{language === 'NL' ? 'Aangepaste datum' : 'Custom date range'}</option>
+              </select>
+              <Calendar className="w-3.5 h-3.5 text-dark/40 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {dateRange === 'custom' && (
+              <div className="flex items-center gap-1.5 bg-[#F8F7F4] p-1 rounded-xl border border-[#D6CFC2]/80 text-xs">
+                <input 
+                  type="date" 
+                  value={customStartDate} 
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="bg-white text-dark text-[11px] px-2 py-1 rounded-lg border border-[#D6CFC2]/50 focus:outline-none"
+                />
+                <span className="text-dark/40 text-[10px]">t/m</span>
+                <input 
+                  type="date" 
+                  value={customEndDate} 
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="bg-white text-dark text-[11px] px-2 py-1 rounded-lg border border-[#D6CFC2]/50 focus:outline-none"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 7 KPI Cards Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          {/* Card 1: Total Leads — LIVE from /leads API */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-primary">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Totaal Leads' : 'Total Leads'}</span>
+              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                <TrendingUp className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl font-heading font-extrabold text-dark">{totalLeads}</p>
+            <p className="text-[10px] font-body text-dark/40 truncate">{language === 'NL' ? 'totaal geregistreerd' : 'total registered'}</p>
+          </div>
+
+          {/* Card 2: Cost Per Lead — not tracked yet, show dash */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-amber-600">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Kosten / Lead' : 'Cost / Lead'}</span>
+              <div className="p-1.5 rounded-lg bg-amber-100 text-amber-700">
+                <DollarSign className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl font-heading font-extrabold text-dark">—</p>
+            <p className="text-[10px] font-body text-dark/40 truncate">{language === 'NL' ? 'nog niet bijgehouden' : 'not tracked yet'}</p>
+          </div>
+
+          {/* Card 3: Quotations Sent — LIVE from Single Source of Truth */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-blue-600">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Offertes' : 'Quotes Sent'}</span>
+              <div className="p-1.5 rounded-lg bg-blue-100 text-blue-700">
+                <FileText className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl font-heading font-extrabold text-dark">
+              {kpisData?.quotesSent?.value != null ? kpisData.quotesSent.value : (funnelData?.offerte?.count != null ? funnelData.offerte.count : activeQuotes)}
+            </p>
+            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'uitgebracht' : 'issued'}</p>
+          </div>
+
+          {/* Card 4: Quotation % — computed from real leads + quotes */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-indigo-600">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Offerte %' : 'Quote %'}</span>
+              <div className="p-1.5 rounded-lg bg-indigo-100 text-indigo-700">
+                <Percent className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl font-heading font-extrabold text-dark">
+              {kpisData?.quotePercentage?.value != null ? `${kpisData.quotePercentage.value}%` : (funnelData?.offerte?.percentage != null ? `${funnelData.offerte.percentage}%` : (totalLeads > 0 ? `${Math.min(100, Math.round((activeQuotes / totalLeads) * 100))}%` : '0%'))}
+            </p>
+            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'van totaal leads' : 'of total leads'}</p>
+          </div>
+
+          {/* Card 5: Orders Won — Single Source of Truth */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-emerald-600">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Opdrachten' : 'Orders Won'}</span>
+              <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl font-heading font-extrabold text-dark">
+              {kpisData?.ordersWon?.value != null ? kpisData.ordersWon.value : (funnelData?.gewonnen?.count != null ? funnelData.gewonnen.count : latestQuotes.filter(q => q.status === 'accepted' || q.status === 'goedgekeurd' || q.status === 'approved').length)}
+            </p>
+            <p className="text-[10px] font-body text-emerald-700 font-semibold truncate">{language === 'NL' ? 'geaccepteerd' : 'accepted'}</p>
+          </div>
+
+          {/* Card 6: Conversion Rate % — Single Source of Truth */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-purple-600">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Conversie' : 'Conversion'}</span>
+              <div className="p-1.5 rounded-lg bg-purple-100 text-purple-700">
+                <Award className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl font-heading font-extrabold text-dark">
+              {kpisData?.conversionRate?.value != null ? `${kpisData.conversionRate.value}%` : (funnelData?.gewonnen?.percentage != null ? `${funnelData.gewonnen.percentage}%` : (totalLeads > 0 ? `${Math.min(100, Math.round(((kpisData?.ordersWon?.value || 0) / totalLeads) * 100))}%` : '0%'))}
+            </p>
+            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'lead → order' : 'lead → order'}</p>
+          </div>
+
+          {/* Card 7: Meta Ads — not connected yet, show dash */}
+          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-pink-600 col-span-2 sm:col-span-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">Meta Ads</span>
+              <div className="p-1.5 rounded-lg bg-pink-100 text-pink-700">
+                <Sparkles className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl font-heading font-extrabold text-dark">—</p>
+            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'niet gekoppeld' : 'not connected'}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* NEW DASHBOARD LAYOUT: 5 BLOCKS AS PER CLIENT REQUIREMENTS */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         
         {/* LEFT COLUMN (2/3 width on large screens) */}
@@ -628,159 +781,6 @@ export default function AdminDashboard() {
             </div>
           </Card>
 
-        </div>
-      </div>
-
-      {/* MODULE 1.2: DATE RANGE FILTER BAR & 7 KPI ANALYTICS CARDS GRID */}
-      <div className="space-y-4">
-        {/* Date Range Selector Header Bar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#D6CFC2]/60 shadow-xs">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-sm font-heading font-bold text-dark">
-                {language === 'NL' ? 'Prestaties & Analytische Cijfers' : 'Performance & Analytics KPIs'}
-              </h3>
-              <p className="text-[11px] font-body text-dark/50">
-                {language === 'NL' ? 'Prestatie-overzicht op basis van geselecteerde tijdsperiode' : 'Performance summary based on selected time frame'}
-              </p>
-            </div>
-          </div>
-
-          {/* Date Selector Dropdown & Custom Range Inputs */}
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <div className="relative flex-1 sm:flex-none">
-              <select 
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
-                className="w-full sm:w-auto appearance-none bg-[#F8F7F4] hover:bg-cream/40 text-dark text-xs font-body font-semibold px-3 py-2 pr-8 rounded-xl border border-[#D6CFC2]/80 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
-              >
-                <option value="7days">{language === 'NL' ? 'Laatste 7 dagen' : 'Last 7 days'}</option>
-                <option value="30days">{language === 'NL' ? 'Laatste 30 dagen' : 'Last 30 days'}</option>
-                <option value="currentMonth">{language === 'NL' ? 'Deze maand' : 'Current month'}</option>
-                <option value="3months">{language === 'NL' ? 'Laatste 3 maanden' : 'Last 3 months'}</option>
-                <option value="6months">{language === 'NL' ? 'Laatste 6 maanden' : 'Last 6 months'}</option>
-                <option value="12months">{language === 'NL' ? 'Laatste 12 maanden' : 'Last 12 months'}</option>
-                <option value="custom">{language === 'NL' ? 'Aangepaste datum' : 'Custom date range'}</option>
-              </select>
-              <Calendar className="w-3.5 h-3.5 text-dark/40 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-
-            {dateRange === 'custom' && (
-              <div className="flex items-center gap-1.5 bg-[#F8F7F4] p-1 rounded-xl border border-[#D6CFC2]/80 text-xs">
-                <input 
-                  type="date" 
-                  value={customStartDate} 
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="bg-white text-dark text-[11px] px-2 py-1 rounded-lg border border-[#D6CFC2]/50 focus:outline-none"
-                />
-                <span className="text-dark/40 text-[10px]">t/m</span>
-                <input 
-                  type="date" 
-                  value={customEndDate} 
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="bg-white text-dark text-[11px] px-2 py-1 rounded-lg border border-[#D6CFC2]/50 focus:outline-none"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 7 KPI Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-          {/* Card 1: Total Leads — LIVE from /leads API */}
-          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-primary">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Totaal Leads' : 'Total Leads'}</span>
-              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                <TrendingUp className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-xl font-heading font-extrabold text-dark">{totalLeads}</p>
-            <p className="text-[10px] font-body text-dark/40 truncate">{language === 'NL' ? 'totaal geregistreerd' : 'total registered'}</p>
-          </div>
-
-          {/* Card 2: Cost Per Lead — not tracked yet, show dash */}
-          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-amber-600">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Kosten / Lead' : 'Cost / Lead'}</span>
-              <div className="p-1.5 rounded-lg bg-amber-100 text-amber-700">
-                <DollarSign className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-xl font-heading font-extrabold text-dark">—</p>
-            <p className="text-[10px] font-body text-dark/40 truncate">{language === 'NL' ? 'nog niet bijgehouden' : 'not tracked yet'}</p>
-          </div>
-
-          {/* Card 3: Quotations Sent — LIVE from Single Source of Truth */}
-          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-blue-600">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Offertes' : 'Quotes Sent'}</span>
-              <div className="p-1.5 rounded-lg bg-blue-100 text-blue-700">
-                <FileText className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-xl font-heading font-extrabold text-dark">
-              {kpisData?.quotesSent?.value != null ? kpisData.quotesSent.value : (funnelData?.offerte?.count != null ? funnelData.offerte.count : activeQuotes)}
-            </p>
-            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'uitgebracht' : 'issued'}</p>
-          </div>
-
-          {/* Card 4: Quotation % — computed from real leads + quotes */}
-          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-indigo-600">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Offerte %' : 'Quote %'}</span>
-              <div className="p-1.5 rounded-lg bg-indigo-100 text-indigo-700">
-                <Percent className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-xl font-heading font-extrabold text-dark">
-              {kpisData?.quotePercentage?.value != null ? `${kpisData.quotePercentage.value}%` : (funnelData?.offerte?.percentage != null ? `${funnelData.offerte.percentage}%` : (totalLeads > 0 ? `${Math.min(100, Math.round((activeQuotes / totalLeads) * 100))}%` : '0%'))}
-            </p>
-            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'van totaal leads' : 'of total leads'}</p>
-          </div>
-
-          {/* Card 5: Orders Won — Single Source of Truth */}
-          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-emerald-600">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Opdrachten' : 'Orders Won'}</span>
-              <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-xl font-heading font-extrabold text-dark">
-              {kpisData?.ordersWon?.value != null ? kpisData.ordersWon.value : (funnelData?.gewonnen?.count != null ? funnelData.gewonnen.count : latestQuotes.filter(q => q.status === 'accepted' || q.status === 'goedgekeurd' || q.status === 'approved').length)}
-            </p>
-            <p className="text-[10px] font-body text-emerald-700 font-semibold truncate">{language === 'NL' ? 'geaccepteerd' : 'accepted'}</p>
-          </div>
-
-          {/* Card 6: Conversion Rate % — Single Source of Truth */}
-          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-purple-600">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">{language === 'NL' ? 'Conversie' : 'Conversion'}</span>
-              <div className="p-1.5 rounded-lg bg-purple-100 text-purple-700">
-                <Award className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-xl font-heading font-extrabold text-dark">
-              {kpisData?.conversionRate?.value != null ? `${kpisData.conversionRate.value}%` : (funnelData?.gewonnen?.percentage != null ? `${funnelData.gewonnen.percentage}%` : (totalLeads > 0 ? `${Math.min(100, Math.round(((kpisData?.ordersWon?.value || 0) / totalLeads) * 100))}%` : '0%'))}
-            </p>
-            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'lead → order' : 'lead → order'}</p>
-          </div>
-
-          {/* Card 7: Meta Ads — not connected yet, show dash */}
-          <div className="bg-white p-3.5 rounded-2xl border border-[#D6CFC2]/50 shadow-xs hover:shadow-card transition-all space-y-1 border-l-4 border-l-pink-600 col-span-2 sm:col-span-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-body font-bold text-dark/45 uppercase tracking-wider">Meta Ads</span>
-              <div className="p-1.5 rounded-lg bg-pink-100 text-pink-700">
-                <Sparkles className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-xl font-heading font-extrabold text-dark">—</p>
-            <p className="text-[10px] font-body text-dark/50 truncate">{language === 'NL' ? 'niet gekoppeld' : 'not connected'}</p>
-          </div>
         </div>
       </div>
 
