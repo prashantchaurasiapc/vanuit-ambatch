@@ -68,10 +68,12 @@ export default function Sidebar({ role }) {
     return localStorage.getItem('app_sidebar_collapsed') === 'true';
   });
 
+  const isEn = language === 'EN';
+
   const [openDropdowns, setOpenDropdowns] = useState({
-    Verkoop: true,
-    Uitvoering: false,
-    'Financiën': false,
+    verkoop: true,
+    uitvoering: false,
+    financien: false,
   });
 
   useEffect(() => {
@@ -80,13 +82,13 @@ export default function Sidebar({ role }) {
     const financienPaths = ['/admin/invoices', '/admin/bank', '/admin/taxes', '/admin/profit-loss'];
 
     if (verkoopPaths.some(p => location.pathname.startsWith(p))) {
-      setOpenDropdowns(prev => ({ ...prev, Verkoop: true }));
+      setOpenDropdowns(prev => ({ ...prev, verkoop: true }));
     }
     if (uitvoeringPaths.some(p => location.pathname.startsWith(p))) {
-      setOpenDropdowns(prev => ({ ...prev, Uitvoering: true }));
+      setOpenDropdowns(prev => ({ ...prev, uitvoering: true }));
     }
     if (financienPaths.some(p => location.pathname.startsWith(p))) {
-      setOpenDropdowns(prev => ({ ...prev, 'Financiën': true }));
+      setOpenDropdowns(prev => ({ ...prev, financien: true }));
     }
   }, [location.pathname]);
 
@@ -104,57 +106,63 @@ export default function Sidebar({ role }) {
     return () => window.removeEventListener('app_toggle_mobile_sidebar', handleToggleMobile);
   }, []);
 
-  const toggleDropdown = (name) => {
-    setOpenDropdowns(prev => ({ ...prev, [name]: !prev[name] }));
+  const toggleDropdown = (id) => {
+    setOpenDropdowns(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Brief: 7 Admin sections ordered like working day (Dutch labels)
+  // Brief: 7 Admin sections ordered like working day (Dutch in NL, English in EN)
   const ADMIN_LINKS = [
     { 
-      name: 'Vandaag', 
+      id: 'vandaag',
+      name: isEn ? 'Today' : 'Vandaag', 
       path: '/admin/dashboard', 
       icon: LayoutDashboard,
       badge: counters.openTasks > 0 ? counters.openTasks : null 
     },
     { 
-      name: 'Verkoop', 
+      id: 'verkoop',
+      name: isEn ? 'Sales' : 'Verkoop', 
       icon: Users, 
       isDropdown: true,
       children: [
-        { name: 'Leads', path: '/admin/leads', badge: counters.newLeads > 0 ? counters.newLeads : null },
-        { name: 'Offertes', path: '/admin/quotes' },
-        { name: 'Klanten', path: '/admin/customers' },
+        { name: isEn ? 'Leads' : 'Leads', path: '/admin/leads', badge: counters.newLeads > 0 ? counters.newLeads : null },
+        { name: isEn ? 'Quotes' : 'Offertes', path: '/admin/quotes' },
+        { name: isEn ? 'Customers' : 'Klanten', path: '/admin/customers' },
       ]
     },
     { 
-      name: 'Uitvoering', 
+      id: 'uitvoering',
+      name: isEn ? 'Delivery' : 'Uitvoering', 
       icon: Briefcase, 
       isDropdown: true,
       children: [
-        { name: 'Projecten', path: '/admin/projects' },
-        { name: 'Planning', path: '/admin/planning' },
+        { name: isEn ? 'Projects' : 'Projecten', path: '/admin/projects' },
+        { name: isEn ? 'Planning' : 'Planning', path: '/admin/planning' },
       ]
     },
     { 
-      name: 'Berichten', 
+      id: 'berichten',
+      name: isEn ? 'Messages' : 'Berichten', 
       path: '/admin/inbox', 
       icon: MessageSquare, 
       badge: counters.unreadMessages > 0 ? counters.unreadMessages : null 
     },
     { 
-      name: 'Partners', 
+      id: 'partners',
+      name: isEn ? 'Partners' : 'Partners', 
       path: '/admin/partners', 
       icon: UserSquare 
     },
     { 
-      name: 'Financiën', 
+      id: 'financien',
+      name: isEn ? 'Finance' : 'Financiën', 
       icon: PieChart, 
       isDropdown: true,
       children: [
-        { name: 'Facturen', path: '/admin/invoices' },
-        { name: 'Bank', path: '/admin/bank' },
-        { name: 'Btw', path: '/admin/taxes' },
-        { name: 'Winst en verlies', path: '/admin/profit-loss' },
+        { name: isEn ? 'Invoices' : 'Facturen', path: '/admin/invoices' },
+        { name: isEn ? 'Bank' : 'Bank', path: '/admin/bank' },
+        { name: isEn ? 'VAT' : 'Btw', path: '/admin/taxes' },
+        { name: isEn ? 'Profit & Loss' : 'Winst en verlies', path: '/admin/profit-loss' },
       ]
     },
   ];
@@ -247,10 +255,11 @@ export default function Sidebar({ role }) {
           const Icon = link.icon;
           
           if (link.isDropdown) {
-            const isOpen = openDropdowns[link.name];
+            const dropdownKey = link.id || link.name;
+            const isOpen = openDropdowns[dropdownKey];
             if (collapsed) {
               return (
-                <div key={link.name} className="relative group flex justify-center my-0.5">
+                <div key={dropdownKey} className="relative group flex justify-center my-0.5">
                   <NavLink
                     to={link.children[0].path}
                     className={({ isActive }) =>
@@ -269,10 +278,10 @@ export default function Sidebar({ role }) {
             }
 
             return (
-              <div key={link.name} className="flex flex-col">
+              <div key={dropdownKey} className="flex flex-col">
                 <button
-                  onClick={() => toggleDropdown(link.name)}
-                  className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg transition-all duration-150 text-white/70 hover:bg-white/10 hover:text-white text-left"
+                  onClick={() => toggleDropdown(dropdownKey)}
+                  className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg transition-all duration-150 text-white/70 hover:bg-white/10 hover:text-white text-left cursor-pointer"
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
                   <span className="text-xs font-body font-normal flex-1 truncate">{link.name}</span>
@@ -283,7 +292,7 @@ export default function Sidebar({ role }) {
                   <div className="mt-0.5 ml-5 pl-2 border-l border-white/10 space-y-0.5 flex flex-col">
                     {link.children.map(child => (
                       <NavLink
-                        key={child.name}
+                        key={child.path}
                         to={child.path}
                         onClick={() => setMobileOpen(false)}
                         title={child.name}
@@ -362,7 +371,7 @@ export default function Sidebar({ role }) {
 
       </nav>
 
-      {/* Instellingen at the bottom of the sidebar (Brief Section 7) */}
+      {/* Instellingen / Settings at the bottom of the sidebar (Brief Section 7) */}
       {role === 'admin' && (
         <div className={`px-2 py-1.5 border-t border-white/10 ${collapsed ? 'flex justify-center' : ''}`}>
           {collapsed ? (
@@ -376,7 +385,7 @@ export default function Sidebar({ role }) {
                     : 'text-white/70 hover:bg-white/15 hover:text-white'
                 }`
               }
-              title="Instellingen"
+              title={isEn ? 'Settings' : 'Instellingen'}
             >
               <Settings className="w-4 h-4" strokeWidth={1.75} />
             </NavLink>
@@ -393,7 +402,7 @@ export default function Sidebar({ role }) {
               }
             >
               <Settings className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} />
-              <span className="text-xs font-body font-normal">Instellingen</span>
+              <span className="text-xs font-body font-normal">{isEn ? 'Settings' : 'Instellingen'}</span>
             </NavLink>
           )}
         </div>

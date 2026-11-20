@@ -28,7 +28,7 @@ function getBreadcrumb(pathname, search, t, language) {
       group = isNl ? 'Verkoop' : 'Sales';
       page = section === 'leads' ? 'Leads' : section === 'quotes' ? (isNl ? 'Offertes' : 'Quotes') : (isNl ? 'Klanten' : 'Customers');
     } else if (opsPaths.includes(section)) {
-      group = isNl ? 'Uitvoering' : 'Operations';
+      group = isNl ? 'Uitvoering' : 'Delivery';
       page = section === 'projects' ? (isNl ? 'Projecten' : 'Projects') : (isNl ? 'Planning' : 'Planning');
     } else if (section === 'inbox') {
       return [isNl ? 'Berichten' : 'Messages'];
@@ -38,8 +38,8 @@ function getBreadcrumb(pathname, search, t, language) {
       group = isNl ? 'Financiën' : 'Finance';
       page = section === 'invoices' ? (isNl ? 'Facturen' : 'Invoices')
         : section === 'bank' ? 'Bank'
-        : section === 'taxes' ? (isNl ? 'Btw-aangifte' : 'Taxes')
-        : (isNl ? 'Winst & Verlies' : 'Profit & Loss');
+        : section === 'taxes' ? (isNl ? 'Btw' : 'VAT')
+        : (isNl ? 'Winst en verlies' : 'Profit & Loss');
     } else if (section === 'settings') {
       return [isNl ? 'Instellingen' : 'Settings'];
     } else if (section === 'tasks') {
@@ -482,10 +482,10 @@ export default function TopNav() {
             <button
               onClick={() => setNewActionOpen(!newActionOpen)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-[#2F3C29] text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer"
-              title="Nieuw aanmaken"
+              title={language === 'NL' ? 'Nieuw aanmaken' : 'Create New'}
             >
               <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-              <span className="hidden sm:inline">Nieuw</span>
+              <span className="hidden sm:inline">{language === 'NL' ? 'Nieuw' : 'New'}</span>
               <ChevronDown className={`w-3 h-3 text-white/70 transition-transform ${newActionOpen ? 'rotate-180' : ''}`} />
             </button>
 
@@ -500,17 +500,17 @@ export default function TopNav() {
                   className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-dark hover:bg-white/70 transition-colors font-medium cursor-pointer"
                 >
                   <UserPlus className="w-4 h-4 text-primary" />
-                  <span>Nieuwe Lead</span>
+                  <span>{language === 'NL' ? 'Nieuwe Lead' : 'New Lead'}</span>
                 </button>
                 <button
                   onClick={() => {
-                    navigate('/admin/tasks?new=true');
+                    navigate('/admin/tasks');
                     setNewActionOpen(false);
                   }}
                   className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-dark hover:bg-white/70 transition-colors font-medium cursor-pointer"
                 >
                   <CheckSquare className="w-4 h-4 text-accent" />
-                  <span>Nieuwe Taak</span>
+                  <span>{language === 'NL' ? 'Nieuwe Taak' : 'New Task'}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -520,7 +520,7 @@ export default function TopNav() {
                   className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-dark hover:bg-white/70 transition-colors font-medium cursor-pointer"
                 >
                   <CalendarPlus className="w-4 h-4 text-primary" />
-                  <span>Nieuwe Afspraak / Inmeting</span>
+                  <span>{language === 'NL' ? 'Nieuwe Afspraak / Inmeting' : 'New Appointment / Measurement'}</span>
                 </button>
               </div>
             )}
@@ -532,7 +532,7 @@ export default function TopNav() {
           <button
             onClick={() => navigate('/admin/inbox')}
             className="relative text-dark/60 hover:text-primary transition-colors p-2 rounded-xl hover:bg-[#D6CFC2]/40 cursor-pointer"
-            title="Berichten"
+            title={language === 'NL' ? 'Berichten' : 'Messages'}
           >
             <MessageSquare className="w-4 h-4" />
             {counters.unreadMessages > 0 && (
