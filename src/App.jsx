@@ -206,7 +206,7 @@ function App() {
         <Route path="projects/field-mapping" element={<Navigate to="/admin/settings" replace />} />
         <Route path="documents" element={<Navigate to="/admin/projects?tab=documents" replace />} />
         <Route path="photos" element={<Navigate to="/admin/projects?tab=documents" replace />} />
-        <Route path="tasks" element={<Navigate to="/admin/dashboard?view=tasks" replace />} />
+        <Route path="tasks" element={<Tasks />} />
         <Route path="reports" element={<Reports />} />
         <Route path="profile" element={<Profile />} />
       </Route>

@@ -42,6 +42,8 @@ function getBreadcrumb(pathname, search, t, language) {
         : (isNl ? 'Winst & Verlies' : 'Profit & Loss');
     } else if (section === 'settings') {
       return [isNl ? 'Instellingen' : 'Settings'];
+    } else if (section === 'tasks') {
+      return [isNl ? 'Vandaag' : 'Today', isNl ? 'Takenagenda' : 'Tasks'];
     } else {
       page = section.charAt(0).toUpperCase() + section.slice(1);
     }
@@ -502,8 +504,7 @@ export default function TopNav() {
                 </button>
                 <button
                   onClick={() => {
-                    navigate('/admin/dashboard?view=tasks&new=true');
-                    window.dispatchEvent(new Event('app_open_task_modal'));
+                    navigate('/admin/tasks?new=true');
                     setNewActionOpen(false);
                   }}
                   className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left text-dark hover:bg-white/70 transition-colors font-medium cursor-pointer"

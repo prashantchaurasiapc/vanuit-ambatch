@@ -671,12 +671,16 @@ export default function AdminDashboard() {
               {/* Tasks */}
               <div className="bg-[#F8F7F4] rounded-xl p-4 border border-[#D6CFC2]/50 sm:col-span-2 md:col-span-1">
                 <div className="flex justify-between items-center mb-3">
-                  <h4 className="text-xs font-bold font-body text-dark/70 uppercase tracking-wider flex items-center gap-2">
+                  <h4 
+                    onClick={() => navigate('/admin/tasks')}
+                    className="text-xs font-bold font-body text-dark/70 uppercase tracking-wider flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
+                    title="Ga naar Takenpagina"
+                  >
                     <ListTodo className="w-3.5 h-3.5 text-primary" /> {language === 'NL' ? 'Openstaande Taken' : 'Open Tasks'}
                   </h4>
                   <button 
                     type="button"
-                    onClick={() => setTasksModalOpen(true)}
+                    onClick={() => navigate('/admin/tasks')}
                     className="text-[10px] font-bold text-accent hover:underline cursor-pointer"
                   >
                     {language === 'NL' ? 'Bekijk Alles →' : 'View All →'}

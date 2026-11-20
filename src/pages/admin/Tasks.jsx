@@ -183,6 +183,25 @@ export default function Tasks() {
     };
   }, []);
 
+  useEffect(() => {
+    if (searchParams.get('new') === 'true') {
+      const defaultLinked = projectsList.length > 0
+        ? `P-${projectsList[0].id || projectsList[0].projectNumber} (${projectsList[0].name || projectsList[0].title})`
+        : '';
+      setSelectedTask(null);
+      setForm({
+        title: '',
+        linkedType: 'Project',
+        linkedId: defaultLinked,
+        assignee: 'Tim',
+        priority: 'Medium',
+        dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        completed: false
+      });
+      setModalOpen(true);
+    }
+  }, [searchParams, projectsList]);
+
   const showToast = (msg) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 3000);
