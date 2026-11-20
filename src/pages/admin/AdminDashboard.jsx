@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
-import { Users, Briefcase, FileText, TrendingUp, Plus, ArrowUpRight, X, CheckCircle, AlertTriangle, Calendar, ListTodo, ArrowRight, Clock, CreditCard, Banknote, Bell, DollarSign, Percent, Sparkles, CheckCircle2, Award, Filter, Layers } from 'lucide-react';
+import { Users, Briefcase, FileText, TrendingUp, Plus, ArrowUpRight, X, CheckCircle, AlertTriangle, Calendar, ListTodo, ArrowRight, Clock, CreditCard, Banknote, Bell, DollarSign, Percent, Sparkles, CheckCircle2, Award, Filter, Layers, CheckSquare } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import heroBg from '/dasbordes images.png';
 import api from '../../api/apiClient';
@@ -32,8 +32,12 @@ const StatCard = ({ label, value, icon: Icon, trend, color, bgColor, borderClass
 export default function AdminDashboard() {
   const { t, language, tStatus } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [toastMsg, setToastMsg] = useState('');
   const [partnerNotifs, setPartnerNotifs] = useState([]);
+  const [tasksModalOpen, setTasksModalOpen] = useState(false);
+  const [newTaskInput, setNewTaskInput] = useState('');
+  const [newTaskPriority, setNewTaskPriority] = useState('Medium');
   
   // Module 1.2: Date Range Filter & Dynamic KPI Analytics State
   const [dateRange, setDateRange] = useState('30days'); // '7days' | '30days' | 'currentMonth' | '3months' | '6months' | '12months' | 'custom'
@@ -160,6 +164,15 @@ export default function AdminDashboard() {
     return () => window.removeEventListener('app_data_changed', refreshDashboard);
   }, []);
 
+  useEffect(() => {
+    if (searchParams.get('view') === 'tasks' || searchParams.get('new') === 'true') {
+      setTasksModalOpen(true);
+    }
+    const handleOpenTask = () => setTasksModalOpen(true);
+    window.addEventListener('app_open_task_modal', handleOpenTask);
+    return () => window.removeEventListener('app_open_task_modal', handleOpenTask);
+  }, [searchParams]);
+
   const handleToggleDashboardTask = async (taskId) => {
     const task = dashboardTasks.find(t => t.id === taskId);
     const nextCompleted = task ? !task.completed : true;
@@ -168,7 +181,38 @@ export default function AdminDashboard() {
     try {
       await api.patch(`/tasks/${taskId}/status`, { completed: nextCompleted, status: nextCompleted ? 'completed' : 'pending' });
     } catch (e) {}
-    showToast("Task status updated!");
+    showToast(language === 'NL' ? 'Taakstatus bijgewerkt!' : 'Task status updated!');
+    window.dispatchEvent(new Event('app_data_changed'));
+  };
+
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+    if (!newTaskInput.trim()) return;
+    const taskTitle = newTaskInput.trim();
+    try {
+      const res = await api.post('/tasks', {
+        title: taskTitle,
+        priority: newTaskPriority.toLowerCase(),
+        status: 'pending'
+      });
+      const newId = res?.data?.id || Date.now();
+      setDashboardTasks(prev => [{
+        id: newId,
+        title: taskTitle,
+        completed: false,
+        priority: newTaskPriority
+      }, ...prev]);
+    } catch (e) {
+      setDashboardTasks(prev => [{
+        id: Date.now(),
+        title: taskTitle,
+        completed: false,
+        priority: newTaskPriority
+      }, ...prev]);
+    }
+    setNewTaskInput('');
+    showToast(language === 'NL' ? 'Taak succesvol toegevoegd!' : 'Task added successfully!');
+    window.dispatchEvent(new Event('app_data_changed'));
   };
 
   // Modals visibility state
@@ -630,7 +674,13 @@ export default function AdminDashboard() {
                   <h4 className="text-xs font-bold font-body text-dark/70 uppercase tracking-wider flex items-center gap-2">
                     <ListTodo className="w-3.5 h-3.5 text-primary" /> {language === 'NL' ? 'Openstaande Taken' : 'Open Tasks'}
                   </h4>
-                  <a href="/admin/tasks" className="text-[10px] font-bold text-accent hover:underline">{language === 'NL' ? 'Bekijk Alles →' : 'View All →'}</a>
+                  <button 
+                    type="button"
+                    onClick={() => setTasksModalOpen(true)}
+                    className="text-[10px] font-bold text-accent hover:underline cursor-pointer"
+                  >
+                    {language === 'NL' ? 'Bekijk Alles →' : 'View All →'}
+                  </button>
                 </div>
                 <div className="space-y-2">
                   {dashboardTasks.slice(0, 4).map(item => {
@@ -783,6 +833,129 @@ export default function AdminDashboard() {
 
         </div>
       </div>
+
+      {/* ALL TASKS & AGENDA MODAL (Brief: Tasks inside Vandaag / Lead / Project) */}
+      <AnimatePresence>
+        {tasksModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-dark/60 backdrop-blur-sm"
+              onClick={() => {
+                setTasksModalOpen(false);
+                if (searchParams.get('view') || searchParams.get('new')) {
+                  navigate('/admin/dashboard', { replace: true });
+                }
+              }}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg bg-[#FAF8F5] border border-[#D6CFC2] rounded-2xl p-6 shadow-2xl z-10 space-y-4 max-h-[85vh] flex flex-col font-body"
+            >
+              <div className="flex items-center justify-between border-b border-[#D6CFC2]/60 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                    <ListTodo className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-heading font-bold text-dark">
+                      {language === 'NL' ? 'Takenagenda (Vandaag)' : 'Task Agenda (Today)'}
+                    </h3>
+                    <p className="text-[11px] text-dark/50">
+                      {dashboardTasks.filter(t => !t.completed).length} {language === 'NL' ? 'openstaande taken voor Tim & Bram' : 'open tasks for Tim & Bram'}
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    setTasksModalOpen(false);
+                    if (searchParams.get('view') || searchParams.get('new')) {
+                      navigate('/admin/dashboard', { replace: true });
+                    }
+                  }} 
+                  className="p-1.5 rounded-lg text-dark/40 hover:bg-[#D6CFC2]/30 hover:text-dark transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Add New Task Inline */}
+              <form onSubmit={handleCreateTask} className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTaskInput}
+                  onChange={e => setNewTaskInput(e.target.value)}
+                  placeholder={language === 'NL' ? 'Voeg een nieuwe taak toe...' : 'Add a new task...'}
+                  className="flex-1 px-3 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs text-dark focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+                <select
+                  value={newTaskPriority}
+                  onChange={e => setNewTaskPriority(e.target.value)}
+                  className="px-2 py-2 bg-white border border-[#D6CFC2] rounded-xl text-xs font-semibold text-dark/80 focus:outline-none"
+                >
+                  <option value="High">{language === 'NL' ? 'Hoog' : 'High'}</option>
+                  <option value="Medium">{language === 'NL' ? 'Middel' : 'Medium'}</option>
+                  <option value="Low">{language === 'NL' ? 'Laag' : 'Low'}</option>
+                </select>
+                <button
+                  type="submit"
+                  className="px-3.5 py-2 bg-primary hover:bg-[#2F3C29] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{language === 'NL' ? 'Toevoegen' : 'Add'}</span>
+                </button>
+              </form>
+
+              {/* Scrollable Tasks List */}
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[50vh]">
+                {dashboardTasks.length === 0 ? (
+                  <p className="text-xs text-dark/40 italic py-6 text-center">
+                    {language === 'NL' ? 'Geen taken gevonden. Voeg er hierboven een toe!' : 'No tasks found. Add one above!'}
+                  </p>
+                ) : (
+                  dashboardTasks.map(task => (
+                    <div
+                      key={task.id}
+                      onClick={() => handleToggleDashboardTask(task.id)}
+                      className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+                        task.completed 
+                          ? 'bg-[#F2EDE4]/60 border-[#D6CFC2]/40 text-dark/40 opacity-75' 
+                          : 'bg-white border-[#D6CFC2]/70 hover:border-primary/50 shadow-xs'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={task.completed || false}
+                        onChange={() => {}}
+                        className="w-4 h-4 accent-primary mt-0.5 cursor-pointer flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-medium leading-snug ${task.completed ? 'line-through text-dark/40' : 'text-dark'}`}>
+                          {task.title}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md ${
+                            task.priority === 'High' ? 'bg-red-100 text-red-700' : task.priority === 'Low' ? 'bg-gray-100 text-gray-600' : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {task.priority || 'Medium'}
+                          </span>
+                          <span className="text-[10px] text-dark/40">
+                            {language === 'NL' ? 'Toegewezen aan Tim & Bram' : 'Assigned to Tim & Bram'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* NEW LEAD MODAL */}
       <AnimatePresence>
